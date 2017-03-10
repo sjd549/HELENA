@@ -149,7 +149,7 @@ phasecycles = 1								#Number of phase cycles to be plotted.
 #Requested TECPLOT Variables
 Variables = ['AR','AR+','E','TE','P-POT','TG-AVE','PRESSURE','EF-TOT','POW-RF','POW-RF-E','S-AR+','SEB-AR+', 'VR-NEUTRAL','VZ-NEUTRAL','VR-ION+','VZ-ION+','EAMB-R','EAMB-Z']
 MultiVar = ['E']						#Additional variables plotted ontop of [Variables] 
-radialineouts = [] 						#Radial 1D-Profiles to be plotted (fixed Z-mesh)
+radialineouts = [0] 						#Radial 1D-Profiles to be plotted (fixed Z-mesh)
 heightlineouts = [0]					#Axial 1D-Profiles to be plotted (fixed R-mesh)
 #YPR H0;R47  #MSHC H0,20;R20
 
@@ -158,8 +158,8 @@ heightlineouts = [0]					#Axial 1D-Profiles to be plotted (fixed R-mesh)
 savefig_itermovie = False				#Requires movie_icp.pdt
 savefig_plot2D = False
 
-savefig_radialines = False
-savefig_heightlines = False
+savefig_radialines = True
+savefig_heightlines = True
 savefig_multiprofiles = False
 savefig_comparelineouts = False
 
@@ -1348,6 +1348,34 @@ def Colourbar(ax,Label,Bins):
 
 
 
+def GenerateAxis(Orientation,Isym):
+	#Generate SI scale axes for lineout plots.
+	axis = list()
+
+	if Orientation == 'Radial':
+		if Isym == 1:
+			for i in range(0,2*R_mesh[l]):
+				axis.append(i*dr[l])
+		#endfor
+		else:
+			for i in range(0,R_mesh[l]):
+				axis.append(i*dr[l])
+			#endfor
+		#endif
+	elif Orientation == 'Axial':
+		for i in range(0,Z_mesh[l]):
+			axis.append(i*dz[l])
+		#endfor
+	#endif
+	return(axis)
+#enddef
+
+
+#=========================#
+#=========================#
+
+
+
 #Obtains a radial 1D profile at a requested axial location.
 #Returns a 1D array for plotting and performs unit conversion.
 def PlotRadialProfile(Data,process,variable,lineout,R_mesh,Isym):
@@ -2108,8 +2136,6 @@ if savefig_comparelineouts == True:
 
 				#Plot all radial profiles for all variables in one folder.
 				Rlineout = PlotRadialProfile(Data[l],processlist[k],Variablelist[k],radialineouts[j],R_mesh[l],Isymlist[l])
-				#print l, k, Variablelist[k]
-
 
 				#Plot single frequencies with dotted lines to distinguish them.
 				if image_singlefreqdotted == True and 'Phase' not in Legendlist[-1]:
@@ -2190,8 +2216,6 @@ if savefig_comparelineouts == True:
 
 				#Obtain axial profile for each folder of the current variable.
 				Zlineout = PlotAxialProfile(Data[l],processlist[k],Variablelist[k],heightlineouts[j],R_mesh[l],Z_mesh[l],Isymlist[l])
-#				print l, k, Variablelist[k], ylabel[k]
-
 
 				#Plot single frequencies with dotted lines to distinguish them.
 				if image_singlefreqdotted == True and 'Phase' not in Legendlist[-1]:
@@ -2247,6 +2271,8 @@ if savefig_multiprofiles == True:
 
 	#For each folder in turn
 	for l in range(0,numfolders):
+		#Create global multivar folder.
+		Dirlineouts = CreateNewFolder(Dirlist[l],'MultiVar_Profiles/')
 
 		#Create processlist for each folder as required.
 		processlist,Variablelist = VariableEnumerator(Variables,rawdata_2D[l],header_2Dlist[l])
@@ -2254,27 +2280,20 @@ if savefig_multiprofiles == True:
 
 		#Generate the vertical (height) lineouts for a given radius.
 		if len(heightlineouts) > 0:
-			#Create folder to keep output plots.
-			DirZlineouts = CreateNewFolder(Dirlist[l],'MultiVar_Axial_Profiles/')
 
 			#Generate SI scale axes for lineout plots.
-			Zaxis = list()
-			if Isymlist[l] == 1:
-				for i in range(0,Z_mesh[l]):
-					Zaxis.append(i*dz[l])
-			#endfor
-			else:
-				for i in range(0,2*Z_mesh[l]):
-					Zaxis.append(i*dz[l])
-				#endfor
-			#endif
+			Zaxis = GenerateAxis('Axial',Isymlist[l])
 
 			#Perform the plotting for all requested variables.
 			for i in range(0,len(processlist)):
-				fig, ax = plt.subplots(figsize=(9,9))
 
 				#Extract the lineout data from the main data array.
 				for j in range(0,len(heightlineouts)):
+					fig, ax = plt.subplots(figsize=(10,10))
+
+					#Create folder to keep output plots.
+					Slice = str(round((heightlineouts[j])*dr[l], 2))
+					DirZlineouts = CreateNewFolder(Dirlineouts,'Z='+Slice+'/')
 
 					#Create legendlist
 					legendlist = list()
@@ -2282,19 +2301,18 @@ if savefig_multiprofiles == True:
 
 					#Plot the initial variable in processlist first.
 					Zlineout = PlotAxialProfile(Data[l],processlist[i],Variablelist[i],heightlineouts[j],R_mesh[l],Z_mesh[l],Isymlist[l])
-					plt.plot(Zaxis[0:len(Zlineout)],Zlineout, lw=2)
+					plt.plot(Zaxis[0:len(Zlineout)],Zlineout[::-1], lw=2)
 
 					#Plot all of the requested comparison variables for this plot.
 					for m in range(0,len(multiprocesslist)):
 						
 						#Plot profile for multiplot variables in compareprocesslist.
 						Zlineout = PlotAxialProfile(Data[l],multiprocesslist[m],multiVariablelist[m],heightlineouts[j],R_mesh[l],Z_mesh[l],Isymlist[l])
-						plt.plot(Zaxis[0:len(Zlineout)],Zlineout, lw=2)
+						plt.plot(Zaxis,Zlineout[::-1], lw=2)
 				
 						#Update legendlist with each variable compared.
 						legendlist.append(VariableLabelMaker(multiVariablelist)[m])
 					#endfor
-
 
 					#Save figures in original folder.
 					plt.title(str(round((heightlineouts[j])*dr[l], 2))+'cm Height profiles for '+Variablelist[i]+','' for \n'+Dirlist[l][2:-1],position=(0.5,1.05))
@@ -2307,10 +2325,9 @@ if savefig_multiprofiles == True:
 
 					R = 'R='+str(round((heightlineouts[j])*dr[l], 2))+'_'
 					plt.savefig(DirZlineouts+R+Variablelist[i]+'_MultiProfiles.png')
-#					plt.show()
 					plt.close('fig')
+					plt.close('all')
 				#endfor
-				plt.close('all')
 			#endfor	
 		#endif
 
@@ -2318,27 +2335,22 @@ if savefig_multiprofiles == True:
 
 		#Generate the horizontal (Radial) lineouts for a given radius.
 		if len(radialineouts) > 0:
-			#Create folder to keep output plots.
-			DirRlineouts = CreateNewFolder(Dirlist[l],'MultiVar_Radial_Profiles/')
+			#Create global multivar folder.
+			Dirlineouts = CreateNewFolder(Dirlist[l],'MultiVar_Profiles/')
 
 			#Generate SI scale axes for lineout plots.
-			Raxis = list()
-			if Isymlist[l] == 1:
-				for i in range(0,2*R_mesh[l]):
-					Raxis.append(i*dr[l])
-			#endfor
-			else:
-				for i in range(0,R_mesh[l]):
-					Raxis.append(i*dr[l])
-				#endfor
-			#endif
+			Raxis = GenerateAxis('Radial',Isymlist[l])
 
 			#Perform the plotting for all requested variables.
 			for i in range(0,len(processlist)):
-				fig, ax = plt.subplots(figsize=(9,9))
-
+				
 				#Perform the plotting for all requested variables.
 				for j in range(0,len(radialineouts)):
+					fig, ax = plt.subplots(figsize=(10,10))
+
+					#Create folder to keep output plots.
+					Slice = str(round((radialineouts[j])*dz[l], 2))
+					DirRlineouts = CreateNewFolder(Dirlineouts,'R='+Slice+'/')
 
 					#Create legendlist
 					legendlist = list()
@@ -2370,10 +2382,9 @@ if savefig_multiprofiles == True:
 
 					Z = 'Z='+str(round((radialineouts[j])*dz[l], 2))+'_'
 					plt.savefig(DirRlineouts+Z+Variablelist[i]+'_MultiProfiles.png')
-#					plt.show()
 					plt.close('fig')
+					plt.close('all')
 				#endfor
-				plt.close('all')
 			#endfor
 		#endif
 	#endfor
