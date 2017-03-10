@@ -149,7 +149,7 @@ phasecycles = 1								#Number of phase cycles to be plotted.
 #Requested TECPLOT Variables
 Variables = ['AR','AR+','E','TE','P-POT','TG-AVE','PRESSURE','EF-TOT','POW-RF','POW-RF-E','S-AR+','SEB-AR+', 'VR-NEUTRAL','VZ-NEUTRAL','VR-ION+','VZ-ION+','EAMB-R','EAMB-Z']
 MultiVar = ['E']						#Additional variables plotted ontop of [Variables] 
-radialineouts = [0] 						#Radial 1D-Profiles to be plotted (fixed Z-mesh)
+radialineouts = [] 						#Radial 1D-Profiles to be plotted (fixed Z-mesh)
 heightlineouts = [0]					#Axial 1D-Profiles to be plotted (fixed R-mesh)
 #YPR H0;R47  #MSHC H0,20;R20
 
@@ -160,8 +160,8 @@ savefig_plot2D = False
 
 savefig_radialines = True
 savefig_heightlines = True
-savefig_multiprofiles = False
-savefig_comparelineouts = False
+savefig_multiprofiles = True
+savefig_comparelineouts = True
 
 savefig_phaseresolvelines = False			#1D Phase Resolved Images
 savefig_phaseresolve2D = False				#2D Phase Resolved Images
@@ -1216,6 +1216,24 @@ def ImageExtractor2D(Data,R_mesh,Z_mesh,Variable=[]):
 
 
 
+#Create figure of default or desired size.
+#Returns figure and axes seperately.
+def figure(aspectratio):
+	if len(aspectratio) == 2: 
+		fig, ax = plt.subplots(figsize=(aspectratio[0],aspectratio[1]))
+	else: 
+		fig, ax = plt.subplots(figsize=(9,9))
+	#endif
+	return(fig,ax)
+#enddef
+
+
+
+#=========================#
+#=========================#
+
+
+
 #Takes pre-produced 2D image and 'beautifies' it for plotting.
 def SymmetryConverter2D(Image,Isym,R_mesh,Z_mesh,Radius,Height):
 
@@ -1347,7 +1365,9 @@ def Colourbar(ax,Label,Bins):
 #=========================#
 
 
-
+#Generates an SI axis for a 1D profile plot.
+#Takes orientation and symmetry options.
+#Returns 1D array in units of [cm].
 def GenerateAxis(Orientation,Isym):
 	#Generate SI scale axes for lineout plots.
 	axis = list()
@@ -1369,6 +1389,7 @@ def GenerateAxis(Orientation,Isym):
 	#endif
 	return(axis)
 #enddef
+
 
 
 #=========================#
@@ -1954,42 +1975,24 @@ if savefig_radialines or savefig_heightlines == True:
 		#Create processlist for each folder as required.
 		processlist,Variablelist = VariableEnumerator(Variables,rawdata_2D[l],header_2Dlist[l])
 		
-		#Refresh appended lists
+		#Generate SI scale axes for lineout plots and refresh legend.
+		Raxis = GenerateAxis('Radial',Isymlist[l])
+		Zaxis = GenerateAxis('Axial',Isymlist[l])
 		Legendlist = list()
-		Zaxis = list()
-		Raxis = list()
-		#Generate SI scale axes for 1D-profile plots, taking account of symmetry.
-		for i in range(0,Z_mesh[l]):
-			Zaxis.append(i*dz[l])
-		#endfor
-		if Isymlist[l] == 1:
-			for i in range(-R_mesh[l],R_mesh[l]):
-				Raxis.append(i*dr[l])
-			#endfor
-		elif Isymlist[l] == 0:
-			for i in range(0,R_mesh[l]):
-				Raxis.append(i*dr[l])
-			#endfor
-		#endif
-
 		
 		#Generate the radial (horizontal) lineouts for a specific height.
-		if savefig_radialines == True:
+		if savefig_radialines == True and len(radialineouts) > 0:
 			#Create folder to keep output plots.
 			DirRlineouts = CreateNewFolder(Dirlist[l],'Radial_Profiles/')
 
 			#Loop over all required variables and requested profile locations.
 			for i in range(0,len(processlist)):
-
 				#Create fig of desired size.
-				if len(image_aspectratio) == 0:
-					fig, ax = plt.subplots(figsize=(9,9))
-				else:
-					fig, ax = plt.subplots(figsize=(image_aspectratio[0],image_aspectratio[1]))
+				if len(image_aspectratio) == 0: fig, ax = plt.subplots(figsize=(9,9))
+				else: fig, ax = plt.subplots(figsize=(image_aspectratio[0],image_aspectratio[1]))
 				#endif
 
 				for j in range(0,len(radialineouts)):
-
 					#Update legend with location of each lineout.
 					if len(Legendlist) < len(radialineouts):
 						Legendlist.append('Z='+str(round((radialineouts[j])*dz[l]*10, 2))+' mm')
@@ -2020,7 +2023,7 @@ if savefig_radialines or savefig_heightlines == True:
 #===================##===================#
 
 		#Generate the vertical (height) lineouts for a given radius.
-		if savefig_heightlines == True:
+		if savefig_heightlines == True and len(heightlineouts) > 0:
 			#Create folder to keep output plots.
 			DirZlineouts = CreateNewFolder(Dirlist[l],'Axial_Profiles/')
 			Legendlist = list()
@@ -2029,10 +2032,8 @@ if savefig_radialines or savefig_heightlines == True:
 			for i in range(0,len(processlist)):
 
 				#Create fig of desired size.
-				if len(image_aspectratio) == 0:
-					fig, ax = plt.subplots(figsize=(9,9))
-				else:
-					fig, ax = plt.subplots(figsize=(image_aspectratio[0],image_aspectratio[1]))
+				if len(image_aspectratio) == 0: fig, ax = plt.subplots(figsize=(9,9))
+				else: fig, ax = plt.subplots(figsize=(image_aspectratio[0],image_aspectratio[1]))
 				#endif
 
 				for j in range(0,len(heightlineouts)):
@@ -2092,6 +2093,10 @@ if savefig_comparelineouts == True:
 	#Create folder to keep output plots.
 	DirComparisons = CreateNewFolder(os.getcwd(),'/1D Comparisons')
 
+	#Generate SI scale axes for lineout plots.
+	Raxis = GenerateAxis('Radial',Isymlist[l])
+	Zaxis = GenerateAxis('Axial',Isymlist[l])
+
 	#Perform radial profile comparisons
 	for j in range(0,len(radialineouts)):
 
@@ -2106,20 +2111,12 @@ if savefig_comparelineouts == True:
 			if k >= 1 and k > len(Variablelist)-1:
 				break
 			#endif
-
-			#Generate SI scale axes for lineout plots.
-			Raxis = list()
-			for i in range(0,R_mesh[l]):
-				Raxis.append(i*dr[l])
-			#endfor
-			Raxis = list()
-			for i in range(-R_mesh[l],R_mesh[l]):
-				Raxis.append(i*dr[l])
-			#endfor
-
-			#Refresh legend list and open new figure.
+			
+			#Create fig of desired size and refresh legendlist.
+			if len(image_aspectratio) == 0: fig, ax = plt.subplots(figsize=(9,9))
+			else: fig, ax = plt.subplots(figsize=(image_aspectratio[0],image_aspectratio[1]))
+			#endif
 			Legendlist = list()
-			fig, ax = plt.subplots(figsize=(9,9))
 
 			#For each folder in the directory.
 			for l in range(0,numfolders):
@@ -2191,14 +2188,10 @@ if savefig_comparelineouts == True:
 				break
 			#endif
 
-			#Generate SI scale axes for lineout plots.
-			Zaxis = list()
-			for i in range(0,Z_mesh[l]):
-				Zaxis.append(i*dz[l])
-			#endfor
-
-			#Refresh figure and legendlist.
-			fig, ax = plt.subplots(figsize=(9,9))
+			#Create fig of desired size and refresh legendlist.
+			if len(image_aspectratio) == 0: fig, ax = plt.subplots(figsize=(9,9))
+			else: fig, ax = plt.subplots(figsize=(image_aspectratio[0],image_aspectratio[1]))
+			#endif
 			Legendlist = list()
 		
 			#For each folder in the directory.
@@ -2289,7 +2282,10 @@ if savefig_multiprofiles == True:
 
 				#Extract the lineout data from the main data array.
 				for j in range(0,len(heightlineouts)):
-					fig, ax = plt.subplots(figsize=(10,10))
+					#Create fig of desired size.
+					if len(image_aspectratio) == 0: fig, ax = plt.subplots(figsize=(9,9))
+					else: fig, ax = plt.subplots(figsize=(image_aspectratio[0],image_aspectratio[1]))
+					#endif
 
 					#Create folder to keep output plots.
 					Slice = str(round((heightlineouts[j])*dr[l], 2))
@@ -2346,7 +2342,10 @@ if savefig_multiprofiles == True:
 				
 				#Perform the plotting for all requested variables.
 				for j in range(0,len(radialineouts)):
-					fig, ax = plt.subplots(figsize=(10,10))
+					#Create fig of desired size and refresh legendlist.
+					if len(image_aspectratio) == 0: fig, ax = plt.subplots(figsize=(9,9))
+					else: fig, ax = plt.subplots(figsize=(image_aspectratio[0],image_aspectratio[1]))
+					#endif
 
 					#Create folder to keep output plots.
 					Slice = str(round((radialineouts[j])*dz[l], 2))
@@ -2464,9 +2463,11 @@ if savefig_trendcomparison == True or print_generaltrends == True:
 			break
 		#endif
 
-		#Refresh lists that change per variable and open new figure.
+		#Create fig of desired size and refresh legendlist.
+		if len(image_aspectratio) == 0: fig, ax = plt.subplots(figsize=(9,9))
+		else: fig, ax = plt.subplots(figsize=(image_aspectratio[0],image_aspectratio[1]))
+		#endif
 		Legendlist = list()
-		fig, ax = plt.subplots(figsize=(10,10))
 
 
 		##AXIAL TRENDS##
@@ -2518,9 +2519,11 @@ if savefig_trendcomparison == True or print_generaltrends == True:
 		##RADIAL TRENDS##
 		#===============#
 
-		#Refresh lists that change per variable and open new figure.
+		#Create fig of desired size and refresh legendlist.
+		if len(image_aspectratio) == 0: fig, ax = plt.subplots(figsize=(9,9))
+		else: fig, ax = plt.subplots(figsize=(image_aspectratio[0],image_aspectratio[1]))
+		#endif
 		Legendlist = list()
-		fig, ax = plt.subplots(figsize=(10,10))
 
 		#Perform trend analysis on requested radial profiles.
 		for j in range(0,len(radialineouts)):
@@ -2639,8 +2642,12 @@ if savefig_trendcomparison == True or print_DCbias == True:
 		print ''
 	#endif
 
+
+	#Create fig of desired size 
+	if len(image_aspectratio) == 0: fig, ax = plt.subplots(figsize=(9,9))
+	else: fig, ax = plt.subplots(figsize=(image_aspectratio[0],image_aspectratio[1]))
+	#endif
 	#Plot and beautify the DCbias.
-	fig, ax = plt.subplots(figsize=(10,10))
 	plt.plot(range(0,numfolders),DCbias, 'o-', lw=2)
 	plt.title('Trend in DCbias with changing '+TrendVariable+' \n'+Dirlist[l][2:-1] ,position=(0.5,1.05))
 	if len(xlabeloverride) > 0:
@@ -2733,7 +2740,8 @@ if savefig_trendcomparison == True or print_totalpower == True:
 		#endfor
 
 		#Plot and beautify each requested power deposition seperately.
-		fig, ax = plt.subplots(figsize=(10,10))
+		if len(image_aspectratio) == 0: fig, ax = plt.subplots(figsize=(9,9))
+		else: fig, ax = plt.subplots(figsize=(image_aspectratio[0],image_aspectratio[1]))
 
 		plt.plot(range(0,numfolders),DepositedPowerList[k*numfolders:(k+1)*numfolders], 'o-', lw=2)
 		plt.title('Power Deposition with changing '+TrendVariable+' \n'+Dirlist[l][2:-1] ,position=(0.5,1.05))
@@ -2757,7 +2765,8 @@ if savefig_trendcomparison == True or print_totalpower == True:
 
 
 	#Plot a comparison of all power depositions requested.
-	fig, ax = plt.subplots(figsize=(10,10))
+	if len(image_aspectratio) == 0: fig, ax = plt.subplots(figsize=(9,9))
+	else: fig, ax = plt.subplots(figsize=(image_aspectratio[0],image_aspectratio[1]))
 
 	for k in range(0,len(RequestedPowers)):
 		plt.plot(range(0,numfolders),DepositedPowerList[k*numfolders:(k+1)*numfolders], 'o-', lw=2)
@@ -2977,6 +2986,7 @@ if savefig_trendcomparison == True or print_KnudsenNumber == True:
 		numrows = len(Data[l][0])/R_mesh[l]
 		Knudsen = np.zeros([Z_mesh[l],R_mesh[l]])
 
+		#Produce Knudsen number 2D image using density image.
 		for j in range(0,Z_mesh[l]):
 			for i in range(0,R_mesh[l]):
 				Start = R_mesh[l]*j
