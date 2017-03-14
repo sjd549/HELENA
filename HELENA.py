@@ -149,18 +149,18 @@ phasecycles = 1								#Number of phase cycles to be plotted.
 #Requested TECPLOT Variables
 Variables = ['AR','AR+','E','TE','P-POT','TG-AVE','PRESSURE','EF-TOT','POW-RF','POW-RF-E','S-AR+','SEB-AR+', 'VR-NEUTRAL','VZ-NEUTRAL','VR-ION+','VZ-ION+','EAMB-R','EAMB-Z']
 MultiVar = ['E']						#Additional variables plotted ontop of [Variables] 
-radialineouts = [] 						#Radial 1D-Profiles to be plotted (fixed Z-mesh)
-heightlineouts = [0]					#Axial 1D-Profiles to be plotted (fixed R-mesh)
+radialineouts = [20] 						#Radial 1D-Profiles to be plotted (fixed Z-mesh)
+heightlineouts = [0,20]					#Axial 1D-Profiles to be plotted (fixed R-mesh)
 #YPR H0;R47  #MSHC H0,20;R20
 
 
 #Requested plotting routines.
 savefig_itermovie = False				#Requires movie_icp.pdt
-savefig_plot2D = False
+savefig_plot2D = True
 
-savefig_radialines = True
-savefig_heightlines = True
-savefig_multiprofiles = True
+savefig_radialines = False
+savefig_heightlines = False
+savefig_multiprofiles = False
 savefig_comparelineouts = True
 
 savefig_phaseresolvelines = False			#1D Phase Resolved Images
@@ -168,10 +168,9 @@ savefig_phaseresolve2D = False				#2D Phase Resolved Images
 savefig_sheathdynamics = False				#PROES style images
 
 #Steady-State diagnostics and terminal outputs. 
-savefig_trendcomparison = False
+savefig_trendcomparison = True
 print_generaltrends = False
-print_KnudsenNumber = False	
-print_RynoldsNumber = False 				#### NOT IMPLIMENTED ####			
+print_KnudsenNumber = False				
 print_totalpower = False				
 print_DCbias = False
 print_thrust = False					
@@ -179,12 +178,13 @@ print_thrust = False
 #Image plotting options.
 image_aspectratio = [10,10]
 image_plotsymmetry = True
+image_contourplot = False
 image_normalize = False						#### NORMALIZES TO EACH PROFILE SEPERATELY ###
 image_logplot = False
 image_rotate = True
 
 image_plotmesh = False						#### NOT IMPLIMENTED ####
-image_singlefreqdotted = False 				#### LINK THIS TO ICP.NAM ####
+image_singlefreqdotted = False 				#### VERY HACKY, LINK THIS TO ICP.NAM ####
 
 
 
@@ -301,7 +301,7 @@ print '   |  |__|  | |  |__   |  |     |  |__   |   \|  |   /  ^  \        '
 print '   |   __   | |   __|  |  |     |   __|  |  . `  |  /  /_\  \       '
 print '   |  |  |  | |  |____ |  `----.|  |____ |  |\   | /  _____  \      '
 print '   |__|  |__| |_______||_______||_______||__| \__|/__/     \__\     '
-print '                                                             v0.8.6 '
+print '                                                             v0.8.7 '
 print '--------------------------------------------------------------------' 
 print ''
 print 'The following diagnostics were requested:'
@@ -1234,66 +1234,78 @@ def figure(aspectratio):
 
 
 
+#Create figure and plot a 2D image with associated image plotting requirements.
+def ImagePlotter(Image,extent,x,y):
+	fig, ax = figure([x,y])
+
+	#Apply any required numerical changes to the image.
+	if image_logplot == True: 
+		Image = np.log(Image)
+	elif image_normalize == True:
+		FlatImage = [item for sublist in Image for item in sublist]
+		NormalizedImage,NormFactor = list(),max(FlatImage)
+		for i in range(0,len(Image)): 
+			NormalizedImage.append( [x/NormFactor for x in Image[i]] )
+		#endfor
+		Image = NormalizedImage
+	#endif
+
+	#Plot image with or without contour plots, allowing for contour failures.
+	if image_contourplot == True:
+		try:
+			im = ax.contour(Image,extent=extent,origin="lower")
+			im = ax.imshow(Image,extent=extent,origin="lower")
+		except:
+			im = ax.imshow(Image,extent=extent,origin="lower")
+		#endtry
+	else:
+		im = ax.imshow(Image,extent=extent,origin="lower")
+	#endif
+	return(fig,ax,im)
+#enddef
+
+
+
+#=========================#
+#=========================#
+
+
+
 #Takes pre-produced 2D image and 'beautifies' it for plotting.
 def SymmetryConverter2D(Image,Isym,R_mesh,Z_mesh,Radius,Height):
 
-	#Detect mesh orientation and decide image aspect ratio.
-	#THIS NEEDS TO BE AUTOMATED AT SOME POINT!!!
-	if len(image_aspectratio) > 0:
-		aspectx = image_aspectratio[0]
-		aspecty = image_aspectratio[1]
-	#Parallel Plate Aspect Ratio
-	elif R_mesh >= 2*Z_mesh:
-		aspectx = 11 #21
-		aspecty = 7  #4
-	#Pocket Rocket Aspect Ratio
-	elif R_mesh <= Z_mesh:
-		aspectx = 7
-		aspecty = 14	
-	#Generic Aspect Ratio
-	else:
-		aspectx = 11
-		aspecty = 11
+	#Obtain image standard (non-rotated) aspect ratio.
+	if len(image_aspectratio) == 2: 
+		x,y = image_aspectratio[0],image_aspectratio[1]
+	else: 
+		x,y = 9,9
 	#endif
 
 	#Rotate image by 90 degrees and plot.
 	if image_rotate == True:
 		#Flip image axes and aspect ratios.
-		RotSymImage = list()
-		RotateImage = Image.swapaxes(0,1)
-		aspectx,aspecty = aspecty,aspectx
+		RotateImage,SymRotateImage = Image.swapaxes(0,1),list()
+		x,y = y,x
 
 		#If mesh uses symmetry, modify Image to conform to this.
 		if Isym == 1:
 			#Create new image by reversing height profiles and adding to beginning of image.
 			for i in range(R_mesh):
-				RotSymImage.append(RotateImage[(R_mesh-1)-i])
+				SymRotateImage.append(RotateImage[(R_mesh-1)-i])
 				if i == (R_mesh-1):
 					for j in range(R_mesh):
-						RotSymImage.append(RotateImage[j])
+						SymRotateImage.append(RotateImage[j])
 					#endfor
 				#endif
 			#endfor
-			x = R_mesh/(float(R_mesh)/float(aspectx))    
-			y = Z_mesh/(float(Z_mesh)/float(aspecty))     
-			fig, ax = plt.subplots(figsize=(x,y))
-			if image_logplot == True:
-				im = ax.imshow(np.log(RotSymImage),extent=[0,Height, -Radius,Radius],origin="lower")
-			else:
-				im = ax.imshow(RotSymImage,extent=[0,Height, -Radius,Radius],origin="lower")
-			#endif
+
+			extent=[0,Height, -Radius,Radius]
+			fig,ax,im = ImagePlotter(SymRotateImage,extent,x,y)
 
 		#If the mesh does not use symmetry, simply plot the data as is.
 		elif Isym == 0:
-			#Determine plot size from mesh grid cell number.
-			x = R_mesh/(float(R_mesh)/float(aspectx))    
-			y = Z_mesh/(float(Z_mesh)/float(aspecty))         
-			fig, ax = plt.subplots(figsize=(x,y))
-			if image_logplot == True:
-				im = ax.imshow(np.log(RotateImage),extent=[0,Height, 0,Radius],origin="lower")
-			else:
-				im = ax.imshow(RotateImage,extent=[0,Height, 0,Radius],origin="lower")
-			#endif
+			extent=[0,Height, 0,Radius]
+			fig,ax,im = ImagePlotter(RotateImage,extent,x,y)
 		#endif
 
 #=========================#
@@ -1308,31 +1320,18 @@ def SymmetryConverter2D(Image,Isym,R_mesh,Z_mesh,Radius,Height):
 			#Create new image by reversing and adding itself on the LHS.
 			for m in range(0,len(Image)):
 				SymImage[m] = np.concatenate([Image[m][::-1],Image[m]])
-			#endfor
+			#endfor 
 
-			#Determine plot size from mesh grid cell number.
-			x = R_mesh/(R_mesh/aspectx)    
-			y = Z_mesh/(Z_mesh/aspecty)     
-			fig, ax = plt.subplots(figsize=(x,y))
-			if image_logplot == True:
-				im = ax.imshow(log(SymImage),extent=[-Radius,Radius, 0,Height],origin="lower")
-			else:
-				im = ax.imshow(SymImage,extent=[-Radius,Radius, 0,Height],origin="lower")
-			#endif
+			extent = [-Radius,Radius, 0,Height]
+			fig,ax,im = ImagePlotter(SymImage,extent,x,y)
 
 		#If the mesh does not use symmetry, simply plot the data as is.
-		elif Isym == 0:
-			#Determine plot size from mesh grid cell number.
-			x = R_mesh/(R_mesh/aspectx)
-			y = Z_mesh/(Z_mesh/aspecty)     
-			fig, ax = plt.subplots(figsize=(x,y))
-			if image_logplot == True:
-				im = ax.imshow(log(Image),extent=[0,Radius, 0,Height],origin="lower")
-			else:
-				im = ax.imshow(Image,extent=[0,Radius, 0,Height],origin="lower")
-			#endif
+		elif Isym == 0: 
+			extent=[0,Radius, 0,Height]
+			fig,ax,im = ImagePlotter(Image,extent,x,y)
 		#endif
 	#endif
+
 	return(fig,ax,im)
 #enddef
 
@@ -2906,7 +2905,8 @@ if savefig_trendcomparison == True or print_thrust == True:
 	#endfor
 
 	#Plot and Beautify the thrust.
-	fig, ax = plt.subplots(figsize=(10,10))
+	if len(image_aspectratio) == 0: fig, ax = plt.subplots(figsize=(9,9))
+	else: fig, ax = plt.subplots(figsize=(image_aspectratio[0],image_aspectratio[1]))
 
 	plt.plot(range(0,numfolders),Thrustlist, 'o-', lw=2)
 	plt.title('Thrust with changing '+TrendVariable+' \n'+Dirlist[l][2:-1] ,position=(0.5,1.05))
@@ -2935,7 +2935,8 @@ if savefig_trendcomparison == True or print_thrust == True:
 				ThrustEfficiency.append(Thrustlist[i]/DepositedPowerList[i])
 			#endfor
 
-			fig, ax = plt.subplots(figsize=(9,9))
+			if len(image_aspectratio) == 0: fig, ax = plt.subplots(figsize=(9,9))
+			else: fig, ax = plt.subplots(figsize=(image_aspectratio[0],image_aspectratio[1]))
 			plt.plot(range(0,numfolders),ThrustEfficiency, 'o-', lw=2)
 			plt.xlabel('Varied Property', fontsize=24)
 			plt.ylabel('Thrust Efficiency [N/kW]', fontsize=24)
@@ -3018,7 +3019,6 @@ if savefig_trendcomparison == True or print_KnudsenNumber == True:
 		plt.title('Knudsen Number Image for \n'+Dirlist[l][2:-1],y=1.03)
 		plt.xlabel('Radial Distance R [cm]',fontsize=24)
 		plt.ylabel('Axial Distance Z [cm]',fontsize=24)
-		plt.xticks([round(-Radius[l], 1), 0, round(Radius[l], 1)])
 		plt.gca().invert_yaxis()
 		xticks(fontsize=18)
 		yticks(fontsize=18)
@@ -3035,7 +3035,8 @@ if savefig_trendcomparison == True or print_KnudsenNumber == True:
 	#endfor
 
 	#Plot a comparison of all average Knudsen numbers.
-	fig, ax = plt.subplots(figsize=(10,10))
+	if len(image_aspectratio) == 0: fig, ax = plt.subplots(figsize=(9,9))
+	else: fig, ax = plt.subplots(figsize=(image_aspectratio[0],image_aspectratio[1]))
 
 	plt.plot(range(0,numfolders),KnudsenAverage, 'o-', lw=2)
 	plt.title('Average Knudsen Number with Changing '+TrendVariable+' \n'+Dirlist[l][2:-1] ,position=(0.5,1.05))
