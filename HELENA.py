@@ -178,7 +178,7 @@ print_thrust = False
 #Image plotting options.
 image_aspectratio = [10,10]
 image_plotsymmetry = True
-image_contourplot = False
+image_contourplot = True
 image_normalize = False						#### NORMALIZES TO EACH PROFILE SEPERATELY ###
 image_logplot = False
 image_rotate = True
@@ -195,8 +195,8 @@ image_singlefreqdotted = False 				#### VERY HACKY, LINK THIS TO ICP.NAM ####
 
 #Overrides for automatic image labelling. (NB - Currently only for ComparisionProfiles)
 titleoverride = ['NotImplimented']
-legendoverride = []
-xlabeloverride = []						#Only for Trend Plotter
+legendoverride = ['0','30','60','90','120','150','180','210','240','270','300','330']
+xlabeloverride = ['Phase Angle Offset [Deg]']						#Only for Trend Plotter
 ylabeloverride = ['NotImplimented']
 cbaroverride = ['NotImplimented']
 gridoverride = ['NotImplimented']
@@ -218,7 +218,7 @@ gridoverride = ['NotImplimented']
 
 
 #====================================================================#
- 					#INITIATE ARRAYS AND LISTS#
+ 					#INITIATE GLOBAL LISTS#
 #====================================================================#
 
 #Create lists for basic processing
@@ -711,10 +711,10 @@ def VariableUnitConversion(profile,variable):
 		#endfor
 
 	#For E-field strengths, convert from [V cm-1] to [V m-1]. (also make positive axial field)
-#	if variable in ['EF-TOT','EAMB-R','EAMB-Z']:
-#		for i in range(0,len(profile)):
-#			profile[i] = profile[i]*100
-#		#endfor
+	if variable in ['EF-TOT','EAMB-R','EAMB-Z']:
+		for i in range(0,len(profile)):
+			profile[i] = profile[i]#*100
+		#endfor
 	if variable in ['EAMB-Z']:
 		for i in range(0,len(profile)):
 			profile[i] = profile[i]*(-1)
@@ -752,7 +752,6 @@ def CreateNewFolder(Dir,string):
 #===================##===================#
 
 
-
 print'---------------------'
 print'Beginning Data Readin'
 print'---------------------'
@@ -768,54 +767,76 @@ for l in range(0,numfolders):
 	except:
 		ierr = 3
 		print 'Unable to find TECPLOT2D.PDT'
-	#endtry
-
-	#Load data from TECPLOT_KIN file and unpack into 1D array.
-	try:
-		PLOTKIN = filter(lambda x: 'TECPLOT_KIN.PDT' in x, Dir)
-		rawdata_kin.append(open(PLOTKIN[l]).readlines())
-		nn_kin = len(rawdata_kin[l])
-	except:
-		ierr = 4
-		print 'Unable to find TECPLOT_KIN.PDT'
-	#endtry	
-
-	#Load data from movie_icp file and unpack into 1D array.
-	try:
-		phasemovie_icp = filter(lambda x: 'movie1.pdt' in x, Dir)
-		rawdata_phasemovie.append(open(phasemovie_icp[l]).readlines())
-		nn_phasemovie = len(rawdata_phasemovie[l])
-	except:
-		ierr = 5
-		print 'Unable to find movie1.pdt'
-	#endtry
-
-	#Load data from movie_icp file and unpack into 1D array.
-	try:
-		itermovie_icp = filter(lambda x: 'movie_icp.pdt' in x, Dir)
-		rawdata_itermovie_icp.append(open(itermovie_icp[l]).readlines())
-		nn_itermovie = len(rawdata_itermovie_icp[l])
-	except:
-		ierr = 6
-		print 'Unable to find movie_icp.pdt'
-	#endtry
-
-	#Load data from MCS.PDT file and unpack into 1D array.
-	try:
-		mcs = filter(lambda x: 'MCS.PDT' in x, Dir)
-		rawdata_mcs.append(open(mcs[l]).readlines())
-		nn_mcs = len(rawdata_mcs[l])
-	except:
-		ierr = 7
-		print 'Unable to find MCS.PDT'
 	#endtry	
 
 
+	#Read through all variables for each file and stop when list ends.
+	Variablelist.append('Radius')
+	Variablelist.append('Height')
+	for i in range(2,nn_2D):
+		Variablelist.append(str(rawdata_2D[l][i][:-2].strip(' \t\n\r\"')))
+		#Locate when variable section has stopped.
+		if str(rawdata_2D[l][i]).find('ZONE') != -1:
+			#Calculate headersize and remove trailing value in variable list.
+			Variablelist = Variablelist[:len(Variablelist)-1]
+			numvariables_2D = len(Variablelist)
+			header_2D = numvariables_2D + 2
+			break
+		#endif
+	#endfor
+	header_2Dlist.append(header_2D)
+
+	#Create Variablelists for each folder of data and refresh Variablelist
+	VariableLegend.append(VariableLabelMaker(Variablelist))
+	Variablelists.append(Variablelist)
+	Variablelist = list()
+	
+
+	#Unpack each row of 7 data points into single array of floats.
+	#Removing 'spacing' between the floats and ignoring variables above data.
+	for i in range(header_2D,nn_2D):
+		numstart = 1
+		for j in range(0,7):
+			try:
+				data_array.append(float(rawdata_2D[l][i][numstart:(numstart+10)]))
+			except:
+				This_means_there_was_a_space = 1
+			#endtry
+			numstart+= 11
+		#endfor
+	#endfor
+
+	#Seperate total 1D array into sets of data for each variable.
+	#Data is a 3D array of form (folder,variable,datapoints)
+	for i in range(0,numvariables_2D):
+		numstart = (Z_mesh[l]*R_mesh[l])*(i)
+		numend = (Z_mesh[l]*R_mesh[l])*(i+1) 
+		Tempdata.append(list(data_array[numstart:numend]))
+	#endfor
+
+	#Save all variables for folder[l] to Data and refresh lists.
+	Data.append(Tempdata)
+	Tempdata = list()
+	data_array = list()
+
+
 #===================##===================#
 #===================##===================#
 #===================##===================#
+
 
 	if savefig_itermovie == True:
+
+		#Load data from movie_icp file and unpack into 1D array.
+		try:
+			itermovie_icp = filter(lambda x: 'movie_icp.pdt' in x, Dir)
+			rawdata_itermovie_icp.append(open(itermovie_icp[l]).readlines())
+			nn_itermovie = len(rawdata_itermovie_icp[l])
+		except:
+			ierr = 6
+			print 'Unable to find movie_icp.pdt'
+		#endtry
+
 
 		#Identify length of variable section and save variables.
 		for i in range(2,nn_itermovie):
@@ -902,6 +923,17 @@ for l in range(0,numfolders):
 
 	if True in [savefig_phaseresolve2D,savefig_phaseresolvelines,savefig_sheathdynamics]:
 
+		#Load data from movie_icp file and unpack into 1D array.
+		try:
+			phasemovie_icp = filter(lambda x: 'movie1.pdt' in x, Dir)
+			rawdata_phasemovie.append(open(phasemovie_icp[l]).readlines())
+			nn_phasemovie = len(rawdata_phasemovie[l])
+		except:
+			ierr = 5
+			print 'Unable to find movie1.pdt'
+		#endtry
+
+
 		#Identify length of variable section and save variables.
 		for i in range(2,nn_phasemovie):
 			MovieVariablelist.append(str(rawdata_phasemovie[l][i][:-2].strip(' \t\n\r\"')))
@@ -984,62 +1016,19 @@ for l in range(0,numfolders):
 #===================##===================#
 
 
-	#Read through all variables for each file and stop when list ends.
-	Variablelist.append('Radius')
-	Variablelist.append('Height')
-	for i in range(2,nn_2D):
-		Variablelist.append(str(rawdata_2D[l][i][:-2].strip(' \t\n\r\"')))
-		#Locate when variable section has stopped.
-		if str(rawdata_2D[l][i]).find('ZONE') != -1:
-			#Calculate headersize and remove trailing value in variable list.
-			Variablelist = Variablelist[:len(Variablelist)-1]
-			numvariables_2D = len(Variablelist)
-			header_2D = numvariables_2D + 2
-			break
-		#endif
-	#endfor
-	header_2Dlist.append(header_2D)
-
-	#Create Variablelists for each folder of data and refresh Variablelist
-	VariableLegend.append(VariableLabelMaker(Variablelist))
-	Variablelists.append(Variablelist)
-	Variablelist = list()
-	
-
-	#Unpack each row of 7 data points into single array of floats.
-	#Removing 'spacing' between the floats and ignoring variables above data.
-	for i in range(header_2D,nn_2D):
-		numstart = 1
-		for j in range(0,7):
-			try:
-				data_array.append(float(rawdata_2D[l][i][numstart:(numstart+10)]))
-			except:
-				This_means_there_was_a_space = 1
-			#endtry
-			numstart+= 11
-		#endfor
-	#endfor
-
-	#Seperate total 1D array into sets of data for each variable.
-	#Data is a 3D array of form (folder,variable,datapoints)
-	for i in range(0,numvariables_2D):
-		numstart = (Z_mesh[l]*R_mesh[l])*(i)
-		numend = (Z_mesh[l]*R_mesh[l])*(i+1) 
-		Tempdata.append(list(data_array[numstart:numend]))
-	#endfor
-
-	#Save all variables for folder[l] to Data and refresh lists.
-	Data.append(Tempdata)
-	Tempdata = list()
-	data_array = list()
-
-
-#===================##===================#
-#===================##===================#
-#===================##===================#
-
-
+	#Species EDF data readin - NOT CURRENTLY USED
 	if True == False:
+
+		#Load data from MCS.PDT file and unpack into 1D array.
+		try:
+			mcs = filter(lambda x: 'MCS.PDT' in x, Dir)
+			rawdata_mcs.append(open(mcs[l]).readlines())
+			nn_mcs = len(rawdata_mcs[l])
+		except:
+			ierr = 7
+			print 'Unable to find MCS.PDT'
+		#endtry	
+
 		header_mcs = 2
 		nn_mcs = 81
 		#Unpack each row of data points into single array of floats.
@@ -1059,6 +1048,21 @@ for l in range(0,numfolders):
 	#endif
 
 
+	#Kinetics data readin - NOT CURRENTLY USED
+	if True == False:
+
+		#Load data from TECPLOT_KIN file and unpack into 1D array.
+		try:
+			PLOTKIN = filter(lambda x: 'TECPLOT_KIN.PDT' in x, Dir)
+			rawdata_kin.append(open(PLOTKIN[l]).readlines())
+			nn_kin = len(rawdata_kin[l])
+		except:
+			ierr = 4
+			print 'Unable to find TECPLOT_KIN.PDT'
+		#endtry	
+	#endif
+
+
 #===================##===================#
 #===================##===================#
 #===================##===================#
@@ -1073,9 +1077,11 @@ for l in range(0,numfolders):
 #endfor
 
 
+#=====================================================================#
+#=====================================================================#
+
+
 #Create global list of all variable names and find shortest list.
-Globalvarlist = list()
-Globalnumvars = list()
 for m in range(0,numfolders):
 	#Alphabetize the Variablelist and keep global alphabetized list.
 	tempvarlist = VariableEnumerator(Variables,rawdata_2D[m],header_2Dlist[m])[1]
@@ -1090,6 +1096,9 @@ for m in range(0,numfolders):
 val, idx = min((val, idx) for (idx, val) in enumerate(Globalnumvars))
 Comparisonlist = Globalvarlist[idx] 
 
+
+#===================##===================#
+#===================##===================#
 
 
 #Alert user that readin process has ended and continue with selected diagnostics.
