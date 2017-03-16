@@ -148,7 +148,7 @@ phasecycles = 1								#Number of phase cycles to be plotted.
 
 #Requested TECPLOT Variables
 Variables = ['AR','AR+','E','TE','P-POT','TG-AVE','PRESSURE','EF-TOT','POW-RF','POW-RF-E','S-AR+','SEB-AR+', 'VR-NEUTRAL','VZ-NEUTRAL','VR-ION+','VZ-ION+','EAMB-R','EAMB-Z']
-MultiVar = ['E']						#Additional variables plotted ontop of [Variables] 
+MultiVar = ['S-AR+']						#Additional variables plotted ontop of [Variables] 
 radialineouts = [20] 						#Radial 1D-Profiles to be plotted (fixed Z-mesh)
 heightlineouts = [0,20]					#Axial 1D-Profiles to be plotted (fixed R-mesh)
 #YPR H0;R47  #MSHC H0,20;R20
@@ -156,19 +156,19 @@ heightlineouts = [0,20]					#Axial 1D-Profiles to be plotted (fixed R-mesh)
 
 #Requested plotting routines.
 savefig_itermovie = False				#Requires movie_icp.pdt
-savefig_plot2D = True
+savefig_plot2D = False
 
 savefig_radialines = False
 savefig_heightlines = False
 savefig_multiprofiles = False
-savefig_comparelineouts = True
+savefig_comparelineouts = False
 
 savefig_phaseresolvelines = False			#1D Phase Resolved Images
-savefig_phaseresolve2D = False				#2D Phase Resolved Images
+savefig_phaseresolve2D = True				#2D Phase Resolved Images
 savefig_sheathdynamics = False				#PROES style images
 
 #Steady-State diagnostics and terminal outputs. 
-savefig_trendcomparison = True
+savefig_trendcomparison = False
 print_generaltrends = False
 print_KnudsenNumber = False				
 print_totalpower = False				
@@ -195,8 +195,8 @@ image_singlefreqdotted = False 				#### VERY HACKY, LINK THIS TO ICP.NAM ####
 
 #Overrides for automatic image labelling. (NB - Currently only for ComparisionProfiles)
 titleoverride = ['NotImplimented']
-legendoverride = ['0','30','60','90','120','150','180','210','240','270','300','330']
-xlabeloverride = ['Phase Angle Offset [Deg]']						#Only for Trend Plotter
+legendoverride = []
+xlabeloverride = []						#Only for Trend Plotter
 ylabeloverride = ['NotImplimented']
 cbaroverride = ['NotImplimented']
 gridoverride = ['NotImplimented']
@@ -1225,13 +1225,13 @@ def ImageExtractor2D(Data,R_mesh,Z_mesh,Variable=[]):
 
 
 
-#Create figure of default or desired size.
+#Create figure of desired size and with variable axes.
 #Returns figure and axes seperately.
-def figure(aspectratio):
+def figure(aspectratio,subplots=1):
 	if len(aspectratio) == 2: 
-		fig, ax = plt.subplots(figsize=(aspectratio[0],aspectratio[1]))
+		fig, ax = plt.subplots(subplots, figsize=(aspectratio[0],aspectratio[1]))
 	else: 
-		fig, ax = plt.subplots(figsize=(9,9))
+		fig, ax = plt.subplots(subplots, figsize=(9,9))
 	#endif
 	return(fig,ax)
 #enddef
@@ -1244,8 +1244,9 @@ def figure(aspectratio):
 
 
 #Create figure and plot a 2D image with associated image plotting requirements.
-def ImagePlotter(Image,extent,x,y):
-	fig, ax = figure([x,y])
+#Returns plotted image, axes and figure.
+def ImagePlotter(Image,extent,aspectratio):
+	fig, ax = figure(aspectratio)
 
 	#Apply any required numerical changes to the image.
 	if image_logplot == True: 
@@ -1285,16 +1286,16 @@ def SymmetryConverter2D(Image,Isym,R_mesh,Z_mesh,Radius,Height):
 
 	#Obtain image standard (non-rotated) aspect ratio.
 	if len(image_aspectratio) == 2: 
-		x,y = image_aspectratio[0],image_aspectratio[1]
+		aspectratio = image_aspectratio
 	else: 
-		x,y = 9,9
+		aspectratio = [9,9]
 	#endif
 
-	#Rotate image by 90 degrees and plot.
+	#Rotate image by 90 degrees anticlockwise and plot.
 	if image_rotate == True:
 		#Flip image axes and aspect ratios.
 		RotateImage,SymRotateImage = Image.swapaxes(0,1),list()
-		x,y = y,x
+		aspectratio = aspectratio[::-1]
 
 		#If mesh uses symmetry, modify Image to conform to this.
 		if Isym == 1:
@@ -1309,17 +1310,17 @@ def SymmetryConverter2D(Image,Isym,R_mesh,Z_mesh,Radius,Height):
 			#endfor
 
 			extent=[0,Height, -Radius,Radius]
-			fig,ax,im = ImagePlotter(SymRotateImage,extent,x,y)
+			fig,ax,im = ImagePlotter(SymRotateImage,extent,aspectratio)
 
 		#If the mesh does not use symmetry, simply plot the data as is.
 		elif Isym == 0:
 			extent=[0,Height, 0,Radius]
-			fig,ax,im = ImagePlotter(RotateImage,extent,x,y)
+			fig,ax,im = ImagePlotter(RotateImage,extent,aspectratio)
 		#endif
 
 #=========================#
 
-	#plot image as default orientation.
+	#plot image as default mesh orientation.
 	elif image_rotate == False:
 		numrows = len(Image)
 		SymImage = np.zeros([numrows,2*R_mesh])
@@ -1332,12 +1333,12 @@ def SymmetryConverter2D(Image,Isym,R_mesh,Z_mesh,Radius,Height):
 			#endfor 
 
 			extent = [-Radius,Radius, 0,Height]
-			fig,ax,im = ImagePlotter(SymImage,extent,x,y)
+			fig,ax,im = ImagePlotter(SymImage,extent,aspectratio)
 
 		#If the mesh does not use symmetry, simply plot the data as is.
 		elif Isym == 0: 
 			extent=[0,Radius, 0,Height]
-			fig,ax,im = ImagePlotter(Image,extent,x,y)
+			fig,ax,im = ImagePlotter(Image,extent,aspectratio)
 		#endif
 	#endif
 
@@ -1996,9 +1997,7 @@ if savefig_radialines or savefig_heightlines == True:
 			#Loop over all required variables and requested profile locations.
 			for i in range(0,len(processlist)):
 				#Create fig of desired size.
-				if len(image_aspectratio) == 0: fig, ax = plt.subplots(figsize=(9,9))
-				else: fig, ax = plt.subplots(figsize=(image_aspectratio[0],image_aspectratio[1]))
-				#endif
+				fig,ax = figure(image_aspectratio,1)
 
 				for j in range(0,len(radialineouts)):
 					#Update legend with location of each lineout.
@@ -2038,11 +2037,8 @@ if savefig_radialines or savefig_heightlines == True:
 
 			#Collect and plot required data.
 			for i in range(0,len(processlist)):
-
 				#Create fig of desired size.
-				if len(image_aspectratio) == 0: fig, ax = plt.subplots(figsize=(9,9))
-				else: fig, ax = plt.subplots(figsize=(image_aspectratio[0],image_aspectratio[1]))
-				#endif
+				fig,ax = figure(image_aspectratio,1)
 
 				for j in range(0,len(heightlineouts)):
 					
@@ -2121,9 +2117,7 @@ if savefig_comparelineouts == True:
 			#endif
 			
 			#Create fig of desired size and refresh legendlist.
-			if len(image_aspectratio) == 0: fig, ax = plt.subplots(figsize=(9,9))
-			else: fig, ax = plt.subplots(figsize=(image_aspectratio[0],image_aspectratio[1]))
-			#endif
+			fig,ax = figure(image_aspectratio,1)
 			Legendlist = list()
 
 			#For each folder in the directory.
@@ -2197,9 +2191,7 @@ if savefig_comparelineouts == True:
 			#endif
 
 			#Create fig of desired size and refresh legendlist.
-			if len(image_aspectratio) == 0: fig, ax = plt.subplots(figsize=(9,9))
-			else: fig, ax = plt.subplots(figsize=(image_aspectratio[0],image_aspectratio[1]))
-			#endif
+			fig,ax = figure(image_aspectratio,1)
 			Legendlist = list()
 		
 			#For each folder in the directory.
@@ -2291,13 +2283,11 @@ if savefig_multiprofiles == True:
 				#Extract the lineout data from the main data array.
 				for j in range(0,len(heightlineouts)):
 					#Create fig of desired size.
-					if len(image_aspectratio) == 0: fig, ax = plt.subplots(figsize=(9,9))
-					else: fig, ax = plt.subplots(figsize=(image_aspectratio[0],image_aspectratio[1]))
-					#endif
+					fig,ax = figure(image_aspectratio,1)
 
 					#Create folder to keep output plots.
 					Slice = str(round((heightlineouts[j])*dr[l], 2))
-					DirZlineouts = CreateNewFolder(Dirlineouts,'Z='+Slice+'/')
+					DirZlineouts = CreateNewFolder(Dirlineouts,'R='+Slice+'cm/')
 
 					#Create legendlist
 					legendlist = list()
@@ -2350,14 +2340,12 @@ if savefig_multiprofiles == True:
 				
 				#Perform the plotting for all requested variables.
 				for j in range(0,len(radialineouts)):
-					#Create fig of desired size and refresh legendlist.
-					if len(image_aspectratio) == 0: fig, ax = plt.subplots(figsize=(9,9))
-					else: fig, ax = plt.subplots(figsize=(image_aspectratio[0],image_aspectratio[1]))
-					#endif
+					#Create fig of desired size.
+					fig,ax = figure(image_aspectratio,1)
 
 					#Create folder to keep output plots.
 					Slice = str(round((radialineouts[j])*dz[l], 2))
-					DirRlineouts = CreateNewFolder(Dirlineouts,'R='+Slice+'/')
+					DirRlineouts = CreateNewFolder(Dirlineouts,'Z='+Slice+'cm/')
 
 					#Create legendlist
 					legendlist = list()
@@ -2472,9 +2460,7 @@ if savefig_trendcomparison == True or print_generaltrends == True:
 		#endif
 
 		#Create fig of desired size and refresh legendlist.
-		if len(image_aspectratio) == 0: fig, ax = plt.subplots(figsize=(9,9))
-		else: fig, ax = plt.subplots(figsize=(image_aspectratio[0],image_aspectratio[1]))
-		#endif
+		fig,ax = figure(image_aspectratio,1)
 		Legendlist = list()
 
 
@@ -2528,9 +2514,7 @@ if savefig_trendcomparison == True or print_generaltrends == True:
 		#===============#
 
 		#Create fig of desired size and refresh legendlist.
-		if len(image_aspectratio) == 0: fig, ax = plt.subplots(figsize=(9,9))
-		else: fig, ax = plt.subplots(figsize=(image_aspectratio[0],image_aspectratio[1]))
-		#endif
+		fig,ax = figure(image_aspectratio,1)
 		Legendlist = list()
 
 		#Perform trend analysis on requested radial profiles.
@@ -2651,11 +2635,9 @@ if savefig_trendcomparison == True or print_DCbias == True:
 	#endif
 
 
-	#Create fig of desired size 
-	if len(image_aspectratio) == 0: fig, ax = plt.subplots(figsize=(9,9))
-	else: fig, ax = plt.subplots(figsize=(image_aspectratio[0],image_aspectratio[1]))
-	#endif
 	#Plot and beautify the DCbias.
+	fig,ax = figure(image_aspectratio,1)
+
 	plt.plot(range(0,numfolders),DCbias, 'o-', lw=2)
 	plt.title('Trend in DCbias with changing '+TrendVariable+' \n'+Dirlist[l][2:-1] ,position=(0.5,1.05))
 	if len(xlabeloverride) > 0:
@@ -2748,9 +2730,7 @@ if savefig_trendcomparison == True or print_totalpower == True:
 		#endfor
 
 		#Plot and beautify each requested power deposition seperately.
-		if len(image_aspectratio) == 0: fig, ax = plt.subplots(figsize=(9,9))
-		else: fig, ax = plt.subplots(figsize=(image_aspectratio[0],image_aspectratio[1]))
-
+		fig,ax = figure(image_aspectratio,1)
 		plt.plot(range(0,numfolders),DepositedPowerList[k*numfolders:(k+1)*numfolders], 'o-', lw=2)
 		plt.title('Power Deposition with changing '+TrendVariable+' \n'+Dirlist[l][2:-1] ,position=(0.5,1.05))
 		if len(xlabeloverride) > 0:
@@ -2773,8 +2753,7 @@ if savefig_trendcomparison == True or print_totalpower == True:
 
 
 	#Plot a comparison of all power depositions requested.
-	if len(image_aspectratio) == 0: fig, ax = plt.subplots(figsize=(9,9))
-	else: fig, ax = plt.subplots(figsize=(image_aspectratio[0],image_aspectratio[1]))
+	fig,ax = figure(image_aspectratio,1)
 
 	for k in range(0,len(RequestedPowers)):
 		plt.plot(range(0,numfolders),DepositedPowerList[k*numfolders:(k+1)*numfolders], 'o-', lw=2)
@@ -2914,8 +2893,7 @@ if savefig_trendcomparison == True or print_thrust == True:
 	#endfor
 
 	#Plot and Beautify the thrust.
-	if len(image_aspectratio) == 0: fig, ax = plt.subplots(figsize=(9,9))
-	else: fig, ax = plt.subplots(figsize=(image_aspectratio[0],image_aspectratio[1]))
+	fig,ax = figure(image_aspectratio,1)
 
 	plt.plot(range(0,numfolders),Thrustlist, 'o-', lw=2)
 	plt.title('Thrust with changing '+TrendVariable+' \n'+Dirlist[l][2:-1] ,position=(0.5,1.05))
@@ -2944,8 +2922,7 @@ if savefig_trendcomparison == True or print_thrust == True:
 				ThrustEfficiency.append(Thrustlist[i]/DepositedPowerList[i])
 			#endfor
 
-			if len(image_aspectratio) == 0: fig, ax = plt.subplots(figsize=(9,9))
-			else: fig, ax = plt.subplots(figsize=(image_aspectratio[0],image_aspectratio[1]))
+			fig,ax = figure(image_aspectratio,1)
 			plt.plot(range(0,numfolders),ThrustEfficiency, 'o-', lw=2)
 			plt.xlabel('Varied Property', fontsize=24)
 			plt.ylabel('Thrust Efficiency [N/kW]', fontsize=24)
@@ -3044,8 +3021,7 @@ if savefig_trendcomparison == True or print_KnudsenNumber == True:
 	#endfor
 
 	#Plot a comparison of all average Knudsen numbers.
-	if len(image_aspectratio) == 0: fig, ax = plt.subplots(figsize=(9,9))
-	else: fig, ax = plt.subplots(figsize=(image_aspectratio[0],image_aspectratio[1]))
+	fig,ax = figure(image_aspectratio,1)
 
 	plt.plot(range(0,numfolders),KnudsenAverage, 'o-', lw=2)
 	plt.title('Average Knudsen Number with Changing '+TrendVariable+' \n'+Dirlist[l][2:-1] ,position=(0.5,1.05))
@@ -3234,10 +3210,17 @@ if savefig_phaseresolve2D == True:
 				if height > width: Image = np.transpose(Image)
 				#endif
 
-				fig, ax = plt.subplots(2, figsize=(10,10))
+				#Create figure and axes, plot image on top and waveform underneath.
+				fig,ax = figure(image_aspectratio,2)
 				fig.suptitle( 'Phase-Resolved '+PhaseVariablelist[i]+'\n'+str(Moviephaselist[l][j]), y=0.97, fontsize=18)
 				
-				im = ax[0].imshow(Image,extent=[Zaxis[0],Zaxis[-1],-Raxis[-1],Raxis[-1]],origin="lower", aspect='auto')
+				extent = [Zaxis[0],Zaxis[-1],-Raxis[-1],Raxis[-1]]
+				if image_contourplot == True:
+					im = ax[0].contour(Image,extent=extent,origin="lower", aspect='auto')
+					im = ax[0].imshow(Image,extent=extent,origin="lower", aspect='auto')
+				else:
+					im = ax[0].imshow(Image,extent=extent,origin="lower", aspect='auto')
+				#endif
 				ax[0].set_xlabel('Axial Distance Z [cm]', fontsize=24)
 				ax[0].set_ylabel('Radial Distance Z [cm]', fontsize=24)
 				ax[0].tick_params(axis='x', labelsize=18)
@@ -3367,7 +3350,7 @@ if savefig_phaseresolvelines == True or savefig_sheathdynamics == True:
 		#endfor
 
 		#Plot the phase-resolved waveform.
-		fig, ax = plt.subplots(1, figsize=(10,10))
+		fig,ax = figure(image_aspectratio,1)
 		plt.plot(Phaseaxis,VoltageWaveform, lw=2)
 		plt.plot(Phaseaxis,WaveformBias, 'k--', lw=2)
 		plt.title('Phase-Resolved Voltage Waveform for '+VariedValuelist[l], y=1.03, fontsize=16)
@@ -3452,7 +3435,7 @@ if savefig_phaseresolvelines == True or savefig_sheathdynamics == True:
 			
 
 					#Create figures and plot the 1D profiles. (ax[0]=variable, ax[1]=waveform)
-					fig, ax = plt.subplots(2, figsize=(10,10))
+					fig,ax = figure(image_aspectratio,2)
 					ylabels = VariableLabelMaker(PhaseVariablelist)
 					fig.suptitle( 'Phase-Resolved '+PhaseVariablelist[i]+' for '+VariedValuelist[l]+lineoutstring+str(Moviephaselist[l][j]), y=0.97, fontsize=16)
 				
@@ -3504,7 +3487,7 @@ if savefig_phaseresolvelines == True or savefig_sheathdynamics == True:
 					#endfor
 
 					#Create figure and rotate PROES such that phaseaxis aligns with waveform.
-					fig, ax = plt.subplots(2, figsize=(10,10))
+					fig,ax = figure(image_aspectratio,2)
 					PROES = ndimage.rotate(PROES, 90)
 					#Choose correct axial or radial distance axis.
 					x1,x2 = Phaseaxis[0],Phaseaxis[-1]
