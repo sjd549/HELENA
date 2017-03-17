@@ -54,82 +54,6 @@ DebugMode = False
 
 
 
-#====================================================================#
-				  	#GRAPHICAL USER INTERFACE#
-#====================================================================#
-
-use_GUI = False
-if use_GUI == True:
-	try:
-		# Python2
-		import Tkinter as tk
-		from ttk import *
-	except ImportError:
-		# Python3
-		import tkinter as tk
-		from ttk import *
-
-#=============#
-
-	#Toggles button font between green/red and outputs corresponding true/false.
-	def toggle(string,btn):
-		#to get the present state of the toggle button
-		if btnlist[btn].config('fg')[-1] == 'green':
-			btnlist[btn].config(fg='red')
-		else:
-			btnlist[btn].config(fg='green')
-		#endif
-
-		#Add name of button and true/false value to switchboard dictionary.
-		global Switchboard
-		if btnlist[btn].config('fg')[-1] == 'green':
-			Switchboard[string] = 'True'
-		elif btnlist[btn].config('fg')[-1] == 'red':
-			Switchboard[string] = 'False'
-		#endif
-	#enddef
-
-#=============#
-
-	#Initialize and configure root window.
-	root = tk.Tk()
-	root.title("Hpem ELectronic ENgine Analysis v0.8.4")
-	root.minsize(width=800, height=600)
-	root.maxsize(width=4*1080, height=1080)
-
-	#Buttonlist as displayed in GUI.
-	btnlist = ['2D Images','2D Converge','2D Phase']
-
-	#Add toggle buttons.  (lambda returns a reference to a nameless function)
-	btnlist[0] = tk.Button(text=btnlist[0], width=12, fg='red')
-	btnlist[0]["command"] = lambda: toggle('savefig_plot2D',0)
-	btnlist[0].grid(row=1, column=0)
-
-	btnlist[1] = tk.Button(text=btnlist[1], width=12, fg='red')
-	btnlist[1]["command"] = lambda: toggle('savefig_itermovie',1)
-	btnlist[1].grid(row=1, column=1)
-
-	btnlist[2] = tk.Button(text=btnlist[2], width=12, fg='red')
-	btnlist[2]["command"] = lambda: toggle('savefig_phaseresolve',2)
-	btnlist[2].grid(row=1, column=2)
-
-	#Add run button, disables GUI and progresses to the main program.
-	Run = tk.Button(text='Run Analysis', height=4, width=18, fg='black')
-	Run["command"] = root.destroy
-	Run.grid(row=3,column=3,padx=0,pady=100)
-
-	root.mainloop()
-	print Switchboard
-#endif
-
-
-
-
-
-
-
-
-
 
 
 
@@ -156,19 +80,19 @@ heightlineouts = [0,20]					#Axial 1D-Profiles to be plotted (fixed R-mesh)
 
 #Requested plotting routines.
 savefig_itermovie = False				#Requires movie_icp.pdt
-savefig_plot2D = False
+savefig_plot2D = True
 
 savefig_radialines = False
 savefig_heightlines = False
 savefig_multiprofiles = False
-savefig_comparelineouts = False
+savefig_comparelineouts = True
 
 savefig_phaseresolvelines = False			#1D Phase Resolved Images
-savefig_phaseresolve2D = True				#2D Phase Resolved Images
+savefig_phaseresolve2D = False				#2D Phase Resolved Images
 savefig_sheathdynamics = False				#PROES style images
 
 #Steady-State diagnostics and terminal outputs. 
-savefig_trendcomparison = False
+savefig_trendcomparison = True
 print_generaltrends = False
 print_KnudsenNumber = False				
 print_totalpower = False				
@@ -437,33 +361,6 @@ for l in range(0,numfolders):
 		print ''
 		#Extract mesh data from initmesh.out
 		mesh = open(mesh[l]).readlines()
-
-		#Identify and enumerate materials used in mesh.
-		meshmaterials = list()
-		for i in range( len(mesh[3].strip(' '))-1 ):
-			meshmaterials.append(mesh[3].strip(' ')[i])
-		#endfor
-
-		meshtest = list()
-		tempmesh = list()
-		#Convert mesh into material names to enable identification of regions.
-		mesh = mesh[4]
-		for i in range(0, len(mesh)):
-			mesh[i] = mesh[i].strip(' ')
-			for j in range(0, len(mesh[i])):
-				for k in range(0, len(meshmaterials) ):
-					try:
-						if int(mesh[i][j]) == k:
-							tempmesh.append(meshmaterials[k])
-						#endif
-					except:
-						a = 1
-					#endtry
-				#endfor
-			#endfor
-			meshtest.append(tempmesh)
-			tempmesh = list()
-		#endfor
 	#endif
 
 	#Inform Mesh Size for inputdeck plotting purposes.
@@ -1623,6 +1520,13 @@ def MinMaxTrends(lineout,Orientation):
 #Can identify DC-bias for parallel plate discharges and dielectric discharges.
 def DCbiasMagnitude(PPOTlineout):
 
+	#Identify if radial or axial.
+	if len(PPOTlineout) == Z_mesh[l]:
+		electrodelocation = electrodeloc[1]
+	elif len(PPOTlineout) in [R_mesh[l],R_mesh[l]*2]:
+		electrodelocation = electrodeloc[0]
+	#endif
+
 	#Identify Min/Max Potential magnitudes and location of max potential.
 	MinPPOT,MaxPPOT = min(PPOTlineout),max(PPOTlineout)
 	MaxIndex = np.argmax(PPOTlineout)
@@ -1630,7 +1534,41 @@ def DCbiasMagnitude(PPOTlineout):
 	#Split PPOT profile into each sheath, pre and post max potential
 	PreIndex = PPOTlineout[:MaxIndex]
 	PostIndex = PPOTlineout[MaxIndex:]
-	
+
+
+	##=========================================##
+
+	#Metals have flat PPOT profiles, dielectric/plasma have gradients.
+	MetalIndices = list()
+	DielectricIndices = list()
+	for i in range(0,len(PPOTlineout)-1):
+		if PPOTlineout[i] == PPOTlineout[i+1]:
+			MetalIndices.append(i)
+		elif PPOTlineout[i] != PPOTlineout[i+1]:
+			DielectricIndices.append(i)
+		#endif
+	#endfor
+	MetalIndices.append(len(PPOTlineout)-1)
+
+	#Grounded metal will have a PPOT of zero -- ##INCORRECT IF NO DC-BIAS##
+	GMetalIndices = list()
+	for i in range(0,len(MetalIndices)):
+		if PPOTlineout[MetalIndices[i]] == 0:
+			GMetalIndices.append(MetalIndices[i])
+		#endif
+	#endfor
+
+	#Any metal that is not grounded will be powered -- ##BAD ASSUMPTION FOR ALL MESHES##
+	PMetalIndices = list()
+	for i in range(0,len(MetalIndices)):
+		if MetalIndices[i] not in GMetalIndices:
+			PMetalIndices.append(MetalIndices[i])
+		#endif
+	#endfor
+
+	##=========================================##
+
+
 	#Identify voltage drop through each sheath from max potential.
 	try: PreIndexVoltageDrop = MaxPPOT - min(PreIndex)
 	except: PreIndexVoltageDrop = MaxPPOT
@@ -1647,15 +1585,28 @@ def DCbiasMagnitude(PPOTlineout):
 
 	#Minimum voltage is one of the electrodes - "Parallel Plate Discharge"
 	else:
-		DCbias = PreIndexVoltageDrop - PostIndexVoltageDrop
+		try: DCbias = PPOTlineout[PMetalIndices[0]]
+		except: DCbias = PreIndexVoltageDrop - PostIndexVoltageDrop
 	#endif
 
+
 	if DebugMode == True:
-		plt.plot(PPOTlineout, lw=2)
-		plt.plot(np.argmax(Rlineout),max(Rlineout), 'ro',  ms=12)
+		X1 = range(0,len(PreIndex))
+		X2 = range(len(PreIndex),len(PPOTlineout))
+
+		plt.plot(X1,PreIndex, lw=2)
+		plt.plot(X2,PostIndex, lw=2)
+		plt.plot(np.argmax(PPOTlineout),max(PPOTlineout), 'go',  ms=12)
+		for i in range(0,len(GMetalIndices)):
+			plt.plot(GMetalIndices[i],PPOTlineout[GMetalIndices[i]], 'ko',  ms=12)
+		#endfor
+		for i in range(0,len(PMetalIndices)):
+			plt.plot(PMetalIndices[i],PPOTlineout[PMetalIndices[i]], 'ro',  ms=12)
+		#endfor
+
 		plt.xlabel('Cell Number')
 		plt.ylabel('Voltage [V]')
-		plt.savefig(DirTrends+'DCBIAS_DEBUG'+str(l)+'.png')
+		plt.savefig(DirTrends+'DCBIAS_DEBUG'+str(l+electrodelocation)+'.png')
 		plt.close('all')
 	#endif
 
@@ -2601,8 +2552,9 @@ if savefig_trendcomparison == True or print_DCbias == True:
 		#endtry
 
 		#Obtain DCbias on axis and across the centre radius of the mesh.
-		AxialDCbias = DCbiasMagnitude(Zlineout)
+		AxialDCbias = DCbiasMagnitude(Zlineout[::-1])
 		RadialDCbias = DCbiasMagnitude(Rlineout)
+
 
 		#Compare Axial and Radial DCbias, if same pick Axial, if not pick the largest.
 		if AxialDCbias != RadialDCbias:
@@ -4308,6 +4260,89 @@ if True == False:
 
 #=====================================================================#
 #=====================================================================#
+
+
+
+
+
+
+
+
+
+#====================================================================#
+				  	#GRAPHICAL USER INTERFACE#
+#====================================================================#
+
+use_GUI = False
+if use_GUI == True:
+	try:
+		# Python2
+		import Tkinter as tk
+		from ttk import *
+	except ImportError:
+		# Python3
+		import tkinter as tk
+		from ttk import *
+
+#=============#
+
+	#Toggles button font between green/red and outputs corresponding true/false.
+	def toggle(string,btn):
+		#to get the present state of the toggle button
+		if btnlist[btn].config('fg')[-1] == 'green':
+			btnlist[btn].config(fg='red')
+		else:
+			btnlist[btn].config(fg='green')
+		#endif
+
+		#Add name of button and true/false value to switchboard dictionary.
+		global Switchboard
+		if btnlist[btn].config('fg')[-1] == 'green':
+			Switchboard[string] = 'True'
+		elif btnlist[btn].config('fg')[-1] == 'red':
+			Switchboard[string] = 'False'
+		#endif
+	#enddef
+
+#=============#
+
+	#Initialize and configure root window.
+	root = tk.Tk()
+	root.title("Hpem ELectronic ENgine Analysis v0.8.4")
+	root.minsize(width=800, height=600)
+	root.maxsize(width=4*1080, height=1080)
+
+	#Buttonlist as displayed in GUI.
+	btnlist = ['2D Images','2D Converge','2D Phase']
+
+	#Add toggle buttons.  (lambda returns a reference to a nameless function)
+	btnlist[0] = tk.Button(text=btnlist[0], width=12, fg='red')
+	btnlist[0]["command"] = lambda: toggle('savefig_plot2D',0)
+	btnlist[0].grid(row=1, column=0)
+
+	btnlist[1] = tk.Button(text=btnlist[1], width=12, fg='red')
+	btnlist[1]["command"] = lambda: toggle('savefig_itermovie',1)
+	btnlist[1].grid(row=1, column=1)
+
+	btnlist[2] = tk.Button(text=btnlist[2], width=12, fg='red')
+	btnlist[2]["command"] = lambda: toggle('savefig_phaseresolve',2)
+	btnlist[2].grid(row=1, column=2)
+
+	#Add run button, disables GUI and progresses to the main program.
+	Run = tk.Button(text='Run Analysis', height=4, width=18, fg='black')
+	Run["command"] = root.destroy
+	Run.grid(row=3,column=3,padx=0,pady=100)
+
+	root.mainloop()
+	print Switchboard
+#endif
+
+#=====================================================================#
+#=====================================================================#
+
+
+
+
 
 
 
