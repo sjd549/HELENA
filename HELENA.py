@@ -80,12 +80,12 @@ heightlineouts = [0,20]					#Axial 1D-Profiles to be plotted (fixed R-mesh)
 
 #Requested plotting routines.
 savefig_itermovie = False				#Requires movie_icp.pdt
-savefig_plot2D = True
+savefig_plot2D = False
 
 savefig_radialines = False
 savefig_heightlines = False
 savefig_multiprofiles = False
-savefig_comparelineouts = True
+savefig_comparelineouts = False
 
 savefig_phaseresolvelines = False			#1D Phase Resolved Images
 savefig_phaseresolve2D = False				#2D Phase Resolved Images
@@ -1046,7 +1046,7 @@ else:
 
 #Identifies if variable exists in all simulations, rejects if not.
 #Allows for the comparison of datasets with different icp.dat files.
-def VariableInterpolator(Variablelist, processlist, Comparisonlist):
+def VariableInterpolator(processlist,Variablelist,Comparisonlist):
 
 	#Return default if atomic physics is the same in all datasets.
 	if len(list(set(Comparisonlist).symmetric_difference(Variablelist))) == 0 :
@@ -1462,7 +1462,7 @@ def MinMaxTrends(lineout,Orientation):
 
 		#Create and correct processlist for each folder as required.
 		processlist,Variablelist = VariableEnumerator(Variables,rawdata_2D[l],header_2Dlist[l])
-		processlist,Variablelist = VariableInterpolator(Variablelist, processlist, Comparisonlist)
+		processlist,Variablelist = VariableInterpolator(processlist,Variablelist,Comparisonlist)
 
 		#Update X-axis with folder information.
 		Xaxis.append( FolderNameTrimmer(Dirlist[l]) )
@@ -2078,7 +2078,7 @@ if savefig_comparelineouts == True:
 				processlist,Variablelist = VariableEnumerator(Variables,rawdata_2D[l],header_2Dlist[l])
 
 				#Correct processlist for folders containing different icp.dat.
-				processlist,Variablelist = VariableInterpolator(Variablelist, processlist, Comparisonlist)
+				processlist,Variablelist = VariableInterpolator(processlist,Variablelist,Comparisonlist)
 	
 				#Update legend with folder information.
 				Legendlist.append( FolderNameTrimmer(Dirlist[l]) )
@@ -2152,7 +2152,7 @@ if savefig_comparelineouts == True:
 				processlist,Variablelist = VariableEnumerator(Variables,rawdata_2D[l],header_2Dlist[l])
 			
 				#Correct processlist for folders containing different icp.dat.
-				processlist,Variablelist = VariableInterpolator(Variablelist, processlist, Comparisonlist)
+				processlist,Variablelist = VariableInterpolator(processlist,Variablelist,Comparisonlist)
 
 				#Update legend with folder information.
 				Legendlist.append( FolderNameTrimmer(Dirlist[l]) )
@@ -2403,7 +2403,10 @@ if savefig_trendcomparison == True or print_generaltrends == True:
 
 		#Create and correct processlist for each folder as required.
 		processlist,Variablelist = VariableEnumerator(Variables,rawdata_2D[0],header_2Dlist[0])
-		processlist,Variablelist = VariableInterpolator(Variablelist, processlist, Comparisonlist)
+		processlist,Variablelist = VariableInterpolator(processlist,Variablelist,Comparisonlist)
+
+		#Create Y-axis legend for each variable to be plotted.
+		YaxisLegend = VariableLabelMaker(Variablelist)
 
 		#Loop escape if variables that do not exist have been requested.
 		if k >= 1 and k > len(Variablelist)-1:
@@ -2438,7 +2441,8 @@ if savefig_trendcomparison == True or print_generaltrends == True:
 			else:
 				plt.xlabel('Varied Property', fontsize=24)
 			#endif
-			plt.ylabel('Max '+VariableLegend[l][processlist[k]], fontsize=24)
+			print len(YaxisLegend), k
+			plt.ylabel('Max '+YaxisLegend[k], fontsize=24)
 			ax.tick_params(axis='x', labelsize=18)
 			ax.tick_params(axis='y', labelsize=18)
 			plt.legend(Legendlist, prop={'size':16}, loc=1)
@@ -2488,7 +2492,7 @@ if savefig_trendcomparison == True or print_generaltrends == True:
 			else:
 				plt.xlabel('Varied Property', fontsize=24)
 			#endif
-			plt.ylabel('Max '+VariableLegend[l][processlist[k]], fontsize=24)
+			plt.ylabel('Max '+YaxisLegend[k], fontsize=24)
 			ax.tick_params(axis='x', labelsize=18)
 			ax.tick_params(axis='y', labelsize=18)
 			plt.legend(Legendlist, prop={'size':16}, loc=1)
