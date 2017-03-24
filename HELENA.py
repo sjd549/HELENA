@@ -64,28 +64,27 @@ DebugMode = False
 
 #Requested movie1/movie_icp Variables.			
 IterVariables = ['AR+','E','PPOT','TE','TG-AVE']	#Requested Movie_icp (iteration) Variables.
-PhaseVariables = ['E','PPOT','TE','S-E']	#Requested Movie1 (phase) Variables.
+PhaseVariables = ['AR+','E','PPOT','TE','TG-AVE']	#Requested Movie1 (phase) Variables.
 electrodeloc = [0,0] 						#Centre Cell of powered electrode [R,Z]. (T,B,L,R)
 phasecycles = 1								#Number of phase cycles to be plotted.
 #YPR [30,47]	
 
-
 #Requested TECPLOT Variables
-Variables = ['AR','AR+','E','TE','P-POT','TG-AVE','PRESSURE','EF-TOT','POW-RF','POW-RF-E','S-AR+','SEB-AR+', 'VR-NEUTRAL','VZ-NEUTRAL','VR-ION+','VZ-ION+','EAMB-R','EAMB-Z']
+Variables = ['AR','AR+','E','TE','P-POT','TG-AVE','PRESSURE','EF-TOT','POW-RF','POW-RF-E','S-AR+','SEB-AR+', 'VR-NEUTRAL','VZ-NEUTRAL','VR-ION+','VZ-ION+','JR-NET','JZ-NET','EFLUX-Z','EFLUX-R']
 MultiVar = ['S-AR+']						#Additional variables plotted ontop of [Variables] 
-radialineouts = [20] 						#Radial 1D-Profiles to be plotted (fixed Z-mesh)
-heightlineouts = [0,20]					#Axial 1D-Profiles to be plotted (fixed R-mesh)
+radialineouts = [] 						#Radial 1D-Profiles to be plotted (fixed Z-mesh)
+heightlineouts = [0]					#Axial 1D-Profiles to be plotted (fixed R-mesh)
 #YPR H0;R47  #MSHC H0,20;R20
 
 
 #Requested plotting routines.
 savefig_itermovie = False				#Requires movie_icp.pdt
-savefig_plot2D = False
+savefig_plot2D = True
 
 savefig_radialines = False
 savefig_heightlines = False
 savefig_multiprofiles = False
-savefig_comparelineouts = False
+savefig_comparelineouts = True
 
 savefig_phaseresolvelines = False			#1D Phase Resolved Images
 savefig_phaseresolve2D = False				#2D Phase Resolved Images
@@ -100,7 +99,7 @@ print_DCbias = False
 print_thrust = False					
 
 #Image plotting options.
-image_aspectratio = [10,10]
+image_aspectratio = [10,10]					#[x,y] in inches
 image_plotsymmetry = True
 image_contourplot = True
 image_normalize = False						#### NORMALIZES TO EACH PROFILE SEPERATELY ###
@@ -524,7 +523,6 @@ def VariableLabelMaker(variablelist):
 			Variable = '+Ion Radial Velocity'
 			VariableUnit = '[kms$^{-1}$]'
 		
-
 		elif variablelist[i] == 'P-POT':
 			Variable = 'Plasma Potential'
 			VariableUnit = '[V]'
@@ -547,6 +545,12 @@ def VariableLabelMaker(variablelist):
 			Variable = 'Axial E-Field Strength'
 			VariableUnit = '[Vcm$^{-1}$]'
 
+		elif variablelist[i] == 'JZ-NET':
+			Variable = 'Axial Net Current Density'
+			VariableUnit = '[mA cm$^{-2}$]'
+		elif variablelist[i] == 'JR-NET':
+			Variable = 'Radial Net Current Density'
+			VariableUnit = '[mA cm$^{-2}$]'
 
 		elif variablelist[i] == 'POW-TOT':
 			Variable = 'Total RF-Power Deposited'
@@ -557,6 +561,25 @@ def VariableLabelMaker(variablelist):
 		elif variablelist[i] == 'POW-RF-E':
 			Variable = 'RF-Power Deposited by e-'
 			VariableUnit = '[Wcm$^{-3}$]'
+
+		elif variablelist[i] == 'EFLUX-Z':
+			Variable = 'Electron Axial Flux'
+			VariableUnit = '[m$^{-2}$ s$^{-1}$]'
+		elif variablelist[i] == 'EFLUX-R':
+			Variable = 'Electron Radial Flux'
+			VariableUnit = '[m$^{-2}$ s$^{-1}$]'
+		elif variablelist[i] == 'FZ-AR+':
+			Variable = 'Ar+ Axial Flux'
+			VariableUnit = '[m$^{-2}$ s$^{-1}$]'
+		elif variablelist[i] == 'FR-AR+':
+			Variable = 'Ar+ Radial Flux'
+			VariableUnit = '[m$^{-2}$ s$^{-1}$]'
+		elif variablelist[i] == 'FZ-AR':
+			Variable = 'Ar Axial Flux'
+			VariableUnit = '[m$^{-2}$ s$^{-1}$]'
+		elif variablelist[i] == 'FR-AR':
+			Variable = 'Ar Radial Flux'
+			VariableUnit = '[m$^{-2}$ s$^{-1}$]'
 
 		else:
 			Variable = 'Variable'
@@ -598,11 +621,11 @@ def VariableUnitConversion(profile,variable):
 		#endfor
 
 	#For fluxes, convert from [cm-2] to [m-2]. (also make positive axial flux)
-	if variable in ['FZ-AR','FR-AR','FZ-AR+','FR-AR+']:
+	if variable in ['EFLUX-Z','EFLUX-R','FZ-AR','FR-AR','FZ-AR+','FR-AR+']:
 		for i in range(0,len(profile)):
 			profile[i] = profile[i]*1E4
 		#endfor
-	if variable in ['FZ-AR','FZ-AR+']:
+	if variable in ['FZ-AR','FZ-AR+','EFLUX-Z']:
 		for i in range(0,len(profile)):
 			profile[i] = profile[i]*(-1)
 		#endfor
@@ -617,6 +640,18 @@ def VariableUnitConversion(profile,variable):
 			profile[i] = profile[i]*(-1)
 		#endfor
 	#endif
+
+	#For Current Densities, convert from [A cm-2] to [mA cm-2]. (also reverse axial current)
+	if variable in ['JZ-NET','JR-NET']:
+		for i in range(0,len(profile)):
+			profile[i] = profile[i]*1000
+		#endfor
+	if variable in ['JZ-NET']:
+		for i in range(0,len(profile)):
+			profile[i] = profile[i]*(-1)
+		#endfor
+	#endif
+
 	return(profile)
 #enddef
 
@@ -1753,6 +1788,9 @@ if savefig_itermovie == True:
 	#for all folders being processed.
 	for l in range(0,numfolders):
 
+		#Create new folder to keep convergence variable folders in.
+		DirConvergence = CreateNewFolder(Dirlist[l],'Convergence/')
+
 		#Create processlist for each folder as required.
 		iterprocesslist,IterVariablelist = VariableEnumerator(IterVariables,rawdata_itermovie_icp[l],header_itermovie[l])
 		#Skip over the R and Z processes as they are not saved properly in iterdata.
@@ -1771,7 +1809,7 @@ if savefig_itermovie == True:
 		for i in range(0,len(iterprocesslist)):
 
 			#Create new folder to keep output plots.
-			DirMovieplots = CreateNewFolder(Dirlist[l],IterVariablelist[i]+'_2DConvergence/')
+			DirMovieplots = CreateNewFolder(DirConvergence,IterVariablelist[i]+'_2DConvergence/')
 
 			#Create empty image array based on mesh size and symmetry options.
 			numrows = len(IterMovieData[l][0][0])/R_mesh[l]
@@ -1870,7 +1908,7 @@ if savefig_itermovie == True:
 		plt.ylim((0,1.02))
 		xticks(fontsize=18)
 		yticks(fontsize=18)
-		savefig(Dirlist[l]+FolderNameTrimmer(Dirlist[l])+'_Convergence.png')
+		savefig(DirConvergence+FolderNameTrimmer(Dirlist[l])+'_Convergence.png')
 		plt.close('all')	
 
 	#endfor
@@ -2441,7 +2479,6 @@ if savefig_trendcomparison == True or print_generaltrends == True:
 			else:
 				plt.xlabel('Varied Property', fontsize=24)
 			#endif
-			print len(YaxisLegend), k
 			plt.ylabel('Max '+YaxisLegend[k], fontsize=24)
 			ax.tick_params(axis='x', labelsize=18)
 			ax.tick_params(axis='y', labelsize=18)
