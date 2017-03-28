@@ -65,13 +65,14 @@ DebugMode = False
 #Requested movie1/movie_icp Variables.			
 IterVariables = ['AR+','E','PPOT','TE','TG-AVE']	#Requested Movie_icp (iteration) Variables.
 PhaseVariables = ['AR+','E','PPOT','TE','TG-AVE']	#Requested Movie1 (phase) Variables.
+DCBiasaxis = ''								#'Axial' or 'Radial'. (empty '' for auto)
 electrodeloc = [0,0] 						#Centre Cell of powered electrode [R,Z]. (T,B,L,R)
 phasecycles = 1								#Number of phase cycles to be plotted.
 #YPR [30,47]	
 
 #Requested TECPLOT Variables
 Variables = ['AR','AR+','E','TE','P-POT','TG-AVE','PRESSURE','EF-TOT','POW-RF','POW-RF-E','S-AR+','SEB-AR+', 'VR-NEUTRAL','VZ-NEUTRAL','VR-ION+','VZ-ION+','JR-NET','JZ-NET','EFLUX-Z','EFLUX-R']
-MultiVar = ['S-AR+']						#Additional variables plotted ontop of [Variables] 
+MultiVar = ['S-AR+']					#Additional variables plotted ontop of [Variables] 
 radialineouts = [] 						#Radial 1D-Profiles to be plotted (fixed Z-mesh)
 heightlineouts = [0]					#Axial 1D-Profiles to be plotted (fixed R-mesh)
 #YPR H0;R47  #MSHC H0,20;R20
@@ -79,12 +80,12 @@ heightlineouts = [0]					#Axial 1D-Profiles to be plotted (fixed R-mesh)
 
 #Requested plotting routines.
 savefig_itermovie = False				#Requires movie_icp.pdt
-savefig_plot2D = True
+savefig_plot2D = False
 
 savefig_radialines = False
 savefig_heightlines = False
 savefig_multiprofiles = False
-savefig_comparelineouts = True
+savefig_comparelineouts = False
 
 savefig_phaseresolvelines = False			#1D Phase Resolved Images
 savefig_phaseresolve2D = False				#2D Phase Resolved Images
@@ -92,19 +93,21 @@ savefig_sheathdynamics = False				#PROES style images
 
 #Steady-State diagnostics and terminal outputs. 
 savefig_trendcomparison = True
+print_meshconvergence = False
 print_generaltrends = False
-print_KnudsenNumber = False				
-print_totalpower = False				
+print_KnudsenNumber = False
+print_totalpower = False
 print_DCbias = False
-print_thrust = False					
+print_thrust = False
+
 
 #Image plotting options.
 image_aspectratio = [10,10]					#[x,y] in inches
-image_plotsymmetry = True
+image_plotsymmetry = False
 image_contourplot = True
 image_normalize = False						#### NORMALIZES TO EACH PROFILE SEPERATELY ###
 image_logplot = False
-image_rotate = True
+image_rotate = False
 
 image_plotmesh = False						#### NOT IMPLIMENTED ####
 image_singlefreqdotted = False 				#### VERY HACKY, LINK THIS TO ICP.NAM ####
@@ -1574,7 +1577,7 @@ def DCbiasMagnitude(PPOTlineout):
 	##=========================================##
 
 	#Metals have flat PPOT profiles, dielectric/plasma have gradients.
-	MetalIndices = list()
+	MetalIndices = list([0])
 	DielectricIndices = list()
 	for i in range(0,len(PPOTlineout)-1):
 		if PPOTlineout[i] == PPOTlineout[i+1]:
@@ -1623,7 +1626,6 @@ def DCbiasMagnitude(PPOTlineout):
 		try: DCbias = PPOTlineout[PMetalIndices[0]]
 		except: DCbias = PreIndexVoltageDrop - PostIndexVoltageDrop
 	#endif
-
 
 	if DebugMode == True:
 		X1 = range(0,len(PreIndex))
@@ -2471,27 +2473,39 @@ if savefig_trendcomparison == True or print_generaltrends == True:
 			#Append the axial position to the legendlist.
 			Legendlist.append( 'R='+str(round((heightlineouts[j]*dr[l]*10), 2))+'mm' )
 
-			#Plot and beautify the data for each variable.
-			plt.plot(range(0,numfolders),MaxTrend, 'o-', lw=2)
+
+			#Choose how to plot the trends.
+			if print_meshconvergence == True:
+				#Plot results against number of cells in each mesh for convergence studies.
+				numcells = list()
+				for l in range(0,numfolders):
+					numcells.append(Z_mesh[l]*R_mesh[l])
+				#endfor
+				plt.plot(numcells[::-1],MaxTrend[::-1], 'o-', lw=2)
+			else:
+				#Plot results against strings pulled from folder names for batch studies.
+				plt.plot(range(0,numfolders),MaxTrend, 'o-', lw=2)
+				if len(legendoverride) > 0:
+					plt.xticks(np.arange(0,numfolders), legendoverride)
+				else:
+					plt.xticks(np.arange(0,numfolders), Xaxis)
+				#endif
+			#endif
+
+			#Beautify the plot before saving.
 			plt.title('Trend in max '+Variablelist[k]+' with changing '+TrendVariable+' \n'+Dirlist[l][2:-1] ,position=(0.5,1.05))
 			if len(xlabeloverride) > 0:
 				plt.xlabel(xlabeloverride[0], fontsize=24)
 			else:
 				plt.xlabel('Varied Property', fontsize=24)
 			#endif
+			if image_logplot == True: ax.set_yscale('log')
 			plt.ylabel('Max '+YaxisLegend[k], fontsize=24)
 			ax.tick_params(axis='x', labelsize=18)
 			ax.tick_params(axis='y', labelsize=18)
 			plt.legend(Legendlist, prop={'size':16}, loc=1)
 			plt.grid(True)
-			if image_logplot == True:
-				ax.set_yscale('log')
-			#endif
-			if len(legendoverride) > 0:
-				plt.xticks(np.arange(0,numfolders), legendoverride)
-			else:
-				plt.xticks(np.arange(0,numfolders), Xaxis)
-			#endif
+
 
 		#Save one image per variable with data from all simulations.
 		if len(heightlineouts) > 0:
@@ -2521,27 +2535,39 @@ if savefig_trendcomparison == True or print_generaltrends == True:
 			#Append the axial position to the legendlist.
 			Legendlist.append( 'Z='+str(round((radialineouts[j]*dz[l]*10), 2))+'mm' )
 
-			#Plot and beautify the data for each variable.
-			plt.plot(range(0,numfolders),MaxTrend, 'o-', lw=2)
+
+			#Choose how to plot the trends.
+			if print_meshconvergence == True:
+				#Plot results against number of cells in each mesh for convergence studies.
+				numcells = list()
+				for l in range(0,numfolders):
+					numcells.append(Z_mesh[l]*R_mesh[l])
+				#endfor
+				plt.plot(numcells[::-1],MaxTrend[::-1], 'o-', lw=2)
+			else:
+				#Plot results against strings pulled from folder names for batch studies.
+				plt.plot(range(0,numfolders),MaxTrend, 'o-', lw=2)
+				if len(legendoverride) > 0:
+					plt.xticks(np.arange(0,numfolders), legendoverride)
+				else:
+					plt.xticks(np.arange(0,numfolders), Xaxis)
+				#endif
+			#endif
+
+			#Beautify the plot before saving.
 			plt.title('Trend in max '+Variablelist[k]+' with changing '+TrendVariable+' \n'+Dirlist[l][2:-1] ,position=(0.5,1.05))
 			if len(xlabeloverride) > 0:
 				plt.xlabel(xlabeloverride[0], fontsize=24)
 			else:
 				plt.xlabel('Varied Property', fontsize=24)
 			#endif
+			if image_logplot == True: ax.set_yscale('log')
 			plt.ylabel('Max '+YaxisLegend[k], fontsize=24)
 			ax.tick_params(axis='x', labelsize=18)
 			ax.tick_params(axis='y', labelsize=18)
 			plt.legend(Legendlist, prop={'size':16}, loc=1)
 			plt.grid(True)
-			if image_logplot == True:
-				ax.set_yscale('log')
-			#endif
-			if len(legendoverride) > 0:
-				plt.xticks(np.arange(0,numfolders), legendoverride)
-			else:
-				plt.xticks(np.arange(0,numfolders), Xaxis)
-			#endif
+
 
 		#Save one image per variable with data from all simulations.
 		if len(radialineouts) > 0:
@@ -2596,16 +2622,22 @@ if savefig_trendcomparison == True or print_DCbias == True:
 		AxialDCbias = DCbiasMagnitude(Zlineout[::-1])
 		RadialDCbias = DCbiasMagnitude(Rlineout)
 
-
-		#Compare Axial and Radial DCbias, if same pick Axial, if not pick the largest.
-		if AxialDCbias != RadialDCbias:
-			if abs(AxialDCbias) > abs(RadialDCbias):
-				DCbias.append(AxialDCbias)
-			else:
-				DCbias.append(RadialDCbias)
-			#endif
-		else:
+		#Choose axial or radial DCbias based on user input, else autoselect most probable.
+		if DCBiasaxis == 'Radial':
+			DCbias.append(RadialDCbias)
+		elif DCBiasaxis == 'Axial':
 			DCbias.append(AxialDCbias)
+		else:
+			#Compare Axial and Radial DCbias, if same pick Axial, if not pick the largest.
+			if AxialDCbias != RadialDCbias:
+				if abs(AxialDCbias) > abs(RadialDCbias):
+					DCbias.append(AxialDCbias)
+				else:
+					DCbias.append(RadialDCbias)
+				#endif
+			else:
+				DCbias.append(AxialDCbias)
+			#endif
 		#endif
 
 
