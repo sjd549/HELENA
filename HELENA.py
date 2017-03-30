@@ -45,6 +45,9 @@ ierr = 0				#OldDebugMode
 #Create switchboard dictionary
 Switchboard = {}
 
+#Tweaks and fixes for 'volitile' diagnostics.
+Manualbiasaxis = ''			#'Axial' or 'Radial'. (empty '' for auto)
+
 #Activates various debug outputs.
 DebugMode = False
 
@@ -64,28 +67,27 @@ DebugMode = False
 
 #Requested movie1/movie_icp Variables.			
 IterVariables = ['AR+','E','PPOT','TE','TG-AVE']	#Requested Movie_icp (iteration) Variables.
-PhaseVariables = ['AR+','E','PPOT','TE','TG-AVE']	#Requested Movie1 (phase) Variables.
-DCBiasaxis = ''								#'Axial' or 'Radial'. (empty '' for auto)
+PhaseVariables = ['E','TE']	#Requested Movie1 (phase) Variables.
 electrodeloc = [0,0] 						#Centre Cell of powered electrode [R,Z]. (T,B,L,R)
 phasecycles = 1								#Number of phase cycles to be plotted.
-#YPR [30,47]	
+#YPR [30,47] #SPR [0,107]
 
 #Requested TECPLOT Variables
-Variables = ['AR','AR+','E','TE','P-POT','TG-AVE','PRESSURE','EF-TOT','POW-RF','POW-RF-E','S-AR+','SEB-AR+', 'VR-NEUTRAL','VZ-NEUTRAL','VR-ION+','VZ-ION+','JR-NET','JZ-NET','EFLUX-Z','EFLUX-R']
-MultiVar = ['S-AR+']					#Additional variables plotted ontop of [Variables] 
+Variables = ['AR','AR+','E','TE','P-POT','TG-AVE','PRESSURE','EF-TOT','POW-RF','POW-RF-E','S-AR+','SEB-AR+', 'VR-NEUTRAL','VZ-NEUTRAL','VR-ION+','VZ-ION+']
+MultiVar = ['AR+']						#Additional variables plotted ontop of [Variables] 
 radialineouts = [] 						#Radial 1D-Profiles to be plotted (fixed Z-mesh)
 heightlineouts = [0]					#Axial 1D-Profiles to be plotted (fixed R-mesh)
-#YPR H0;R47  #MSHC H0,20;R20
+#YPR H0;R47 #MSHC H0,20;R20
 
 
 #Requested plotting routines.
 savefig_itermovie = False				#Requires movie_icp.pdt
-savefig_plot2D = False
+savefig_plot2D = True
 
 savefig_radialines = False
 savefig_heightlines = False
 savefig_multiprofiles = False
-savefig_comparelineouts = False
+savefig_comparelineouts = True
 
 savefig_phaseresolvelines = False			#1D Phase Resolved Images
 savefig_phaseresolve2D = False				#2D Phase Resolved Images
@@ -144,7 +146,7 @@ gridoverride = ['NotImplimented']
 
 
 #====================================================================#
- 					#INITIATE GLOBAL LISTS#
+ 						#INITIATE GLOBAL LISTS#
 #====================================================================#
 
 #Create lists for basic processing
@@ -157,15 +159,7 @@ MovieVariablelists = list()
 MovieITERlist = list()
 Moviephaselist = list()
 Geometrylist = list()
-MovieVariableLegend = list()
-VariableLegend = list()
 Legendlist = list()
-
-rawdata = list()
-data_array = list()
-Tempdata = list()
-Tempdata2 = list()
-templineout = list()
 
 Globalvarlist = list()
 Globalnumvars = list()
@@ -722,13 +716,13 @@ for l in range(0,numfolders):
 	header_2Dlist.append(header_2D)
 
 	#Create Variablelists for each folder of data and refresh Variablelist
-	VariableLegend.append(VariableLabelMaker(Variablelist))
 	Variablelists.append(Variablelist)
 	Variablelist = list()
 	
 
 	#Unpack each row of 7 data points into single array of floats.
 	#Removing 'spacing' between the floats and ignoring variables above data.
+	tempdata, data_array = list(),list()
 	for i in range(header_2D,nn_2D):
 		numstart = 1
 		for j in range(0,7):
@@ -746,12 +740,12 @@ for l in range(0,numfolders):
 	for i in range(0,numvariables_2D):
 		numstart = (Z_mesh[l]*R_mesh[l])*(i)
 		numend = (Z_mesh[l]*R_mesh[l])*(i+1) 
-		Tempdata.append(list(data_array[numstart:numend]))
+		tempdata.append(list(data_array[numstart:numend]))
 	#endfor
 
 	#Save all variables for folder[l] to Data and refresh lists.
-	Data.append(Tempdata)
-	Tempdata = list()
+	Data.append(tempdata)
+	tempdata = list()
 	data_array = list()
 
 
@@ -798,7 +792,6 @@ for l in range(0,numfolders):
 		header_itermovie.append(header_movie)
 
 		#Create Variablelists for each folder of data and refresh Variablelist
-		MovieVariableLegend.append(VariableLabelMaker(MovieVariablelist))
 		MovieVariablelists.append(MovieVariablelist)
 		MovieVariablelist = list()
 		MovieITERlist_temp = list()
@@ -827,8 +820,8 @@ for l in range(0,numfolders):
 
 		#Seperate total 1D array into sets of data for each variable.
 		#Data is a 4D array of form (folder,timestep,variable,datapoints)
+		tempdata,tempdata2 = list(),list()
 		for j in range(1,len(MovieITERlist_temp)+1):
-			Tempdata = list()
 
 			#Collect data for each variable in turn, then reset per iteration.
 			IterationStart = numvariables_movie*(j-1)
@@ -837,16 +830,16 @@ for l in range(0,numfolders):
 				#Offset of (Z_mesh[l]*R_mesh[l])*2 to avoid initial R and Z output.
 				numstart = (Z_mesh[l]*R_mesh[l])*(i) + (Z_mesh[l]*R_mesh[l])*2
 				numend = (Z_mesh[l]*R_mesh[l])*(i+1) + (Z_mesh[l]*R_mesh[l])*2
-				Tempdata.append(list(data_array[numstart:numend]))
+				tempdata.append(list(data_array[numstart:numend]))
 			#endfor
-			Tempdata2.append(Tempdata)
+			tempdata2.append(tempdata)
+			tempdata = list()
 		#endfor
 
 		#Save all variables for folder[l] to Data and refresh lists.
-		IterMovieData.append(Tempdata2)
+		IterMovieData.append(tempdata2)
 		MovieITERlist.append(MovieITERlist_temp)
-		Tempdata = list()
-		Tempdata2 = list()
+		tempdata,tempdata2 = list(),list()
 		data_array = list()
 	#endif
 
@@ -893,7 +886,6 @@ for l in range(0,numfolders):
 		header_phasemovie.append(header_movie)
 
 		#Create Variablelists for each folder of data and refresh Variablelist
-		MovieVariableLegend.append(VariableLabelMaker(MovieVariablelist))
 		MovieVariablelists.append(MovieVariablelist)
 		MovieVariablelist = list()
 		Moviephaselist_temp = list()
@@ -922,8 +914,8 @@ for l in range(0,numfolders):
 
 		#Seperate total 1D array into sets of data for each variable.
 		#Data is a 4D array of form (folder,timestep,variable,datapoints)
+		tempdata,tempdata2 = list(),list()
 		for j in range(1,len(Moviephaselist_temp)+1):
-			Tempdata = list()
 
 			#Collect data for each variable in turn, then reset per iteration.
 			IterationStart = numvariables_movie*(j-1)
@@ -932,16 +924,16 @@ for l in range(0,numfolders):
 				#Offset of (Z_mesh[l]*R_mesh[l])*2 to avoid initial R and Z output.
 				numstart = (Z_mesh[l]*R_mesh[l])*(i) + (Z_mesh[l]*R_mesh[l])*2
 				numend = (Z_mesh[l]*R_mesh[l])*(i+1) + (Z_mesh[l]*R_mesh[l])*2
-				Tempdata.append(list(data_array[numstart:numend]))
+				tempdata.append(list(data_array[numstart:numend]))
 			#endfor
-			Tempdata2.append(Tempdata)
+			tempdata2.append(tempdata)
+			tempdata = list()
 		#endfor
 
 		#Save all variables for folder[l] to Data and refresh lists.
-		PhaseMovieData.append(Tempdata2)
+		PhaseMovieData.append(tempdata2)
 		Moviephaselist.append(Moviephaselist_temp)
-		Tempdata = list()
-		Tempdata2 = list()
+		tempdata,tempdata2 = list(),list()
 		data_array = list()
 	#endif
 
@@ -1011,6 +1003,11 @@ for l in range(0,numfolders):
 	#endif
 #endfor
 
+#Empty and delete any non-global data lists.
+tempdata,tempdata2 = list(),list()
+data_array,templineout = list(),list()
+del data_array,tempdata,tempdata2,templineout
+
 
 #=====================================================================#
 #=====================================================================#
@@ -1034,6 +1031,7 @@ Comparisonlist = Globalvarlist[idx]
 
 #===================##===================#
 #===================##===================#
+
 
 
 #Alert user that readin process has ended and continue with selected diagnostics.
@@ -1488,12 +1486,13 @@ def Automovie(FolderDir,Output):
 #Takes a lineout location and orientation string as input.
 #And returns the maximum and minimum values For all folders to be analysed.
 #With an associated X-axis composed of the trimmed folder names.
-def MinMaxTrends(lineout,Orientation):
+def MinMaxTrends(lineout,Orientation,process):
 
 	#Refresh lists that change per profile.
 	Xaxis = list()
 	MaxValueTrend = list()
 	MinValueTrend = list()
+	p = process
 
 	#For each folder in the directory.
 	for l in range(0,numfolders):
@@ -1507,11 +1506,11 @@ def MinMaxTrends(lineout,Orientation):
 
 		#Obtain radial and axial profiles for further processing.
 		if Orientation == 'Radial':
-			try: Profile = PlotRadialProfile(Data[l],processlist[k],Variablelist[k],lineout,R_mesh[l],Isymlist[l])
+			try: Profile = PlotRadialProfile(Data[l],processlist[p],Variablelist[p],lineout,R_mesh[l],Isymlist[l])
 			except: Profile = float('NaN')
 			#endtry
 		elif Orientation == 'Axial':
-			try: Profile = PlotAxialProfile(Data[l],processlist[k],Variablelist[k],lineout,R_mesh[l],Z_mesh[l],Isymlist[l])
+			try: Profile = PlotAxialProfile(Data[l],processlist[p],Variablelist[p],lineout,R_mesh[l],Z_mesh[l],Isymlist[l])
 			except: Profile = float('NaN')
 			#endtry
 		#endif
@@ -1526,7 +1525,7 @@ def MinMaxTrends(lineout,Orientation):
 
 	#Display Min/Max value trends to terminal if requested.
 	if print_generaltrends == True:
-		print VariableLegend[l][processlist[k]]
+		print VariableLabelMaker(Variablelist)[p]
 		print Orientation+'Maximum: ', round(max(MaxValueTrend), 5) 
 		print Orientation+'Minimum: ', round(min(MinValueTrend), 5)
 		print ''
@@ -1588,7 +1587,7 @@ def DCbiasMagnitude(PPOTlineout):
 	#endfor
 	MetalIndices.append(len(PPOTlineout)-1)
 
-	#Grounded metal will have a PPOT of zero -- ##INCORRECT IF NO DC-BIAS##
+	#Grounded metal will have a PPOT of zero -- ##INCORRECT IF DC-BIAS == 0.0##
 	GMetalIndices = list()
 	for i in range(0,len(MetalIndices)):
 		if PPOTlineout[MetalIndices[i]] == 0:
@@ -1643,6 +1642,7 @@ def DCbiasMagnitude(PPOTlineout):
 
 		plt.xlabel('Cell Number')
 		plt.ylabel('Voltage [V]')
+		plt.legend(['PreBulk','PostBulk','Bulk'])
 		plt.savefig(DirTrends+'DCBIAS_DEBUG'+str(l+electrodelocation)+'.png')
 		plt.close('all')
 	#endif
@@ -2262,6 +2262,10 @@ if savefig_multiprofiles == True:
 		processlist,Variablelist = VariableEnumerator(Variables,rawdata_2D[l],header_2Dlist[l])
 		multiprocesslist, multiVariablelist = VariableEnumerator(MultiVar,rawdata_2D[l],header_2Dlist[l])
 
+		#Create variable labels with SI unit conversions if required.
+		ylabel = VariableLabelMaker(Variablelist)
+		multiylabel = VariableLabelMaker(multiVariablelist)
+
 		#Generate the vertical (height) lineouts for a given radius.
 		if len(heightlineouts) > 0:
 
@@ -2305,7 +2309,7 @@ if savefig_multiprofiles == True:
 					ax.tick_params(axis='x', labelsize=18)
 					ax.tick_params(axis='y', labelsize=18)
 					plt.xlabel('Axial Distance Z [cm]', fontsize=22)
-					plt.ylabel(VariableLegend[l][processlist[i]], fontsize=22)
+					plt.ylabel(ylabel[i], fontsize=22)
 					plt.grid(True)
 
 					R = 'R='+str(round((heightlineouts[j])*dr[l], 2))+'_'
@@ -2363,7 +2367,7 @@ if savefig_multiprofiles == True:
 					ax.tick_params(axis='x', labelsize=18)
 					ax.tick_params(axis='y', labelsize=18)
 					plt.xlabel('Radial Distance R [cm]', fontsize=22)
-					plt.ylabel(VariableLegend[l][processlist[i]], fontsize=22)
+					plt.ylabel(ylabel[i], fontsize=22)
 					plt.grid(True)
 
 					Z = 'Z='+str(round((radialineouts[j])*dz[l], 2))+'_'
@@ -2468,7 +2472,7 @@ if savefig_trendcomparison == True or print_generaltrends == True:
 			DirAxialTrends = CreateNewFolder(DirTrends,'Axial Trends')
 
 			#Obtain min/max trend values for requested profile over all folders.
-			Xaxis,MaxTrend,MinTrend = MinMaxTrends(heightlineouts[j],'Axial')
+			Xaxis,MaxTrend,MinTrend = MinMaxTrends(heightlineouts[j],'Axial',k)
 
 			#Append the axial position to the legendlist.
 			Legendlist.append( 'R='+str(round((heightlineouts[j]*dr[l]*10), 2))+'mm' )
@@ -2530,7 +2534,7 @@ if savefig_trendcomparison == True or print_generaltrends == True:
 			DirRadialTrends = CreateNewFolder(DirTrends,'Radial Trends')
 
 			#Obtain min/max trend values for requested profile over all folders.
-			Xaxis,MaxTrend,MinTrend = MinMaxTrends(radialineouts[j],'Radial')
+			Xaxis,MaxTrend,MinTrend = MinMaxTrends(radialineouts[j],'Radial',k)
 
 			#Append the axial position to the legendlist.
 			Legendlist.append( 'Z='+str(round((radialineouts[j]*dz[l]*10), 2))+'mm' )
@@ -2623,9 +2627,9 @@ if savefig_trendcomparison == True or print_DCbias == True:
 		RadialDCbias = DCbiasMagnitude(Rlineout)
 
 		#Choose axial or radial DCbias based on user input, else autoselect most probable.
-		if DCBiasaxis == 'Radial':
+		if Manualbiasaxis == 'Radial':
 			DCbias.append(RadialDCbias)
-		elif DCBiasaxis == 'Axial':
+		elif Manualbiasaxis == 'Axial':
 			DCbias.append(AxialDCbias)
 		else:
 			#Compare Axial and Radial DCbias, if same pick Axial, if not pick the largest.
@@ -3223,23 +3227,30 @@ if savefig_phaseresolve2D == True:
 			#Reshape specific part of 1D Data array into 2D image for plotting.
 			for j in range(0,len(Moviephaselist[l])):
 
-				#Extract full 2D image for further processing.
+				#Extract full 2D image for further processing.  [ASSUMES SYMMETRIC IMAGE]
 				Image = ImageExtractor2D(PhaseMovieData[l][j][PhaseProcesslist[i]],R_mesh[l],Z_mesh[l],PhaseVariablelist[i])
 				#Create new image by reversing and adding itself on the LHS.
 				SymImage = np.zeros([len(Image),2*R_mesh[l]])
 				for m in range(0,len(Image)): SymImage[m] = np.concatenate([Image[m][::-1],Image[m]])
 				Image = SymImage
 
+				#Define image size and axis label names.
+				extent = [-Raxis[-1],Raxis[-1],Zaxis[0],Zaxis[-1]]
+				xlabel = 'Radial Distance R [cm]'
+				ylabel = 'Axial Distance Z [cm]'
+
 				#Ensure image is landscape for waveform to fit underneath.
 				height,width = len(Image), len(Image[0])
-				if height > width: Image = np.transpose(Image)
+				if height > width: 
+					extent=[Zaxis[0],Zaxis[-1],-Raxis[-1],Raxis[-1]]
+					xlabel,ylabel = ylabel,xlabel
+					Image = np.transpose(Image)
 				#endif
 
 				#Create figure and axes, plot image on top and waveform underneath.
 				fig,ax = figure(image_aspectratio,2)
 				fig.suptitle( 'Phase-Resolved '+PhaseVariablelist[i]+'\n'+str(Moviephaselist[l][j]), y=0.97, fontsize=18)
 				
-				extent = [Zaxis[0],Zaxis[-1],-Raxis[-1],Raxis[-1]]
 				if image_contourplot == True:
 					im = ax[0].contour(Image,extent=extent,origin="lower", aspect='auto')
 					im = ax[0].imshow(Image,extent=extent,origin="lower", aspect='auto')
@@ -3806,7 +3817,7 @@ if savefig_phaseresolvelines == True and True == False:
 			plt.plot(Phaseaxis,PhaseResolvedData, 'b' ,lw=2)
 			plt.plot(Phaseaxis,PhaseResolvedData_avg,'b--',lw=2)
 
-			CurrentVariable = str(MovieVariableLegend[l][phaseprocesslist[i]])
+			CurrentVariable = str(VariableLabelMaker(MovieVariablelist)[i])
 			plt.title(Dirlist[l][2:-1]+' Phase Resolved Potentials',position=(0.5,1.05))
 			ax[l].legend([['13.56MHz','DC bias'],['13.56+27.12MHz','DC Bias']][l],loc=1, fontsize=14)
 			plt.xlabel('Phase [$\omega$t/2$\pi$]', fontsize=24)
