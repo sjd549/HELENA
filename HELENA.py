@@ -46,7 +46,8 @@ ierr = 0				#OldDebugMode
 Switchboard = {}
 
 #Tweaks and fixes for 'volitile' diagnostics.
-Manualbiasaxis = ''			#'Axial' or 'Radial'. (empty '' for auto)
+AxialLine = 80				#Z-axis line for thrust calculation.
+Manualbiasaxis = 'Radial'			#'Axial' or 'Radial'. (empty '' for auto)
 
 #Activates various debug outputs.
 DebugMode = False
@@ -67,16 +68,16 @@ DebugMode = False
 
 #Requested movie1/movie_icp Variables.			
 IterVariables = ['AR+','E','PPOT','TE','TG-AVE']	#Requested Movie_icp (iteration) Variables.
-PhaseVariables = ['E','TE']	#Requested Movie1 (phase) Variables.
+PhaseVariables = ['AR+','E','PPOT','TE','TG-AVE']	#Requested Movie1 (phase) Variables.
 electrodeloc = [0,0] 						#Centre Cell of powered electrode [R,Z]. (T,B,L,R)
 phasecycles = 1								#Number of phase cycles to be plotted.
 #YPR [30,47] #SPR [0,107]
 
 #Requested TECPLOT Variables
-Variables = ['AR','AR+','E','TE','P-POT','TG-AVE','PRESSURE','EF-TOT','POW-RF','POW-RF-E','S-AR+','SEB-AR+', 'VR-NEUTRAL','VZ-NEUTRAL','VR-ION+','VZ-ION+']
+Variables = ['AR','AR+','E','TE','P-POT','TG-AVE','PRESSURE','EF-TOT','POW-RF','POW-RF-E','S-AR+','SEB-AR+', 'VR-NEUTRAL','VZ-NEUTRAL','VR-ION+','VZ-ION+','JR-NET','JZ-NET']
 MultiVar = ['AR+']						#Additional variables plotted ontop of [Variables] 
 radialineouts = [] 						#Radial 1D-Profiles to be plotted (fixed Z-mesh)
-heightlineouts = [0]					#Axial 1D-Profiles to be plotted (fixed R-mesh)
+heightlineouts = [0,97]					#Axial 1D-Profiles to be plotted (fixed R-mesh)
 #YPR H0;R47 #MSHC H0,20;R20
 
 
@@ -104,10 +105,11 @@ print_thrust = False
 
 
 #Image plotting options.
-image_aspectratio = [10,10]					#[x,y] in inches
+image_aspectratio = [14,10]					#[x,y] in inches
 image_plotsymmetry = False
 image_contourplot = True
 image_normalize = False						#### NORMALIZES TO EACH PROFILE SEPERATELY ###
+image_plotgrid = False
 image_logplot = False
 image_rotate = False
 
@@ -221,7 +223,7 @@ print '   |  |__|  | |  |__   |  |     |  |__   |   \|  |   /  ^  \        '
 print '   |   __   | |   __|  |  |     |   __|  |  . `  |  /  /_\  \       '
 print '   |  |  |  | |  |____ |  `----.|  |____ |  |\   | /  _____  \      '
 print '   |__|  |__| |_______||_______||_______||__| \__|/__/     \__\     '
-print '                                                             v0.8.7 '
+print '                                                             v0.9.0 '
 print '--------------------------------------------------------------------' 
 print ''
 print 'The following diagnostics were requested:'
@@ -1176,6 +1178,28 @@ def figure(aspectratio,subplots=1):
 
 
 
+#Applies plt.options to current figure based on user input.
+#Returns nothing, current image is required, use figure().
+def ImageOptions():
+
+	#Log image if possible, else linear. Grid default is off.
+	if image_logplot == True: 
+		try: ax.set_yscale('log')
+		except: ax.set_yscale('linear')
+	#endif
+	if image_plotgrid == True: plt.grid(True)
+	#endif
+
+	return()
+#enddef
+
+
+
+#=========================#
+#=========================#
+
+
+
 #Create figure and plot a 2D image with associated image plotting requirements.
 #Returns plotted image, axes and figure.
 def ImagePlotter(Image,extent,aspectratio):
@@ -1205,6 +1229,48 @@ def ImagePlotter(Image,extent,aspectratio):
 		im = ax.imshow(Image,extent=extent,origin="lower")
 	#endif
 	return(fig,ax,im)
+#enddef
+
+
+
+#=========================#
+#=========================#
+
+
+
+#Creates a 1D image from an array of supplied points.
+#Image plotted onto existing axes, figure() should be used.
+def TrendPlotter(TrendArray,Xaxis,Normalize=1):
+
+	#Normalize data to provided normalization factor if required.
+	if image_normalize == True:
+		for i in range(0,len(TrendArray)):
+			TrendArray[i] = TrendArray[i]/Normalize
+		#endfor
+	#endif
+
+	#Choose how to plot the trends.
+	if print_meshconvergence == True:
+		#Plot results against number of cells in each mesh for convergence studies.
+		numcells = list()
+		for l in range(0,numfolders):
+			numcells.append(Z_mesh[l]*R_mesh[l])
+		#endfor
+		plt.plot(numcells[::-1],TrendArray[::-1], 'o-', lw=2)
+	else:
+		#Plot results against strings pulled from folder names for batch studies.
+		plt.plot(range(0,numfolders),TrendArray, 'o-', lw=2)
+		if len(legendoverride) > 0:
+			plt.xticks(np.arange(0,numfolders), legendoverride)
+		else:
+			plt.xticks(np.arange(0,numfolders), Xaxis)
+		#endif
+	#endif
+
+	#Standard image_<string> user modifcations.
+	ImageOptions()
+
+	return()
 #enddef
 
 
@@ -2009,7 +2075,7 @@ if savefig_radialines or savefig_heightlines == True:
 				plt.ylabel(ylabel[i], fontsize=24)
 				ax.tick_params(axis='x', labelsize=18)
 				ax.tick_params(axis='y', labelsize=18)
-				plt.grid(True)
+				if image_plotgrid == True: plt.grid(True)
 
 				plt.savefig(DirRlineouts+'1D_Radial_'+Variablelist[i]+' profiles.png')
 #				plt.show()
@@ -2058,7 +2124,7 @@ if savefig_radialines or savefig_heightlines == True:
 				ax.tick_params(axis='x', labelsize=18)
 				ax.tick_params(axis='y', labelsize=18)
 				plt.legend(Legendlist,loc=1)
-				plt.grid(True)
+				if image_plotgrid == True: plt.grid(True)
 
 				plt.savefig(DirZlineouts+'1D_Height_'+Variablelist[i]+' profiles.png')
 #				plt.show()
@@ -2148,7 +2214,7 @@ if savefig_comparelineouts == True:
 				plt.ylabel(ylabel[k], fontsize=24)
 				ax.tick_params(axis='x', labelsize=18)
 				ax.tick_params(axis='y', labelsize=18)
-				plt.grid(True)
+				if image_plotgrid == True: plt.grid(True)
 				if len(legendoverride) > 0:
 					plt.legend(legendoverride, prop={'size':16}, loc=1)
 				else:
@@ -2222,7 +2288,7 @@ if savefig_comparelineouts == True:
 				plt.ylabel(ylabel[k], fontsize=22)
 				ax.tick_params(axis='x', labelsize=18)
 				ax.tick_params(axis='y', labelsize=18)
-				plt.grid(True)
+				if image_plotgrid == True: plt.grid(True)
 				if len(legendoverride) > 0:
 					plt.legend(legendoverride, prop={'size':16}, loc=1)
 				else:
@@ -2310,7 +2376,7 @@ if savefig_multiprofiles == True:
 					ax.tick_params(axis='y', labelsize=18)
 					plt.xlabel('Axial Distance Z [cm]', fontsize=22)
 					plt.ylabel(ylabel[i], fontsize=22)
-					plt.grid(True)
+					if image_plotgrid == True: plt.grid(True)
 
 					R = 'R='+str(round((heightlineouts[j])*dr[l], 2))+'_'
 					plt.savefig(DirZlineouts+R+Variablelist[i]+'_MultiProfiles.png')
@@ -2368,7 +2434,7 @@ if savefig_multiprofiles == True:
 					ax.tick_params(axis='y', labelsize=18)
 					plt.xlabel('Radial Distance R [cm]', fontsize=22)
 					plt.ylabel(ylabel[i], fontsize=22)
-					plt.grid(True)
+					if image_plotgrid == True: plt.grid(True)
 
 					Z = 'Z='+str(round((radialineouts[j])*dz[l], 2))+'_'
 					plt.savefig(DirRlineouts+Z+Variablelist[i]+'_MultiProfiles.png')
@@ -2445,8 +2511,8 @@ if savefig_trendcomparison == True or print_generaltrends == True:
 	#For each requested comparison variable.
 	for k in range(0,len(Variables)):
 
-		#Create and correct processlist for each folder as required.
-		processlist,Variablelist = VariableEnumerator(Variables,rawdata_2D[0],header_2Dlist[0])
+		#Create processlist for largest output, only compare variables shared between all folders.
+		processlist,Variablelist = VariableEnumerator(Variables,max(rawdata_2D),max(header_2Dlist))
 		processlist,Variablelist = VariableInterpolator(processlist,Variablelist,Comparisonlist)
 
 		#Create Y-axis legend for each variable to be plotted.
@@ -2477,39 +2543,20 @@ if savefig_trendcomparison == True or print_generaltrends == True:
 			#Append the axial position to the legendlist.
 			Legendlist.append( 'R='+str(round((heightlineouts[j]*dr[l]*10), 2))+'mm' )
 
-
-			#Choose how to plot the trends.
-			if print_meshconvergence == True:
-				#Plot results against number of cells in each mesh for convergence studies.
-				numcells = list()
-				for l in range(0,numfolders):
-					numcells.append(Z_mesh[l]*R_mesh[l])
-				#endfor
-				plt.plot(numcells[::-1],MaxTrend[::-1], 'o-', lw=2)
-			else:
-				#Plot results against strings pulled from folder names for batch studies.
-				plt.plot(range(0,numfolders),MaxTrend, 'o-', lw=2)
-				if len(legendoverride) > 0:
-					plt.xticks(np.arange(0,numfolders), legendoverride)
-				else:
-					plt.xticks(np.arange(0,numfolders), Xaxis)
-				#endif
-			#endif
+			#Plot trends for each variable over all folders, applying image options.
+			TrendPlotter(MaxTrend,Xaxis,Normalize=1)
 
 			#Beautify the plot before saving.
 			plt.title('Trend in max '+Variablelist[k]+' with changing '+TrendVariable+' \n'+Dirlist[l][2:-1] ,position=(0.5,1.05))
+			plt.ylabel('Max '+YaxisLegend[k], fontsize=24)
+			ax.tick_params(axis='x', labelsize=18)
+			ax.tick_params(axis='y', labelsize=18)
+			plt.legend(Legendlist, prop={'size':16}, loc=1)
 			if len(xlabeloverride) > 0:
 				plt.xlabel(xlabeloverride[0], fontsize=24)
 			else:
 				plt.xlabel('Varied Property', fontsize=24)
 			#endif
-			if image_logplot == True: ax.set_yscale('log')
-			plt.ylabel('Max '+YaxisLegend[k], fontsize=24)
-			ax.tick_params(axis='x', labelsize=18)
-			ax.tick_params(axis='y', labelsize=18)
-			plt.legend(Legendlist, prop={'size':16}, loc=1)
-			plt.grid(True)
-
 
 		#Save one image per variable with data from all simulations.
 		if len(heightlineouts) > 0:
@@ -2539,39 +2586,20 @@ if savefig_trendcomparison == True or print_generaltrends == True:
 			#Append the axial position to the legendlist.
 			Legendlist.append( 'Z='+str(round((radialineouts[j]*dz[l]*10), 2))+'mm' )
 
-
-			#Choose how to plot the trends.
-			if print_meshconvergence == True:
-				#Plot results against number of cells in each mesh for convergence studies.
-				numcells = list()
-				for l in range(0,numfolders):
-					numcells.append(Z_mesh[l]*R_mesh[l])
-				#endfor
-				plt.plot(numcells[::-1],MaxTrend[::-1], 'o-', lw=2)
-			else:
-				#Plot results against strings pulled from folder names for batch studies.
-				plt.plot(range(0,numfolders),MaxTrend, 'o-', lw=2)
-				if len(legendoverride) > 0:
-					plt.xticks(np.arange(0,numfolders), legendoverride)
-				else:
-					plt.xticks(np.arange(0,numfolders), Xaxis)
-				#endif
-			#endif
+			#Plot trends for each variable over all folders, applying image options.
+			TrendPlotter(MaxTrend,Xaxis,Normalize=1)
 
 			#Beautify the plot before saving.
 			plt.title('Trend in max '+Variablelist[k]+' with changing '+TrendVariable+' \n'+Dirlist[l][2:-1] ,position=(0.5,1.05))
+			plt.ylabel('Max '+YaxisLegend[k], fontsize=24)
+			ax.tick_params(axis='x', labelsize=18)
+			ax.tick_params(axis='y', labelsize=18)
+			plt.legend(Legendlist, prop={'size':16}, loc=1)
 			if len(xlabeloverride) > 0:
 				plt.xlabel(xlabeloverride[0], fontsize=24)
 			else:
 				plt.xlabel('Varied Property', fontsize=24)
 			#endif
-			if image_logplot == True: ax.set_yscale('log')
-			plt.ylabel('Max '+YaxisLegend[k], fontsize=24)
-			ax.tick_params(axis='x', labelsize=18)
-			ax.tick_params(axis='y', labelsize=18)
-			plt.legend(Legendlist, prop={'size':16}, loc=1)
-			plt.grid(True)
-
 
 		#Save one image per variable with data from all simulations.
 		if len(radialineouts) > 0:
@@ -2644,7 +2672,6 @@ if savefig_trendcomparison == True or print_DCbias == True:
 			#endif
 		#endif
 
-
 		#Display DCbias to terminal if requested.
 		if print_DCbias == True:
 			print Dirlist[l]
@@ -2652,36 +2679,19 @@ if savefig_trendcomparison == True or print_DCbias == True:
 		#endif
 	#endfor
 
-	#Normalize to maximum value in each profile if required. ### NORMALIZED TO Vpp ###
-	if image_normalize == True:
-		for i in range(0,len(DCbias)):
-			DCbias[i] = DCbias[i]/520
-		#endfor
-		print ''
-		NormalizedDCbiasVariation = round( max(DCbias)-min(DCbias),5)
-		print 'Normalized Maximum DC Bias Variation:', NormalizedDCbiasVariation*100,'%'
-		print ''
-	#endif
 
-
-	#Plot and beautify the DCbias.
+	#Plot and beautify the DCbias, applying normalization if requested.
 	fig,ax = figure(image_aspectratio,1)
+	TrendPlotter(DCbias,Xaxis,Normalize=520)
 
-	plt.plot(range(0,numfolders),DCbias, 'o-', lw=2)
 	plt.title('Trend in DCbias with changing '+TrendVariable+' \n'+Dirlist[l][2:-1] ,position=(0.5,1.05))
+	plt.ylabel('DC bias [V]', fontsize=24)
+	ax.tick_params(axis='x', labelsize=18)
+	ax.tick_params(axis='y', labelsize=18)
 	if len(xlabeloverride) > 0:
 		plt.xlabel(xlabeloverride[0], fontsize=24)
 	else:
 		plt.xlabel('Varied Property', fontsize=24)
-	#endif
-	plt.ylabel('DC bias [V]', fontsize=24)
-	ax.tick_params(axis='x', labelsize=18)
-	ax.tick_params(axis='y', labelsize=18)
-	plt.grid(True)
-	if len(legendoverride) > 0:
-		plt.xticks(np.arange(0,numfolders), legendoverride)
-	else:
-		plt.xticks(np.arange(0,numfolders), Xaxis)
 	#endif
 
 	plt.savefig(DirTrends+'Powered Electrode DCbias.png')
@@ -2750,7 +2760,6 @@ if savefig_trendcomparison == True or print_totalpower == True:
 			#endfor
 			DepositedPowerList.append(Power)
 
-
 			#Display power to terminal if requested.
 			if print_totalpower == True:
 				print Dirlist[l]
@@ -2758,24 +2767,22 @@ if savefig_trendcomparison == True or print_totalpower == True:
 			#endif
 		#endfor
 
+
 		#Plot and beautify each requested power deposition seperately.
 		fig,ax = figure(image_aspectratio,1)
-		plt.plot(range(0,numfolders),DepositedPowerList[k*numfolders:(k+1)*numfolders], 'o-', lw=2)
+		Power = DepositedPowerList[k*numfolders:(k+1)*numfolders]
+		TrendPlotter(Power,Xaxis,Normalize=1)
+
 		plt.title('Power Deposition with changing '+TrendVariable+' \n'+Dirlist[l][2:-1] ,position=(0.5,1.05))
+		plt.ylabel('RF-Power Deposited [W]', fontsize=24)
+		ax.tick_params(axis='x', labelsize=18)
+		ax.tick_params(axis='y', labelsize=18)
 		if len(xlabeloverride) > 0:
 			plt.xlabel(xlabeloverride[0], fontsize=24)
 		else:
 			plt.xlabel('Varied Property', fontsize=24)
 		#endif
-		plt.ylabel('RF-Power Deposited [W]', fontsize=24)
-		ax.tick_params(axis='x', labelsize=18)
-		ax.tick_params(axis='y', labelsize=18)
-		plt.grid(True)
-		if len(legendoverride) > 0:
-			plt.xticks(np.arange(0,numfolders), legendoverride)
-		else:
-			plt.xticks(np.arange(0,numfolders), Xaxis[k*numfolders:(k+1)*numfolders])
-		#endif
+
 		plt.savefig(DirTrends+RequestedPowers[k]+' Deposition Trends.png')
 		plt.close('all')
 	#endfor
@@ -2783,26 +2790,23 @@ if savefig_trendcomparison == True or print_totalpower == True:
 
 	#Plot a comparison of all power depositions requested.
 	fig,ax = figure(image_aspectratio,1)
-
 	for k in range(0,len(RequestedPowers)):
-		plt.plot(range(0,numfolders),DepositedPowerList[k*numfolders:(k+1)*numfolders], 'o-', lw=2)
+		Power = DepositedPowerList[k*numfolders:(k+1)*numfolders]
+		TrendPlotter(Power,Xaxis,Normalize=1)
 	#endfor
+
 	plt.title('Power Deposition with changing '+TrendVariable+' \n'+Dirlist[l][2:-1] ,position=(0.5,1.05))
+	plt.ylabel('Power Deposited [W]', fontsize=24)
+	plt.legend(RequestedPowers)
+	ax.tick_params(axis='x', labelsize=18)
+	ax.tick_params(axis='y', labelsize=18)
 	if len(xlabeloverride) > 0:
 		plt.xlabel(xlabeloverride[0], fontsize=24)
 	else:
 		plt.xlabel('Varied Property', fontsize=24)
 	#endif
-	plt.ylabel('Power Deposited [W]', fontsize=24)
-	plt.legend(RequestedPowers)
-	ax.tick_params(axis='x', labelsize=18)
-	ax.tick_params(axis='y', labelsize=18)
-	plt.grid(True)
-	if len(legendoverride) > 0:
-		plt.xticks(np.arange(0,numfolders), legendoverride)
-	else:
-		plt.xticks(np.arange(0,numfolders), Xaxis[k*numfolders:(k+1)*numfolders])
-	#endif
+
+
 	plt.savefig(DirTrends+'Power Deposition Comparison.png')
 	plt.close('all')
 #endif
@@ -2835,7 +2839,6 @@ if savefig_trendcomparison == True or print_thrust == True:
 		Xaxis.append( FolderNameTrimmer(Dirlist[l]) )
 
 		#Extract radial density, velocity and pressure profiles across the discharge plane.
-		AxialLine = 80
 		AbortDiagnostic = False
 		try:
 			Density = PlotRadialProfile(Data[l],processlist[0],Variablelist[0],AxialLine,R_mesh[l],Isymlist[l])
@@ -2923,26 +2926,25 @@ if savefig_trendcomparison == True or print_thrust == True:
 
 	#Plot and Beautify the thrust.
 	fig,ax = figure(image_aspectratio,1)
+	TrendPlotter(Thrustlist,Xaxis,Normalize=1)
 
-	plt.plot(range(0,numfolders),Thrustlist, 'o-', lw=2)
 	plt.title('Thrust with changing '+TrendVariable+' \n'+Dirlist[l][2:-1] ,position=(0.5,1.05))
+	plt.ylabel('Thrust [mN]', fontsize=24)
+	ax.tick_params(axis='x', labelsize=18)
+	ax.tick_params(axis='y', labelsize=18)
 	if len(xlabeloverride) > 0:
 		plt.xlabel(xlabeloverride[0], fontsize=24)
 	else:
 		plt.xlabel('Varied Property', fontsize=24)
 	#endif
-	plt.ylabel('Thrust [mN]', fontsize=24)
-	ax.tick_params(axis='x', labelsize=18)
-	ax.tick_params(axis='y', labelsize=18)
-	plt.grid(True)
-	if len(legendoverride) > 0:
-		plt.xticks(np.arange(0,numfolders), legendoverride)
-	else:
-		plt.xticks(np.arange(0,numfolders), Xaxis)
-	#endif
 
 	plt.savefig(DirTrends+'Thrust Trends.png')
 	plt.close('all')
+
+
+	#=====#=====#
+	#=====#=====#
+
 
 	if True == False:
 		try:
@@ -2952,7 +2954,8 @@ if savefig_trendcomparison == True or print_thrust == True:
 			#endfor
 
 			fig,ax = figure(image_aspectratio,1)
-			plt.plot(range(0,numfolders),ThrustEfficiency, 'o-', lw=2)
+			TrendPlottingOptions1D(ThrustEfficiency,Xaxis,Normalize=1)
+
 			plt.xlabel('Varied Property', fontsize=24)
 			plt.ylabel('Thrust Efficiency [N/kW]', fontsize=24)
 			ax.tick_params(axis='x', labelsize=18)
@@ -3051,23 +3054,18 @@ if savefig_trendcomparison == True or print_KnudsenNumber == True:
 
 	#Plot a comparison of all average Knudsen numbers.
 	fig,ax = figure(image_aspectratio,1)
+	TrendPlotter(KnudsenAverage,Xaxis,Normalize=1)
 
-	plt.plot(range(0,numfolders),KnudsenAverage, 'o-', lw=2)
 	plt.title('Average Knudsen Number with Changing '+TrendVariable+' \n'+Dirlist[l][2:-1] ,position=(0.5,1.05))
+	plt.ylabel('Average Knudsen Number', fontsize=24)
+	ax.tick_params(axis='x', labelsize=18)
+	ax.tick_params(axis='y', labelsize=18)
 	if len(xlabeloverride) > 0:
 		plt.xlabel(xlabeloverride[0], fontsize=24)
 	else:
 		plt.xlabel('Varied Property', fontsize=24)
 	#endif
-	plt.ylabel('Average Knudsen Number', fontsize=24)
-	ax.tick_params(axis='x', labelsize=18)
-	ax.tick_params(axis='y', labelsize=18)
-	plt.grid(True)
-	if len(legendoverride) > 0:
-		plt.xticks(np.arange(0,numfolders), legendoverride)
-	else:
-		plt.xticks(np.arange(0,numfolders), Xaxis)
-	#endif
+
 	plt.savefig(DirTrends+'KnudsenNumber Comparison.png')
 	plt.close('all')
 
