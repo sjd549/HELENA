@@ -46,17 +46,20 @@ ierr = 0				#OldDebugMode
 Switchboard = {}
 
 #Tweaks and fixes for 'volitile' diagnostics.
-AxialLine = 80				#Z-axis line for thrust calculation.
+AxialLine = 80						#Z-axis line for thrust calculation.
 Manualbiasaxis = 'Radial'			#'Axial' or 'Radial'. (empty '' for auto)
 
 #Activates various debug outputs.
 DebugMode = False
 
+#List of recognised atomic sets, add new sets as required.
+ArgonReduced = ['AR','AR+','AR*']
+Oxygen = ['O','O+','O-','O*','O2','O2+','O2*']
+AtomicSet = ['E']+ArgonReduced+Oxygen
 
-
-
-
-
+#Commonly used variable sets.
+# ['AR','AR+','E','TE','P-POT','TG-AVE','PRESSURE','EF-TOT','POW-RF','POW-RF-E','S-AR+','SEB-AR+', 'VR-NEUTRAL','VZ-NEUTRAL','VR-ION+','VZ-ION+']
+# ['O2','O2+','O','O+','O-','E','TE','P-POT','TG-AVE','PRESSURE','EF-TOT','POW-RF','POW-RF-E','VR-NEUTRAL','VZ-NEUTRAL','VR-ION+','VZ-ION+','VR-ION-','VZ-ION-','FR-O-','FZ-O-']
 
 
 
@@ -71,19 +74,19 @@ IterVariables = ['AR+','E','PPOT','TE','TG-AVE']	#Requested Movie_icp (iteration
 PhaseVariables = ['AR+','E','PPOT','TE','TG-AVE']	#Requested Movie1 (phase) Variables.
 electrodeloc = [0,0] 						#Centre Cell of powered electrode [R,Z]. (T,B,L,R)
 phasecycles = 1								#Number of phase cycles to be plotted.
-#YPR [30,47] #SPR [0,107]
+#YPR [30,47] #SPR [0,107] #MSHC [0,12]
 
 #Requested TECPLOT Variables
-Variables = ['AR','AR+','E','TE','P-POT','TG-AVE','PRESSURE','EF-TOT','POW-RF','POW-RF-E','S-AR+','SEB-AR+', 'VR-NEUTRAL','VZ-NEUTRAL','VR-ION+','VZ-ION+','JR-NET','JZ-NET']
+Variables = ['AR','AR+','E','TE','P-POT','TG-AVE','PRESSURE','EF-TOT','POW-RF','POW-RF-E','S-AR+','SEB-AR+', 'VR-NEUTRAL','VZ-NEUTRAL','VR-ION+','VZ-ION+']
 MultiVar = ['AR+']						#Additional variables plotted ontop of [Variables] 
 radialineouts = [] 						#Radial 1D-Profiles to be plotted (fixed Z-mesh)
-heightlineouts = [0,97]					#Axial 1D-Profiles to be plotted (fixed R-mesh)
+heightlineouts = [0]					#Axial 1D-Profiles to be plotted (fixed R-mesh)
 #YPR H0;R47 #MSHC H0,20;R20
 
 
 #Requested plotting routines.
 savefig_itermovie = False				#Requires movie_icp.pdt
-savefig_plot2D = True
+savefig_plot2D = False
 
 savefig_radialines = False
 savefig_heightlines = False
@@ -105,13 +108,13 @@ print_thrust = False
 
 
 #Image plotting options.
-image_aspectratio = [14,10]					#[x,y] in inches
-image_plotsymmetry = False
+image_aspectratio = [10,10]					#[x,y] in inches
+image_plotsymmetry = True
 image_contourplot = True
 image_normalize = False						#### NORMALIZES TO EACH PROFILE SEPERATELY ###
 image_plotgrid = False
 image_logplot = False
-image_rotate = False
+image_rotate = True
 
 image_plotmesh = False						#### NOT IMPLIMENTED ####
 image_singlefreqdotted = False 				#### VERY HACKY, LINK THIS TO ICP.NAM ####
@@ -293,6 +296,7 @@ Dir.sort()
 #These indices are then used to cut off file names and save the preamble.
 try:
 	Dirlist.append(Dir[0][:len(Dir[0])-Dir[0][::-1].index('/')])
+	print Dir[0]
 except:
 	print '#===============================#'
 	print 'No data found, aborting analysis.'
@@ -467,10 +471,38 @@ def VariableEnumerator(Variables,Rawdata,Header):
 #enddef
 
 
+#Takes array of strings and compares to variable string.
+#Returns true if any element of stringarray is in variable.
+def IsStringInVariable(variable,stringarray):
+
+#	#Should perform the same task but returns True every time.
+#	OutputType = ['EFLUX-Z','EFLUX-R','FZ-','FR-']
+#	if (String in variable for String in OutputType):
+#		print variable
+#	#endif
+
+	boolian = False
+	#Check if each element of string is inside variable.
+	for i in range(0,len(stringarray)):
+		if stringarray[i] in variable:
+			boolian = True
+		#endif
+	#endfor
+	return(boolian)
+#enddef
+
+
 #Makeshift way of creating units for each legend entry.
 def VariableLabelMaker(variablelist):
+
+	#Define common lists for implicit legend generation.
+	Ionizationlist = ['S-','SEB-']
+	Velocitylist = ['VZ-','VR-']
+	Fluxlist = ['FZ-','FR-','EFLUX-R','EFLUX-Z']
+
 	Variablelegends = list()
 	for i in range(0,len(variablelist)):
+		#Explicit Species Densities.
 		if variablelist[i] == 'E':
 			Variable = 'Electron Density'
 			VariableUnit = '[m$^{-3}$]'
@@ -480,32 +512,36 @@ def VariableLabelMaker(variablelist):
 		elif variablelist[i] == 'AR+':
 			Variable = 'Ar+ Density'
 			VariableUnit = '[m$^{-3}$]'
-		elif variablelist[i] == 'SEB-AR+':
-			Variable = 'Secondary Ar+ Ionization Rate'
-			VariableUnit = '[m$^{-3}$s$^{-1}$]'
-		elif variablelist[i] == 'S-AR+':
-			Variable = 'Bulk Ar+ Ionization Rate'
+
+		#Explicit Ionization Rates.
+		elif variablelist[i] == 'S-E':
+			Variable = 'Bulk Electron Excitation'
 			VariableUnit = '[m$^{-3}$s$^{-1}$]'
 		elif variablelist[i] == 'SEB-E':
 			Variable = 'Secondary Electron Excitation'
 			VariableUnit = '[m$^{-3}$s$^{-1}$]'
-		elif variablelist[i] == 'S-E':
-			Variable = 'Bulk Electron Excitation'
+		elif variablelist[i] == 'S-AR+':
+			Variable = 'Bulk Ar+ Ionization Rate'
+			VariableUnit = '[m$^{-3}$s$^{-1}$]'
+		elif variablelist[i] == 'SEB-AR+':
+			Variable = 'Secondary Ar+ Ionization Rate'
 			VariableUnit = '[m$^{-3}$s$^{-1}$]'
 		
+		#Explicit Species Temperatures.
 		elif variablelist[i] == 'TE':
 			Variable = 'Electron Temperature'
 			VariableUnit = '[eV]'
+		elif variablelist[i] == 'TG-AVE':
+			Variable = 'Neutral Gas Temperature'
+			VariableUnit = '[K]'
 		elif variablelist[i] == 'T-AR':
 			Variable = 'Ar Temperature'
 			VariableUnit = '[K]'
 		elif variablelist[i] == 'T-AR+':
 			Variable = 'Ar+ Temperature'
 			VariableUnit = '[K]'
-		elif variablelist[i] == 'TG-AVE':
-			Variable = 'Neutral Gas Temperature'
-			VariableUnit = '[K]'
 
+		#Explicit Species Velocities and Resulting Pressure.
 		elif variablelist[i] == 'PRESSURE':
 			Variable = 'Pressure'
 			VariableUnit = '[Torr]'
@@ -521,7 +557,34 @@ def VariableLabelMaker(variablelist):
 		elif variablelist[i] == 'VR-ION+':
 			Variable = '+Ion Radial Velocity'
 			VariableUnit = '[kms$^{-1}$]'
+		elif variablelist[i] == 'VZ-ION-':
+			Variable = '-Ion Axial Velocity'
+			VariableUnit = '[kms$^{-1}$]'
+		elif variablelist[i] == 'VR-ION-':
+			Variable = '-Ion Radial Velocity'
+			VariableUnit = '[kms$^{-1}$]'
+
+		#Explicit Species Fluxes.
+		elif variablelist[i] == 'EFLUX-Z':
+			Variable = 'Electron Axial Flux'
+			VariableUnit = '[m$^{-2}$ s$^{-1}$]'
+		elif variablelist[i] == 'EFLUX-R':
+			Variable = 'Electron Radial Flux'
+			VariableUnit = '[m$^{-2}$ s$^{-1}$]'
+		elif variablelist[i] == 'FZ-AR+':
+			Variable = 'Ar+ Axial Flux'
+			VariableUnit = '[m$^{-2}$ s$^{-1}$]'
+		elif variablelist[i] == 'FR-AR+':
+			Variable = 'Ar+ Radial Flux'
+			VariableUnit = '[m$^{-2}$ s$^{-1}$]'
+		elif variablelist[i] == 'FZ-AR':
+			Variable = 'Ar Axial Flux'
+			VariableUnit = '[m$^{-2}$ s$^{-1}$]'
+		elif variablelist[i] == 'FR-AR':
+			Variable = 'Ar Radial Flux'
+			VariableUnit = '[m$^{-2}$ s$^{-1}$]'
 		
+		#Explicit Electrodynamic Properties
 		elif variablelist[i] == 'P-POT':
 			Variable = 'Plasma Potential'
 			VariableUnit = '[V]'
@@ -543,7 +606,6 @@ def VariableLabelMaker(variablelist):
 		elif variablelist[i] == 'EZ':
 			Variable = 'Axial E-Field Strength'
 			VariableUnit = '[Vcm$^{-1}$]'
-
 		elif variablelist[i] == 'JZ-NET':
 			Variable = 'Axial Net Current Density'
 			VariableUnit = '[mA cm$^{-2}$]'
@@ -551,6 +613,7 @@ def VariableLabelMaker(variablelist):
 			Variable = 'Radial Net Current Density'
 			VariableUnit = '[mA cm$^{-2}$]'
 
+		#Explicit Power Deposition.
 		elif variablelist[i] == 'POW-TOT':
 			Variable = 'Total RF-Power Deposited'
 			VariableUnit = '[Wcm$^{-3}$]'
@@ -561,25 +624,25 @@ def VariableLabelMaker(variablelist):
 			Variable = 'RF-Power Deposited by e-'
 			VariableUnit = '[Wcm$^{-3}$]'
 
-		elif variablelist[i] == 'EFLUX-Z':
-			Variable = 'Electron Axial Flux'
-			VariableUnit = '[m$^{-2}$ s$^{-1}$]'
-		elif variablelist[i] == 'EFLUX-R':
-			Variable = 'Electron Radial Flux'
-			VariableUnit = '[m$^{-2}$ s$^{-1}$]'
-		elif variablelist[i] == 'FZ-AR+':
-			Variable = 'Ar+ Axial Flux'
-			VariableUnit = '[m$^{-2}$ s$^{-1}$]'
-		elif variablelist[i] == 'FR-AR+':
-			Variable = 'Ar+ Radial Flux'
-			VariableUnit = '[m$^{-2}$ s$^{-1}$]'
-		elif variablelist[i] == 'FZ-AR':
-			Variable = 'Ar Axial Flux'
-			VariableUnit = '[m$^{-2}$ s$^{-1}$]'
-		elif variablelist[i] == 'FR-AR':
-			Variable = 'Ar Radial Flux'
-			VariableUnit = '[m$^{-2}$ s$^{-1}$]'
 
+		#Implicit Variables.
+		elif IsStringInVariable(variablelist[i],Ionizationlist) == True:
+			Variable = variablelist[i]
+			VariableUnit = '[m$^{-3}$s$^{-1}$]'
+		elif IsStringInVariable(variablelist[i],['T-']) == True:
+			Variable = variablelist[i]
+			VariableUnit = '[K]'
+		elif IsStringInVariable(variablelist[i],Velocitylist) == True:
+			Variable = variablelist[i]
+			VariableUnit = '[kms$^{-1}$]'
+		elif IsStringInVariable(variablelist[i],Fluxlist) == True:
+			Variable = variablelist[i]
+			VariableUnit = '[m$^{-2}$ s$^{-1}$]'
+		elif IsStringInVariable(variablelist[i],['POW-']) == True:
+			Variable = variablelist[i]
+			VariableUnit = '[Wcm$^{-3}$]'
+
+		#Default if no fitting variable found.
 		else:
 			Variable = 'Variable'
 			VariableUnit = '[Unit]'
@@ -593,61 +656,66 @@ def VariableLabelMaker(variablelist):
 #Converts units for input 1D array profiles.
 def VariableUnitConversion(profile,variable):
 
-	#For densities, convert from [cm-3] to [m-3]
-	if variable in ['E','AR','AR+']:
-		for i in range(0,len(profile)):
-			profile[i] = profile[i]*1E6
-		#endfor
-
 	#For ionization rates, convert from [cm-3 s-1] to [m-3 s-1]
-	if variable in ['S-AR+', 'S-E', 'SEB-AR+','SEB-E']:
+	if IsStringInVariable(variable,['S-','SEB-']) == True:
 		for i in range(0,len(profile)):
 			profile[i] = profile[i]*1E6
 		#endfor
+	#endif
 
-	#For velocities, convert from [cms-1] to [ms-1] or [kms-1]. (also make positive axial velocity)
-	if variable in ['VR-NEUTRAL','VZ-NEUTRAL']:
-		for i in range(0,len(profile)):
-			profile[i] = profile[i]*(0.01)
-		#endfor
-	if variable in ['VR-ION+','VZ-ION+']:
-		for i in range(0,len(profile)):
-			profile[i] = profile[i]*(0.01)*(0.001)
-		#endfor
-	if variable in ['VZ-NEUTRAL','VZ-ION+']:
-		for i in range(0,len(profile)):
-			profile[i] = profile[i]*(-1)
-		#endfor
-
-	#For fluxes, convert from [cm-2] to [m-2]. (also make positive axial flux)
-	if variable in ['EFLUX-Z','EFLUX-R','FZ-AR','FR-AR','FZ-AR+','FR-AR+']:
+	#For fluxes, convert from [cm-2] to [m-2]. (also reverse axial flux)
+	if IsStringInVariable(variable,['EFLUX-Z','EFLUX-R','FZ-','FR-']) == True:
 		for i in range(0,len(profile)):
 			profile[i] = profile[i]*1E4
 		#endfor
-	if variable in ['FZ-AR','FZ-AR+','EFLUX-Z']:
-		for i in range(0,len(profile)):
-			profile[i] = profile[i]*(-1)
-		#endfor
-
-	#For E-field strengths, convert from [V cm-1] to [V m-1]. (also make positive axial field)
-	if variable in ['EF-TOT','EAMB-R','EAMB-Z']:
-		for i in range(0,len(profile)):
-			profile[i] = profile[i]#*100
-		#endfor
-	if variable in ['EAMB-Z']:
+	#endif
+	if IsStringInVariable(variable,['EFLUX-Z','FZ-']) == True:
 		for i in range(0,len(profile)):
 			profile[i] = profile[i]*(-1)
 		#endfor
 	#endif
 
+	#For velocities, convert from [cms-1] to [ms-1] or [kms-1]. (also reverse axial velocity)
+	if IsStringInVariable(variable,['VR-NEUTRAL','VZ-NEUTRAL']) == True:
+		for i in range(0,len(profile)):
+			profile[i] = profile[i]*(0.01)
+		#endfor
+	if IsStringInVariable(variable,['VR-ION+','VZ-ION+','VR-ION-','VZ-ION-']) == True:
+		for i in range(0,len(profile)):
+			profile[i] = profile[i]*(0.01)*(0.001)
+		#endfor
+	if IsStringInVariable(variable,['VZ-NEUTRAL','VZ-ION+','VZ-ION-']) == True:
+		for i in range(0,len(profile)):
+			profile[i] = profile[i]*(-1)
+		#endfor
+	#endif
+
+	#For E-field strengths, convert from [V cm-1] to [V m-1]. (also reverse axial field)
+	if IsStringInVariable(variable,['EF-TOT','EAMB-R','EAMB-Z']) == True:
+		for i in range(0,len(profile)):
+			profile[i] = profile[i]#*100	### STILL IN [V cm-1] ###
+		#endfor
+	if IsStringInVariable(variable,['EAMB-Z']) == True:
+		for i in range(0,len(profile)):
+			profile[i] = profile[i]*(-1)	
+		#endfor
+	#endif
+
 	#For Current Densities, convert from [A cm-2] to [mA cm-2]. (also reverse axial current)
-	if variable in ['JZ-NET','JR-NET']:
+	if IsStringInVariable(variable,['JZ-NET','JR-NET']) == True:
 		for i in range(0,len(profile)):
 			profile[i] = profile[i]*1000
 		#endfor
-	if variable in ['JZ-NET']:
+	if IsStringInVariable(variable,['JZ-NET']) == True:
 		for i in range(0,len(profile)):
 			profile[i] = profile[i]*(-1)
+		#endfor
+	#endif
+
+	#For densities, convert from [cm-3] to [m-3]. (AtomicSet is defined in default parameters)
+	if variable in AtomicSet:
+		for i in range(0,len(profile)):
+			profile[i] = profile[i]*1E6
 		#endfor
 	#endif
 
@@ -666,6 +734,7 @@ def FolderNameTrimmer(Dirlist):
 	#endtry
 	return(FinalItem)
 #enddef
+
 
 #Creates a new folder if one does not already exist, returns new directory.
 def CreateNewFolder(Dir,string):
