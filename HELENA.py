@@ -65,6 +65,14 @@ AtomicSet = ['E']+ArgonReduced+Oxygen
 
 
 
+
+
+
+
+
+
+
+
 #====================================================================#
 					#SWITCHBOARD AND DIAGNOSTICS#
 #====================================================================#
@@ -86,7 +94,7 @@ heightlineouts = [0]					#Axial 1D-Profiles to be plotted (fixed R-mesh)
 
 #Requested plotting routines.
 savefig_itermovie = False				#Requires movie_icp.pdt
-savefig_plot2D = False
+savefig_plot2D = True
 
 savefig_radialines = False
 savefig_heightlines = False
@@ -109,12 +117,12 @@ print_thrust = False
 
 #Image plotting options.
 image_aspectratio = [10,10]					#[x,y] in inches
-image_plotsymmetry = True
+image_plotsymmetry = False
 image_contourplot = True
 image_normalize = False						#### NORMALIZES TO EACH PROFILE SEPERATELY ###
 image_plotgrid = False
 image_logplot = False
-image_rotate = True
+image_rotate = False
 
 image_plotmesh = False						#### NOT IMPLIMENTED ####
 image_singlefreqdotted = False 				#### VERY HACKY, LINK THIS TO ICP.NAM ####
@@ -1163,8 +1171,8 @@ def VariableInterpolator(processlist,Variablelist,Comparisonlist):
 	#Identify elements in each variablelist which are not in comparison list.
 	interpolation = list()
 	for i in range(0,numfolders):
-		Variablelist = VariableEnumerator(Variables,rawdata_2D[i],header_2Dlist[i])[1]
-		inter = set(Comparisonlist).symmetric_difference(Variablelist)
+		variablelist = VariableEnumerator(Variables,rawdata_2D[i],header_2Dlist[i])[1]
+		inter = set(Comparisonlist).symmetric_difference(variablelist)
 		inter = list(inter)
 		#Collect list of all variables not present in all folders.
 		for i in range(0,len(inter)):
