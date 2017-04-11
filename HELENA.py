@@ -38,19 +38,21 @@ from pylab import *
 #====================================================================#
 
 #Define Misc parameters, Do Not Change Unless Required.
+
+#Enviroment variables, (fudge factors).
 numfolders = 1			#Fudge
 Magmesh = 1				#initmesh.exe
 ierr = 0				#OldDebugMode
+
+#Activates various debug outputs.
+DebugMode = False
 
 #Create switchboard dictionary
 Switchboard = {}
 
 #Tweaks and fixes for 'volitile' diagnostics.
 AxialLine = 80						#Z-axis line for thrust calculation.
-Manualbiasaxis = 'Radial'			#'Axial' or 'Radial'. (empty '' for auto)
-
-#Activates various debug outputs.
-DebugMode = False
+Manualbiasaxis = ''					#'Axial' or 'Radial'. (empty '' for auto)
 
 #List of recognised atomic sets, add new sets as required.
 ArgonReduced = ['AR','AR+','AR*']
@@ -86,14 +88,14 @@ phasecycles = 1								#Number of phase cycles to be plotted.
 
 #Requested TECPLOT Variables
 Variables = ['AR','AR+','E','TE','P-POT','TG-AVE','PRESSURE','EF-TOT','POW-RF','POW-RF-E','S-AR+','SEB-AR+', 'VR-NEUTRAL','VZ-NEUTRAL','VR-ION+','VZ-ION+']
-MultiVar = ['AR+']						#Additional variables plotted ontop of [Variables] 
+MultiVar = ['E']						#Additional variables plotted ontop of [Variables] 
 radialineouts = [] 						#Radial 1D-Profiles to be plotted (fixed Z-mesh)
 heightlineouts = [0]					#Axial 1D-Profiles to be plotted (fixed R-mesh)
 #YPR H0;R47 #MSHC H0,20;R20
 
 
 #Requested plotting routines.
-savefig_itermovie = False				#Requires movie_icp.pdt
+savefig_itermovie = False					#Requires movie_icp.pdt
 savefig_plot2D = True
 
 savefig_radialines = False
@@ -117,12 +119,12 @@ print_thrust = False
 
 #Image plotting options.
 image_aspectratio = [10,10]					#[x,y] in inches
-image_plotsymmetry = False
+image_plotsymmetry = True
 image_contourplot = True
 image_normalize = False						#### NORMALIZES TO EACH PROFILE SEPERATELY ###
 image_plotgrid = False
 image_logplot = False
-image_rotate = False
+image_rotate = True
 
 image_plotmesh = False						#### NOT IMPLIMENTED ####
 image_singlefreqdotted = False 				#### VERY HACKY, LINK THIS TO ICP.NAM ####
@@ -1277,6 +1279,45 @@ def ImageOptions():
 
 
 
+#Takes 1D or 2D array and returns array normalized to maximum value.
+def Normalize(profile):
+
+	#determine dimensionality of profile and select normaliztion method.
+	if isinstance(profile[0], (list, np.ndarray, np.generic) ) == True:
+
+		#Normalize 2D array to local maximum.
+		FlatImage = [item for sublist in profile for item in sublist]
+		NormalizedImage,NormFactor = list(),max(FlatImage)
+		for i in range(0,len(profile)): 
+			NormalizedImage.append( [x/NormFactor for x in profile[i]] )
+		#endfor
+		profile = NormalizedImage
+		return(profile)
+	
+	#Lowest dimention is still list.
+	elif isinstance(profile, (list, np.ndarray, np.generic) ) == True:
+
+		#Fix for division by zero.
+		if max(profile) != 0: normalize = max(profile)
+		else: normalize = 1
+		#endif
+
+		#Normalize 1D array to local maximum.
+		for i in range(0,len(profile)):
+			profile[i] = profile[i]/normalize
+		#endfor
+	#endif
+
+	return(profile)
+#enddef
+
+
+
+#=========================#
+#=========================#
+
+
+
 #Create figure and plot a 2D image with associated image plotting requirements.
 #Returns plotted image, axes and figure.
 def ImagePlotter(Image,extent,aspectratio):
@@ -1286,12 +1327,7 @@ def ImagePlotter(Image,extent,aspectratio):
 	if image_logplot == True: 
 		Image = np.log(Image)
 	elif image_normalize == True:
-		FlatImage = [item for sublist in Image for item in sublist]
-		NormalizedImage,NormFactor = list(),max(FlatImage)
-		for i in range(0,len(Image)): 
-			NormalizedImage.append( [x/NormFactor for x in Image[i]] )
-		#endfor
-		Image = NormalizedImage
+		Image = Normalize(Image)
 	#endif
 
 	#Plot image with or without contour plots, allowing for contour failures.
@@ -2142,7 +2178,17 @@ if savefig_radialines or savefig_heightlines == True:
 
 					#Plot all requested radial lines on single image per variable.
 					Rlineout = PlotRadialProfile(Data[l],processlist[i],Variablelist[i],radialineouts[j],R_mesh[l],Isymlist[l])
-					plt.plot(Raxis,Rlineout,lw=2)
+
+					#Plot lines for each variable at each requested slice.
+					if image_logplot == True:
+						plt.plot(Raxis,np.log(Rlineout), lw=2)
+						#ax.set_yscale('log')
+					elif image_normalize == True: 
+						Rlineout = Normalize(Rlineout)
+						plt.plot(Raxis,Rlineout, lw=2)
+					else:
+						plt.plot(Raxis,Rlineout, lw=2)
+					#endif
 				#endfor
 
 				#Save lines in previously created folder.
@@ -2178,12 +2224,16 @@ if savefig_radialines or savefig_heightlines == True:
 					
 					#Plot all requested radial lines on single image per variable.
 					Zlineout = PlotAxialProfile(Data[l],processlist[i],Variablelist[i],heightlineouts[j],R_mesh[l],Z_mesh[l],Isymlist[l])
+
 					#Plot lines for each variable at each requested slice.
 					if image_logplot == True:
-						plt.plot(Zaxis[0:len(Zlineout)],np.log(Zlineout[::-1]),lw=2)
-						ax.set_yscale('log')
+						plt.plot(Zaxis[0:len(Zlineout)],np.log(Zlineout[::-1]), lw=2)
+						#ax.set_yscale('log')
+					elif image_normalize == True: 
+						Zlineout = Normalize(Zlineout)
+						plt.plot(Zaxis[0:len(Zlineout)],Zlineout[::-1], lw=2)
 					else:
-						plt.plot(Zaxis[0:len(Zlineout)],Zlineout[::-1],lw=2)
+						plt.plot(Zaxis[0:len(Zlineout)],Zlineout[::-1], lw=2)
 					#endif
 
 					#Perform SI conversion and save to legend.
@@ -2280,7 +2330,10 @@ if savefig_comparelineouts == True:
 				#Plot radial profile and allow for log y-axis if requested.
 				if image_logplot == True:
 					plt.plot(Raxis,np.log(Rlineout), lw=2, ls=Linestyle)
-					ax.set_yscale('log')
+					#ax.set_yscale('log')
+				elif image_normalize == True: 
+					Rlineout = Normalize(Rlineout)
+					plt.plot(Raxis,Rlineout, lw=2, ls=Linestyle)
 				else:
 					plt.plot(Raxis,Rlineout, lw=2, ls=Linestyle)
 				#endif
@@ -2351,10 +2404,13 @@ if savefig_comparelineouts == True:
 					Linestyle = '-'
 				#endif
 
-				#Plot axial profile and allow for log y-axis if requested. ###IN REVERSE FOR PR###
+				#Plot axial profile and allow for log y-axis if requested.
 				if image_logplot == True:
 					plt.plot(Zaxis[0:len(Zlineout)],np.log(Zlineout[::-1]), lw=2, ls=Linestyle)
-					ax.set_yscale('log')
+					#ax.set_yscale('log')
+				elif image_normalize == True: 
+					Zlineout = Normalize(Zlineout)
+					plt.plot(Raxis[0:len(Zlineout)],Zlineout[::-1], lw=2, ls=Linestyle)
 				else:
 					plt.plot(Zaxis[0:len(Zlineout)],Zlineout[::-1], lw=2, ls=Linestyle)
 				#endif
@@ -2433,6 +2489,7 @@ if savefig_multiprofiles == True:
 
 					#Plot the initial variable in processlist first.
 					Zlineout = PlotAxialProfile(Data[l],processlist[i],Variablelist[i],heightlineouts[j],R_mesh[l],Z_mesh[l],Isymlist[l])
+					if image_normalize == True: Zlineout = Normalize(Zlineout)
 					plt.plot(Zaxis[0:len(Zlineout)],Zlineout[::-1], lw=2)
 
 					#Plot all of the requested comparison variables for this plot.
@@ -2440,7 +2497,15 @@ if savefig_multiprofiles == True:
 						
 						#Plot profile for multiplot variables in compareprocesslist.
 						Zlineout = PlotAxialProfile(Data[l],multiprocesslist[m],multiVariablelist[m],heightlineouts[j],R_mesh[l],Z_mesh[l],Isymlist[l])
-						plt.plot(Zaxis,Zlineout[::-1], lw=2)
+						if image_logplot == True:
+							plt.plot(Zaxis,np.log(Zlineout), lw=2)
+							#ax.set_yscale('log')
+						elif image_normalize == True: 
+							Zlineout = Normalize(Zlineout)
+							plt.plot(Zaxis,Zlineout[::-1], lw=2)
+						else:
+							plt.plot(Zaxis,Zlineout[::-1], lw=2)
+						#endif
 				
 						#Update legendlist with each variable compared.
 						legendlist.append(VariableLabelMaker(multiVariablelist)[m])
@@ -2491,6 +2556,7 @@ if savefig_multiprofiles == True:
 
 					#Plot profile for initial variable in processlist.
 					Rlineout = PlotRadialProfile(Data[l],processlist[i],Variablelist[i],radialineouts[j],R_mesh[l],Isymlist[l])
+					if image_normalize == True: Rlineout = Normalize(Rlineout)
 					plt.plot(Raxis,Rlineout,lw=2)
 						
 					#Plot all of the requested comparison variables for this plot.
@@ -2498,7 +2564,15 @@ if savefig_multiprofiles == True:
 
 						#Plot profile for multiplot variables in compareprocesslist.
 						Rlineout = PlotRadialProfile(Data[l],multiprocesslist[m],multiVariablelist[m],radialineouts[j],R_mesh[l],Isymlist[l])
-						plt.plot(Raxis,Rlineout,lw=2)
+						if image_logplot == True:
+							plt.plot(Raxis,np.log(Rlineout), lw=2)
+							#ax.set_yscale('log')
+						elif image_normalize == True: 
+							Rlineout = Normalize(Rlineout)
+							plt.plot(Raxis,Rlineout, lw=2)
+						else:
+							plt.plot(Raxis,Rlineout, lw=2)
+						#endif
 
 						#Update legendlist with each variable compared.
 						legendlist.append(VariableLabelMaker(multiVariablelist)[m])
