@@ -33,6 +33,8 @@ from pylab import *
 
 
 
+
+
 #====================================================================#
 				  		#DEFAULT PARAMETERS#
 #====================================================================#
@@ -75,20 +77,24 @@ AtomicSet = ['E']+ArgonReduced+Oxygen
 
 
 
+
+
+
+
 #====================================================================#
 					#SWITCHBOARD AND DIAGNOSTICS#
 #====================================================================#
 
 #Requested movie1/movie_icp Variables.			
 IterVariables = ['AR+','E','PPOT','TE','TG-AVE']	#Requested Movie_icp (iteration) Variables.
-PhaseVariables = ['AR+','E','PPOT','TE','TG-AVE']	#Requested Movie1 (phase) Variables.
-electrodeloc = [0,0] 						#Centre Cell of powered electrode [R,Z]. (T,B,L,R)
+PhaseVariables = ['AR+','E','PPOT','TE','POWALL']	#Requested Movie1 (phase) Variables.
+electrodeloc = [0,0]						#Centre Cell of powered electrode [R,Z]. (T,B,L,R)
 phasecycles = 1								#Number of phase cycles to be plotted.
 #YPR [30,47] #SPR [0,107] #MSHC [0,12]
 
 #Requested TECPLOT Variables
 Variables = ['AR','AR+','E','TE','P-POT','TG-AVE','PRESSURE','EF-TOT','POW-RF','POW-RF-E','S-AR+','SEB-AR+', 'VR-NEUTRAL','VZ-NEUTRAL','VR-ION+','VZ-ION+']
-MultiVar = ['E']						#Additional variables plotted ontop of [Variables] 
+MultiVar = ['S-AR+']					#Additional variables plotted ontop of [Variables] 
 radialineouts = [] 						#Radial 1D-Profiles to be plotted (fixed Z-mesh)
 heightlineouts = [0]					#Axial 1D-Profiles to be plotted (fixed R-mesh)
 #YPR H0;R47 #MSHC H0,20;R20
@@ -105,14 +111,14 @@ savefig_comparelineouts = True
 
 savefig_phaseresolvelines = False			#1D Phase Resolved Images
 savefig_phaseresolve2D = False				#2D Phase Resolved Images
-savefig_sheathdynamics = False				#PROES style images
+savefig_sheathdynamics = False			#PROES style images
 
 #Steady-State diagnostics and terminal outputs. 
 savefig_trendcomparison = True
 print_meshconvergence = False
 print_generaltrends = False
 print_KnudsenNumber = False
-print_totalpower = False
+print_totalpower = True
 print_DCbias = False
 print_thrust = False
 
@@ -236,7 +242,7 @@ print '   |  |__|  | |  |__   |  |     |  |__   |   \|  |   /  ^  \        '
 print '   |   __   | |   __|  |  |     |   __|  |  . `  |  /  /_\  \       '
 print '   |  |  |  | |  |____ |  `----.|  |____ |  |\   | /  _____  \      '
 print '   |__|  |__| |_______||_______||_______||__| \__|/__/     \__\     '
-print '                                                             v0.9.0 '
+print '                                                             v0.9.1 '
 print '--------------------------------------------------------------------' 
 print ''
 print 'The following diagnostics were requested:'
@@ -251,6 +257,8 @@ if True in [savefig_phaseresolvelines,savefig_sheathdynamics]:
 	print'# 1D Phase Resolved Profile Processing'
 if True in [savefig_radialines,savefig_heightlines,savefig_multiprofiles]:
 	print'# 1D Steady-State Profile Processing'
+if True in [print_generaltrends,print_KnudsenNumber,print_totalpower,print_DCbias,print_thrust]:
+	print'# 1D Specific Trend Analysis'
 if savefig_trendcomparison == True: 
 	print'# 1D Steady-State Trend Processing'
 if savefig_comparelineouts == True:
@@ -651,6 +659,9 @@ def VariableLabelMaker(variablelist):
 		elif IsStringInVariable(variablelist[i],['POW-']) == True:
 			Variable = variablelist[i]
 			VariableUnit = '[Wcm$^{-3}$]'
+		elif variablelist[i] in AtomicSet:
+			Variable = variablelist[i]
+			VariableUnit = '[m$^{-3}$]'
 
 		#Default if no fitting variable found.
 		else:
@@ -663,7 +674,9 @@ def VariableLabelMaker(variablelist):
 #enddef
 
 
-#Converts units for input 1D array profiles.
+#Converts units and direction (sign) for input 1D array profiles.
+#Takes profile and variable name, returns profile in required SI unit.
+#Implicitly calculates for common variables, explicitly for densities.
 def VariableUnitConversion(profile,variable):
 
 	#For ionization rates, convert from [cm-3 s-1] to [m-3 s-1]
@@ -1872,8 +1885,7 @@ def DCbiasMagnitude(PPOTlineout):
 if savefig_plot2D == True:
 
 	#Refresh percentage counters.
-	New = 0.0
-	Old = 1.0
+	New, Old = 0.0, 1.0
 
 	for l in range(0,numfolders):
 		#Create new folder to keep output plots.
@@ -2870,7 +2882,7 @@ if savefig_trendcomparison == True or print_totalpower == True:
 
 	#Identify which power densities have been requested.
 	for i in range(0,len(Variables)):
-		if Variables[i] in ['POW-TOT','POW-RF','POW-RF-E']:
+		if Variables[i] in ['POW-ALL','POW-TOT','POW-ICP','POW-RF','POW-RF-E']:
 			RequestedPowers.append(Variables[i])
 		#endif
 	#endfor
@@ -2938,12 +2950,12 @@ if savefig_trendcomparison == True or print_totalpower == True:
 		plt.close('all')
 	#endfor
 
-
 	#Plot a comparison of all power depositions requested.
 	fig,ax = figure(image_aspectratio,1)
 	for k in range(0,len(RequestedPowers)):
 		Power = DepositedPowerList[k*numfolders:(k+1)*numfolders]
 		TrendPlotter(Power,Xaxis,Normalize=1)
+		plt.show()
 	#endfor
 
 	plt.title('Power Deposition with changing '+TrendVariable+' \n'+Dirlist[l][2:-1] ,position=(0.5,1.05))
@@ -3128,100 +3140,101 @@ if savefig_trendcomparison == True or print_thrust == True:
 #====================================================================#
 
 
+if 'AR' in Variables:
+	if savefig_trendcomparison == True or print_KnudsenNumber == True:
 
-if savefig_trendcomparison == True or print_KnudsenNumber == True:
+		#Create Trend folder to keep output plots.
+		TrendVariable = filter(lambda x: x.isalpha(), FolderNameTrimmer(Dirlist[0]))
+		DirTrends = CreateNewFolder(os.getcwd()+'/',TrendVariable+' Trends')
 
-	#Create Trend folder to keep output plots.
-	TrendVariable = filter(lambda x: x.isalpha(), FolderNameTrimmer(Dirlist[0]))
-	DirTrends = CreateNewFolder(os.getcwd()+'/',TrendVariable+' Trends')
+		#Initiate lists required for storing data.
+		KnudsenAverage = list()
+		Xaxis = list()
 
-	#Initiate lists required for storing data.
-	KnudsenAverage = list()
-	Xaxis = list()
+		#For all folders.
+		for l in range(0,numfolders):
 
-	#For all folders.
-	for l in range(0,numfolders):
+			#Using effective radius of argon in this calculation.
+			Dimentionality = 2*(Radius[l]/100)		#meters
+			CrossSection = np.pi*((7.1E-11)**2)		#meters
 
-		#Using effective radius of argon in this calculation.
-		Dimentionality = 2*(Radius[l]/100)		#meters
-		CrossSection = np.pi*((7.1E-11)**2)		#meters
+			#Create extract data for the neutral flux and neutral velocity.
+			NeutAtom = 'AR'
+			processlist,Variablelist = VariableEnumerator([NeutAtom],rawdata_2D[l],header_2Dlist[l])
 
-		#Create extract data for the neutral flux and neutral velocity.
-		processlist,Variablelist = VariableEnumerator(['AR'],rawdata_2D[l],header_2Dlist[l])
+			#Update X-axis with folder information.
+			Xaxis.append( FolderNameTrimmer(Dirlist[l]) )
 
-		#Update X-axis with folder information.
-		Xaxis.append( FolderNameTrimmer(Dirlist[l]) )
+			#Create empty image array based on mesh size and symmetry options.
+			numrows = len(Data[l][0])/R_mesh[l]
+			Knudsen = np.zeros([Z_mesh[l],R_mesh[l]])
 
-		#Create empty image array based on mesh size and symmetry options.
-		numrows = len(Data[l][0])/R_mesh[l]
-		Knudsen = np.zeros([Z_mesh[l],R_mesh[l]])
+			#Produce Knudsen number 2D image using density image.
+			for j in range(0,Z_mesh[l]):
+				for i in range(0,R_mesh[l]):
+					Start = R_mesh[l]*j
+					Row = Z_mesh[l]-1-j
 
-		#Produce Knudsen number 2D image using density image.
-		for j in range(0,Z_mesh[l]):
-			for i in range(0,R_mesh[l]):
-				Start = R_mesh[l]*j
-				Row = Z_mesh[l]-1-j
-
-				LocalDensity = (Data[l][processlist[0]][Start+i])*1E6
-				try:
-					KnudsenNumber = (1/(LocalDensity*CrossSection*Dimentionality))
-				except:
-					KnudsenNumber = 0
-				#endtry
-				Knudsen[Row,i] = KnudsenNumber
+					LocalDensity = (Data[l][processlist[0]][Start+i])*1E6
+					try:
+						KnudsenNumber = (1/(LocalDensity*CrossSection*Dimentionality))
+					except:
+						KnudsenNumber = 0
+					#endtry
+					Knudsen[Row,i] = KnudsenNumber
+				#endfor
 			#endfor
-		#endfor
 				
-		#Create new folder to keep 2D output plots.
-		Dir2Dplots = CreateNewFolder(Dirlist[l],'2Dplots')
+			#Create new folder to keep 2D output plots.
+			Dir2Dplots = CreateNewFolder(Dirlist[l],'2Dplots')
 
-		#Display average Knudsen number to terminal if requested.
-		KnudsenAverage.append( sum(Knudsen)/(len(Knudsen[0])*len(Knudsen)) )
-		if print_KnudsenNumber == True:
-			print Dirlist[l]
-			print 'Average Knudsen Number:', KnudsenAverage[l] 
+			#Display average Knudsen number to terminal if requested.
+			KnudsenAverage.append( sum(Knudsen)/(len(Knudsen[0])*len(Knudsen)) )
+			if print_KnudsenNumber == True:
+				print Dirlist[l]
+				print 'Average Knudsen Number:', KnudsenAverage[l] 
+			#endif
+
+			#Label and save the 2D Plots.
+			fig,ax,im = SymmetryConverter2D(Knudsen,Isymlist[l],R_mesh[l],Z_mesh[l],Radius[l],Height[l])
+			#Image plotting details
+			plt.title('Knudsen Number Image for \n'+Dirlist[l][2:-1],y=1.03)
+			plt.xlabel('Radial Distance R [cm]',fontsize=24)
+			plt.ylabel('Axial Distance Z [cm]',fontsize=24)
+			plt.gca().invert_yaxis()
+			xticks(fontsize=18)
+			yticks(fontsize=18)
+
+			#Add Colourbar (Axis, Label, Bins)
+			Bins = 5
+			cax = Colourbar(ax,'Knudsen Number',Bins)
+
+			#Save Figure
+			plt.savefig(Dir2Dplots+'KnudsenNumber.png')
+	#		plt.show()
+			plt.clf()
+			plt.close('all')
+		#endfor
+
+		#Plot a comparison of all average Knudsen numbers.
+		fig,ax = figure(image_aspectratio,1)
+		TrendPlotter(KnudsenAverage,Xaxis,Normalize=1)
+
+		plt.title('Average Knudsen Number with Changing '+TrendVariable+' \n'+Dirlist[l][2:-1] ,position=(0.5,1.05))
+		plt.ylabel('Average Knudsen Number', fontsize=24)
+		ax.tick_params(axis='x', labelsize=18)
+		ax.tick_params(axis='y', labelsize=18)
+		if len(xlabeloverride) > 0:
+			plt.xlabel(xlabeloverride[0], fontsize=24)
+		else:
+			plt.xlabel('Varied Property', fontsize=24)
 		#endif
 
-		#Label and save the 2D Plots.
-		fig,ax,im = SymmetryConverter2D(Knudsen,Isymlist[l],R_mesh[l],Z_mesh[l],Radius[l],Height[l])
-		#Image plotting details
-		plt.title('Knudsen Number Image for \n'+Dirlist[l][2:-1],y=1.03)
-		plt.xlabel('Radial Distance R [cm]',fontsize=24)
-		plt.ylabel('Axial Distance Z [cm]',fontsize=24)
-		plt.gca().invert_yaxis()
-		xticks(fontsize=18)
-		yticks(fontsize=18)
-
-		#Add Colourbar (Axis, Label, Bins)
-		Bins = 5
-		cax = Colourbar(ax,'Knudsen Number',Bins)
-
-		#Save Figure
-		plt.savefig(Dir2Dplots+'KnudsenNumber.png')
-#		plt.show()
-		plt.clf()
+		plt.savefig(DirTrends+'KnudsenNumber Comparison.png')
 		plt.close('all')
-	#endfor
 
-	#Plot a comparison of all average Knudsen numbers.
-	fig,ax = figure(image_aspectratio,1)
-	TrendPlotter(KnudsenAverage,Xaxis,Normalize=1)
-
-	plt.title('Average Knudsen Number with Changing '+TrendVariable+' \n'+Dirlist[l][2:-1] ,position=(0.5,1.05))
-	plt.ylabel('Average Knudsen Number', fontsize=24)
-	ax.tick_params(axis='x', labelsize=18)
-	ax.tick_params(axis='y', labelsize=18)
-	if len(xlabeloverride) > 0:
-		plt.xlabel(xlabeloverride[0], fontsize=24)
-	else:
-		plt.xlabel('Varied Property', fontsize=24)
 	#endif
-
-	plt.savefig(DirTrends+'KnudsenNumber Comparison.png')
-	plt.close('all')
-
 #endif
-
 
 #===============================#
 
@@ -4572,7 +4585,6 @@ if use_GUI == True:
 
 #=====================================================================#
 #=====================================================================#
-
 
 
 
