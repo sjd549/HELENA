@@ -78,9 +78,6 @@ AtomicSet = ['E']+ArgonReduced+Oxygen
 
 
 
-
-
-
 #====================================================================#
 					#SWITCHBOARD AND DIAGNOSTICS#
 #====================================================================#
@@ -88,7 +85,7 @@ AtomicSet = ['E']+ArgonReduced+Oxygen
 #Requested movie1/movie_icp Variables.			
 IterVariables = ['AR+','E','PPOT','TE','TG-AVE']	#Requested Movie_icp (iteration) Variables.
 PhaseVariables = ['AR+','E','PPOT','TE','POWALL']	#Requested Movie1 (phase) Variables.
-electrodeloc = [0,0]						#Centre Cell of powered electrode [R,Z]. (T,B,L,R)
+electrodeloc = [0,12]						#Centre Cell of powered electrode [R,Z]. (T,B,L,R)
 phasecycles = 1								#Number of phase cycles to be plotted.
 #YPR [30,47] #SPR [0,107] #MSHC [0,12]
 
@@ -102,12 +99,12 @@ heightlineouts = [0]					#Axial 1D-Profiles to be plotted (fixed R-mesh)
 
 #Requested plotting routines.
 savefig_itermovie = False					#Requires movie_icp.pdt
-savefig_plot2D = True
+savefig_plot2D = False
 
 savefig_radialines = False
 savefig_heightlines = False
 savefig_multiprofiles = False
-savefig_comparelineouts = True
+savefig_comparelineouts = False
 
 savefig_phaseresolvelines = False			#1D Phase Resolved Images
 savefig_phaseresolve2D = False				#2D Phase Resolved Images
@@ -118,7 +115,7 @@ savefig_trendcomparison = True
 print_meshconvergence = False
 print_generaltrends = False
 print_KnudsenNumber = False
-print_totalpower = True
+print_totalpower = False
 print_DCbias = False
 print_thrust = False
 
@@ -242,7 +239,7 @@ print '   |  |__|  | |  |__   |  |     |  |__   |   \|  |   /  ^  \        '
 print '   |   __   | |   __|  |  |     |   __|  |  . `  |  /  /_\  \       '
 print '   |  |  |  | |  |____ |  `----.|  |____ |  |\   | /  _____  \      '
 print '   |__|  |__| |_______||_______||_______||__| \__|/__/     \__\     '
-print '                                                             v0.9.1 '
+print '                                                             v0.9.2 '
 print '--------------------------------------------------------------------' 
 print ''
 print 'The following diagnostics were requested:'
@@ -465,6 +462,37 @@ for l in range(0,numfolders):
 #====================================================================#
 				#UNPACKING AND ORGANIZATION OF DATA#
 #====================================================================#
+
+#WriteDataToFile(Image, FolderNameTrimmer(Dirlist[l])+Variablelist[k] )
+#filename = FolderNameTrimmer(Dirlist[l])+Variablelist[k])
+def WriteDataToFile(Data,filename):
+
+	#Determine dimensionality of profile and select normaliztion method.
+	if isinstance(Data[0], (list, np.ndarray, np.generic) ) == True:
+		#Open new textfile and output 2D image data.
+		datafile = open(filename, 'w')
+		for m in range(0,len(Data)):
+			for n in range(0,len(Data[m])):
+				datafile.write(str(Data[m][n]))
+				datafile.write(' ')
+			#endfor
+			datafile.write('\n')
+		#endfor
+		datafile.close()
+	
+	#Lowest dimention is still list.
+	elif isinstance(Data, (list, np.ndarray, np.generic) ) == True:
+		#Open new textfile and output 2D image data.
+		datafile = open(filename, 'w')
+		for n in range(0,len(Data)):
+			datafile.write(str(Data[n]))
+			datafile.write(' ')
+		#endfor
+		datafile.close()
+
+	return()
+#enddef
+
 
 #VariableEnumerator(PhaseVariables,rawdata_phasemovie[l],header_phasemovie[l])
 #Enumerates requested variables and produces a processlist for plotting.
@@ -2864,7 +2892,7 @@ if savefig_trendcomparison == True or print_DCbias == True:
 
 
 #====================================================================#
-				#CAPACITIVE POWER DEPOSITED DIAGNOSTIC#
+					#POWER DEPOSITED DIAGNOSTIC#
 #====================================================================#
 
 
@@ -2955,7 +2983,7 @@ if savefig_trendcomparison == True or print_totalpower == True:
 	for k in range(0,len(RequestedPowers)):
 		Power = DepositedPowerList[k*numfolders:(k+1)*numfolders]
 		TrendPlotter(Power,Xaxis,Normalize=1)
-		plt.show()
+#		plt.show()
 	#endfor
 
 	plt.title('Power Deposition with changing '+TrendVariable+' \n'+Dirlist[l][2:-1] ,position=(0.5,1.05))
@@ -3847,418 +3875,6 @@ if savefig_phaseresolvelines == True or savefig_sheathdynamics == True:
 
 
 
-
-
-
-
-
-
-
- ##### OLD SHEATH DYNAMICS PLOTTER, ARCHIVED HERE #####		
-#====================================================================#
-			#SHEATH DYNAMICS AND DC-BIAS CALCULATION#
-#====================================================================#
-
-
-#Plot Phase-Resolved lineouts with electrode voltage and requested variables.
-if savefig_phaseresolvelines == True and True == False:
-
-	#Create fig and reset lists related to DCbias trend plotter.
-	fig, ax = plt.subplots(2, sharex=True, figsize=(9,9))
-	VariedValuelist = list()
-	PPOTtrend = list()
-	
-	#for all folders.
-	for l in range(0,numfolders):
-		
-		#Create folders to keep output plots.
-		DirPhaseResolved = CreateNewFolder(Dirlist[l],'PhaseResolved_profiles/')
-
-		#Update X-axis with folder information.
-		VariedValuelist.append( FolderNameTrimmer(Dirlist[l]) )
-
-		#Create processlist for each folder as required. (Always get PPOT)
-		phaseprocesslist,MovieVariablelist = VariableEnumerator(PhaseVariables,rawdata_phasemovie[l],header_phasemovie[l])
-		PPOT = VariableEnumerator(['PPOT'],rawdata_phasemovie[l],header_phasemovie[l])[0]
-
-		#Subtract 2 from process as variables R&Z are not saved properly in phasedata.
-		for i in range(0,len(phaseprocesslist)): phaseprocesslist[i] -= 2
-		PPOT = PPOT[0]-2
-
-		#Generate a phase axis of units [omega*t/2pi] for plotting.
-		Phaseaxis = list()
-		for i in range(0,phasecycles*len(Moviephaselist[l])):
-			Phaseaxis.append(  (np.pi*(i*2)/180)/(2*np.pi)  )
-		#endfor
-
-		#Find the location of commonly requested points for lineout plotting.
-		LHSUpperEdge = R_mesh[l]*(Z_mesh[l]-1)
-		LHSCenterEdge = R_mesh[l]*((Z_mesh[l]/2)-1)
-		LHSBottomEdge = 0
-
-		UpperGridCentre = (R_mesh[l]*(Z_mesh[l]-1)) + (R_mesh[l]-1)
-		GridCentre = (R_mesh[l]*Z_mesh[l])/2
-		BottomGridCentre = (R_mesh[l]/2)-1
-
-		RHSUpperEdge = (R_mesh[l]*Z_mesh[l])-1
-		RHSCenterEdge = (R_mesh[l]*(Z_mesh[l]/2))-1
-		RHSBottomEdge =  R_mesh[l]-1
-
-		#for all requested variables.
-		for i in range(0,len(phaseprocesslist)):
-
-			#Refresh data arrays for each variable.
-			AppliedElectrodeVoltage = list()
-			ElectrodeBias = list()
-			DC_SelfBias = list()
-			PhaseResolvedData = list()
-			PhaseResolvedData_avg = list()
-
-			#for all recorded phases, find the location of the powered electrode and plasma centre.
-			for j in range(0,len(Moviephaselist[l])):
-
-				#If the user has not specified an electrode location, auto-select one.
-				if electrodeloc == []:
-					#Horizontal IZX=1 Mesh, Central Electrode.
-					if Isymlist[l] == 0 and R_mesh[l] >= Z_mesh[l]:
-						Electrodeloc = UpperGridCentre
-						CentreLoc = GridCentre
-					#Vertical IZX=1 Mesh, RHSCenterEdge electrode.
-					elif Isymlist[l] == 0 and Z_mesh[l] >= R_mesh[l]:
-						Electrodeloc = RHSCenterEdge
-						CentreLoc = GridCentre 
-					#Vertical Isym=1 Mesh, RHSCenterEdge electrode.
-					elif Isymlist[l] == 1 and PhaseMovieData[l][j][PPOT][RHSCenterEdge] != 0:
-						Electrodeloc = RHSCenterEdge
-						CentreLoc = LHSCenterEdge 
-					#Vertical Isym=1 Mesh, Central Electrode.
-					elif Isymlist[l] == 1:
-						Electrodeloc = LHSUpperEdge
-						CentreLoc = LHSCenterEdge 
-					#endif
-				else:
-					ElectrodeBias.append(PhaseMovieData[l][j][PPOT][electrodeloc[0]])
-					Electrodeloc = electrodeloc[0]
-					CentreLoc = GridCentre
-				#endif
-
-				#Obtain profiles through middle of powered electrode for further processing.
-				LineoutCenterLoc = (Z_mesh[l]/2)
-				PhaseResolvedlineout = PlotRadialProfile(PhaseMovieData[l][j],phaseprocesslist[i],MovieVariablelist[i],LineoutCenterLoc,R_mesh[l],Isymlist[l])
-				PPOTlineout = PlotRadialProfile(PhaseMovieData[l][j],PPOT,MovieVariablelist[i],LineoutCenterLoc,R_mesh[l],Isymlist[l])
-
-				#Extract datapoint from centre of plasma and PPOT from lowest bias.	
-				PhaseResolvedData.append(PhaseResolvedlineout[len(PhaseResolvedlineout)/2])
-				ElectrodeBias.append(min(PPOTlineout))
-			#endfor
-		
-			#Calculate self-bias and phase-averaged data for plotting.
-			for j in range(0,len(Moviephaselist[l])):
-				PhaseResolvedData_avg.append(sum(PhaseResolvedData)/len(PhaseResolvedData))
-				DC_SelfBias.append(sum(ElectrodeBias)/len(ElectrodeBias))
-			#endfor
-
-			#Remove the 'kink' at the connection point if multiple AC cycles are used.
-			ElectrodeBias[0] = (ElectrodeBias[0]+ElectrodeBias[-1])/2
-			ElectrodeBias[-1] = (ElectrodeBias[0]+ElectrodeBias[-1])/2
-
-			#Plot multiple AC cycles if requested by user.
-			for j in range(0,(phasecycles-1)*len(ElectrodeBias)):
-				ElectrodeBias.append(ElectrodeBias[j])
-				DC_SelfBias.append(DC_SelfBias[j])
-
-				PhaseResolvedData.append(PhaseResolvedData[j])
-				PhaseResolvedData_avg.append(PhaseResolvedData_avg[j])
-			#endfor
-
-
-			#Plot requested phase resolved variables with electrode voltage.
-			ax[l].plot(Phaseaxis,ElectrodeBias,lw=2)
-			ax[l].plot(Phaseaxis,DC_SelfBias,'k--',lw=2)
-
-			plt.plot(Phaseaxis,PhaseResolvedData, 'b' ,lw=2)
-			plt.plot(Phaseaxis,PhaseResolvedData_avg,'b--',lw=2)
-
-			CurrentVariable = str(VariableLabelMaker(MovieVariablelist)[i])
-			plt.title(Dirlist[l][2:-1]+' Phase Resolved Potentials',position=(0.5,1.05))
-			ax[l].legend([['13.56MHz','DC bias'],['13.56+27.12MHz','DC Bias']][l],loc=1, fontsize=14)
-			plt.xlabel('Phase [$\omega$t/2$\pi$]', fontsize=24)
-			fig.text(0.03, 0.5, 'Potential [V]', ha='center', va='center', rotation='vertical', fontsize=24)
-			ax[l].set_ylim([-800,800])
-			ax[l].tick_params(axis='x', labelsize=18)
-			ax[l].tick_params(axis='y', labelsize=18)
-			ax[l].grid(True)
-#			plt.show()
-		#endfor
-	#endfor
-
-	plt.plot(ElectrodeBias)
-	plt.show()
-
-	plt.savefig(DirPhaseResolved+Dirlist[l][2:-1]+' Phase Resolved '+MovieVariablelist[i]+'.png')
-	plt.close('fig')
-	plt.close('all')
-
-	print'----------------------------------'
-	print'# Phase Resolved Profiles Complete'
-	print'----------------------------------'
-#endif
-		
-#=====================================================================#
-#=====================================================================#
-
-
-
-
-
-##### OLD RAW PHASE RESOLVED IMAGE PLOTTER, ARCHIVED HERE #####
-#====================================================================#
-			#PHASE RESOLVED MOVIES -- PHASE ANGLE BASED#
-#====================================================================#
-
-
-savefig_rawphaseresolve = False
-#Plot 2D images for different saved time periods in movie_icp
-if savefig_rawphaseresolve == True:
-	
-	#Refresh percentage counters.
-	New = 0.0
-	Old = 1.0
-
-	#for all folders being processed.
-	for l in range(0,numfolders):
-
-		#Create global folder to keep output plots.
-		DirPhaseResolved = CreateNewFolder(Dirlist[l],'2DPhase/')
-
-		#Create processlist for each folder as required.
-		phaseprocesslist,MovieVariablelist = VariableEnumerator(PhaseVariables,rawdata_phasemovie[l],header_phasemovie[l])
-		#Skip over the R and Z processes as they are not saved properly in phasedata.
-		for i in range(0,len(phaseprocesslist)):
-			phaseprocesslist[i] = phaseprocesslist[i]-2
-		#endfor
-
-		#for all variables requested by the user.
-		for i in range(0,len(phaseprocesslist)):
-
-			#Create new folder to keep specific plots.
-			DirMovieplots = CreateNewFolder(DirPhaseResolved,MovieVariablelist[i]+'_2DPhaseResolved/')
-
-			#Create empty image array based on mesh size and symmetry options.
-			numrows = len(PhaseMovieData[l][0][0])/R_mesh[l]
-			Image = np.zeros([numrows,R_mesh[l]])
-
-			#Reshape specific part of 1D Data array into 2D image for plotting.
-			for k in range(0,len(Moviephaselist[l])):
-
-				#Extract full 2D image for further processing.
-				Image = ImageExtractor2D(PhaseMovieData[l][k][phaseprocesslist[i]],R_mesh[l],Z_mesh[l],MovieVariablelist[i])
-
-				#Label and save the 2D Plots.
-				fig,ax,im = SymmetryConverter2D(Image,Isymlist[l],R_mesh[l],Z_mesh[l],Radius[l],Height[l])
-				plt.title(Moviephaselist[l][k], y=1.03, fontsize=26)
-				plt.xlabel('Radial Distance R [cm]',fontsize=24)
-				plt.ylabel('Axial Distance Z [cm]',fontsize=24)
-				plt.gca().invert_yaxis()
-				if image_plotsymmetry == True:
-					plt.xticks([round(-Radius[l], 1), 0, round(Radius[l], 1)])
-				elif image_plotsymmetry == False:
-					plt.xticks([0, round(Radius[l], 1)])
-				#endif
-				xticks(fontsize=18)
-				yticks(fontsize=18)
-
-				#Add Colourbar (Axis, Label, Bins)
-				Bins = 5
-				label = VariableLabelMaker(MovieVariablelist)
-				cax = Colourbar(ax,label[i],Bins)
-
-				#Save to seperate files inside simulation folder.
-				num1 = k % 10
-				num2 = k/10 % 10
-				num3 = k/100 % 10
-				savefig(DirMovieplots+MovieVariablelist[i]+'_'+str(num3)+str(num2)+str(num1)+'.png')
-#				plt.show()
-				plt.clf()
-				plt.close('all')
-
-
-				#Percentage Complete Readout.
-				New += 1.0
-				Old += 1.0
-				Total = len(phaseprocesslist)*numfolders*len(Moviephaselist[l])
-				oldpercentage = int( (New/Total)*100.0 )
-				newpercentage = int( (Old/Total)*100.0 )
-				if round(oldpercentage,-1) != round(newpercentage,-1):
-					print int(round(newpercentage,-1)),'%'
-				#endif
-			#endfor
-		#endfor
-	#endfor
-
-	print'---------------------------------------'
-	print'# 2D Phase-Resolved Processing Complete'
-	print'---------------------------------------'
-#endif
-
-#=====================================================================#
-#=====================================================================#
-
-
-
-
-
-
-    #####  LINEOUT COLLECTOR -- OUTDATED AND ARCHIVED HERE  #####
-#=====================================================================#
-#=====================================================================#
-
-#Lineout collector, seems to misalign in some cases, not used anymore but may be useful later.
-#Is positioned at the end of the data read-in section, just before the percentage counter.
-if False == True:
-	for l in range(0,numfolders):
-
-		#Identify when folder has changed for lineout saving routine.
-		DeltaL = 0
-		if l != 0:
-			DeltaL = 1
-		#endif
-
-		#Create a global list of all lineouts for later comparitive plotting
-		#for all variables in folder [l].
-		for i in range(0,len(Data[l])):
-			#for all values in that variable.
-			for j in range(0,len(Data[l][0])):
-
-				#save data from variable to lineout.
-				templineout.append(Data[l][i][j])
-
-				#Identify end of R_mesh length by modular selection.
-				#The i+j != 0 is required to stop overflow of next variable by 1 data.
-				#The DeltaL = 1 is required to identify the end of a folder. 
-				if j % R_mesh[l] == 0.0 and i+j != 0 or DeltaL == 1:
-					#Save lineout to global list, retaining the overflow data.
-					Lineoutlist.append(templineout[0:len(templineout)-1])
-					carryover = templineout[-1]
-					#Refresh templineout with overflow and refresh DeltaL if needed.
-					templineout = list([carryover])
-					DeltaL = 0
-				#endif
-			#endfor
-		#endfor
-	#endfor
-#endif
-
-#=====================================================================#
-#=====================================================================#
-
-
-
-
-
-
-
-
-    #####  QUAZI-EEDF PLOTTER -- OUTDATED AND ARCHIVED HERE  #####
-#====================================================================#
-				  		#QUAZI-EEDF ANALYSIS#
-#====================================================================#
-
-#Outdated and/or non-functioning diagnostics.
-plotEEDF = False							#Requires 'TE', 'E'
-EEDFresolution = 5							#EEDF 'bins' per eV.
-
-#Organize electron population by energy and plot in required bin resolution.
-if plotEEDF == True:
-	
-
-	fig = plt.subplots(figsize=(9,9))
-	for l in range(0,numfolders):
-		
-		#Refresh bin lists between simulation folders.
-		EEDFeVarray = list()
-		EEDFarray = list()
-
-		#Identify electron temperature and density indices.
-		for i in range(0,len(Variablelists[l])):
-			if Variablelists[l][i] == 'E':
-				ne = i
-			elif Variablelists[l][i] == 'TE':
-				Te = i
-			#endif
-		#endfor
-
-		#Calculate the number of temperature 'bins' for given resolution.
-		maxtemp = ceil(max(Data[l][Te]))        
-		EEDFeVarray.append(range(0,int(maxtemp)*EEDFresolution,1))
-		EEDFeVarray = [x/EEDFresolution for x in EEDFeVarray[0]]
-
-		#Create array of correct length to hold electron population at given temp.
-		for i in range(len(EEDFeVarray)):
-			EEDFarray.append(0)
-		#endfor
-
-		#Go over all elements in the electron population and organize into bins.
-		for i in range(0,len(Data[l][ne])):
-			for j in range(0,len(EEDFeVarray)): 
-				if Data[l][Te][i] >= EEDFeVarray[j]:
-					EEDFarray[j] += Data[l][ne][i]/len(Data[l][Te])
-					j = len(EEDFeVarray)
-				#endif		
-			#endfor
-		#endfor
-
-		#Individual Plotting
-		Start = int(floor(EEDFresolution*InitTe+1))
-		if EEDF_Comparison == 0:
-			fig = plt.subplots(figsize=(9,9))
-		#endif
-		plt.plot(EEDFeVarray[Start:],np.log(EEDFarray[Start:]))
-		plt.title('Electron Energy Distribution Function')
-		plt.legend(Dirlist[l][2:-1])
-		plt.ylabel('Log(ne) [cm$^{-3}$]', fontsize=20)
-		plt.xlabel('Te [eV]', fontsize=20)
-		plt.grid(True)
-
-		if EEDF_Comparison == 0:
-			plt.savefig(Dirlist[l][2:-1]+'_EEDF')
-#			plt.show()
-			plt.clf()
-			plt.close('all')
-		#endif
-
-		#Percentage Complete Readout.
-		oldpercentage = int(float(l)/float(numfolders)*100.0)
-		newpercentage = int(float(l+1)/float(numfolders)*100.0)
-		if oldpercentage != newpercentage:
-			print newpercentage,'%'
-		#endif
-	#endfor
-
-	if EEDF_Comparison == 1:
-		plt.legend(Dirlist, loc=1)
-		plt.savefig('EEDF')
-#		plt.show()
-		plt.clf()
-		plt.close('all')
-	#endif
-	
-
-
-	print '-----------------------'
-	print 'EEDF Analysis Complete.'
-	print '-----------------------'
-#endif	
-
-#=====================================================================#
-#=====================================================================#	
-
-
-
-
-
-
-
 	##### ANALYSIS NEEDS MADE INTO A GENERAL FUNCTION. #####
 	##### ATTACH AS SEPERATE 1D/2D TREND (KNUDSEN LIKE) #####
 	##### ALSO MAKE NORMALIZATION OF VZ/VR-NEUTRAL #####
@@ -4282,231 +3898,6 @@ if True == False:
 
 #=====================================================================#
 #=====================================================================#	
-
-
-
-
-
-
-
-
-#HEIGHTLINEOUTS[0] METHOD, DOESN'T ALLOW RADIAL BUT SIMPLE TO UNDERSTAND.
-#====================================================================#
-			#PHASE RESOLVED PROFILES & SHEATH DYNAMICS (PROES)#
-#====================================================================#
-
-if True == False:
-	#Plot Phase-Resolved profiles with electrode voltage and requested variables.
-	if savefig_phaseresolvelines == True or savefig_sheathdynamics == True:
-
-		#Refresh percentage counters.
-		Total = numfolders*len(PhaseVariables)
-		New = 0.0
-		Old = 1.0
-		#Initiate any required lists.
-		VariedValuelist = list()
-
-		#for all folders.
-		for l in range(0,numfolders):
-		
-			#Create folders to keep output plots.
-			DirPhaseResolved = CreateNewFolder(Dirlist[l],'PhaseResolved_profiles/')
-
-			#Update X-axis with folder information.
-			VariedValuelist.append( FolderNameTrimmer(Dirlist[l]) )
-
-			#Create processlist for each folder as required. (Always get PPOT)
-			PhaseProcesslist,PhaseVariablelist = VariableEnumerator(PhaseVariables,rawdata_phasemovie[l],header_phasemovie[l])
-			PPOT = VariableEnumerator(['PPOT'],rawdata_phasemovie[l],header_phasemovie[l])[0]
-
-			#Subtract 2 from process as variables R&Z are not saved properly in phasedata.
-			for i in range(0,len(PhaseProcesslist)): PhaseProcesslist[i] -= 2
-			PPOT = PPOT[0]-2
-
-			#Generate a phase axis of units [omega*t/2pi] for plotting.
-			Phaseaxis = list()
-			for i in range(0,phasecycles*len(Moviephaselist[l])):
-				Phaseaxis.append(  (np.pi*(i*2)/180)/(2*np.pi)  )
-			#endfor
-
-			#Generate SI scale axes for lineout plots.
-			Zaxis = list()
-			for i in range(0,Z_mesh[l]): Zaxis.append(i*dz[l])
-
-
-			#==============#
-
-
-			#for all requested variables.
-			for i in range(0,len(PhaseProcesslist)):
-
-				#Refresh lists keeping variable-specific data.
-				PROES = list()
-				VariableMax = list()
-				VariableMin = list()
-				VoltageWaveform = list()
-
-				#Obtain applied voltage waveform and normalization values seperately.
-				for j in range(0,len(Moviephaselist[l])):
-
-					#Obtain applied voltage waveform.
-					RElectrodeLoc = ElectrodeLoc(electrodeloc)[0]
-					ZElectrodeLoc = ElectrodeLoc(electrodeloc)[1]
-					VoltageWaveform.append( PlotAxialProfile(PhaseMovieData[l][j], PPOT,'PPOT',ZElectrodeLoc,R_mesh[l],Z_mesh[l],Isymlist[l])[RElectrodeLoc])
-
-					#Record local maximum and minimum for each phase.
-					ZlineoutLoc = heightlineouts[0]
-					VariableMax.append( max(PlotAxialProfile(PhaseMovieData[l][j],PhaseProcesslist[i],PhaseVariablelist[i],ZlineoutLoc,R_mesh[l],Z_mesh[l],Isymlist[l])) )
-					VariableMin.append( min(PlotAxialProfile(PhaseMovieData[l][j],PhaseProcesslist[i],PhaseVariablelist[i],ZlineoutLoc,R_mesh[l],Z_mesh[l],Isymlist[l])) )
-				#endfor
-
-				#Find global maximum and minimum for all phases.
-				VariableMax = max(VariableMax)
-				VariableMin = min(VariableMin)
-
-				#Plot the phase-resolved waveform.
-				for m in range(0,(phasecycles-1)*len(VoltageWaveform)): 
-					VoltageWaveform.append(VoltageWaveform[m])
-				#endfor
-				fig, ax = plt.subplots(1, figsize=(10,10))
-				plt.plot(Phaseaxis,VoltageWaveform, lw=2)
-				plt.title('Phase-Resolved Voltage Waveform for '+VariedValuelist[l], y=1.03, fontsize=16)
-				plt.xlabel('Phase [$\omega$t/2$\pi$]', fontsize=24)
-				plt.ylabel('Potential [V]', fontsize=24)
-				ax.tick_params(axis='x', labelsize=18)
-				ax.tick_params(axis='y', labelsize=18)
-
-				plt.savefig(DirPhaseResolved+VariedValuelist[l]+' Waveform.png')
-				plt.close('all')
-
-
-				#==============#
-
-
-				#Create folders to keep output plots for each variable.
-				Dir1DProfiles = CreateNewFolder(DirPhaseResolved,PhaseVariablelist[i]+'_1Dprofiles/')
-
-				#for all recorded phases, plot spatially varying variable and waveform.
-				for j in range(0,len(Moviephaselist[l])):
-
-					#Axial 1D profiles, using first hightlineout as axial location.
-					ZlineoutLoc = heightlineouts[0]	
-					PhaseResolvedZlineout = PlotAxialProfile(PhaseMovieData[l][j],PhaseProcesslist[i],PhaseVariablelist[i],ZlineoutLoc,R_mesh[l],Z_mesh[l],Isymlist[l])
-			
-					#Calculate numbers used for filename ordering.
-					num1,num2,num3 = j % 10, j/10 % 10, j/100 % 10
-					Number = str(num3)+str(num2)+str(num1)
-
-
-					#Create figures and plot the 1D profiles. (ax[0]=variable, ax[1]=waveform)
-					fig, ax = plt.subplots(2, figsize=(10,10))
-					ylabels = VariableLabelMaker(PhaseVariablelist)
-					fig.suptitle( 'Phase-Resolved '+PhaseVariablelist[i]+' for '+VariedValuelist[l]+' @ Z='+str(ZlineoutLoc)+'cm \n'+str(Moviephaselist[l][j]), y=0.97, fontsize=16)
-				
-					ax[0].plot(Zaxis, PhaseResolvedZlineout[::-1], lw=2)
-					ax[0].set_xlabel('Axial Distance Z [cm]', fontsize=24)
-					ax[0].set_ylabel(ylabels[i], fontsize=24)
-					ax[0].tick_params(axis='x', labelsize=18)
-					ax[0].tick_params(axis='y', labelsize=18)
-					ax[0].set_ylim(VariableMin,VariableMax*1.02)
-
-					ax[1].plot(Phaseaxis, VoltageWaveform, lw=2)
-					ax[1].axvline(Phaseaxis[j], color='k', linestyle='--', lw=2)
-					ax[1].set_xlabel('Phase [$\omega$t/2$\pi$]', fontsize=24)
-					ax[1].set_ylabel('Potential [V]', fontsize=24)
-					ax[1].tick_params(axis='x', labelsize=18)
-					ax[1].tick_params(axis='y', labelsize=18)
-					ax[1].set_xlim(0,phasecycles)
-
-					if savefig_phaseresolvelines == True:	
-						fig.tight_layout()
-						plt.subplots_adjust(top=0.90)
-						plt.savefig(Dir1DProfiles+PhaseVariablelist[i]+'_'+Number+'.png')
-					#endif
-					plt.close('all')
-
-					#Collect each profile for stitching into a PROES image if required.
-					if savefig_sheathdynamics == True:
-						PROES.append(PhaseResolvedZlineout)
-					#endif
-				#endfor
-
-
-				#==============#
-
-
-				#plot more detailed PROES sheath-dynamics if requested by user.
-				if savefig_sheathdynamics == True:
-
-					#Increase PROES image by required number of phasecycles.
-					for m in range(1,phasecycles):
-						for n in range(0,len(PROES)):
-							PROES.append(PROES[n])
-						#endfor
-					#endfor
-
-					#Create figure and rotate PROES such that phaseaxis aligns with waveform.
-					fig, ax = plt.subplots(2, figsize=(10,10))
-					PROES = ndimage.rotate(PROES, 90)
-					x1,x2 = Phaseaxis[0],Phaseaxis[-1]
-					y1,y2 = Zaxis[0],Zaxis[-1]
-
-					fig.suptitle( 'Simulated '+PhaseVariablelist[i]+' PROES for '+VariedValuelist[l]+' @ Z='+str(ZlineoutLoc)+'cm', y=0.95, fontsize=18)
-
-					im = ax[0].imshow(PROES,extent=[x1,x2,y1,y2],origin='bottom',aspect='auto')
-					ax[0].set_ylabel('Axial Distance Z [cm]', fontsize=24)
-					ax[0].tick_params(axis='x', labelsize=18)
-					ax[0].tick_params(axis='y', labelsize=18)
-					#Add Colourbar (Axis, Label, Bins, Loc)
-	#				label = VariableLabelMaker(PhaseVariablelist)
-	#				cax = Colourbar(ax[0],label[i],5)
-
-					ax[1].plot(Phaseaxis, VoltageWaveform, lw=2)
-					ax[1].set_xlabel('Phase [$\omega$t/2$\pi$]', fontsize=24)
-					ax[1].set_ylabel('Potential [V]', fontsize=24)
-					ax[1].tick_params(axis='x', labelsize=18)
-					ax[1].tick_params(axis='y', labelsize=18)
-				
-					fig.tight_layout()
-					plt.subplots_adjust(top=0.85)
-					plt.savefig(DirPhaseResolved+VariedValuelist[l]+' '+PhaseVariablelist[i]+' PROES.png')
-					plt.close('all')
-
-					if l == numfolders:
-						print'-------------------------------'
-						print'# PROES Image analysis Complete'
-						print'-------------------------------'
-					#endif
-				#endif
-
-
-				#==============#
-
-
-				#Create .mp4 movie from completed images.
-				Prefix = FolderNameTrimmer(Dirlist[l])
-				Automovie(Dir1DProfiles,Prefix+'_'+PhaseVariablelist[i])
-
-				#Percentage Complete Readout.
-				New += 1.0
-				Old += 1.0
-				oldpercentage = int( (New/Total)*100.0 )
-				newpercentage = int( (Old/Total)*100.0 )
-				if round(oldpercentage,-1) != round(newpercentage,-1):
-					print int(round(oldpercentage, 0)),'%'
-				#endif
-			#endfor
-		#endfor
-
-		print'----------------------------------'
-		print'# Phase Resolved Profiles Complete'
-		print'----------------------------------'
-	#endif
-#endif
-
-#=====================================================================#
-#=====================================================================#
-
 
 
 
@@ -4585,8 +3976,6 @@ if use_GUI == True:
 
 #=====================================================================#
 #=====================================================================#
-
-
 
 
 
