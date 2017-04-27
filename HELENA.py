@@ -91,24 +91,25 @@ phasecycles = 1								#Number of phase cycles to be plotted.
 
 #Requested TECPLOT Variables
 Variables = ['AR','AR+','E','TE','P-POT','TG-AVE','PRESSURE','EF-TOT','POW-RF','POW-RF-E','S-AR+','SEB-AR+', 'VR-NEUTRAL','VZ-NEUTRAL','VR-ION+','VZ-ION+']
-MultiVar = ['S-AR+']					#Additional variables plotted ontop of [Variables] 
-radialineouts = [] 						#Radial 1D-Profiles to be plotted (fixed Z-mesh)
-heightlineouts = [0]					#Axial 1D-Profiles to be plotted (fixed R-mesh)
+MultiVar = []							#Additional variables plotted ontop of [Variables] 
+radialineouts = [20] 					#Radial 1D-Profiles to be plotted (fixed Z-mesh)
+heightlineouts = [0,20]					#Axial 1D-Profiles to be plotted (fixed R-mesh)
+TrendLocation = [] 						#Cell location For Trend Analysis [R,Z], ([] = min/max)
 #YPR H0;R47 #MSHC H0,20;R20
 
 
 #Requested plotting routines.
 savefig_itermovie = False					#Requires movie_icp.pdt
-savefig_plot2D = False
+savefig_plot2D = True
 
 savefig_radialines = False
 savefig_heightlines = False
 savefig_multiprofiles = False
-savefig_comparelineouts = False
+savefig_comparelineouts = True
 
 savefig_phaseresolvelines = False			#1D Phase Resolved Images
 savefig_phaseresolve2D = False				#2D Phase Resolved Images
-savefig_sheathdynamics = False			#PROES style images
+savefig_sheathdynamics = False				#PROES style images
 
 #Steady-State diagnostics and terminal outputs. 
 savefig_trendcomparison = True
@@ -150,8 +151,8 @@ gridoverride = ['NotImplimented']
 #Commonly Used:
 #['$0$','$\\frac{\pi}{6}$','$\\frac{\pi}{3}$','$\\frac{\pi}{2}$','$\\frac{2\pi}{3}$','$\\frac{3\pi}{4}$','$\pi$']
 #'0','30','60','90','120','150','180','210','240','270','300','330'
-#'13.56MHz','27.12MHz','0','30','60','90','120','150','180'
 #'13.56MHz','27.12MHz','40.68MHz','54.24MHz','67.80MHz'
+#'67.80MHz','54.24MHz','40.68MHz','27.12MHz','13.56MHz'
 
 
 
@@ -468,7 +469,7 @@ for l in range(0,numfolders):
 def WriteDataToFile(Data,filename):
 
 	#Determine dimensionality of profile and select normaliztion method.
-	if isinstance(Data[0], (list, np.ndarray, np.generic) ) == True:
+	if isinstance(Data[0], (list, np.ndarray) ) == True:
 		#Open new textfile and output 2D image data.
 		datafile = open(filename, 'w')
 		for m in range(0,len(Data)):
@@ -481,7 +482,7 @@ def WriteDataToFile(Data,filename):
 		datafile.close()
 	
 	#Lowest dimention is still list.
-	elif isinstance(Data, (list, np.ndarray, np.generic) ) == True:
+	elif isinstance(Data, (list, np.ndarray) ) == True:
 		#Open new textfile and output 2D image data.
 		datafile = open(filename, 'w')
 		for n in range(0,len(Data)):
@@ -1702,6 +1703,56 @@ def Automovie(FolderDir,Output):
 
 
 
+#Trend analysis for a given point on a 2D Image.
+#Takes global 'TrendLocation' for safety, process and variable.
+#Returns two arrays: One is the X-axis to plot against
+#Second is the value of variable at location for all simulations.
+def TrendAtGivenLocation(TrendLocation,process,variable):
+
+	#Refresh lists that change per image.
+	R,Z = TrendLocation[0],TrendLocation[1]
+	Xaxis = list()
+	Trend = list()
+
+	#For all simulation folders.
+	for l in range(0,numfolders):
+
+		#Extract image with given process and variable name.
+		Image = ImageExtractor2D(Data[l][process],R_mesh[l],Z_mesh[l],variable)
+
+		#Update X-axis with folder information.
+		Xaxis.append( FolderNameTrimmer(Dirlist[l]) )
+
+		#TREND ANALYSIS - Value at Given Location Comparison.
+		try: Trend.append( Image[Z][R] )
+		except: Trend.append(float('NaN'))
+
+		#Display Min/Max value trends to terminal if requested.
+		if print_generaltrends == True:
+			Location = '('+str(round(R*dr[l],1))+'cm,'+str(round(Z*dz[l],1))+'cm)'
+			print FolderNameTrimmer(Dirlist[l])
+			print str(variable)+' @ '+Location+':', round(Trend[-1], 5) 
+		if print_generaltrends == True and l == numfolders-1:
+			print ''
+		#endif
+	#endfor
+
+	#Normalize to maximum value in each profile if required.
+	if image_normalize == True:
+		Image = Image.flatten()
+		Trend = Trend/max(Image)
+	#endif
+		
+	return(Xaxis,Trend)
+#enddef
+
+
+
+#=========================#
+#=========================#
+
+
+
 #General trend plotting function for use with multiple folders.
 #Takes a lineout location and orientation string as input.
 #And returns the maximum and minimum values For all folders to be analysed.
@@ -1769,6 +1820,7 @@ def MinMaxTrends(lineout,Orientation,process):
 
 #=========================#
 #=========================#
+
 
 
 
@@ -2728,14 +2780,33 @@ if savefig_trendcomparison == True or print_generaltrends == True:
 			#Create folder for axial trends if needed.
 			DirAxialTrends = CreateNewFolder(DirTrends,'Axial Trends')
 
-			#Obtain min/max trend values for requested profile over all folders.
-			Xaxis,MaxTrend,MinTrend = MinMaxTrends(heightlineouts[j],'Axial',k)
-
-			#Append the axial position to the legendlist.
-			Legendlist.append( 'R='+str(round((heightlineouts[j]*dr[l]*10), 2))+'mm' )
+			#Take Trend at Given Location or Default to Min/Max Trends.
+			if len(TrendLocation) == 2:
+				#Append requested position to the legendlist.
+				R,Z = TrendLocation[0],TrendLocation[1]
+				Location = '(R'+str(round(R*dr[l],1))+'cm, Z'+str(round(Z*dz[l],1))+'cm)'
+				Legendlist.append(Location)
+				#Take trend at given location if specified.
+				Xaxis,Trend = TrendAtGivenLocation([R,Z],processlist[k],Variablelist[k])
+				
+			elif len(TrendLocation) == 1:
+				#Append requested position to the legendlist.
+				R,Z = TrendLocation[0],heightlineouts[j]
+				Location = '(R'+str(round(R*dr[l],1))+'cm, Z'+str(round(Z*dz[l],1))+'cm)'
+				Legendlist.append(Location)
+				#Take trend at given location if specified.
+				Xaxis,Trend = TrendAtGivenLocation([R,Z],processlist[k],Variablelist[k])
+				
+			else:
+				#Obtain min/max trend values for requested profile over all folders.
+				Xaxis,MaxTrend,MinTrend = MinMaxTrends(heightlineouts[j],'Axial',k)
+				Trend = MaxTrend
+				#Append the radial position to the legendlist.
+				Legendlist.append( 'R='+str(round((heightlineouts[j]*dr[l]*10), 2))+'mm' )
+			#endif
 
 			#Plot trends for each variable over all folders, applying image options.
-			TrendPlotter(MaxTrend,Xaxis,Normalize=1)
+			TrendPlotter(Trend,Xaxis,Normalize=1)
 
 			#Beautify the plot before saving.
 			plt.title('Trend in max '+Variablelist[k]+' with changing '+TrendVariable+' \n'+Dirlist[l][2:-1] ,position=(0.5,1.05))
@@ -2771,11 +2842,30 @@ if savefig_trendcomparison == True or print_generaltrends == True:
 			#Create folder for axial trends if needed.
 			DirRadialTrends = CreateNewFolder(DirTrends,'Radial Trends')
 
-			#Obtain min/max trend values for requested profile over all folders.
-			Xaxis,MaxTrend,MinTrend = MinMaxTrends(radialineouts[j],'Radial',k)
-
-			#Append the axial position to the legendlist.
-			Legendlist.append( 'Z='+str(round((radialineouts[j]*dz[l]*10), 2))+'mm' )
+			#Take Trend at Given Location or Default to Min/Max Trends.
+			if len(TrendLocation) == 2:
+				#Append requested position to the legendlist.
+				R,Z = TrendLocation[0],TrendLocation[1]
+				Location = '(R'+str(round(R*dr[l],1))+'cm, Z'+str(round(Z*dz[l],1))+'cm)'
+				Legendlist.append(Location)
+				#Take trend at given location if specified.
+				Xaxis,Trend = TrendAtGivenLocation([R,Z],processlist[k],Variablelist[k])
+				
+			elif len(TrendLocation) == 1:
+				#Append requested position to the legendlist.
+				R,Z = radialineouts[j],TrendLocation[0],
+				Location = '(R'+str(round(R*dr[l],1))+'cm, Z'+str(round(Z*dz[l],1))+'cm)'
+				Legendlist.append(Location)
+				#Take trend at given location if specified.
+				Xaxis,Trend = TrendAtGivenLocation([R,Z],processlist[k],Variablelist[k])
+				
+			else:
+				#Obtain min/max trend values for requested profile over all folders.
+				Xaxis,MaxTrend,MinTrend = MinMaxTrends(radialineouts[j],'Radial',k)
+				Trend = MaxTrend
+				#Append the axial position to the legendlist.
+				Legendlist.append( 'Z='+str(round((radialineouts[j]*dz[l]*10), 2))+'mm' )
+			#endif	
 
 			#Plot trends for each variable over all folders, applying image options.
 			TrendPlotter(MaxTrend,Xaxis,Normalize=1)
