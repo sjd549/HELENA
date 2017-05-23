@@ -66,7 +66,8 @@ AtomicSet = ['E']+ArgonReduced+Oxygen
 # ['O2','O2+','O','O+','O-','E','TE','P-POT','TG-AVE','PRESSURE','EF-TOT','POW-RF','POW-RF-E','VR-NEUTRAL','VZ-NEUTRAL','VR-ION+','VZ-ION+','VR-ION-','VZ-ION-','FR-O-','FZ-O-']
 
 
-
+#Paper Trend Locations
+#MSHC dz(5.50/118), dr(2.55/102) height=[24,43], Trend=[19]
 
 
 
@@ -84,16 +85,16 @@ AtomicSet = ['E']+ArgonReduced+Oxygen
 
 #Requested movie1/movie_icp Variables.			
 IterVariables = ['AR+','E','PPOT','TE','TG-AVE']	#Requested Movie_icp (iteration) Variables.
-PhaseVariables = ['AR+','E','PPOT','TE','POWALL']	#Requested Movie1 (phase) Variables.
-electrodeloc = [0,12]						#Centre Cell of powered electrode [R,Z]. (T,B,L,R)
+PhaseVariables = ['S-E','E','PPOT','TE']			#Requested Movie1 (phase) Variables.
+electrodeloc = [0,0]						#Centre Cell of powered electrode [R,Z]. (T,B,L,R)
 phasecycles = 1								#Number of phase cycles to be plotted.
 #YPR [30,47] #SPR [0,107] #MSHC [0,12]
 
 #Requested TECPLOT Variables
 Variables = ['AR','AR+','E','TE','P-POT','TG-AVE','PRESSURE','EF-TOT','POW-RF','POW-RF-E','S-AR+','SEB-AR+', 'VR-NEUTRAL','VZ-NEUTRAL','VR-ION+','VZ-ION+']
 MultiVar = []							#Additional variables plotted ontop of [Variables] 
-radialineouts = [20] 					#Radial 1D-Profiles to be plotted (fixed Z-mesh)
-heightlineouts = [0,20]					#Axial 1D-Profiles to be plotted (fixed R-mesh)
+radialineouts = [] 						#Radial 1D-Profiles to be plotted (fixed Z-mesh)
+heightlineouts = []						#Axial 1D-Profiles to be plotted (fixed R-mesh)
 TrendLocation = [] 						#Cell location For Trend Analysis [R,Z], ([] = min/max)
 #YPR H0;R47 #MSHC H0,20;R20
 
@@ -105,14 +106,14 @@ savefig_plot2D = True
 savefig_radialines = False
 savefig_heightlines = False
 savefig_multiprofiles = False
-savefig_comparelineouts = True
+savefig_comparelineouts = False
 
 savefig_phaseresolvelines = False			#1D Phase Resolved Images
 savefig_phaseresolve2D = False				#2D Phase Resolved Images
 savefig_sheathdynamics = False				#PROES style images
 
 #Steady-State diagnostics and terminal outputs. 
-savefig_trendcomparison = True
+savefig_trendcomparison = False
 print_meshconvergence = False
 print_generaltrends = False
 print_KnudsenNumber = False
@@ -128,7 +129,7 @@ image_contourplot = True
 image_normalize = False						#### NORMALIZES TO EACH PROFILE SEPERATELY ###
 image_plotgrid = False
 image_logplot = False
-image_rotate = True
+image_rotate = False
 
 image_plotmesh = False						#### NOT IMPLIMENTED ####
 image_singlefreqdotted = False 				#### VERY HACKY, LINK THIS TO ICP.NAM ####
@@ -312,7 +313,6 @@ Dir.sort()
 #These indices are then used to cut off file names and save the preamble.
 try:
 	Dirlist.append(Dir[0][:len(Dir[0])-Dir[0][::-1].index('/')])
-	print Dir[0]
 except:
 	print '#===============================#'
 	print 'No data found, aborting analysis.'
@@ -337,12 +337,24 @@ for i in range(0, len(Dir)-1):
 icpnam = filter(lambda x: 'icp.nam' in x, Dir)
 icpout = filter(lambda x: 'icp.out' in x, Dir)
 mesh = filter(lambda x: 'initmesh.out' in x, Dir)
+TEC2D = filter(lambda x: 'TECPLOT2D.PDT' in x, Dir)
 
 #Loop over all folders and retrieve mesh sizes and SI sizes.
 for l in range(0,numfolders):
 
 	#Attempt automated retrieval of mesh sizes.
 	try:
+		#Identify mesh size from TECPLOT2D file.
+		meshdata = open(TEC2D[l]).readlines()
+		for i in range(0,len(meshdata)):
+			if 'ZONE' in meshdata[i]:
+				R_mesh.append( int(meshdata[i].split()[2].strip(',')) )
+				Z_mesh.append( int(meshdata[i].split()[4].strip(',')) )
+			#endif
+		#endfor
+
+	except ValueError:
+		#Identify mesh size from initmesh.out file. (Issues with Q-VT and Magmesh)
 		meshdata = open(mesh[l]).readline()
 		R_mesh.append([int(i) for i in meshdata.split()][1])
 		if Magmesh == 1:
@@ -352,6 +364,7 @@ for l in range(0,numfolders):
 		#endif
 
 	except:
+		#Manual input of mesh sizes.
 		ierr = 1
 		
 		#If the initmesh.out file cannot be found, manual input is required.
@@ -2960,7 +2973,6 @@ if savefig_trendcomparison == True or print_DCbias == True:
 		#endif
 	#endfor
 
-
 	#Plot and beautify the DCbias, applying normalization if requested.
 	fig,ax = figure(image_aspectratio,1)
 	TrendPlotter(DCbias,Xaxis,Normalize=520)
@@ -3751,26 +3763,26 @@ if savefig_phaseresolvelines == True or savefig_sheathdynamics == True:
 			
 
 					#Create figures and plot the 1D profiles. (ax[0]=variable, ax[1]=waveform)
-					fig,ax = figure(image_aspectratio,2)
-					ylabels = VariableLabelMaker(PhaseVariablelist)
-					fig.suptitle( 'Phase-Resolved '+PhaseVariablelist[i]+' for '+VariedValuelist[l]+lineoutstring+str(Moviephaselist[l][j]), y=0.97, fontsize=16)
+					if savefig_phaseresolvelines == True:
+						fig,ax = figure(image_aspectratio,2)
+						ylabels = VariableLabelMaker(PhaseVariablelist)
+						fig.suptitle( 'Phase-Resolved '+PhaseVariablelist[i]+' for '+VariedValuelist[l]+lineoutstring+str(Moviephaselist[l][j]), y=0.97, fontsize=16)
 				
-					ax[0].plot(axis, PhaseResolvedlineout[::-1], lw=2)
-					ax[0].set_xlabel(xlabel, fontsize=24)
-					ax[0].set_ylabel(ylabels[i], fontsize=24)
-					ax[0].tick_params(axis='x', labelsize=18)
-					ax[0].tick_params(axis='y', labelsize=18)
-					ax[0].set_ylim(VariableMin,VariableMax*1.02)
+						ax[0].plot(axis, PhaseResolvedlineout[::-1], lw=2)
+						ax[0].set_xlabel(xlabel, fontsize=24)
+						ax[0].set_ylabel(ylabels[i], fontsize=24)
+						ax[0].tick_params(axis='x', labelsize=18)
+						ax[0].tick_params(axis='y', labelsize=18)
+						ax[0].set_ylim(VariableMin,VariableMax*1.02)
 
-					ax[1].plot(Phaseaxis, VoltageWaveform, lw=2)
-					ax[1].axvline(Phaseaxis[j], color='k', linestyle='--', lw=2)
-					ax[1].set_xlabel('Phase [$\omega$t/2$\pi$]', fontsize=24)
-					ax[1].set_ylabel('Potential [V]', fontsize=24)
-					ax[1].tick_params(axis='x', labelsize=18)
-					ax[1].tick_params(axis='y', labelsize=18)
-					ax[1].set_xlim(0,phasecycles)
-
-					if savefig_phaseresolvelines == True:	
+						ax[1].plot(Phaseaxis, VoltageWaveform, lw=2)
+						ax[1].axvline(Phaseaxis[j], color='k', linestyle='--', lw=2)
+						ax[1].set_xlabel('Phase [$\omega$t/2$\pi$]', fontsize=24)
+						ax[1].set_ylabel('Potential [V]', fontsize=24)
+						ax[1].tick_params(axis='x', labelsize=18)
+						ax[1].tick_params(axis='y', labelsize=18)
+						ax[1].set_xlim(0,phasecycles)
+	
 						#Calculate numbers used for filename ordering.
 						num1,num2,num3 = j % 10, j/10 % 10, j/100 % 10
 						Number = str(num3)+str(num2)+str(num1)
@@ -3778,8 +3790,8 @@ if savefig_phaseresolvelines == True or savefig_sheathdynamics == True:
 						fig.tight_layout()
 						plt.subplots_adjust(top=0.90)
 						plt.savefig(Dir1DProfiles+NameString+'_'+Number+'.png')
+						plt.close('all')
 					#endif
-					plt.close('all')
 
 					#Collect each profile for stitching into a PROES image if required.
 					if savefig_sheathdynamics == True:
@@ -3853,10 +3865,11 @@ if savefig_phaseresolvelines == True or savefig_sheathdynamics == True:
 				# 	  PROES    #
 				#==============#
 
-
-				#Create .mp4 movie from completed images.
-				Prefix = NameString+FolderNameTrimmer(Dirlist[l])
-				Automovie(Dir1DProfiles,Prefix+'_'+PhaseVariablelist[i])
+				if savefig_phaseresolvelines == True:
+					#Create .mp4 movie from completed images.
+					Prefix = NameString+FolderNameTrimmer(Dirlist[l])
+					Automovie(Dir1DProfiles,Prefix+'_'+PhaseVariablelist[i])
+				#endif
 
 				#Percentage Complete Readout.
 				New += 1.0
