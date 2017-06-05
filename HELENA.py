@@ -53,7 +53,7 @@ DebugMode = False
 Switchboard = {}
 
 #Tweaks and fixes for 'volitile' diagnostics.
-AxialLine = 80						#Z-axis line for thrust calculation.
+AxialLine = 80 						#Z-axis line for thrust calculation.  YPR=80
 Manualbiasaxis = ''					#'Axial' or 'Radial'. (empty '' for auto)
 
 #List of recognised atomic sets, add new sets as required.
@@ -84,18 +84,18 @@ AtomicSet = ['E']+ArgonReduced+Oxygen
 #====================================================================#
 
 #Requested movie1/movie_icp Variables.			
-IterVariables = ['AR+','E','PPOT','TE','TG-AVE']	#Requested Movie_icp (iteration) Variables.
-PhaseVariables = ['S-E','E','PPOT','TE']			#Requested Movie1 (phase) Variables.
-electrodeloc = [0,0]						#Centre Cell of powered electrode [R,Z]. (T,B,L,R)
+IterVariables = ['S-E','E','PPOT','TE']		#Requested Movie_icp (iteration) Variables.
+PhaseVariables = []							#Requested Movie1 (phase) Variables.
+electrodeloc = [30,47]						#Centre Cell of powered electrode [R,Z]. (T,B,L,R)
 phasecycles = 1								#Number of phase cycles to be plotted.
 #YPR [30,47] #SPR [0,107] #MSHC [0,12]
 
 #Requested TECPLOT Variables
-Variables = ['AR','AR+','E','TE','P-POT','TG-AVE','PRESSURE','EF-TOT','POW-RF','POW-RF-E','S-AR+','SEB-AR+', 'VR-NEUTRAL','VZ-NEUTRAL','VR-ION+','VZ-ION+']
+Variables = ['AR','AR+','E','TE','P-POT','TG-AVE','PRESSURE','EF-TOT','POW-RF','POW-RF-E','S-AR+','SEB-AR+', 'VR-NEUTRAL','VZ-NEUTRAL','VR-ION+','VZ-ION+','FR-AR+','FZ-AR+','RHO']
 MultiVar = []							#Additional variables plotted ontop of [Variables] 
 radialineouts = [] 						#Radial 1D-Profiles to be plotted (fixed Z-mesh)
-heightlineouts = []						#Axial 1D-Profiles to be plotted (fixed R-mesh)
-TrendLocation = [] 						#Cell location For Trend Analysis [R,Z], ([] = min/max)
+heightlineouts = [0]					#Axial 1D-Profiles to be plotted (fixed R-mesh)
+TrendLocation = [] 					#Cell location For Trend Analysis [R,Z], ([] = min/max)
 #YPR H0;R47 #MSHC H0,20;R20
 
 
@@ -106,14 +106,14 @@ savefig_plot2D = True
 savefig_radialines = False
 savefig_heightlines = False
 savefig_multiprofiles = False
-savefig_comparelineouts = False
+savefig_comparelineouts = True
 
 savefig_phaseresolvelines = False			#1D Phase Resolved Images
 savefig_phaseresolve2D = False				#2D Phase Resolved Images
 savefig_sheathdynamics = False				#PROES style images
 
 #Steady-State diagnostics and terminal outputs. 
-savefig_trendcomparison = False
+savefig_trendcomparison = True
 print_meshconvergence = False
 print_generaltrends = False
 print_KnudsenNumber = False
@@ -129,7 +129,7 @@ image_contourplot = True
 image_normalize = False						#### NORMALIZES TO EACH PROFILE SEPERATELY ###
 image_plotgrid = False
 image_logplot = False
-image_rotate = False
+image_rotate = True
 
 image_plotmesh = False						#### NOT IMPLIMENTED ####
 image_singlefreqdotted = False 				#### VERY HACKY, LINK THIS TO ICP.NAM ####
@@ -154,7 +154,7 @@ gridoverride = ['NotImplimented']
 #'0','30','60','90','120','150','180','210','240','270','300','330'
 #'13.56MHz','27.12MHz','40.68MHz','54.24MHz','67.80MHz'
 #'67.80MHz','54.24MHz','40.68MHz','27.12MHz','13.56MHz'
-
+#'1.0mm','1.5mm','2.0mm','2.5mm','3.0mm'
 
 
 
@@ -348,8 +348,11 @@ for l in range(0,numfolders):
 		meshdata = open(TEC2D[l]).readlines()
 		for i in range(0,len(meshdata)):
 			if 'ZONE' in meshdata[i]:
-				R_mesh.append( int(meshdata[i].split()[2].strip(',')) )
-				Z_mesh.append( int(meshdata[i].split()[4].strip(',')) )
+				#Split zone size at comma, R&Z values are given by "I=,J=" respectively.
+				R = filter(lambda x: x.isdigit(), meshdata[i].split(",")[0])
+				Z = filter(lambda x: x.isdigit(), meshdata[i].split(",")[1])
+				R_mesh.append( int(R) )
+				Z_mesh.append( int(Z) )
 			#endif
 		#endfor
 
@@ -364,19 +367,23 @@ for l in range(0,numfolders):
 		#endif
 
 	except:
-		#Manual input of mesh sizes.
-		ierr = 1
-		
-		#If the initmesh.out file cannot be found, manual input is required.
-		print '#=======================================================#'
-		print 'initmesh.out not found, please manually define variables.'
-		print '#=======================================================#'
-		r_mesh = int(raw_input("Please Define R_mesh: "))
-		z_mesh = int(raw_input("Please Define Z_mesh: "))
-		print ''
+		#If data for current file exists, ask for manual input.
+		if l <= len(TEC2D)-1:
 
-		R_mesh.append(r_mesh)
-		Z_mesh.append(z_mesh)
+			#Manual input of mesh sizes.
+			ierr = 1
+		
+			#If the initmesh.out file cannot be found, manual input is required.
+			print '#========================================================#'
+			print 'Cannot extract mesh, please manually define mesh geometry.'
+			print '#========================================================#'
+			r_mesh = int(raw_input("Please Define R_mesh: "))
+			z_mesh = int(raw_input("Please Define Z_mesh: "))
+			print ''
+
+			R_mesh.append(r_mesh)
+			Z_mesh.append(z_mesh)
+		#endif
 	#endtry
 
 
@@ -651,6 +658,9 @@ def VariableLabelMaker(variablelist):
 		elif variablelist[i] == 'PPOT':
 			Variable = 'Plasma Potential'
 			VariableUnit = '[V]'
+		elif variablelist[i] == 'RHO':
+			Variable = 'Charge Density'
+			VariableUnit = '[C cm$^{-3}$]'
 		elif variablelist[i] == 'EF-TOT':
 			Variable = 'E-Field Strength'
 			VariableUnit = '[Vcm$^{-1}$]'
