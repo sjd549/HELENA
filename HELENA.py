@@ -1,4 +1,4 @@
-#!/usr/bin/env python 
+#!/usr/bin/env python
 
 #################################
 #		Point of Contact		#
@@ -41,9 +41,9 @@ from pylab import *
 
 #Define Misc parameters, Do Not Change Unless Required.
 
-#Enviroment variables, (fudge factors).
+#Enviroment variables.
 numfolders = 1			#Fudge
-Magmesh = 1				#initmesh.exe
+Magmesh = 1				#initmesh.exe Mag-Factor
 ierr = 0				#OldDebugMode
 
 #Activates various debug outputs.
@@ -58,11 +58,17 @@ Manualbiasaxis = ''					#'Axial' or 'Radial'. (empty '' for auto)
 
 #List of recognised atomic sets, add new sets as required.
 ArgonReduced = ['AR','AR+','AR*']
+ArgonFull = ['AR3S','AR4SM','AR4SR','AR4SPM','AR4SPR','AR4P','AR4D','AR+','AR2+','AR2*']
 Oxygen = ['O','O+','O-','O*','O2','O2+','O2*']
-AtomicSet = ['E']+ArgonReduced+Oxygen
+AtomicSet = ['E']+ArgonReduced+ArgonFull+Oxygen
+
+#List of neutral species for fluid analysis.
+NeutSpecies = ['AR','AR3S']
+
 
 #Commonly used variable sets.
-# ['AR','AR+','E','TE','P-POT','TG-AVE','PRESSURE','EF-TOT','POW-RF','POW-RF-E','S-AR+','SEB-AR+', 'VR-NEUTRAL','VZ-NEUTRAL','VR-ION+','VZ-ION+']
+# ['AR','AR+','E','TE','P-POT','RHO','TG-AVE','PRESSURE','EF-TOT','POW-RF','POW-RF-E','S-AR+','SEB-AR+', 'VR-NEUTRAL','VZ-NEUTRAL','VR-ION+','VZ-ION+','FR-AR+','FZ-AR+']
+# ['AR3S','AR4SM','AR4SR','AR4SPM','AR4SPR','AR4P','AR4D','AR+','AR2+','AR2*','E','TE','P-POT','TG-AVE','RHO','PRESSURE','EF-TOT','POW-RF','POW-RF-E','S-AR+','SEB-AR+', 'VR-NEUTRAL','VZ-NEUTRAL','VR-ION+','VZ-ION+','FR-AR+','FZ-AR+']
 # ['O2','O2+','O','O+','O-','E','TE','P-POT','TG-AVE','PRESSURE','EF-TOT','POW-RF','POW-RF-E','VR-NEUTRAL','VZ-NEUTRAL','VR-ION+','VZ-ION+','VR-ION-','VZ-ION-','FR-O-','FZ-O-']
 
 
@@ -83,18 +89,18 @@ AtomicSet = ['E']+ArgonReduced+Oxygen
 					#SWITCHBOARD AND DIAGNOSTICS#
 #====================================================================#
 
-#Requested movie1/movie_icp Variables.			
+#Requested movie1/movie_icp Variables.
 IterVariables = ['S-E','E','PPOT','TE']		#Requested Movie_icp (iteration) Variables.
-PhaseVariables = []							#Requested Movie1 (phase) Variables.
-electrodeloc = [30,47]						#Centre Cell of powered electrode [R,Z]. (T,B,L,R)
+PhaseVariables = ['S-E','E','PPOT','TE']	#Requested Movie1 (phase) Variables.
+electrodeloc = [0,0]						#Centre Cell of powered electrode [R,Z]. (T,B,L,R)
 phasecycles = 1								#Number of phase cycles to be plotted.
 #YPR [30,47] #SPR [0,107] #MSHC [0,12]
 
 #Requested TECPLOT Variables
-Variables = ['AR','AR+','E','TE','P-POT','TG-AVE','PRESSURE','EF-TOT','POW-RF','POW-RF-E','S-AR+','SEB-AR+', 'VR-NEUTRAL','VZ-NEUTRAL','VR-ION+','VZ-ION+','FR-AR+','FZ-AR+','RHO']
-MultiVar = []							#Additional variables plotted ontop of [Variables] 
-radialineouts = [] 						#Radial 1D-Profiles to be plotted (fixed Z-mesh)
-heightlineouts = [0]					#Axial 1D-Profiles to be plotted (fixed R-mesh)
+Variables = ['AR','AR+','E','TE','P-POT','RHO','TG-AVE','PRESSURE','EF-TOT','POW-RF','POW-RF-E','S-AR+','SEB-AR+', 'VR-NEUTRAL','VZ-NEUTRAL','VR-ION+','VZ-ION+','FR-AR+','FZ-AR+']
+MultiVar = []						#Additional variables plotted ontop of [Variables]
+radialineouts = [] 					#Radial 1D-Profiles to be plotted (fixed Z-mesh)
+heightlineouts = [0,20]				#Axial 1D-Profiles to be plotted (fixed R-mesh)
 TrendLocation = [] 					#Cell location For Trend Analysis [R,Z], ([] = min/max)
 #YPR H0;R47 #MSHC H0,20;R20
 
@@ -112,7 +118,7 @@ savefig_phaseresolvelines = False			#1D Phase Resolved Images
 savefig_phaseresolve2D = False				#2D Phase Resolved Images
 savefig_sheathdynamics = False				#PROES style images
 
-#Steady-State diagnostics and terminal outputs. 
+#Steady-State diagnostics and terminal outputs.
 savefig_trendcomparison = True
 print_meshconvergence = False
 print_generaltrends = False
@@ -132,7 +138,6 @@ image_logplot = False
 image_rotate = True
 
 image_plotmesh = False						#### NOT IMPLIMENTED ####
-image_singlefreqdotted = False 				#### VERY HACKY, LINK THIS TO ICP.NAM ####
 
 
 
@@ -242,7 +247,7 @@ print '   |   __   | |   __|  |  |     |   __|  |  . `  |  /  /_\  \       '
 print '   |  |  |  | |  |____ |  `----.|  |____ |  |\   | /  _____  \      '
 print '   |__|  |__| |_______||_______||_______||__| \__|/__/     \__\     '
 print '                                                             v0.9.2 '
-print '--------------------------------------------------------------------' 
+print '--------------------------------------------------------------------'
 print ''
 print 'The following diagnostics were requested:'
 print '-----------------------------------------'
@@ -258,7 +263,7 @@ if True in [savefig_radialines,savefig_heightlines,savefig_multiprofiles]:
 	print'# 1D Steady-State Profile Processing'
 if True in [print_generaltrends,print_KnudsenNumber,print_totalpower,print_DCbias,print_thrust]:
 	print'# 1D Specific Trend Analysis'
-if savefig_trendcomparison == True: 
+if savefig_trendcomparison == True:
 	print'# 1D Steady-State Trend Processing'
 if savefig_comparelineouts == True:
 	print'# 1D Steady-State Profile Comparisons'
@@ -275,7 +280,7 @@ print ''
 
 #Obtain system RAM.
 mem_bytes = os.sysconf('SC_PAGE_SIZE') * os.sysconf('SC_PHYS_PAGES')
-mem_gib = mem_bytes/(1024.**3)  
+mem_gib = mem_bytes/(1024.**3)
 
 #Find all files ending in dir recursively from current directory.
 sh_files_pattern = Match(filetype='f', name='*.PDT')
@@ -372,7 +377,7 @@ for l in range(0,numfolders):
 
 			#Manual input of mesh sizes.
 			ierr = 1
-		
+
 			#If the initmesh.out file cannot be found, manual input is required.
 			print '#========================================================#'
 			print 'Cannot extract mesh, please manually define mesh geometry.'
@@ -412,7 +417,7 @@ for l in range(0,numfolders):
 	#Attempt automated retrieval of SI conversion units.
 	try:
 		SImeshdata = open(icpnam[l]).readlines()
-	
+
 		for i in range(0,len(SImeshdata)):
 			#Identify geometry section for outread.
 			if SImeshdata[i][0:17].strip(' ') == '$DATAIN_GEOMETRY':
@@ -449,11 +454,11 @@ for l in range(0,numfolders):
 				#Calculate SI units for plotting.
 				dr.append(Radius[-1]/(R_mesh[-1]-1))
 				dz.append(Height[-1]/(Z_mesh[-1]-1))
-			#endif	
+			#endif
 		#endfor
 	except:
 		ierr = 2
-	
+
 		#If the geometry section cannot be found, manual input is required.
 		print '#=================================================#'
 		print 'icp.nam not found, please manually define variables'
@@ -484,11 +489,12 @@ for l in range(0,numfolders):
 				#UNPACKING AND ORGANIZATION OF DATA#
 #====================================================================#
 
+#Takes a 1D or 2D array and writes to a datafile in ASCII format.
+#Two imputs, first is data to be written, second is filename string.
 #WriteDataToFile(Image, FolderNameTrimmer(Dirlist[l])+Variablelist[k] )
-#filename = FolderNameTrimmer(Dirlist[l])+Variablelist[k])
 def WriteDataToFile(Data,filename):
 
-	#Determine dimensionality of profile and select normaliztion method.
+	#Determine dimensionality of profile.
 	if isinstance(Data[0], (list, np.ndarray) ) == True:
 		#Open new textfile and output 2D image data.
 		datafile = open(filename, 'w')
@@ -500,7 +506,7 @@ def WriteDataToFile(Data,filename):
 			datafile.write('\n')
 		#endfor
 		datafile.close()
-	
+
 	#Lowest dimention is still list.
 	elif isinstance(Data, (list, np.ndarray) ) == True:
 		#Open new textfile and output 2D image data.
@@ -512,6 +518,37 @@ def WriteDataToFile(Data,filename):
 		datafile.close()
 
 	return()
+#enddef
+
+
+#Reads 1D or 2D data from textfile in ASCII format.
+#One input, filename string, returns data array.
+def ReadDataFromFile(Filename):
+	OutputData = list()
+
+	#Determine dimensionality of profile.
+	if isinstance(Data[0], (list, np.ndarray) ) == True:
+		#Read in 2D data from ASCII formatted file.
+		datafile = open(Filename)
+		for m in range(0,len(datafile)):
+			Row = datafile.readline().split()
+			for n in range(0,len(Row)):
+				Row[n] = float(Row[n])
+			#endfor
+			OutputData.append(Row)
+		#endfor
+
+	#Lowest dimention is still list.
+	elif isinstance(Data, (list, np.ndarray) ) == True:
+		#Read in 1D data from ASCII formatted file.
+		datafile = open(Filename)
+		Row = datafile.readline().split()
+		for m in range(0,len(Row)):
+			OutputData.append(float(Row[m]))
+		#endfor
+	#endif
+
+	return(OutputData)
 #enddef
 
 
@@ -573,7 +610,7 @@ def VariableLabelMaker(variablelist):
 		if variablelist[i] == 'E':
 			Variable = 'Electron Density'
 			VariableUnit = '[m$^{-3}$]'
-		elif variablelist[i] == 'AR':
+		elif variablelist[i] in ['AR','AR3S']:
 			Variable = 'Neutral Ar Density'
 			VariableUnit = '[m$^{-3}$]'
 		elif variablelist[i] == 'AR+':
@@ -593,7 +630,7 @@ def VariableLabelMaker(variablelist):
 		elif variablelist[i] == 'SEB-AR+':
 			Variable = 'Secondary Ar+ Ionization Rate'
 			VariableUnit = '[m$^{-3}$s$^{-1}$]'
-		
+
 		#Explicit Species Temperatures.
 		elif variablelist[i] == 'TE':
 			Variable = 'Electron Temperature'
@@ -650,7 +687,7 @@ def VariableLabelMaker(variablelist):
 		elif variablelist[i] == 'FR-AR':
 			Variable = 'Ar Radial Flux'
 			VariableUnit = '[m$^{-2}$ s$^{-1}$]'
-		
+
 		#Explicit Electrodynamic Properties
 		elif variablelist[i] == 'P-POT':
 			Variable = 'Plasma Potential'
@@ -772,7 +809,7 @@ def VariableUnitConversion(profile,variable):
 		#endfor
 	if IsStringInVariable(variable,['EAMB-Z']) == True:
 		for i in range(0,len(profile)):
-			profile[i] = profile[i]*(-1)	
+			profile[i] = profile[i]*(-1)
 		#endfor
 	#endif
 
@@ -842,7 +879,7 @@ for l in range(0,numfolders):
 	except:
 		ierr = 3
 		print 'Unable to find TECPLOT2D.PDT'
-	#endtry	
+	#endtry
 
 
 	#Read through all variables for each file and stop when list ends.
@@ -864,7 +901,7 @@ for l in range(0,numfolders):
 	#Create Variablelists for each folder of data and refresh Variablelist
 	Variablelists.append(Variablelist)
 	Variablelist = list()
-	
+
 
 	#Unpack each row of 7 data points into single array of floats.
 	#Removing 'spacing' between the floats and ignoring variables above data.
@@ -885,7 +922,7 @@ for l in range(0,numfolders):
 	#Data is a 3D array of form (folder,variable,datapoints)
 	for i in range(0,numvariables_2D):
 		numstart = (Z_mesh[l]*R_mesh[l])*(i)
-		numend = (Z_mesh[l]*R_mesh[l])*(i+1) 
+		numend = (Z_mesh[l]*R_mesh[l])*(i+1)
 		tempdata.append(list(data_array[numstart:numend]))
 	#endfor
 
@@ -933,7 +970,7 @@ for l in range(0,numfolders):
 			if str(rawdata_itermovie_icp[l][i]).find('ITER') != -1:
 				header_movie = i+1
 				break
-			#endif	
+			#endif
 		#endfor
 		header_itermovie.append(header_movie)
 
@@ -1027,7 +1064,7 @@ for l in range(0,numfolders):
 			if str(rawdata_phasemovie[l][i]).find('CYCL') != -1:
 				header_movie = i+1
 				break
-			#endif	
+			#endif
 		#endfor
 		header_phasemovie.append(header_movie)
 
@@ -1035,7 +1072,7 @@ for l in range(0,numfolders):
 		MovieVariablelists.append(MovieVariablelist)
 		MovieVariablelist = list()
 		Moviephaselist_temp = list()
-		
+
 
 		#Unpack each row of 7 data points into single array of floats.
 		#Removing 'spacing' between the floats and ignoring variables above data.
@@ -1100,7 +1137,7 @@ for l in range(0,numfolders):
 		except:
 			ierr = 7
 			print 'Unable to find MCS.PDT'
-		#endtry	
+		#endtry
 
 		header_mcs = 2
 		nn_mcs = 81
@@ -1132,7 +1169,7 @@ for l in range(0,numfolders):
 		except:
 			ierr = 4
 			print 'Unable to find TECPLOT_KIN.PDT'
-		#endtry	
+		#endtry
 	#endif
 
 
@@ -1172,7 +1209,7 @@ for m in range(0,numfolders):
 
 #Find the folder with the fewest avaliable variables.
 val, idx = min((val, idx) for (idx, val) in enumerate(Globalnumvars))
-Comparisonlist = Globalvarlist[idx] 
+Comparisonlist = Globalvarlist[idx]
 
 
 #===================##===================#
@@ -1233,7 +1270,7 @@ def VariableInterpolator(processlist,Variablelist,Comparisonlist):
 	#Return default if atomic physics is the same in all datasets.
 	if len(list(set(Comparisonlist).symmetric_difference(Variablelist))) == 0 :
 		return(processlist, Variablelist)
-	#endif 
+	#endif
 
 	#Identify elements in each variablelist which are not in comparison list.
 	interpolation = list()
@@ -1292,7 +1329,7 @@ def ImageExtractor2D(Data,R_mesh,Z_mesh,Variable=[]):
 	#endfor
 
 	#Convert units if required.
-	Image = VariableUnitConversion(Image,Variable) 
+	Image = VariableUnitConversion(Image,Variable)
 
 	return(Image)
 #enddef
@@ -1307,9 +1344,9 @@ def ImageExtractor2D(Data,R_mesh,Z_mesh,Variable=[]):
 #Create figure of desired size and with variable axes.
 #Returns figure and axes seperately.
 def figure(aspectratio,subplots=1):
-	if len(aspectratio) == 2: 
+	if len(aspectratio) == 2:
 		fig, ax = plt.subplots(subplots, figsize=(aspectratio[0],aspectratio[1]))
-	else: 
+	else:
 		fig, ax = plt.subplots(subplots, figsize=(9,9))
 	#endif
 	return(fig,ax)
@@ -1327,7 +1364,7 @@ def figure(aspectratio,subplots=1):
 def ImageOptions():
 
 	#Log image if possible, else linear. Grid default is off.
-	if image_logplot == True: 
+	if image_logplot == True:
 		try: ax.set_yscale('log')
 		except: ax.set_yscale('linear')
 	#endif
@@ -1353,12 +1390,12 @@ def Normalize(profile):
 		#Normalize 2D array to local maximum.
 		FlatImage = [item for sublist in profile for item in sublist]
 		NormalizedImage,NormFactor = list(),max(FlatImage)
-		for i in range(0,len(profile)): 
+		for i in range(0,len(profile)):
 			NormalizedImage.append( [x/NormFactor for x in profile[i]] )
 		#endfor
 		profile = NormalizedImage
 		return(profile)
-	
+
 	#Lowest dimention is still list.
 	elif isinstance(profile, (list, np.ndarray, np.generic) ) == True:
 
@@ -1389,7 +1426,7 @@ def ImagePlotter(Image,extent,aspectratio):
 	fig, ax = figure(aspectratio)
 
 	#Apply any required numerical changes to the image.
-	if image_logplot == True: 
+	if image_logplot == True:
 		Image = np.log(Image)
 	elif image_normalize == True:
 		Image = Normalize(Image)
@@ -1462,9 +1499,9 @@ def TrendPlotter(TrendArray,Xaxis,Normalize=1):
 def SymmetryConverter2D(Image,Isym,R_mesh,Z_mesh,Radius,Height):
 
 	#Obtain image standard (non-rotated) aspect ratio.
-	if len(image_aspectratio) == 2: 
+	if len(image_aspectratio) == 2:
 		aspectratio = image_aspectratio
-	else: 
+	else:
 		aspectratio = [9,9]
 	#endif
 
@@ -1507,13 +1544,13 @@ def SymmetryConverter2D(Image,Isym,R_mesh,Z_mesh,Radius,Height):
 			#Create new image by reversing and adding itself on the LHS.
 			for m in range(0,len(Image)):
 				SymImage[m] = np.concatenate([Image[m][::-1],Image[m]])
-			#endfor 
+			#endfor
 
 			extent = [-Radius,Radius, 0,Height]
 			fig,ax,im = ImagePlotter(SymImage,extent,aspectratio)
 
 		#If the mesh does not use symmetry, simply plot the data as is.
-		elif Isym == 0: 
+		elif Isym == 0:
 			extent=[0,Radius, 0,Height]
 			fig,ax,im = ImagePlotter(Image,extent,aspectratio)
 		#endif
@@ -1665,11 +1702,11 @@ def ElectrodeLoc(location,data):
 			ZlineoutLoc = R_mesh[l]/2
 		#RHSCenterEdge electrode.
 		elif location[0] == 'R':
-			RlineoutLoc = Z_mesh[l]/2 
+			RlineoutLoc = Z_mesh[l]/2
 			ZlineoutLoc = R_mesh
 		#LHSCenterEdge electrode.
 		elif location[0] == 'L':
-			RlineoutLoc = Z_mesh[l]/2 
+			RlineoutLoc = Z_mesh[l]/2
 			ZlineoutLoc = 0
 		#Bottom Central Electrode.
 		if location[0] == 'B':
@@ -1680,15 +1717,15 @@ def ElectrodeLoc(location,data):
 	elif isinstance(location[0], basestring) == False:
 		#if data is from movie1, Zaxis is back to front.
 		if len(location) == 2 and data == 'Phase':
-			RlineoutLoc = (Z_mesh[l]-location[1])-1	 
+			RlineoutLoc = (Z_mesh[l]-location[1])-1
 			ZlineoutLoc = location[0]
 		#if data is from TECPLOT2D, Zaxis is correct orientation.
 		elif len(location) == 2 and data == '2D':
 			RlineoutLoc = location[1]
 			ZlineoutLoc = location[0]
 		else:
-			RlineoutLoc = Z_mesh[l]/2 
-			ZlineoutLoc = 0	
+			RlineoutLoc = Z_mesh[l]/2
+			ZlineoutLoc = 0
 		#endif
 
 	return(RlineoutLoc,ZlineoutLoc)
@@ -1754,7 +1791,7 @@ def TrendAtGivenLocation(TrendLocation,process,variable):
 		if print_generaltrends == True:
 			Location = '('+str(round(R*dr[l],1))+'cm,'+str(round(Z*dz[l],1))+'cm)'
 			print FolderNameTrimmer(Dirlist[l])
-			print str(variable)+' @ '+Location+':', round(Trend[-1], 5) 
+			print str(variable)+' @ '+Location+':', round(Trend[-1], 5)
 		if print_generaltrends == True and l == numfolders-1:
 			print ''
 		#endif
@@ -1765,7 +1802,7 @@ def TrendAtGivenLocation(TrendLocation,process,variable):
 		Image = Image.flatten()
 		Trend = Trend/max(Image)
 	#endif
-		
+
 	return(Xaxis,Trend)
 #enddef
 
@@ -1820,7 +1857,7 @@ def MinMaxTrends(lineout,Orientation,process):
 	#Display Min/Max value trends to terminal if requested.
 	if print_generaltrends == True:
 		print VariableLabelMaker(Variablelist)[p]
-		print Orientation+'Maximum: ', round(max(MaxValueTrend), 5) 
+		print Orientation+'Maximum: ', round(max(MaxValueTrend), 5)
 		print Orientation+'Minimum: ', round(min(MinValueTrend), 5)
 		print ''
 	#endif
@@ -1993,7 +2030,7 @@ if savefig_plot2D == True:
 	for l in range(0,numfolders):
 		#Create new folder to keep output plots.
 		Dir2Dplots = CreateNewFolder(Dirlist[l],'2Dplots')
-	
+
 		#Create processlist for each folder as required.
 		processlist,Variablelist = VariableEnumerator(Variables,rawdata_2D[l],header_2Dlist[l])
 
@@ -2018,7 +2055,7 @@ if savefig_plot2D == True:
 				#endif
 				xticks(fontsize=18)
 				yticks(fontsize=18)
-			
+
 			else:
 				#Label and save the vertical 2D Plots.
 				fig,ax,im = SymmetryConverter2D(Image,Isymlist[l],R_mesh[l],Z_mesh[l],Radius[l],Height[l])
@@ -2074,7 +2111,7 @@ if savefig_plot2D == True:
 
 #Plot 2D images at different iterations towards convergence from movie_icp.
 if savefig_itermovie == True:
-	
+
 	#Refresh percentage counters and calculate total loop cycles for percentage.
 	New, Old, Total = 0.0, 1.0, 0
 	for l in range(0,numfolders):
@@ -2135,7 +2172,7 @@ if savefig_itermovie == True:
 					#endif
 					xticks(fontsize=18)
 					yticks(fontsize=18)
-			
+
 				else:
 					#Label and save the vertical 2D Plots.
 					fig,ax,im = SymmetryConverter2D(Image,Isymlist[l],R_mesh[l],Z_mesh[l],Radius[l],Height[l])
@@ -2164,7 +2201,7 @@ if savefig_itermovie == True:
 				savefig(DirMovieplots+IterVariablelist[i]+'_'+Number+'.png')
 #				plt.show()
 				plt.clf()
-				plt.close('all')	
+				plt.close('all')
 
 				#Percentage Complete Readout.
 				New += 1.0
@@ -2191,7 +2228,7 @@ if savefig_itermovie == True:
 		#Plot a convergence check for all variables in each folder.
 		legend = VariableLabelMaker(IterVariablelist)
 		fig, ax = plt.subplots(1, figsize=(10,10))
-		
+
 		for j in range(0,len(iterprocesslist)):
 			start = j*len(Xaxis)
 			end = (j+1)*len(Xaxis)
@@ -2205,7 +2242,7 @@ if savefig_itermovie == True:
 		xticks(fontsize=18)
 		yticks(fontsize=18)
 		savefig(DirConvergence+FolderNameTrimmer(Dirlist[l])+'_Convergence.png')
-		plt.close('all')	
+		plt.close('all')
 
 	#endfor
 
@@ -2226,8 +2263,8 @@ if savefig_itermovie == True:
 
 
 
-		
-		
+
+
 
 
 
@@ -2268,12 +2305,12 @@ if savefig_radialines or savefig_heightlines == True:
 
 		#Create processlist for each folder as required.
 		processlist,Variablelist = VariableEnumerator(Variables,rawdata_2D[l],header_2Dlist[l])
-		
+
 		#Generate SI scale axes for lineout plots and refresh legend.
 		Raxis = GenerateAxis('Radial',Isymlist[l])
 		Zaxis = GenerateAxis('Axial',Isymlist[l])
 		Legendlist = list()
-		
+
 		#Generate the radial (horizontal) lineouts for a specific height.
 		if savefig_radialines == True and len(radialineouts) > 0:
 			#Create folder to keep output plots.
@@ -2298,7 +2335,7 @@ if savefig_radialines or savefig_heightlines == True:
 					if image_logplot == True:
 						plt.plot(Raxis,np.log(Rlineout), lw=2)
 						#ax.set_yscale('log')
-					elif image_normalize == True: 
+					elif image_normalize == True:
 						Rlineout = Normalize(Rlineout)
 						plt.plot(Raxis,Rlineout, lw=2)
 					else:
@@ -2336,7 +2373,7 @@ if savefig_radialines or savefig_heightlines == True:
 				fig,ax = figure(image_aspectratio,1)
 
 				for j in range(0,len(heightlineouts)):
-					
+
 					#Plot all requested radial lines on single image per variable.
 					Zlineout = PlotAxialProfile(Data[l],processlist[i],Variablelist[i],heightlineouts[j],R_mesh[l],Z_mesh[l],Isymlist[l])
 
@@ -2344,7 +2381,7 @@ if savefig_radialines or savefig_heightlines == True:
 					if image_logplot == True:
 						plt.plot(Zaxis[0:len(Zlineout)],np.log(Zlineout[::-1]), lw=2)
 						#ax.set_yscale('log')
-					elif image_normalize == True: 
+					elif image_normalize == True:
 						Zlineout = Normalize(Zlineout)
 						plt.plot(Zaxis[0:len(Zlineout)],Zlineout[::-1], lw=2)
 					else:
@@ -2353,7 +2390,7 @@ if savefig_radialines or savefig_heightlines == True:
 
 					#Perform SI conversion and save to legend.
 					if len(Legendlist) < len(heightlineouts):
-						Rlegend = heightlineouts[j]*dr[l]*10 
+						Rlegend = heightlineouts[j]*dr[l]*10
 						Legendlist.append('R='+str(round(Rlegend, 2))+' mm')
 					#endif
 					ylabel = VariableLabelMaker(Variablelist)
@@ -2378,7 +2415,7 @@ if savefig_radialines or savefig_heightlines == True:
 
 	print'--------------------------'
 	print'# Single Profiles Complete'
-	print'--------------------------'	
+	print'--------------------------'
 #endif
 
 
@@ -2414,7 +2451,7 @@ if savefig_comparelineouts == True:
 			if k >= 1 and k > len(Variablelist)-1:
 				break
 			#endif
-			
+
 			#Create fig of desired size and refresh legendlist.
 			fig,ax = figure(image_aspectratio,1)
 			Legendlist = list()
@@ -2427,7 +2464,7 @@ if savefig_comparelineouts == True:
 
 				#Correct processlist for folders containing different icp.dat.
 				processlist,Variablelist = VariableInterpolator(processlist,Variablelist,Comparisonlist)
-	
+
 				#Update legend with folder information.
 				Legendlist.append( FolderNameTrimmer(Dirlist[l]) )
 				ylabel = VariableLabelMaker(Variablelist)
@@ -2435,22 +2472,15 @@ if savefig_comparelineouts == True:
 				#Plot all radial profiles for all variables in one folder.
 				Rlineout = PlotRadialProfile(Data[l],processlist[k],Variablelist[k],radialineouts[j],R_mesh[l],Isymlist[l])
 
-				#Plot single frequencies with dotted lines to distinguish them.
-				if image_singlefreqdotted == True and 'Phase' not in Legendlist[-1]:
-					Linestyle = '--'
-				else: 
-					Linestyle = '-'
-				#endif
-				
 				#Plot radial profile and allow for log y-axis if requested.
 				if image_logplot == True:
-					plt.plot(Raxis,np.log(Rlineout), lw=2, ls=Linestyle)
+					plt.plot(Raxis,np.log(Rlineout), lw=2)
 					#ax.set_yscale('log')
-				elif image_normalize == True: 
+				elif image_normalize == True:
 					Rlineout = Normalize(Rlineout)
-					plt.plot(Raxis,Rlineout, lw=2, ls=Linestyle)
+					plt.plot(Raxis,Rlineout, lw=2)
 				else:
-					plt.plot(Raxis,Rlineout, lw=2, ls=Linestyle)
+					plt.plot(Raxis,Rlineout, lw=2)
 				#endif
 
 				#Organize and beautify the plots.
@@ -2495,13 +2525,13 @@ if savefig_comparelineouts == True:
 			#Create fig of desired size and refresh legendlist.
 			fig,ax = figure(image_aspectratio,1)
 			Legendlist = list()
-		
+
 			#For each folder in the directory.
 			for l in range(0,numfolders):
 
 				#Create processlist for each folder as required.
 				processlist,Variablelist = VariableEnumerator(Variables,rawdata_2D[l],header_2Dlist[l])
-			
+
 				#Correct processlist for folders containing different icp.dat.
 				processlist,Variablelist = VariableInterpolator(processlist,Variablelist,Comparisonlist)
 
@@ -2512,25 +2542,18 @@ if savefig_comparelineouts == True:
 				#Obtain axial profile for each folder of the current variable.
 				Zlineout = PlotAxialProfile(Data[l],processlist[k],Variablelist[k],heightlineouts[j],R_mesh[l],Z_mesh[l],Isymlist[l])
 
-				#Plot single frequencies with dotted lines to distinguish them.
-				if image_singlefreqdotted == True and 'Phase' not in Legendlist[-1]:
-					Linestyle = '--'
-				else: 
-					Linestyle = '-'
-				#endif
-
 				#Plot axial profile and allow for log y-axis if requested.
 				if image_logplot == True:
-					plt.plot(Zaxis[0:len(Zlineout)],np.log(Zlineout[::-1]), lw=2, ls=Linestyle)
+					plt.plot(Zaxis[0:len(Zlineout)],np.log(Zlineout[::-1]), lw=2)
 					#ax.set_yscale('log')
-				elif image_normalize == True: 
+				elif image_normalize == True:
 					Zlineout = Normalize(Zlineout)
-					plt.plot(Raxis[0:len(Zlineout)],Zlineout[::-1], lw=2, ls=Linestyle)
+					plt.plot(Raxis[0:len(Zlineout)],Zlineout[::-1], lw=2)
 				else:
-					plt.plot(Zaxis[0:len(Zlineout)],Zlineout[::-1], lw=2, ls=Linestyle)
+					plt.plot(Zaxis[0:len(Zlineout)],Zlineout[::-1], lw=2)
 				#endif
 
-				#Beautify and label the plots, allowing for manual renaming if requested.  
+				#Beautify and label the plots, allowing for manual renaming if requested.
 				plt.title('Comparison of '+Variablelist[k]+' Profiles at R='+str(round((heightlineouts[j])*dr[l], 2))+'cm for \n'+Dirlist[l][2:-1]+' Simulation',position=(0.5,1.05))
 				plt.xlabel('Axial Distance Z [cm]', fontsize=22)
 				plt.ylabel(ylabel[k], fontsize=22)
@@ -2609,19 +2632,19 @@ if savefig_multiprofiles == True:
 
 					#Plot all of the requested comparison variables for this plot.
 					for m in range(0,len(multiprocesslist)):
-						
+
 						#Plot profile for multiplot variables in compareprocesslist.
 						Zlineout = PlotAxialProfile(Data[l],multiprocesslist[m],multiVariablelist[m],heightlineouts[j],R_mesh[l],Z_mesh[l],Isymlist[l])
 						if image_logplot == True:
 							plt.plot(Zaxis,np.log(Zlineout), lw=2)
 							#ax.set_yscale('log')
-						elif image_normalize == True: 
+						elif image_normalize == True:
 							Zlineout = Normalize(Zlineout)
 							plt.plot(Zaxis,Zlineout[::-1], lw=2)
 						else:
 							plt.plot(Zaxis,Zlineout[::-1], lw=2)
 						#endif
-				
+
 						#Update legendlist with each variable compared.
 						legendlist.append(VariableLabelMaker(multiVariablelist)[m])
 					#endfor
@@ -2640,7 +2663,7 @@ if savefig_multiprofiles == True:
 					plt.close('fig')
 					plt.close('all')
 				#endfor
-			#endfor	
+			#endfor
 		#endif
 
 #===================##===================#
@@ -2655,7 +2678,7 @@ if savefig_multiprofiles == True:
 
 			#Perform the plotting for all requested variables.
 			for i in range(0,len(processlist)):
-				
+
 				#Perform the plotting for all requested variables.
 				for j in range(0,len(radialineouts)):
 					#Create fig of desired size.
@@ -2673,7 +2696,7 @@ if savefig_multiprofiles == True:
 					Rlineout = PlotRadialProfile(Data[l],processlist[i],Variablelist[i],radialineouts[j],R_mesh[l],Isymlist[l])
 					if image_normalize == True: Rlineout = Normalize(Rlineout)
 					plt.plot(Raxis,Rlineout,lw=2)
-						
+
 					#Plot all of the requested comparison variables for this plot.
 					for m in range(0,len(multiprocesslist)):
 
@@ -2682,7 +2705,7 @@ if savefig_multiprofiles == True:
 						if image_logplot == True:
 							plt.plot(Raxis,np.log(Rlineout), lw=2)
 							#ax.set_yscale('log')
-						elif image_normalize == True: 
+						elif image_normalize == True:
 							Rlineout = Normalize(Rlineout)
 							plt.plot(Raxis,Rlineout, lw=2)
 						else:
@@ -2811,7 +2834,7 @@ if savefig_trendcomparison == True or print_generaltrends == True:
 				Legendlist.append(Location)
 				#Take trend at given location if specified.
 				Xaxis,Trend = TrendAtGivenLocation([R,Z],processlist[k],Variablelist[k])
-				
+
 			elif len(TrendLocation) == 1:
 				#Append requested position to the legendlist.
 				R,Z = TrendLocation[0],heightlineouts[j]
@@ -2819,7 +2842,7 @@ if savefig_trendcomparison == True or print_generaltrends == True:
 				Legendlist.append(Location)
 				#Take trend at given location if specified.
 				Xaxis,Trend = TrendAtGivenLocation([R,Z],processlist[k],Variablelist[k])
-				
+
 			else:
 				#Obtain min/max trend values for requested profile over all folders.
 				Xaxis,MaxTrend,MinTrend = MinMaxTrends(heightlineouts[j],'Axial',k)
@@ -2873,7 +2896,7 @@ if savefig_trendcomparison == True or print_generaltrends == True:
 				Legendlist.append(Location)
 				#Take trend at given location if specified.
 				Xaxis,Trend = TrendAtGivenLocation([R,Z],processlist[k],Variablelist[k])
-				
+
 			elif len(TrendLocation) == 1:
 				#Append requested position to the legendlist.
 				R,Z = radialineouts[j],TrendLocation[0],
@@ -2881,14 +2904,14 @@ if savefig_trendcomparison == True or print_generaltrends == True:
 				Legendlist.append(Location)
 				#Take trend at given location if specified.
 				Xaxis,Trend = TrendAtGivenLocation([R,Z],processlist[k],Variablelist[k])
-				
+
 			else:
 				#Obtain min/max trend values for requested profile over all folders.
 				Xaxis,MaxTrend,MinTrend = MinMaxTrends(radialineouts[j],'Radial',k)
 				Trend = MaxTrend
 				#Append the axial position to the legendlist.
 				Legendlist.append( 'Z='+str(round((radialineouts[j]*dz[l]*10), 2))+'mm' )
-			#endif	
+			#endif
 
 			#Plot trends for each variable over all folders, applying image options.
 			TrendPlotter(MaxTrend,Xaxis,Normalize=1)
@@ -2916,7 +2939,7 @@ if savefig_trendcomparison == True or print_generaltrends == True:
 #endif
 
 
-					
+
 #=====================================================================#
 						# DC-BIAS CALCULATOR #
 #=====================================================================#
@@ -2945,7 +2968,7 @@ if savefig_trendcomparison == True or print_DCbias == True:
 		#Locate powered electrode for bias extraction.
 		Rlineoutloc = ElectrodeLoc(electrodeloc,'2D')[0]
 		Zlineoutloc = ElectrodeLoc(electrodeloc,'2D')[1]
-	
+
 		#Obtain radial and axial profiles for further processing.
 		try: Rlineout = PlotRadialProfile(Data[l],Process[0],Variable[0],Rlineoutloc,R_mesh[l],  Isymlist[l])
 		except: Rlineout = float('NaN')
@@ -3042,7 +3065,7 @@ if savefig_trendcomparison == True or print_totalpower == True:
 			#Extract full 2D power density image.
 			PowerDensity = ImageExtractor2D(Data[l][processlist[k]],R_mesh[l],Z_mesh[l])
 
-			#For power densities, convert from [Wcm-3] to [Wm-3]. 
+			#For power densities, convert from [Wcm-3] to [Wm-3].
 			for i in range(0,len(PowerDensity)):
 				PowerDensity[i] = PowerDensity[i]*1E6
 			#endfor
@@ -3167,9 +3190,9 @@ if savefig_trendcomparison == True or print_thrust == True:
 		NeutralIsp = list()
 		IonIsp = list()
 
-		DefaultTechnique = True	
+		DefaultTechnique = True
 		if DefaultTechnique == True:
-			
+
 			#Thrust based on integration over concentric ion/neutral momentum loss rate.
 			NeutralThrust = 0
 			IonThrust = 0
@@ -3199,9 +3222,9 @@ if savefig_trendcomparison == True or print_thrust == True:
 			#endfor
 			Thrust = NeutralThrust + IonThrust
 			Thrustlist.append( round(Thrust*1000,5) )
-			try: IonIsp = (sum(IonIsp)/len(IonIsp))/9.81 
+			try: IonIsp = (sum(IonIsp)/len(IonIsp))/9.81
 			except: IonIsp = 0
-			try: NeutralIsp = (sum(NeutralIsp)/len(NeutralIsp))/9.81 
+			try: NeutralIsp = (sum(NeutralIsp)/len(NeutralIsp))/9.81
 			except: NeutralIsp = 0
 
 		else:
@@ -3272,7 +3295,7 @@ if savefig_trendcomparison == True or print_thrust == True:
 	#endif
 #endif
 
-	
+
 
 
 #====================================================================#
@@ -3280,7 +3303,7 @@ if savefig_trendcomparison == True or print_thrust == True:
 #====================================================================#
 
 
-if 'AR' in Variables:
+if bool(set(NeutSpecies).intersection(Variables)) == True:
 	if savefig_trendcomparison == True or print_KnudsenNumber == True:
 
 		#Create Trend folder to keep output plots.
@@ -3299,8 +3322,7 @@ if 'AR' in Variables:
 			CrossSection = np.pi*((7.1E-11)**2)		#meters
 
 			#Create extract data for the neutral flux and neutral velocity.
-			NeutAtom = 'AR'
-			processlist,Variablelist = VariableEnumerator([NeutAtom],rawdata_2D[l],header_2Dlist[l])
+			processlist,Variablelist = VariableEnumerator(NeutSpecies,rawdata_2D[l],header_2Dlist[l])
 
 			#Update X-axis with folder information.
 			Xaxis.append( FolderNameTrimmer(Dirlist[l]) )
@@ -3324,7 +3346,7 @@ if 'AR' in Variables:
 					Knudsen[Row,i] = KnudsenNumber
 				#endfor
 			#endfor
-				
+
 			#Create new folder to keep 2D output plots.
 			Dir2Dplots = CreateNewFolder(Dirlist[l],'2Dplots')
 
@@ -3332,7 +3354,7 @@ if 'AR' in Variables:
 			KnudsenAverage.append( sum(Knudsen)/(len(Knudsen[0])*len(Knudsen)) )
 			if print_KnudsenNumber == True:
 				print Dirlist[l]
-				print 'Average Knudsen Number:', KnudsenAverage[l] 
+				print 'Average Knudsen Number:', KnudsenAverage[l]
 			#endif
 
 			#Label and save the 2D Plots.
@@ -3351,7 +3373,6 @@ if 'AR' in Variables:
 
 			#Save Figure
 			plt.savefig(Dir2Dplots+'KnudsenNumber.png')
-	#		plt.show()
 			plt.clf()
 			plt.close('all')
 		#endfor
@@ -3385,9 +3406,9 @@ if any([savefig_trendcomparison, print_generaltrends, print_KnudsenNumber, print
 #endif
 
 #=====================================================================#
-#=====================================================================#	
+#=====================================================================#
 
-	
+
 
 
 
@@ -3440,7 +3461,7 @@ if any([savefig_trendcomparison, print_generaltrends, print_KnudsenNumber, print
 
 #Plot 2D images over all saved phase cycles with included wavevform guide.
 if savefig_phaseresolve2D == True:
-	
+
 	#Initialize required lists and refresh percentage counters.
 	WaveformTitles = list()
 	VoltageWaveform = list()
@@ -3491,7 +3512,7 @@ if savefig_phaseresolve2D == True:
 
 		#Extend the waveform to match requested number of phase cycles.
 		WaveformTitles.append( FolderNameTrimmer(Dirlist[l]) )
-		for m in range(0,(phasecycles-1)*len(VoltageWaveform)): 
+		for m in range(0,(phasecycles-1)*len(VoltageWaveform)):
 			VoltageWaveform.append(VoltageWaveform[m])
 			WaveformBias.append(WaveformBias[m])
 		#endfor
@@ -3543,7 +3564,7 @@ if savefig_phaseresolve2D == True:
 
 				#Ensure image is landscape for waveform to fit underneath.
 				height,width = len(Image), len(Image[0])
-				if height > width: 
+				if height > width:
 					extent=[Zaxis[0],Zaxis[-1],-Raxis[-1],Raxis[-1]]
 					xlabel,ylabel = ylabel,xlabel
 					Image = np.transpose(Image)
@@ -3552,7 +3573,7 @@ if savefig_phaseresolve2D == True:
 				#Create figure and axes, plot image on top and waveform underneath.
 				fig,ax = figure(image_aspectratio,2)
 				fig.suptitle( 'Phase-Resolved '+PhaseVariablelist[i]+'\n'+str(Moviephaselist[l][j]), y=0.97, fontsize=18)
-				
+
 				if image_contourplot == True:
 					im = ax[0].contour(Image,extent=extent,origin="lower", aspect='auto')
 					im = ax[0].imshow(Image,extent=extent,origin="lower", aspect='auto')
@@ -3628,7 +3649,7 @@ if savefig_phaseresolvelines == True or savefig_sheathdynamics == True:
 
 	#for all folders.
 	for l in range(0,numfolders):
-		
+
 		#Create folders to keep output plots.
 		DirPhaseResolved = CreateNewFolder(Dirlist[l],'PhaseResolved_profiles/')
 
@@ -3653,11 +3674,11 @@ if savefig_phaseresolvelines == True or savefig_sheathdynamics == True:
 		Zaxis = list()
 		Raxis = list()
 		for i in range(0,Z_mesh[l]): Zaxis.append(i*dz[l])
-		if Isymlist[l] == 1: 
+		if Isymlist[l] == 1:
 			for i in range(-R_mesh[l],R_mesh[l]):
 				Raxis.append(i*dr[l])
 			#endfor
-		elif Isymlist[l] == 0: 
+		elif Isymlist[l] == 0:
 			for i in range(0,R_mesh[l]):
 				Raxis.append(i*dr[l])
 			#endfor
@@ -3682,7 +3703,7 @@ if savefig_phaseresolvelines == True or savefig_sheathdynamics == True:
 		#endfor
 
 		#Extend the waveform to match requested number of phase cycles.
-		for m in range(0,(phasecycles-1)*len(VoltageWaveform)): 
+		for m in range(0,(phasecycles-1)*len(VoltageWaveform)):
 			VoltageWaveform.append(VoltageWaveform[m])
 			WaveformBias.append(WaveformBias[m])
 		#endfor
@@ -3756,7 +3777,7 @@ if savefig_phaseresolvelines == True or savefig_sheathdynamics == True:
 
 					if LineoutsOrientation[k] == 'Axial':
 						#Axial 1D profiles, using first hightlineout as axial location.
-						ZlineoutLoc = Lineouts[k]	
+						ZlineoutLoc = Lineouts[k]
 						PhaseResolvedlineout = PlotAxialProfile(PhaseMovieData[l][j],PhaseProcesslist[i],PhaseVariablelist[i],ZlineoutLoc,R_mesh[l],Z_mesh[l],Isymlist[l])
 						lineoutstring = ' @ Z='+str(round(ZlineoutLoc*dz[l],2))+'cm \n'
 						xlabel = 'Axial Distance Z [cm]'
@@ -3764,20 +3785,20 @@ if savefig_phaseresolvelines == True or savefig_sheathdynamics == True:
 
 					elif LineoutsOrientation[k] == 'Radial':
 						#Radial 1D profiles, using first radialineout as axial location.
-						RlineoutLoc = Lineouts[k]	
+						RlineoutLoc = Lineouts[k]
 						PhaseResolvedlineout = PlotRadialProfile(PhaseMovieData[l][j],PhaseProcesslist[i],PhaseVariablelist[i],RlineoutLoc,R_mesh[l],Isymlist[l])
 						lineoutstring = ' @ R='+str(round(RlineoutLoc*dr[l],2))+'cm \n'
 						xlabel = 'Radial Distance R [cm]'
 						axis = Raxis
 					#endif
-			
+
 
 					#Create figures and plot the 1D profiles. (ax[0]=variable, ax[1]=waveform)
 					if savefig_phaseresolvelines == True:
 						fig,ax = figure(image_aspectratio,2)
 						ylabels = VariableLabelMaker(PhaseVariablelist)
 						fig.suptitle( 'Phase-Resolved '+PhaseVariablelist[i]+' for '+VariedValuelist[l]+lineoutstring+str(Moviephaselist[l][j]), y=0.97, fontsize=16)
-				
+
 						ax[0].plot(axis, PhaseResolvedlineout[::-1], lw=2)
 						ax[0].set_xlabel(xlabel, fontsize=24)
 						ax[0].set_ylabel(ylabels[i], fontsize=24)
@@ -3792,7 +3813,7 @@ if savefig_phaseresolvelines == True or savefig_sheathdynamics == True:
 						ax[1].tick_params(axis='x', labelsize=18)
 						ax[1].tick_params(axis='y', labelsize=18)
 						ax[1].set_xlim(0,phasecycles)
-	
+
 						#Calculate numbers used for filename ordering.
 						num1,num2,num3 = j % 10, j/10 % 10, j/100 % 10
 						Number = str(num3)+str(num2)+str(num1)
@@ -3858,7 +3879,7 @@ if savefig_phaseresolvelines == True or savefig_sheathdynamics == True:
 					ax[1].set_ylabel('Potential [V]', fontsize=24)
 					ax[1].tick_params(axis='x', labelsize=18)
 					ax[1].tick_params(axis='y', labelsize=18)
-				
+
 					fig.tight_layout()
 					plt.subplots_adjust(top=0.85)
 					plt.savefig(DirPhaseResolved+VariedValuelist[l]+' '+NameString+' PROES.png')
@@ -4010,7 +4031,7 @@ if True == False:
 #endif
 
 #=====================================================================#
-#=====================================================================#	
+#=====================================================================#
 
 
 
@@ -4089,14 +4110,3 @@ if use_GUI == True:
 
 #=====================================================================#
 #=====================================================================#
-
-
-
-
-
-
-
-
-
-
-
