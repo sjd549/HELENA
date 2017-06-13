@@ -63,13 +63,12 @@ Oxygen = ['O','O+','O-','O*','O2','O2+','O2*']
 AtomicSet = ['E']+ArgonReduced+ArgonFull+Oxygen
 
 #List of neutral species for fluid analysis.
-NeutSpecies = ['AR','AR3S']
-
+NeutSpecies = ['AR','AR3S','O2']
 
 #Commonly used variable sets.
-# ['AR','AR+','E','TE','P-POT','RHO','TG-AVE','PRESSURE','EF-TOT','POW-RF','POW-RF-E','S-AR+','SEB-AR+', 'VR-NEUTRAL','VZ-NEUTRAL','VR-ION+','VZ-ION+','FR-AR+','FZ-AR+']
-# ['AR3S','AR4SM','AR4SR','AR4SPM','AR4SPR','AR4P','AR4D','AR+','AR2+','AR2*','E','TE','P-POT','TG-AVE','RHO','PRESSURE','EF-TOT','POW-RF','POW-RF-E','S-AR+','SEB-AR+', 'VR-NEUTRAL','VZ-NEUTRAL','VR-ION+','VZ-ION+','FR-AR+','FZ-AR+']
-# ['O2','O2+','O','O+','O-','E','TE','P-POT','TG-AVE','PRESSURE','EF-TOT','POW-RF','POW-RF-E','VR-NEUTRAL','VZ-NEUTRAL','VR-ION+','VZ-ION+','VR-ION-','VZ-ION-','FR-O-','FZ-O-']
+ArReduced = ['AR','AR+','E','TE','P-POT','RHO','TG-AVE','PRESSURE','EF-TOT','POW-RF','POW-RF-E','S-AR+','SEB-AR+', 'VR-NEUTRAL','VZ-NEUTRAL','VR-ION+','VZ-ION+','FR-AR+','FZ-AR+']
+ArFull = ['AR3S','AR4SM','AR4SR','AR4SPM','AR4SPR','AR4P','AR4D','AR+','AR2+','AR2*','E','TE','P-POT','TG-AVE','RHO','PRESSURE','EF-TOT','POW-RF','POW-RF-E','S-AR+','SEB-AR+', 'VR-NEUTRAL','VZ-NEUTRAL','VR-ION+','VZ-ION+','FR-AR+','FZ-AR+']
+O2 = ['O2','O2+','O','O+','O-','E','TE','P-POT','TG-AVE','PRESSURE','EF-TOT','POW-RF','POW-RF-E','VR-NEUTRAL','VZ-NEUTRAL','VR-ION+','VZ-ION+','VR-ION-','VZ-ION-','FR-O-','FZ-O-']
 
 
 #Paper Trend Locations
@@ -91,16 +90,16 @@ NeutSpecies = ['AR','AR3S']
 
 #Requested movie1/movie_icp Variables.
 IterVariables = ['S-E','E','PPOT','TE']		#Requested Movie_icp (iteration) Variables.
-PhaseVariables = ['S-E','E','PPOT','TE']	#Requested Movie1 (phase) Variables.
+PhaseVariables = ['S-E','TE']				#Requested Movie1 (phase) Variables.
 electrodeloc = [0,0]						#Centre Cell of powered electrode [R,Z]. (T,B,L,R)
 phasecycles = 1								#Number of phase cycles to be plotted.
 #YPR [30,47] #SPR [0,107] #MSHC [0,12]
 
 #Requested TECPLOT Variables
-Variables = ['AR','AR+','E','TE','P-POT','RHO','TG-AVE','PRESSURE','EF-TOT','POW-RF','POW-RF-E','S-AR+','SEB-AR+', 'VR-NEUTRAL','VZ-NEUTRAL','VR-ION+','VZ-ION+','FR-AR+','FZ-AR+']
+Variables = ArFull
 MultiVar = []						#Additional variables plotted ontop of [Variables]
 radialineouts = [] 					#Radial 1D-Profiles to be plotted (fixed Z-mesh)
-heightlineouts = [0,20]				#Axial 1D-Profiles to be plotted (fixed R-mesh)
+heightlineouts = [0]				#Axial 1D-Profiles to be plotted (fixed R-mesh)
 TrendLocation = [] 					#Cell location For Trend Analysis [R,Z], ([] = min/max)
 #YPR H0;R47 #MSHC H0,20;R20
 
@@ -142,8 +141,6 @@ image_plotmesh = False						#### NOT IMPLIMENTED ####
 
 
 
-
-
 #============================#
 
 #Overrides for automatic image labelling. (NB - Currently only for ComparisionProfiles)
@@ -157,6 +154,7 @@ gridoverride = ['NotImplimented']
 #Commonly Used:
 #['$0$','$\\frac{\pi}{6}$','$\\frac{\pi}{3}$','$\\frac{\pi}{2}$','$\\frac{2\pi}{3}$','$\\frac{3\pi}{4}$','$\pi$']
 #'0','30','60','90','120','150','180','210','240','270','300','330'
+#'100','200','300','400','500','600','700','800','900','1000'
 #'13.56MHz','27.12MHz','40.68MHz','54.24MHz','67.80MHz'
 #'67.80MHz','54.24MHz','40.68MHz','27.12MHz','13.56MHz'
 #'1.0mm','1.5mm','2.0mm','2.5mm','3.0mm'
@@ -491,7 +489,7 @@ for l in range(0,numfolders):
 
 #Takes a 1D or 2D array and writes to a datafile in ASCII format.
 #Two imputs, first is data to be written, second is filename string.
-#WriteDataToFile(Image, FolderNameTrimmer(Dirlist[l])+Variablelist[k] )
+#WriteDataToFile(Image, FolderNameTrimmer(Dirlist[l])+Variablelist[k])
 def WriteDataToFile(Data,filename):
 
 	#Determine dimensionality of profile.
@@ -3093,7 +3091,6 @@ if savefig_trendcomparison == True or print_totalpower == True:
 			#endif
 		#endfor
 
-
 		#Plot and beautify each requested power deposition seperately.
 		fig,ax = figure(image_aspectratio,1)
 		Power = DepositedPowerList[k*numfolders:(k+1)*numfolders]
@@ -3865,6 +3862,7 @@ if savefig_phaseresolvelines == True or savefig_sheathdynamics == True:
 					#endif
 
 
+					#Create PROES image along line of sight with phase-locked waveform.
 					fig.suptitle( 'Simulated '+PhaseVariablelist[i]+' PROES for '+VariedValuelist[l]+lineoutstring, y=0.95, fontsize=18)
 					im = ax[0].imshow(PROES,extent=[x1,x2,y1,y2],origin='bottom',aspect='auto')
 					ax[0].set_ylabel(ylabel, fontsize=24)
@@ -3884,6 +3882,31 @@ if savefig_phaseresolvelines == True or savefig_sheathdynamics == True:
 					plt.subplots_adjust(top=0.85)
 					plt.savefig(DirPhaseResolved+VariedValuelist[l]+' '+NameString+' PROES.png')
 					plt.close('all')
+
+
+					#########################################
+					#			UNDER CONSTRUCTION			#
+					#########################################
+					if True == False:
+						#Collapse the 2D PROES image along the line of sight.
+						fig,ax = figure(image_aspectratio,1)
+
+						FlattenedPROES = list()
+						for m in range(0,len(PROES)):
+							FlattenedPROES.append( (sum(PROES[m][::])) )
+						#endfor
+
+						print y1,y2
+						Filename = FolderNameTrimmer(Dirlist[l])+PhaseVariablelist[i]
+						WriteDataToFile(FlattenedPROES,Filename)
+
+						plt.plot(FlattenedPROES)
+						plt.show()
+					#endif
+					#########################################
+					#			UNDER CONSTRUCTION			#
+					#########################################
+
 
 					if l == numfolders and k == len(Lineouts):
 						print'-------------------------------'
