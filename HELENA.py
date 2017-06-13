@@ -53,7 +53,7 @@ DebugMode = False
 Switchboard = {}
 
 #Tweaks and fixes for 'volitile' diagnostics.
-AxialLine = 80 						#Z-axis line for thrust calculation.  YPR=80
+AxialLine = 47 						#Z-axis line for thrust calculation.  YPR=80
 Manualbiasaxis = ''					#'Axial' or 'Radial'. (empty '' for auto)
 
 #List of recognised atomic sets, add new sets as required.
@@ -67,7 +67,7 @@ NeutSpecies = ['AR','AR3S','O2']
 
 #Commonly used variable sets.
 ArReduced = ['AR','AR+','E','TE','P-POT','RHO','TG-AVE','PRESSURE','EF-TOT','POW-RF','POW-RF-E','S-AR+','SEB-AR+', 'VR-NEUTRAL','VZ-NEUTRAL','VR-ION+','VZ-ION+','FR-AR+','FZ-AR+']
-ArFull = ['AR3S','AR4SM','AR4SR','AR4SPM','AR4SPR','AR4P','AR4D','AR+','AR2+','AR2*','E','TE','P-POT','TG-AVE','RHO','PRESSURE','EF-TOT','POW-RF','POW-RF-E','S-AR+','SEB-AR+', 'VR-NEUTRAL','VZ-NEUTRAL','VR-ION+','VZ-ION+','FR-AR+','FZ-AR+']
+ArFull = ['AR3S','AR4SM','AR4SR','AR4SPM','AR4SPR','AR4P','AR4D','AR','AR+','AR2+','AR2*','E','TE','P-POT','TG-AVE','RHO','PRESSURE','EF-TOT','POW-RF','POW-RF-E','S-AR+','SEB-AR+', 'VR-NEUTRAL','VZ-NEUTRAL','VR-ION+','VZ-ION+','FR-AR+','FZ-AR+']
 O2 = ['O2','O2+','O','O+','O-','E','TE','P-POT','TG-AVE','PRESSURE','EF-TOT','POW-RF','POW-RF-E','VR-NEUTRAL','VZ-NEUTRAL','VR-ION+','VZ-ION+','VR-ION-','VZ-ION-','FR-O-','FZ-O-']
 
 
@@ -91,7 +91,7 @@ O2 = ['O2','O2+','O','O+','O-','E','TE','P-POT','TG-AVE','PRESSURE','EF-TOT','PO
 #Requested movie1/movie_icp Variables.
 IterVariables = ['S-E','E','PPOT','TE']		#Requested Movie_icp (iteration) Variables.
 PhaseVariables = ['S-E','TE']				#Requested Movie1 (phase) Variables.
-electrodeloc = [0,0]						#Centre Cell of powered electrode [R,Z]. (T,B,L,R)
+electrodeloc = [0,12]						#Centre Cell of powered electrode [R,Z]. (T,B,L,R)
 phasecycles = 1								#Number of phase cycles to be plotted.
 #YPR [30,47] #SPR [0,107] #MSHC [0,12]
 
@@ -99,8 +99,8 @@ phasecycles = 1								#Number of phase cycles to be plotted.
 Variables = ArFull
 MultiVar = []						#Additional variables plotted ontop of [Variables]
 radialineouts = [] 					#Radial 1D-Profiles to be plotted (fixed Z-mesh)
-heightlineouts = [0]				#Axial 1D-Profiles to be plotted (fixed R-mesh)
-TrendLocation = [] 					#Cell location For Trend Analysis [R,Z], ([] = min/max)
+heightlineouts = [24,43]				#Axial 1D-Profiles to be plotted (fixed R-mesh)
+TrendLocation = [19] 					#Cell location For Trend Analysis [R,Z], ([] = min/max)
 #YPR H0;R47 #MSHC H0,20;R20
 
 
@@ -117,13 +117,14 @@ savefig_phaseresolvelines = False			#1D Phase Resolved Images
 savefig_phaseresolve2D = False				#2D Phase Resolved Images
 savefig_sheathdynamics = False				#PROES style images
 
+
 #Steady-State diagnostics and terminal outputs.
 savefig_trendcomparison = True
 print_meshconvergence = False
 print_generaltrends = False
 print_KnudsenNumber = False
 print_totalpower = False
-print_DCbias = False
+print_DCbias = True
 print_thrust = False
 
 
@@ -133,10 +134,17 @@ image_plotsymmetry = True
 image_contourplot = True
 image_normalize = False						#### NORMALIZES TO EACH PROFILE SEPERATELY ###
 image_plotgrid = False
+image_plotmesh = False						#### NOT IMPLIMENTED ####
 image_logplot = False
 image_rotate = True
 
-image_plotmesh = False						#### NOT IMPLIMENTED ####
+
+#Write data to ASCII file.
+write_trendcomparison = False
+write_phaseresolve = False
+write_lineouts = False
+write_plot2D = False
+
 
 
 
@@ -145,8 +153,8 @@ image_plotmesh = False						#### NOT IMPLIMENTED ####
 
 #Overrides for automatic image labelling. (NB - Currently only for ComparisionProfiles)
 titleoverride = ['NotImplimented']
-legendoverride = []
-xlabeloverride = []						#Only for Trend Plotter
+legendoverride = ['0','30','60','90','120','150','180','210','240','270','300','330']
+xlabeloverride = ['Phase Offset [Deg]']						#Only for Trend Plotter
 ylabeloverride = ['NotImplimented']
 cbaroverride = ['NotImplimented']
 gridoverride = ['NotImplimented']
@@ -473,8 +481,6 @@ for l in range(0,numfolders):
 		dz.append(Height[-1]/(Z_mesh[-1]-1))
 	#endtry
 #endfor
-
-
 
 
 
@@ -3003,6 +3009,13 @@ if savefig_trendcomparison == True or print_DCbias == True:
 			print 'DC Bias:',round(DCbias[l],5),'V'
 		#endif
 	#endfor
+
+	#Write data to ASCII format datafile if requested.
+	if write_trendcomparison == True:
+		DirASCII = CreateNewFolder(DirTrends,'DataFiles')
+		DCASCII = [Xaxis,DCbias]
+		WriteDataToFile(DCASCII, DirASCII+'DCbias trends')
+	#endif
 
 	#Plot and beautify the DCbias, applying normalization if requested.
 	fig,ax = figure(image_aspectratio,1)
