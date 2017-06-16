@@ -53,7 +53,7 @@ DebugMode = False
 Switchboard = {}
 
 #Tweaks and fixes for 'volitile' diagnostics.
-AxialLine = 47 						#Z-axis line for thrust calculation.  YPR=80
+AxialLine = 80 						#Z-axis line for thrust calculation.  YPR=80
 Manualbiasaxis = ''					#'Axial' or 'Radial'. (empty '' for auto)
 
 #List of recognised atomic sets, add new sets as required.
@@ -90,8 +90,8 @@ O2 = ['O2','O2+','O','O+','O-','E','TE','P-POT','TG-AVE','PRESSURE','EF-TOT','PO
 
 #Requested movie1/movie_icp Variables.
 IterVariables = ['S-E','E','PPOT','TE']		#Requested Movie_icp (iteration) Variables.
-PhaseVariables = ['S-E','TE']				#Requested Movie1 (phase) Variables.
-electrodeloc = [0,12]						#Centre Cell of powered electrode [R,Z]. (T,B,L,R)
+PhaseVariables = ['S-E','E','PPOT','TE']	#Requested Movie1 (phase) Variables.
+electrodeloc = [0,0]						#Centre Cell of powered electrode [R,Z]. (T,B,L,R)
 phasecycles = 1								#Number of phase cycles to be plotted.
 #YPR [30,47] #SPR [0,107] #MSHC [0,12]
 
@@ -99,8 +99,8 @@ phasecycles = 1								#Number of phase cycles to be plotted.
 Variables = ArFull
 MultiVar = []						#Additional variables plotted ontop of [Variables]
 radialineouts = [] 					#Radial 1D-Profiles to be plotted (fixed Z-mesh)
-heightlineouts = [24,43]				#Axial 1D-Profiles to be plotted (fixed R-mesh)
-TrendLocation = [19] 					#Cell location For Trend Analysis [R,Z], ([] = min/max)
+heightlineouts = [0]				#Axial 1D-Profiles to be plotted (fixed R-mesh)
+TrendLocation = [] 					#Cell location For Trend Analysis [R,Z], ([] = min/max)
 #YPR H0;R47 #MSHC H0,20;R20
 
 
@@ -124,7 +124,7 @@ print_meshconvergence = False
 print_generaltrends = False
 print_KnudsenNumber = False
 print_totalpower = False
-print_DCbias = True
+print_DCbias = False
 print_thrust = False
 
 
@@ -153,8 +153,8 @@ write_plot2D = False
 
 #Overrides for automatic image labelling. (NB - Currently only for ComparisionProfiles)
 titleoverride = ['NotImplimented']
-legendoverride = ['0','30','60','90','120','150','180','210','240','270','300','330']
-xlabeloverride = ['Phase Offset [Deg]']						#Only for Trend Plotter
+legendoverride = []
+xlabeloverride = []						#Only for Trend Plotter
 ylabeloverride = ['NotImplimented']
 cbaroverride = ['NotImplimented']
 gridoverride = ['NotImplimented']
@@ -1923,7 +1923,7 @@ def DCbiasMagnitude(PPOTlineout):
 	#endfor
 	MetalIndices.append(len(PPOTlineout)-1)
 
-	#Grounded metal will have a PPOT of zero -- ##INCORRECT IF DC-BIAS == 0.0##
+	#Grounded metal will have a PPOT of zero -- ##INCORRECT IF DC-BIAS == int(0.0)##
 	GMetalIndices = list()
 	for i in range(0,len(MetalIndices)):
 		if PPOTlineout[MetalIndices[i]] == 0:
@@ -3014,7 +3014,7 @@ if savefig_trendcomparison == True or print_DCbias == True:
 	if write_trendcomparison == True:
 		DirASCII = CreateNewFolder(DirTrends,'DataFiles')
 		DCASCII = [Xaxis,DCbias]
-		WriteDataToFile(DCASCII, DirASCII+'DCbias trends')
+		WriteDataToFile(DCbias, DirASCII+'DCbias trends')
 	#endif
 
 	#Plot and beautify the DCbias, applying normalization if requested.
