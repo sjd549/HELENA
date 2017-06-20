@@ -46,11 +46,11 @@ numfolders = 1			#Fudge
 Magmesh = 1				#initmesh.exe Mag-Factor
 ierr = 0				#OldDebugMode
 
+#Create switchboard directory for GUI.
+Switchboard = {}
+
 #Activates various debug outputs.
 DebugMode = False
-
-#Create switchboard dictionary
-Switchboard = {}
 
 #Tweaks and fixes for 'volitile' diagnostics.
 AxialLine = 80 						#Z-axis line for thrust calculation.  YPR=80
@@ -72,7 +72,7 @@ O2 = ['O2','O2+','O','O+','O-','E','TE','P-POT','TG-AVE','PRESSURE','EF-TOT','PO
 
 
 #Paper Trend Locations
-#MSHC dz(5.50/118), dr(2.55/102) height=[24,43], Trend=[19]
+#SDoyle2017a: dz(5.50/118), dr(2.55/102) height=[24,43], Trend=[19]
 
 
 
@@ -139,10 +139,10 @@ image_logplot = False
 image_rotate = True
 
 
-#Write data to ASCII file.
+#Write data to ASCII files.
 write_trendcomparison = False
 write_phaseresolve = False
-write_lineouts = False
+write_lineouts = True
 write_plot2D = False
 
 
@@ -252,7 +252,7 @@ print '   |  |__|  | |  |__   |  |     |  |__   |   \|  |   /  ^  \        '
 print '   |   __   | |   __|  |  |     |   __|  |  . `  |  /  /_\  \       '
 print '   |  |  |  | |  |____ |  `----.|  |____ |  |\   | /  _____  \      '
 print '   |__|  |__| |_______||_______||_______||__| \__|/__/     \__\     '
-print '                                                             v0.9.2 '
+print '                                                             v0.9.3 '
 print '--------------------------------------------------------------------'
 print ''
 print 'The following diagnostics were requested:'
@@ -496,15 +496,15 @@ for l in range(0,numfolders):
 #Takes a 1D or 2D array and writes to a datafile in ASCII format.
 #Two imputs, first is data to be written, second is filename string.
 #WriteDataToFile(Image, FolderNameTrimmer(Dirlist[l])+Variablelist[k])
-def WriteDataToFile(Data,filename):
+def WriteDataToFile(data,filename,structure='w'):
 
 	#Determine dimensionality of profile.
-	if isinstance(Data[0], (list, np.ndarray) ) == True:
+	if isinstance(data[0], (list, np.ndarray) ) == True:
 		#Open new textfile and output 2D image data.
-		datafile = open(filename, 'w')
-		for m in range(0,len(Data)):
-			for n in range(0,len(Data[m])):
-				datafile.write(str(Data[m][n]))
+		datafile = open(filename, structure)
+		for m in range(0,len(data)):
+			for n in range(0,len(data[m])):
+				datafile.write(str(data[m][n]))
 				datafile.write(' ')
 			#endfor
 			datafile.write('\n')
@@ -512,11 +512,11 @@ def WriteDataToFile(Data,filename):
 		datafile.close()
 
 	#Lowest dimention is still list.
-	elif isinstance(Data, (list, np.ndarray) ) == True:
+	elif isinstance(data, (list, np.ndarray) ) == True:
 		#Open new textfile and output 2D image data.
-		datafile = open(filename, 'w')
-		for n in range(0,len(Data)):
-			datafile.write(str(Data[n]))
+		datafile = open(filename, structure)
+		for n in range(0,len(data)):
+			datafile.write(str(data[n]))
 			datafile.write(' ')
 		#endfor
 		datafile.close()
@@ -1362,7 +1362,7 @@ def figure(aspectratio,subplots=1):
 #=========================#
 
 
-
+	###### NOT CURRENTLY IN USE, NEEDS OVERHAUL #####
 #Applies plt.options to current figure based on user input.
 #Returns nothing, current image is required, use figure().
 def ImageOptions():
@@ -1423,10 +1423,38 @@ def Normalize(profile):
 #=========================#
 
 
+#Create figure and plot a 1D graph with associated image plotting requirements.
+#Returns plotted axes and figure if new ones were created.
+#Else plots to existing figure and returns nothing.
+def ImagePlotter1D(profile,axis,aspectratio,createfig=True):
+
+	if createfig == True: fig, ax = figure(aspectratio)
+
+	#Apply any required numerical changes to the profile.
+	if image_logplot == True:
+		profile = np.log(profile)
+	if image_normalize == True:
+		profile = Normalize(profile)
+	#endif
+
+	#Plot profile and apply any further image_<string> modifications.
+	plt.plot(axis,profile, lw=2)
+	if image_plotgrid == True: plt.grid(True)
+
+	try: return(fig,ax)
+	except: return()
+#enddef
+
+
+
+#=========================#
+#=========================#
+
+
 
 #Create figure and plot a 2D image with associated image plotting requirements.
 #Returns plotted image, axes and figure.
-def ImagePlotter(Image,extent,aspectratio):
+def ImagePlotter2D(Image,extent,aspectratio):
 	fig, ax = figure(aspectratio)
 
 	#Apply any required numerical changes to the image.
@@ -1487,7 +1515,7 @@ def TrendPlotter(TrendArray,Xaxis,Normalize=1):
 	#endif
 
 	#Standard image_<string> user modifcations.
-	ImageOptions()
+	if image_plotgrid == True: plt.grid(True)
 
 	return()
 #enddef
@@ -1528,12 +1556,12 @@ def SymmetryConverter2D(Image,Isym,R_mesh,Z_mesh,Radius,Height):
 			#endfor
 
 			extent=[0,Height, -Radius,Radius]
-			fig,ax,im = ImagePlotter(SymRotateImage,extent,aspectratio)
+			fig,ax,im = ImagePlotter2D(SymRotateImage,extent,aspectratio)
 
 		#If the mesh does not use symmetry, simply plot the data as is.
 		elif Isym == 0:
 			extent=[0,Height, 0,Radius]
-			fig,ax,im = ImagePlotter(RotateImage,extent,aspectratio)
+			fig,ax,im = ImagePlotter2D(RotateImage,extent,aspectratio)
 		#endif
 
 #=========================#
@@ -1551,12 +1579,12 @@ def SymmetryConverter2D(Image,Isym,R_mesh,Z_mesh,Radius,Height):
 			#endfor
 
 			extent = [-Radius,Radius, 0,Height]
-			fig,ax,im = ImagePlotter(SymImage,extent,aspectratio)
+			fig,ax,im = ImagePlotter2D(SymImage,extent,aspectratio)
 
 		#If the mesh does not use symmetry, simply plot the data as is.
 		elif Isym == 0:
 			extent=[0,Radius, 0,Height]
-			fig,ax,im = ImagePlotter(Image,extent,aspectratio)
+			fig,ax,im = ImagePlotter2D(Image,extent,aspectratio)
 		#endif
 	#endif
 
@@ -2336,15 +2364,7 @@ if savefig_radialines or savefig_heightlines == True:
 					Rlineout = PlotRadialProfile(Data[l],processlist[i],Variablelist[i],radialineouts[j],R_mesh[l],Isymlist[l])
 
 					#Plot lines for each variable at each requested slice.
-					if image_logplot == True:
-						plt.plot(Raxis,np.log(Rlineout), lw=2)
-						#ax.set_yscale('log')
-					elif image_normalize == True:
-						Rlineout = Normalize(Rlineout)
-						plt.plot(Raxis,Rlineout, lw=2)
-					else:
-						plt.plot(Raxis,Rlineout, lw=2)
-					#endif
+					ImagePlotter1D(Rlineout,Raxis,image_aspectratio,False)
 				#endfor
 
 				#Save lines in previously created folder.
@@ -2382,15 +2402,7 @@ if savefig_radialines or savefig_heightlines == True:
 					Zlineout = PlotAxialProfile(Data[l],processlist[i],Variablelist[i],heightlineouts[j],R_mesh[l],Z_mesh[l],Isymlist[l])
 
 					#Plot lines for each variable at each requested slice.
-					if image_logplot == True:
-						plt.plot(Zaxis[0:len(Zlineout)],np.log(Zlineout[::-1]), lw=2)
-						#ax.set_yscale('log')
-					elif image_normalize == True:
-						Zlineout = Normalize(Zlineout)
-						plt.plot(Zaxis[0:len(Zlineout)],Zlineout[::-1], lw=2)
-					else:
-						plt.plot(Zaxis[0:len(Zlineout)],Zlineout[::-1], lw=2)
-					#endif
+					ImagePlotter1D(Zlineout[::-1],Zaxis,image_aspectratio,False)
 
 					#Perform SI conversion and save to legend.
 					if len(Legendlist) < len(heightlineouts):
@@ -2477,14 +2489,16 @@ if savefig_comparelineouts == True:
 				Rlineout = PlotRadialProfile(Data[l],processlist[k],Variablelist[k],radialineouts[j],R_mesh[l],Isymlist[l])
 
 				#Plot radial profile and allow for log y-axis if requested.
-				if image_logplot == True:
-					plt.plot(Raxis,np.log(Rlineout), lw=2)
-					#ax.set_yscale('log')
-				elif image_normalize == True:
-					Rlineout = Normalize(Rlineout)
-					plt.plot(Raxis,Rlineout, lw=2)
-				else:
-					plt.plot(Raxis,Rlineout, lw=2)
+				ImagePlotter1D(Rlineout,Raxis,image_aspectratio,False)
+
+				#Write data to ASCII files if requested.
+				if write_lineouts == True and l == 0:
+					WriteFolder = 'Z='+str(round((radialineouts[j])*dz[l], 2))+'cm Data'
+					DirWrite = CreateNewFolder(DirComparisons, WriteFolder) 
+					try: os.remove(DirWrite+Variablelist[k])
+					except: a=1
+				if write_lineouts == True:
+					WriteDataToFile(Rlineout+['\n'], DirWrite+Variablelist[k], 'a')
 				#endif
 
 				#Organize and beautify the plots.
@@ -2547,14 +2561,16 @@ if savefig_comparelineouts == True:
 				Zlineout = PlotAxialProfile(Data[l],processlist[k],Variablelist[k],heightlineouts[j],R_mesh[l],Z_mesh[l],Isymlist[l])
 
 				#Plot axial profile and allow for log y-axis if requested.
-				if image_logplot == True:
-					plt.plot(Zaxis[0:len(Zlineout)],np.log(Zlineout[::-1]), lw=2)
-					#ax.set_yscale('log')
-				elif image_normalize == True:
-					Zlineout = Normalize(Zlineout)
-					plt.plot(Raxis[0:len(Zlineout)],Zlineout[::-1], lw=2)
-				else:
-					plt.plot(Zaxis[0:len(Zlineout)],Zlineout[::-1], lw=2)
+				ImagePlotter1D(Zlineout[::-1],Zaxis,image_aspectratio,False)
+
+				#Write data to ASCII files if requested.
+				if write_lineouts == True and l == 0:
+					WriteFolder = 'R='+str(round((heightlineouts[j])*dr[l], 2))+'cm Data'
+					DirWrite = CreateNewFolder(DirComparisons, WriteFolder) 
+					try: os.remove(DirWrite+Variablelist[k])
+					except: a=1
+				if write_lineouts == True:
+					WriteDataToFile(Zlineout+['\n'], DirWrite+Variablelist[k], 'a')
 				#endif
 
 				#Beautify and label the plots, allowing for manual renaming if requested.
@@ -2631,23 +2647,14 @@ if savefig_multiprofiles == True:
 
 					#Plot the initial variable in processlist first.
 					Zlineout = PlotAxialProfile(Data[l],processlist[i],Variablelist[i],heightlineouts[j],R_mesh[l],Z_mesh[l],Isymlist[l])
-					if image_normalize == True: Zlineout = Normalize(Zlineout)
-					plt.plot(Zaxis[0:len(Zlineout)],Zlineout[::-1], lw=2)
+					ImagePlotter1D(Zlineout[::-1],Zaxis,image_aspectratio,False)
 
 					#Plot all of the requested comparison variables for this plot.
 					for m in range(0,len(multiprocesslist)):
 
 						#Plot profile for multiplot variables in compareprocesslist.
 						Zlineout = PlotAxialProfile(Data[l],multiprocesslist[m],multiVariablelist[m],heightlineouts[j],R_mesh[l],Z_mesh[l],Isymlist[l])
-						if image_logplot == True:
-							plt.plot(Zaxis,np.log(Zlineout), lw=2)
-							#ax.set_yscale('log')
-						elif image_normalize == True:
-							Zlineout = Normalize(Zlineout)
-							plt.plot(Zaxis,Zlineout[::-1], lw=2)
-						else:
-							plt.plot(Zaxis,Zlineout[::-1], lw=2)
-						#endif
+						ImagePlotter1D(Zlineout[::-1],Zaxis,image_aspectratio,False)
 
 						#Update legendlist with each variable compared.
 						legendlist.append(VariableLabelMaker(multiVariablelist)[m])
@@ -2698,23 +2705,14 @@ if savefig_multiprofiles == True:
 
 					#Plot profile for initial variable in processlist.
 					Rlineout = PlotRadialProfile(Data[l],processlist[i],Variablelist[i],radialineouts[j],R_mesh[l],Isymlist[l])
-					if image_normalize == True: Rlineout = Normalize(Rlineout)
-					plt.plot(Raxis,Rlineout,lw=2)
+					ImagePlotter1D(Rlineout,Raxis,image_aspectratio,False)
 
 					#Plot all of the requested comparison variables for this plot.
 					for m in range(0,len(multiprocesslist)):
 
 						#Plot profile for multiplot variables in compareprocesslist.
 						Rlineout = PlotRadialProfile(Data[l],multiprocesslist[m],multiVariablelist[m],radialineouts[j],R_mesh[l],Isymlist[l])
-						if image_logplot == True:
-							plt.plot(Raxis,np.log(Rlineout), lw=2)
-							#ax.set_yscale('log')
-						elif image_normalize == True:
-							Rlineout = Normalize(Rlineout)
-							plt.plot(Raxis,Rlineout, lw=2)
-						else:
-							plt.plot(Raxis,Rlineout, lw=2)
-						#endif
+						ImagePlotter1D(Rlineout,Raxis,image_aspectratio,False)
 
 						#Update legendlist with each variable compared.
 						legendlist.append(VariableLabelMaker(multiVariablelist)[m])
@@ -3012,7 +3010,7 @@ if savefig_trendcomparison == True or print_DCbias == True:
 
 	#Write data to ASCII format datafile if requested.
 	if write_trendcomparison == True:
-		DirASCII = CreateNewFolder(DirTrends,'DataFiles')
+		DirASCII = CreateNewFolder(DirTrends,'Trend Data')
 		DCASCII = [Xaxis,DCbias]
 		WriteDataToFile(DCbias, DirASCII+'DCbias trends')
 	#endif
