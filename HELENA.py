@@ -22,14 +22,14 @@ import math as m
 import os, sys
 import os.path
 
-
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from findtools.find_files import (find_files, Match)
 from matplotlib import pyplot as plt
 from matplotlib import ticker
 from scipy import ndimage
-#from tqdm import tqdm	#Progress bar
+#from tqdm import tqdm		#Progress bar
 from pylab import *
+
 
 
 
@@ -53,7 +53,7 @@ Switchboard = {}
 DebugMode = False
 
 #Tweaks and fixes for 'volitile' diagnostics.
-AxialLine = 80 						#Z-axis line for thrust calculation.  YPR=80
+AxialLine = 80 						#Z-axis line for thrust calculation.  YPR=80, ESCTest=42,
 Manualbiasaxis = ''					#'Axial' or 'Radial'. (empty '' for auto)
 
 #List of recognised atomic sets, add new sets as required.
@@ -91,7 +91,7 @@ O2 = ['O2','O2+','O','O+','O-','E','TE','P-POT','TG-AVE','PRESSURE','EF-TOT','PO
 #Requested movie1/movie_icp Variables.
 IterVariables = ['S-E','E','PPOT','TE']		#Requested Movie_icp (iteration) Variables.
 PhaseVariables = ['S-E','E','PPOT','TE']	#Requested Movie1 (phase) Variables.
-electrodeloc = [0,0]						#Centre Cell of powered electrode [R,Z]. (T,B,L,R)
+electrodeloc = [0,12]						#Centre Cell of powered electrode [R,Z]. (T,B,L,R)
 phasecycles = 1								#Number of phase cycles to be plotted.
 #YPR [30,47] #SPR [0,107] #MSHC [0,12]
 
@@ -99,8 +99,8 @@ phasecycles = 1								#Number of phase cycles to be plotted.
 Variables = ArFull
 MultiVar = []						#Additional variables plotted ontop of [Variables]
 radialineouts = [] 					#Radial 1D-Profiles to be plotted (fixed Z-mesh)
-heightlineouts = [0]				#Axial 1D-Profiles to be plotted (fixed R-mesh)
-TrendLocation = [] 					#Cell location For Trend Analysis [R,Z], ([] = min/max)
+heightlineouts = [24,43]				#Axial 1D-Profiles to be plotted (fixed R-mesh)
+TrendLocation = [19] 					#Cell location For Trend Analysis [R,Z], ([] = min/max)
 #YPR H0;R47 #MSHC H0,20;R20
 
 
@@ -111,7 +111,7 @@ savefig_plot2D = True
 savefig_radialines = False
 savefig_heightlines = False
 savefig_multiprofiles = False
-savefig_comparelineouts = True
+savefig_comparelineouts = False
 
 savefig_phaseresolvelines = False			#1D Phase Resolved Images
 savefig_phaseresolve2D = False				#2D Phase Resolved Images
@@ -119,7 +119,7 @@ savefig_sheathdynamics = False				#PROES style images
 
 
 #Steady-State diagnostics and terminal outputs.
-savefig_trendcomparison = True
+savefig_trendcomparison = False
 print_meshconvergence = False
 print_generaltrends = False
 print_KnudsenNumber = False
@@ -141,9 +141,9 @@ image_rotate = True
 
 #Write data to ASCII files.
 write_trendcomparison = False
-write_phaseresolve = False
+write_phaseresolve = False					#### NOT IMPLIMENTED ####
 write_lineouts = True
-write_plot2D = False
+write_plot2D = True
 
 
 
@@ -153,8 +153,8 @@ write_plot2D = False
 
 #Overrides for automatic image labelling. (NB - Currently only for ComparisionProfiles)
 titleoverride = ['NotImplimented']
-legendoverride = []
-xlabeloverride = []						#Only for Trend Plotter
+legendoverride = ['0.5Torr','1.0Torr','1.5Torr']
+xlabeloverride = []							#Only for Trend Plotter
 ylabeloverride = ['NotImplimented']
 cbaroverride = ['NotImplimented']
 gridoverride = ['NotImplimented']
@@ -166,6 +166,10 @@ gridoverride = ['NotImplimented']
 #'13.56MHz','27.12MHz','40.68MHz','54.24MHz','67.80MHz'
 #'67.80MHz','54.24MHz','40.68MHz','27.12MHz','13.56MHz'
 #'1.0mm','1.5mm','2.0mm','2.5mm','3.0mm'
+
+
+
+
 
 
 
@@ -252,7 +256,7 @@ print '   |  |__|  | |  |__   |  |     |  |__   |   \|  |   /  ^  \        '
 print '   |   __   | |   __|  |  |     |   __|  |  . `  |  /  /_\  \       '
 print '   |  |  |  | |  |____ |  `----.|  |____ |  |\   | /  _____  \      '
 print '   |__|  |__| |_______||_______||_______||__| \__|/__/     \__\     '
-print '                                                             v0.9.3 '
+print '                                                             v0.9.4 '
 print '--------------------------------------------------------------------'
 print ''
 print 'The following diagnostics were requested:'
@@ -494,7 +498,7 @@ for l in range(0,numfolders):
 #====================================================================#
 
 #Takes a 1D or 2D array and writes to a datafile in ASCII format.
-#Two imputs, first is data to be written, second is filename string.
+#Three imputs, Data to be written, Filename, 'w'rite or 'a'ppend.
 #WriteDataToFile(Image, FolderNameTrimmer(Dirlist[l])+Variablelist[k])
 def WriteDataToFile(data,filename,structure='w'):
 
@@ -511,7 +515,7 @@ def WriteDataToFile(data,filename,structure='w'):
 		#endfor
 		datafile.close()
 
-	#Lowest dimention is still list.
+	#Lowest dimention is scalar: ==> 1D array.
 	elif isinstance(data, (list, np.ndarray) ) == True:
 		#Open new textfile and output 2D image data.
 		datafile = open(filename, structure)
@@ -534,15 +538,16 @@ def ReadDataFromFile(Filename):
 	if isinstance(Data[0], (list, np.ndarray) ) == True:
 		#Read in 2D data from ASCII formatted file.
 		datafile = open(Filename)
-		for m in range(0,len(datafile)):
-			Row = datafile.readline().split()
+		RawData = datafile.readlines()
+		for m in range(0,Height):
+			Row = RawData[m].split()
 			for n in range(0,len(Row)):
 				Row[n] = float(Row[n])
 			#endfor
 			OutputData.append(Row)
 		#endfor
 
-	#Lowest dimention is still list.
+	#Lowest dimention is scalar: ==> 1D array.
 	elif isinstance(Data, (list, np.ndarray) ) == True:
 		#Read in 1D data from ASCII formatted file.
 		datafile = open(Filename)
@@ -560,7 +565,7 @@ def ReadDataFromFile(Filename):
 #Enumerates requested variables and produces a processlist for plotting.
 def VariableEnumerator(Variables,Rawdata,Header):
 	processlist = list()
-	legendlist = list()
+	variablelist = list()
 
 	#For all requested variables, in the requested data header, find which match.
 	for j in range(0,len(Variables)):
@@ -570,12 +575,12 @@ def VariableEnumerator(Variables,Rawdata,Header):
 			#Default uses [1:-3] slice for the variable string.
 			if Variables[j] == Rawdata[i].replace(" ", "")[1:-3]:
 				processlist.append(i)
-				legendlist.append(Rawdata[i].replace(" ", "")[1:-3])
+				variablelist.append(Rawdata[i].replace(" ", "")[1:-3])
 				break
 			#endif
 		#endfor
 	#endfor
-	return processlist,legendlist
+	return(processlist,variablelist)
 #enddef
 
 
@@ -624,16 +629,16 @@ def VariableLabelMaker(variablelist):
 		#Explicit Ionization Rates.
 		elif variablelist[i] == 'S-E':
 			Variable = 'Bulk Electron Excitation'
-			VariableUnit = '[m$^{-3}$s$^{-1}$]'
+			VariableUnit = '[m$^{3}$s$^{-1}$]'
 		elif variablelist[i] == 'SEB-E':
 			Variable = 'Secondary Electron Excitation'
-			VariableUnit = '[m$^{-3}$s$^{-1}$]'
+			VariableUnit = '[m$^{3}$s$^{-1}$]'
 		elif variablelist[i] == 'S-AR+':
 			Variable = 'Bulk Ar+ Ionization Rate'
-			VariableUnit = '[m$^{-3}$s$^{-1}$]'
+			VariableUnit = '[m$^{3}$s$^{-1}$]'
 		elif variablelist[i] == 'SEB-AR+':
 			Variable = 'Secondary Ar+ Ionization Rate'
-			VariableUnit = '[m$^{-3}$s$^{-1}$]'
+			VariableUnit = '[m$^{3}$s$^{-1}$]'
 
 		#Explicit Species Temperatures.
 		elif variablelist[i] == 'TE':
@@ -739,7 +744,7 @@ def VariableLabelMaker(variablelist):
 		#Implicit Variables.
 		elif IsStringInVariable(variablelist[i],Ionizationlist) == True:
 			Variable = variablelist[i]
-			VariableUnit = '[m$^{-3}$s$^{-1}$]'
+			VariableUnit = '[m$^{3}$s$^{-1}$]'
 		elif IsStringInVariable(variablelist[i],['T-']) == True:
 			Variable = variablelist[i]
 			VariableUnit = '[K]'
@@ -772,7 +777,7 @@ def VariableLabelMaker(variablelist):
 #Implicitly calculates for common variables, explicitly for densities.
 def VariableUnitConversion(profile,variable):
 
-	#For ionization rates, convert from [cm-3 s-1] to [m-3 s-1]
+	#For ionization rates, convert from [cm3 s-1] to [m3 s-1]
 	if IsStringInVariable(variable,['S-','SEB-']) == True:
 		for i in range(0,len(profile)):
 			profile[i] = profile[i]*1E6
@@ -1269,6 +1274,8 @@ else:
 
 #Identifies if variable exists in all simulations, rejects if not.
 #Allows for the comparison of datasets with different icp.dat files.
+#Takes processlist, variablelist, globalcomparisonlist
+#Returns processlist and variablelist with largest commonly shared variables.
 def VariableInterpolator(processlist,Variablelist,Comparisonlist):
 
 	#Return default if atomic physics is the same in all datasets.
@@ -1301,7 +1308,7 @@ def VariableInterpolator(processlist,Variablelist,Comparisonlist):
 				else:
 					j += 1
 				#endif
-			#endfor
+			#endwhile
 		#endfor
 	#endif
 
@@ -2072,47 +2079,37 @@ if savefig_plot2D == True:
 			#Extract full 2D image for further processing.
 			Image = ImageExtractor2D(Data[l][processlist[k]],R_mesh[l],Z_mesh[l],Variablelist[k])
 
+			#Generate and rotate figure as requested.
+			fig,ax,im = SymmetryConverter2D(Image,Isymlist[l],R_mesh[l],Z_mesh[l],Radius[l],Height[l])
+
+			#Define image beautification variables.
 			if image_rotate == True:
-				#Label and save the horizontal 2D Plots.
-				fig,ax,im = SymmetryConverter2D(Image,Isymlist[l],R_mesh[l],Z_mesh[l],Radius[l],Height[l])
-
-				#Image plotting details
-				plt.title('2D Steady State Plot of '+Variablelist[k]+' for \n'+Dirlist[l][2:-1],y=1.10)
-				plt.xlabel('Axial Distance Z [cm]',fontsize=24)
-				plt.ylabel('Radial Distance R [cm]',fontsize=24)
-				if image_plotsymmetry == True:
-					plt.yticks([round(-Radius[l], 1), round(-Radius[l]/2, 1), 0, round(Radius[l]/2, 1), round(Radius[l], 1)])
-				elif image_plotsymmetry == False:
-					plt.yticks([0, round(Radius[l]/2, 1), round(Radius[l], 1)])
-				#endif
-				xticks(fontsize=18)
-				yticks(fontsize=18)
-
-			else:
-				#Label and save the vertical 2D Plots.
-				fig,ax,im = SymmetryConverter2D(Image,Isymlist[l],R_mesh[l],Z_mesh[l],Radius[l],Height[l])
-				#Image plotting details, invert Y-axis to fit 1D profiles.
-				plt.title('2D Steady State Plot of '+Variablelist[k]+' for \n'+Dirlist[l][2:-1],y=1.03)
-				plt.xlabel('Radial Distance R [cm]',fontsize=24)
-				plt.ylabel('Axial Distance Z [cm]',fontsize=24)
+				Xlabel,Ylabel = 'Axial Distance Z [cm]','Radial Distance R [cm]'
+			elif image_rotate == False:
+				Xlabel,Ylabel = 'Radial Distance R [cm]','Axial Distance Z [cm]'
 				plt.gca().invert_yaxis()
-				if image_plotsymmetry == True:
-					plt.xticks([round(-Radius[l], 1), round(-Radius[l]/2, 1), 0, round(Radius[l]/2, 1), round(Radius[l], 1)])
-				elif image_plotsymmetry == False:
-					plt.xticks([0, round(Radius[l]/2, 1), round(Radius[l], 1)])
-				#endif
-				xticks(fontsize=18)
-				yticks(fontsize=18)
 			#endif
+			
+			#Image plotting details, invert Y-axis to fit 1D profiles.
+			plt.title('2D Steady State Plot of '+Variablelist[k]+' for \n'+Dirlist[l][2:-1],y=1.10)
+			plt.xlabel(Xlabel, fontsize=24)
+			plt.ylabel(Ylabel, fontsize=24)
+			xticks(fontsize=18)
+			yticks(fontsize=18)
 
 			#Add Colourbar (Axis, Label, Bins)
 			Bins = 5
 			label = VariableLabelMaker(Variablelist)
 			cax = Colourbar(ax,label[k],Bins)
 
+			#Write data to ASCII files if requested.
+			if write_plot2D == True:
+				DirWrite = CreateNewFolder(Dir2Dplots, '2Dplots Data') 
+				WriteDataToFile(Image, DirWrite+Variablelist[k])
+			#endif
+
 			#Save Figure
 			plt.savefig(Dir2Dplots+'2DPlot '+Variablelist[k]+'.png')
-#			plt.show()
 			plt.clf()
 			plt.close('all')
 
@@ -2856,6 +2853,13 @@ if savefig_trendcomparison == True or print_generaltrends == True:
 			#Plot trends for each variable over all folders, applying image options.
 			TrendPlotter(Trend,Xaxis,Normalize=1)
 
+			#Write data to ASCII format datafile if requested.
+			if write_trendcomparison == True:
+				DirASCII = CreateNewFolder(DirTrends,'Trend Data')
+				DCASCII = [Xaxis,Trend]
+				WriteDataToFile(Trend, DirASCII+Variablelist[k]+' Trends')
+			#endif
+
 			#Beautify the plot before saving.
 			plt.title('Trend in max '+Variablelist[k]+' with changing '+TrendVariable+' \n'+Dirlist[l][2:-1] ,position=(0.5,1.05))
 			plt.ylabel('Max '+YaxisLegend[k], fontsize=24)
@@ -2917,6 +2921,13 @@ if savefig_trendcomparison == True or print_generaltrends == True:
 
 			#Plot trends for each variable over all folders, applying image options.
 			TrendPlotter(MaxTrend,Xaxis,Normalize=1)
+
+			#Write data to ASCII format datafile if requested.
+			if write_trendcomparison == True:
+				DirASCII = CreateNewFolder(DirTrends,'Trend Data')
+				DCASCII = [Xaxis,MaxTrend]
+				WriteDataToFile(MaxTrend, DirASCII+Variablelist[k]+' Trends')
+			#endif
 
 			#Beautify the plot before saving.
 			plt.title('Trend in max '+Variablelist[k]+' with changing '+TrendVariable+' \n'+Dirlist[l][2:-1] ,position=(0.5,1.05))
@@ -3160,6 +3171,8 @@ if savefig_trendcomparison == True or print_thrust == True:
 	DirTrends = CreateNewFolder(os.getcwd()+'/',TrendVariable+' Trends')
 
 	#Initiate lists required for storing data.
+	NeutralThrustlist = list()
+	IonThrustlist = list()
 	Thrustlist = list()
 	Xaxis = list()
 
@@ -3228,12 +3241,15 @@ if savefig_trendcomparison == True or print_thrust == True:
 					IonIsp.append(IonExitVelocity)
 				#endif
 			#endfor
-			Thrust = NeutralThrust + IonThrust
-			Thrustlist.append( round(Thrust*1000,5) )
+			Thrust = NeutralThrust + IonThrust							#N
 			try: IonIsp = (sum(IonIsp)/len(IonIsp))/9.81
 			except: IonIsp = 0
 			try: NeutralIsp = (sum(NeutralIsp)/len(NeutralIsp))/9.81
 			except: NeutralIsp = 0
+
+			NeutralThrustlist.append( round(NeutralThrust*1000,5) )		#mN
+			IonThrustlist.append( round(IonThrust*1000,5) )				#mN
+			Thrustlist.append( round(Thrust*1000,5) )					#mN
 
 		else:
 			#Thrust based on integration over concentric neutral momentum and pressure.
@@ -3261,15 +3277,17 @@ if savefig_trendcomparison == True or print_thrust == True:
 	#Plot and Beautify the thrust.
 	fig,ax = figure(image_aspectratio,1)
 	TrendPlotter(Thrustlist,Xaxis,Normalize=1)
+#	TrendPlotter(IonThrustlist,Xaxis,Normalize=1)
 
-	plt.title('Thrust with changing '+TrendVariable+' \n'+Dirlist[l][2:-1] ,position=(0.5,1.05))
-	plt.ylabel('Thrust [mN]', fontsize=24)
+	ax.set_title('Thrust with changing '+TrendVariable+' \n'+Dirlist[l][2:-1] ,position=(0.5,1.05))
+	ax.legend(['Total Thrust','Ion Thrust'], loc=1)
+	ax.set_ylabel('Total Thrust [mN]', fontsize=24)
 	ax.tick_params(axis='x', labelsize=18)
 	ax.tick_params(axis='y', labelsize=18)
 	if len(xlabeloverride) > 0:
-		plt.xlabel(xlabeloverride[0], fontsize=24)
+		ax.set_xlabel(xlabeloverride[0], fontsize=24)
 	else:
-		plt.xlabel('Varied Property', fontsize=24)
+		ax.set_xlabel('Varied Property', fontsize=24)
 	#endif
 
 	plt.savefig(DirTrends+'Thrust Trends.png')
@@ -3530,6 +3548,7 @@ if savefig_phaseresolve2D == True:
 		plt.plot(Phaseaxis,VoltageWaveform, lw=2)
 		plt.plot(Phaseaxis,WaveformBias, 'k--', lw=2)
 		plt.title('Phase-Resolved Voltage Waveform for '+WaveformTitles[l], y=1.03, fontsize=16)
+		plt.legend( ['Electrical Bias: '+str(round(WaveformBias[0],2))] )
 		plt.xlabel('Phase [$\omega$t/2$\pi$]', fontsize=24)
 		plt.ylabel('Potential [V]', fontsize=24)
 		ax.tick_params(axis='x', labelsize=18)
@@ -4062,6 +4081,36 @@ if True == False:
 	# SoundVelocity=np.sqrt(k*Pressure/Density)
 
 	SoundVelocity=np.sqrt(AdiabaticIndex*GasConstant*NeutralTemp)
+#endif
+
+#=====================================================================#
+#=====================================================================#
+
+
+
+
+
+
+
+
+#====================================================================#
+				#MORE DETAILED GRAPHS/CONTOUR PLOTS#
+#====================================================================#
+
+if True == False:
+	#SeaBorn Colour, as_cmap causes issue!
+	#Set_Style should remove grids but doesn't.
+	try:
+		import seaborn as sns	
+		GlobalCmap = sns.color_palette("muted", as_cmap=True)
+		sns.set_style("whitegrid", {'axes.grid' : False})
+	except:
+		GlobalCmap = matplotlib.cm.get_cmap('jet')
+	#endtry
+
+	#NB:
+	#Need to replace plotting functions with:
+	#im = ax.imshow(Image,extent=extent,cmap=GlobalCmap,origin="lower")
 #endif
 
 #=====================================================================#
