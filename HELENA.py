@@ -132,6 +132,7 @@ print_thrust = False
 image_aspectratio = [10,10]					#[x,y] in cm [Doesn't rotate dynamically]
 image_radialcrop = [0.6]					#[R,Z] in cm
 image_axialcrop = [1,4]						#[R,Z] in cm
+#YPR R[0.6];Z[1,4]
 
 image_plotsymmetry = True
 image_contourplot = True
@@ -260,7 +261,7 @@ print '   |  |__|  | |  |__   |  |     |  |__   |   \|  |   /  ^  \        '
 print '   |   __   | |   __|  |  |     |   __|  |  . `  |  /  /_\  \       '
 print '   |  |  |  | |  |____ |  `----.|  |____ |  |\   | /  _____  \      '
 print '   |__|  |__| |_______||_______||_______||__| \__|/__/     \__\     '
-print '                                                             v0.9.6 '
+print '                                                             v0.9.7 '
 print '--------------------------------------------------------------------'
 print ''
 print 'The following diagnostics were requested:'
@@ -2305,7 +2306,7 @@ if savefig_itermovie == True:
 			numrows = len(IterMovieData[l][0][0])/R_mesh[l]
 			Image = np.zeros([numrows,R_mesh[l]])
 
-			#Append new list to convergenceTrends.
+			#Append new list to convergenceTrends for each variable.
 			ConvergenceTrends.append(list())
 
 			#Reshape specific part of 1D Data array into 2D image for plotting.
@@ -2374,7 +2375,7 @@ if savefig_itermovie == True:
 		Title = 'Convergence of '+str(IterVariablelist)
 		Xlabel,Ylabel = 'Simulation Iteration','Normalized Mesh-Average Value'
 		ImageOptions(ax,Xlabel,Ylabel,Title,Crop=False)
-		ax.legend(legend, loc=4)
+		ax.legend(Legend, loc=4)
 		ax.set_ylim( 0,1.02 )
 
 		#Save figure.
