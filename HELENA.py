@@ -111,15 +111,15 @@ savefig_plot2D = False						#Requires TECPLOT2D.PDT
 savefig_radialines = False
 savefig_heightlines = False
 savefig_multiprofiles = False
-savefig_comparelineouts = True
+savefig_comparelineouts = False
 
 savefig_phaseresolvelines = False			#1D Phase Resolved Images
-savefig_phaseresolve2D = False				#2D Phase Resolved Images
+savefig_phaseresolve2D = True				#2D Phase Resolved Images
 savefig_sheathdynamics = False				#PROES style images
 
 
 #Steady-State diagnostics and terminal outputs.
-savefig_trendcomparison = True
+savefig_trendcomparison = False
 print_meshconvergence = False
 print_generaltrends = False
 print_KnudsenNumber = False
@@ -3687,9 +3687,9 @@ if savefig_phaseresolve2D == True:
 				#endif
 				ImageOptions(ax[0],Xlabel,Ylabel)
 				#Add Colourbar (Axis, Label, Bins)
-#				label = VariableLabelMaker(PhaseVariablelist)
-#				cax = Colourbar(ax[0],label[i],5)
-#				im.set_clim(vmin=MinNormalize, vmax=MaxNormalize)
+				label = VariableLabelMaker(PhaseVariablelist)
+				cax = Colourbar(ax[0],label[i],5)
+				im.set_clim(vmin=MinNormalize, vmax=MaxNormalize)
 
 				#Plot waveform and apply image options.
 				ax[1].plot(Phaseaxis, VoltageWaveform, lw=2)
@@ -3968,8 +3968,8 @@ if savefig_phaseresolvelines == True or savefig_sheathdynamics == True:
 					ImageOptions(ax[0],Xlabel='',Ylabel=Ylabel,Crop=True)
 					ax[0].set_xlim(x1,x2)
 					#Add Colourbar (Axis, Label, Bins)
-					label = VariableLabelMaker(PhaseVariablelist)
-					cax = Colourbar(ax[0],label[i],5)
+#					label = VariableLabelMaker(PhaseVariablelist)
+#					cax = Colourbar(ax[0],label[i],5)
 
 					#Plot Waveform.
 					ax[1].plot(Phaseaxis, VoltageWaveform, lw=2)
