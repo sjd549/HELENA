@@ -111,7 +111,7 @@ savefig_plot2D = True
 savefig_radialines = False
 savefig_heightlines = False
 savefig_multiprofiles = False
-savefig_comparelineouts = False
+savefig_comparelineouts = True
 
 savefig_phaseresolvelines = False			#1D Phase Resolved Images
 savefig_phaseresolve2D = False				#2D Phase Resolved Images
@@ -119,7 +119,7 @@ savefig_sheathdynamics = False				#PROES style images
 
 
 #Steady-State diagnostics and terminal outputs.
-savefig_trendcomparison = False
+savefig_trendcomparison = True
 print_meshconvergence = False
 print_generaltrends = False
 print_KnudsenNumber = False
@@ -129,7 +129,10 @@ print_thrust = False
 
 
 #Image plotting options.
-image_aspectratio = [10,10]					#[x,y] in inches
+image_aspectratio = [10,10]					#[x,y] in cm [Doesn't rotate dynamically]
+image_radialcrop = [0.6]					#[R,Z] in cm
+image_axialcrop = [1,4]						#[R,Z] in cm
+
 image_plotsymmetry = True
 image_contourplot = True
 image_normalize = False						#### NORMALIZES TO EACH PROFILE SEPERATELY ###
@@ -137,6 +140,7 @@ image_plotgrid = False
 image_plotmesh = False						#### NOT IMPLIMENTED ####
 image_logplot = False
 image_rotate = True
+
 
 
 #Write data to ASCII files.
@@ -256,7 +260,7 @@ print '   |  |__|  | |  |__   |  |     |  |__   |   \|  |   /  ^  \        '
 print '   |   __   | |   __|  |  |     |   __|  |  . `  |  /  /_\  \       '
 print '   |  |  |  | |  |____ |  `----.|  |____ |  |\   | /  _____  \      '
 print '   |__|  |__| |_______||_______||_______||__| \__|/__/     \__\     '
-print '                                                             v0.9.5 '
+print '                                                             v0.9.6 '
 print '--------------------------------------------------------------------'
 print ''
 print 'The following diagnostics were requested:'
@@ -1369,17 +1373,72 @@ def figure(aspectratio,subplots=1):
 #=========================#
 
 
-	###### NOT CURRENTLY IN USE, NEEDS OVERHAUL #####
+
+#Crops 2D image taking account of image rotation options.
+#Takes image axis and returns nothing, use figure()
+#CropImage(ax[0]), assumes default axis.
+def CropImage(ax=plt.gca()):
+
+		#Obtain default limits and change to local crop variables.
+		R1,R2 = ax.get_ylim()[0],ax.get_ylim()[1]
+		Z1,Z2 = ax.get_xlim()[0],ax.get_xlim()[1]
+		radialcrop = image_radialcrop
+		axialcrop = image_axialcrop
+
+		#Extract cropping dimentions from image_<input>.
+		if len(radialcrop) == 1:
+			R1,R2 = -(radialcrop[0]),radialcrop[0]
+		elif len(radialcrop) == 2:
+			R1,R2 = radialcrop[0],radialcrop[1]
+		#endif
+		if len(axialcrop) == 1:
+			Z1,Z2 = 0,axialcrop[0]
+		elif len(axialcrop) == 2:
+			Z1,Z2 = axialcrop[0],axialcrop[1]
+		#endif
+
+		#Rotate cropping dimentions if image is rotated.
+		if image_rotate == True:
+			R1,Z1 = Z1,R1
+			R2,Z2 = Z2,R2
+		#endif
+
+		#Apply cropping dimensions to image.
+		xlim(R1,R2) 
+		ylim(Z1,Z2)
+	#endif
+#enddef
+
+
+#=========================#
+#=========================#
+
+
+
 #Applies plt.options to current figure based on user input.
 #Returns nothing, current image is required, use figure().
-def ImageOptions():
+#ImageOptions(Title,Xlabel,Ylabel,Legend)
+def ImageOptions(Title='',Xlabel='',Ylabel='',Legend=[]):
 
-	#Log image if possible, else linear. Grid default is off.
-	if image_logplot == True:
-		try: ax.set_yscale('log')
-		except: ax.set_yscale('linear')
+	#Set title and legend if one is supplied.
+	plt.title(Title, fontsize=18, y=1.10)
+	if len(Legend) > 0:
+		plt.legend(Legend, frameon=False)
 	#endif
+
+	#Set labels and ticksize.
+	plt.xlabel(Xlabel, fontsize=24)
+	plt.ylabel(Ylabel, fontsize=24)
+	xticks(fontsize=18)
+	yticks(fontsize=18)
+
+	#Set grid, default is off.
 	if image_plotgrid == True: plt.grid(True)
+	#endif
+
+	#Crop image dimensions if requested.
+	if len(image_radialcrop) > 0 or len(image_axialcrop) > 0:
+		CropImage(plt.gca())
 	#endif
 
 	return()
@@ -2152,11 +2211,8 @@ if savefig_plot2D == True:
 			#endif
 			
 			#Image plotting details, invert Y-axis to fit 1D profiles.
-			plt.title('2D Steady State Plot of '+Variablelist[k]+' for \n'+Dirlist[l][2:-1],y=1.10)
-			plt.xlabel(Xlabel, fontsize=24)
-			plt.ylabel(Ylabel, fontsize=24)
-			xticks(fontsize=18)
-			yticks(fontsize=18)
+			Title = '2D Steady State Plot of '+Variablelist[k]+' for \n'+Dirlist[l][2:-1]
+			ImageOptions(Title,Xlabel,Ylabel)
 
 			#Add Colourbar (Axis, Label, Bins)
 			Bins = 5
