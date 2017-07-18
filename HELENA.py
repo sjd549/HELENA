@@ -99,8 +99,8 @@ phasecycles = 1								#Number of phase cycles to be plotted.
 Variables = ArFull
 MultiVar = []						#Additional variables plotted ontop of [Variables]
 radialineouts = [] 					#Radial 1D-Profiles to be plotted (fixed Z-mesh)
-heightlineouts = [24,43]				#Axial 1D-Profiles to be plotted (fixed R-mesh)
-TrendLocation = [19] 					#Cell location For Trend Analysis [R,Z], ([] = min/max)
+heightlineouts = [0]				#Axial 1D-Profiles to be plotted (fixed R-mesh)
+TrendLocation = [] 					#Cell location For Trend Analysis [R,Z], ([] = min/max)
 #YPR H0;R47 #MSHC H0,20;R20
 
 
@@ -142,8 +142,8 @@ image_rotate = True
 #Write data to ASCII files.
 write_trendcomparison = False
 write_phaseresolve = False					#### NOT IMPLIMENTED ####
-write_lineouts = True
-write_plot2D = True
+write_lineouts = False
+write_plot2D = False
 
 
 
@@ -153,7 +153,7 @@ write_plot2D = True
 
 #Overrides for automatic image labelling. (NB - Currently only for ComparisionProfiles)
 titleoverride = ['NotImplimented']
-legendoverride = ['0.5Torr','1.0Torr','1.5Torr']
+legendoverride = []
 xlabeloverride = []							#Only for Trend Plotter
 ylabeloverride = ['NotImplimented']
 cbaroverride = ['NotImplimented']
@@ -256,7 +256,7 @@ print '   |  |__|  | |  |__   |  |     |  |__   |   \|  |   /  ^  \        '
 print '   |   __   | |   __|  |  |     |   __|  |  . `  |  /  /_\  \       '
 print '   |  |  |  | |  |____ |  `----.|  |____ |  |\   | /  _____  \      '
 print '   |__|  |__| |_______||_______||_______||__| \__|/__/     \__\     '
-print '                                                             v0.9.4 '
+print '                                                             v0.9.5 '
 print '--------------------------------------------------------------------'
 print ''
 print 'The following diagnostics were requested:'
@@ -1619,6 +1619,8 @@ def Colourbar(ax,Label,Bins):
 	#Size of font
 	cbar.ax.yaxis.offsetText.set(size=18)
 	yticks(fontsize=18)
+
+	return(cbar)
 #enddef
 
 
@@ -1661,7 +1663,7 @@ def GenerateAxis(Orientation,Isym):
 
 #Obtains a radial 1D profile at a requested axial location.
 #Returns a 1D array for plotting and performs unit conversion.
-def PlotRadialProfile(Data,process,variable,lineout,R_mesh,Isym):
+def PlotRadialProfile(Data,process,variable,lineout,R_mesh=R_mesh[l],Isym=Isymlist[l]):
 
 	#Obtain start location for requested data and perform SI conversion.
 	ZStart = R_mesh*lineout
@@ -1702,7 +1704,7 @@ def PlotRadialProfile(Data,process,variable,lineout,R_mesh,Isym):
 
 #Obtains an axial 1D profile at a requested radial location.
 #Returns a 1D array for plotting and performs unit conversion.
-def PlotAxialProfile(Data,process,variable,lineout,R_mesh,Z_mesh,Isym):
+def PlotAxialProfile(Data,process,variable,lineout,R_mesh=R_mesh[l],Z_mesh=Z_mesh[l],Isym=Isymlist[l]):
 
 	#Refresh lineout data between lines.
 	Zlineout = list()
@@ -1922,7 +1924,6 @@ def MinMaxTrends(lineout,Orientation,process):
 
 
 
-
 #TREND ANALYSIS - DCbias
 #Takes a PPOT profile and calcuates DCbias via difference in voltage drop.
 #Can identify DC-bias for parallel plate discharges and dielectric discharges.
@@ -2028,6 +2029,61 @@ def DCbiasMagnitude(PPOTlineout):
 
 
 
+##########################################################################
+#NOT WORKING, NEEDS FIXING AND TESTING FOR PHASEDATA AND STEADYSTATE DATA#
+##########################################################################
+#Takes current folder and orientation, returns arrays of waveform shape.
+#PVoltageWaveform(PhaseMovieData[l],'axial',l)
+def PlotVoltageWaveform(Data,orientation,folder=l):
+
+	#Create processlist for PPOT.
+	PPOT = VariableEnumerator(['PPOT'],rawdata_phasemovie[folder],header_phasemovie[folder])[0]
+
+	VoltageWaveformZ, VoltageWaveformR = list(),list()
+	VoltageWaveform = list()
+	#Obtain applied voltage waveform and normalization values seperately.
+	for i in range(0,len(Data)):
+
+		#Obtain electrode locations.
+		RElectrodeLoc = ElectrodeLoc(electrodeloc,'Phase')[0]
+		ZElectrodeLoc = ElectrodeLoc(electrodeloc,'Phase')[1]
+
+		#Obtain applied voltage waveforms.
+		VoltageWaveformZ.append( PlotAxialProfile(Data[i],PPOT,'PPOT',ZElectrodeLoc)[RElectrodeLoc])
+		VoltageWaveformR.append( PlotRadialProfile(Data[i],PPOT,'PPOT',RElectrodeLoc)[ZElectrodeLoc])
+	#endfor
+
+	#select orientation to return.
+	if orientation == 'radial':
+		VoltageWaveform = VoltageWaveformR
+	if orientation == 'axial':
+		VoltageWaveform = VoltageWaveformZ
+	#endif
+
+	#Calculate time averaged waveform bias, i.e. waveform symmetry.
+	WaveformBias = list()
+	for m in range(0,len(VoltageWaveform)):
+		WaveformBias.append(sum(VoltageWaveform)/len(VoltageWaveform))
+	#endfor
+
+	#Extend the waveform to match requested number of phase cycles.
+	for m in range(0,(phasecycles-1)*len(VoltageWaveform)):
+		VoltageWaveform.append(VoltageWaveform[m])
+		WaveformBias.append(WaveformBias[m])
+	#endfor
+
+	return(VoltageWaveform,WaveformBias)
+#enddef
+
+
+
+#=========================#
+#=========================#
+
+
+
+
+
 
 
 
@@ -2072,6 +2128,11 @@ if savefig_plot2D == True:
 
 		#Create processlist for each folder as required.
 		processlist,Variablelist = VariableEnumerator(Variables,rawdata_2D[l],header_2Dlist[l])
+
+		#Setting the radial ticks for beauty purposes ~HACKY~
+		R = Radius[l]
+		SymTicks = [round(-R, 1), round(-R/2, 1), 0, round(R/2, 1), round(R, 1)]
+		NoSymTicks = [0, round(R/2, 1), round(R, 1)]
 
 		#Reshape specific part of 1D Data array into 2D image for plotting.
 		for k in range(0,len(processlist)):
@@ -3548,7 +3609,7 @@ if savefig_phaseresolve2D == True:
 		plt.plot(Phaseaxis,VoltageWaveform, lw=2)
 		plt.plot(Phaseaxis,WaveformBias, 'k--', lw=2)
 		plt.title('Phase-Resolved Voltage Waveform for '+WaveformTitles[l], y=1.03, fontsize=16)
-		plt.legend( ['Electrical Bias: '+str(round(WaveformBias[0],2))] )
+		plt.legend( ['rf self-bias: '+str(round(WaveformBias[0],2))] )
 		plt.xlabel('Phase [$\omega$t/2$\pi$]', fontsize=24)
 		plt.ylabel('Potential [V]', fontsize=24)
 		ax.tick_params(axis='x', labelsize=18)
@@ -3740,6 +3801,7 @@ if savefig_phaseresolvelines == True or savefig_sheathdynamics == True:
 		plt.plot(Phaseaxis,VoltageWaveform, lw=2)
 		plt.plot(Phaseaxis,WaveformBias, 'k--', lw=2)
 		plt.title('Phase-Resolved Voltage Waveform for '+VariedValuelist[l], y=1.03, fontsize=16)
+		plt.legend( ['rf self-bias: '+str(round(WaveformBias[0],2))] )
 		plt.xlabel('Phase [$\omega$t/2$\pi$]', fontsize=24)
 		plt.ylabel('Potential [V]', fontsize=24)
 		ax.tick_params(axis='x', labelsize=18)
