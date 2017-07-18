@@ -91,7 +91,7 @@ O2 = ['O2','O2+','O','O+','O-','E','TE','P-POT','TG-AVE','PRESSURE','EF-TOT','PO
 #Requested movie1/movie_icp Variables.
 IterVariables = ['S-E','E','PPOT','TE']		#Requested Movie_icp (iteration) Variables.
 PhaseVariables = ['S-E','E','PPOT','TE']	#Requested Movie1 (phase) Variables.
-electrodeloc = [0,12]						#Centre Cell of powered electrode [R,Z]. (T,B,L,R)
+electrodeloc = [30,47]						#Centre Cell of powered electrode [R,Z]. (T,B,L,R)
 phasecycles = 1								#Number of phase cycles to be plotted.
 #YPR [30,47] #SPR [0,107] #MSHC [0,12]
 
@@ -106,7 +106,7 @@ TrendLocation = [] 					#Cell location For Trend Analysis [R,Z], ([] = min/max)
 
 #Requested plotting routines.
 savefig_itermovie = False					#Requires movie_icp.pdt
-savefig_plot2D = True
+savefig_plot2D = False						#Requires TECPLOT2D.PDT
 
 savefig_radialines = False
 savefig_heightlines = False
@@ -1328,7 +1328,7 @@ def VariableInterpolator(processlist,Variablelist,Comparisonlist):
 
 #Returns a 2D array of inputted data with size [R_mesh] x [Z_mesh]
 #Can optionally perform variable unit conversion if required.
-def ImageExtractor2D(Data,R_mesh,Z_mesh,Variable=[]):
+def ImageExtractor2D(Data,Variable=[],R_mesh=R_mesh[l],Z_mesh=Z_mesh[l]):
 
 	#Create empty 2D image of required size.
 	numrows = len(Data)/R_mesh
@@ -1404,8 +1404,8 @@ def CropImage(ax=plt.gca()):
 		#endif
 
 		#Apply cropping dimensions to image.
-		xlim(R1,R2) 
-		ylim(Z1,Z2)
+		ax.set_xlim(R1,R2) 
+		ax.set_ylim(Z1,Z2)
 	#endif
 #enddef
 
@@ -1417,28 +1417,31 @@ def CropImage(ax=plt.gca()):
 
 #Applies plt.options to current figure based on user input.
 #Returns nothing, current image is required, use figure().
-#ImageOptions(Title,Xlabel,Ylabel,Legend)
-def ImageOptions(Title='',Xlabel='',Ylabel='',Legend=[]):
+#ImageOptions(plt.gca(),Xlabel,Ylabel,Title,Legend,Crop=False)
+def ImageOptions(ax=plt.gca(),Xlabel='',Ylabel='',Title='',Legend=[],Crop=True):
 
 	#Set title and legend if one is supplied.
-	plt.title(Title, fontsize=18, y=1.10)
+	if len(Title) > 0:
+		ax.set_title(Title, fontsize=14, y=1.09)
 	if len(Legend) > 0:
-		plt.legend(Legend, frameon=False)
+		ax.legend(Legend, frameon=False)
 	#endif
 
 	#Set labels and ticksize.
-	plt.xlabel(Xlabel, fontsize=24)
-	plt.ylabel(Ylabel, fontsize=24)
-	xticks(fontsize=18)
-	yticks(fontsize=18)
+	ax.set_xlabel(Xlabel, fontsize=24)
+	ax.set_ylabel(Ylabel, fontsize=24)
+	ax.tick_params(axis='x', labelsize=18)
+	ax.tick_params(axis='y', labelsize=18)
 
 	#Set grid, default is off.
-	if image_plotgrid == True: plt.grid(True)
+	if image_plotgrid == True: ax.grid(True)
 	#endif
 
 	#Crop image dimensions if requested.
 	if len(image_radialcrop) > 0 or len(image_axialcrop) > 0:
-		CropImage(plt.gca())
+		if Crop == True:
+			CropImage(ax)
+		#endif
 	#endif
 
 	return()
@@ -1455,7 +1458,7 @@ def ImageOptions(Title='',Xlabel='',Ylabel='',Legend=[]):
 def Normalize(profile):
 
 	#determine dimensionality of profile and select normaliztion method.
-	if isinstance(profile[0], (list, np.ndarray, np.generic) ) == True:
+	if isinstance(profile[0], (list, np.ndarray) ) == True:
 
 		#Normalize 2D array to local maximum.
 		FlatImage = [item for sublist in profile for item in sublist]
@@ -1467,7 +1470,7 @@ def Normalize(profile):
 		return(profile)
 
 	#Lowest dimention is still list.
-	elif isinstance(profile, (list, np.ndarray, np.generic) ) == True:
+	elif isinstance(profile, (list, np.ndarray) ) == True:
 
 		#Fix for division by zero.
 		if max(profile) != 0: normalize = max(profile)
@@ -1593,8 +1596,10 @@ def TrendPlotter(TrendArray,Xaxis,Normalize=1):
 
 
 
-#Takes pre-produced 2D image and 'beautifies' it for plotting.
-def SymmetryConverter2D(Image,Isym,R_mesh,Z_mesh,Radius,Height):
+#Takes 2D image array and produces rotated and plotted figure.
+#Returns fig,ax,im for further beautification if required.
+#fix,ax,im = SymmetryConverter2D(Image)
+def SymmetryConverter2D(Image,Isym=Isymlist[l],R_mesh=R_mesh[l],Z_mesh=Z_mesh[l],Radius=Radius[l],Height=Height[l]):
 
 	#Obtain image standard (non-rotated) aspect ratio.
 	if len(image_aspectratio) == 2:
@@ -1666,6 +1671,7 @@ def SymmetryConverter2D(Image,Isym,R_mesh,Z_mesh,Radius,Height):
 
 #Creates and plots a colourbar with given label and binsize.
 def Colourbar(ax,Label,Bins):
+
 	#Colourbar plotting details
 	divider = make_axes_locatable(ax)
 	cax = divider.append_axes("right", size="5%", pad=0.1)
@@ -1878,7 +1884,7 @@ def TrendAtGivenLocation(TrendLocation,process,variable):
 	for l in range(0,numfolders):
 
 		#Extract image with given process and variable name.
-		Image = ImageExtractor2D(Data[l][process],R_mesh[l],Z_mesh[l],variable)
+		Image = ImageExtractor2D(Data[l][process],variable,R_mesh[l],Z_mesh[l])
 
 		#Update X-axis with folder information.
 		Xaxis.append( FolderNameTrimmer(Dirlist[l]) )
@@ -2167,6 +2173,14 @@ def PlotVoltageWaveform(Data,orientation,folder=l):
 
 
 
+
+
+
+
+
+
+
+
 #====================================================================#
 				  #IMAGE PLOTTING AND DATA ANALYSIS#
 #====================================================================#
@@ -2197,10 +2211,10 @@ if savefig_plot2D == True:
 		for k in range(0,len(processlist)):
 
 			#Extract full 2D image for further processing.
-			Image = ImageExtractor2D(Data[l][processlist[k]],R_mesh[l],Z_mesh[l],Variablelist[k])
+			Image = ImageExtractor2D(Data[l][processlist[k]],Variablelist[k])
 
 			#Generate and rotate figure as requested.
-			fig,ax,im = SymmetryConverter2D(Image,Isymlist[l],R_mesh[l],Z_mesh[l],Radius[l],Height[l])
+			fig,ax,im = SymmetryConverter2D(Image)
 
 			#Define image beautification variables.
 			if image_rotate == True:
@@ -2212,12 +2226,11 @@ if savefig_plot2D == True:
 			
 			#Image plotting details, invert Y-axis to fit 1D profiles.
 			Title = '2D Steady State Plot of '+Variablelist[k]+' for \n'+Dirlist[l][2:-1]
-			ImageOptions(Title,Xlabel,Ylabel)
+			ImageOptions(ax,Xlabel,Ylabel,Title)
 
 			#Add Colourbar (Axis, Label, Bins)
-			Bins = 5
-			label = VariableLabelMaker(Variablelist)
-			cax = Colourbar(ax,label[k],Bins)
+			label,bins = VariableLabelMaker(Variablelist),5
+			cax = Colourbar(ax,label[k],bins)
 
 			#Write data to ASCII files if requested.
 			if write_plot2D == True:
@@ -2227,7 +2240,6 @@ if savefig_plot2D == True:
 
 			#Save Figure
 			plt.savefig(Dir2Dplots+'2DPlot '+Variablelist[k]+'.png')
-			plt.clf()
 			plt.close('all')
 
 			#Percentage Complete Readout.
@@ -2278,10 +2290,9 @@ if savefig_itermovie == True:
 		#endfor
 
 		#Create list and x-axis for convergence trend plotting.
-		ConvergenceTrend = list()
-		Xaxis = list()
-		for k in range(0,len(MovieITERlist[l])):
-			Xaxis.append(filter(lambda x: x.isdigit(), MovieITERlist[l][k]))
+		ConvergenceTrends,Xaxis = list(),list()
+		for i in range(0,len(MovieITERlist[l])):
+			Xaxis.append(filter(lambda x: x.isdigit(), MovieITERlist[l][i]))
 		#endfor
 
 		#for all variables requested by the user.
@@ -2294,59 +2305,40 @@ if savefig_itermovie == True:
 			numrows = len(IterMovieData[l][0][0])/R_mesh[l]
 			Image = np.zeros([numrows,R_mesh[l]])
 
+			#Append new list to convergenceTrends.
+			ConvergenceTrends.append(list())
+
 			#Reshape specific part of 1D Data array into 2D image for plotting.
 			for k in range(0,len(MovieITERlist[l])):
 
 				#Extract full 2D image for further processing.
-				Image = ImageExtractor2D(IterMovieData[l][k][iterprocesslist[i]],R_mesh[l],Z_mesh[l],IterVariablelist[i])
+				Image = ImageExtractor2D(IterMovieData[l][k][iterprocesslist[i]],IterVariablelist[i])
 				#Take Max value of image for general convergence trend.
-				ConvergenceTrend.append( sum(Image.flatten())/len(Image.flatten()) )
+				ConvergenceTrends[-1].append( sum(Image.flatten())/len(Image.flatten()) )
 
-				#Label and save the 2D Plots.
+				#Generate and rotate figure as requested.
+				fig,ax,im = SymmetryConverter2D(Image)
+
+				#Define image axis labels.
 				if image_rotate == True:
-					#Label and save the horizontal 2D Plots.
-					fig,ax,im = SymmetryConverter2D(Image,Isymlist[l],R_mesh[l],Z_mesh[l],Radius[l],Height[l])
-
-					#Image plotting details
-					plt.title(MovieITERlist[l][k], y=1.10, fontsize=26)
-					plt.xlabel('Axial Distance Z [cm]',fontsize=24)
-					plt.ylabel('Radial Distance R [cm]',fontsize=24)
-					if image_plotsymmetry == True:
-						plt.yticks([round(-Radius[l], 1), round(-Radius[l]/2, 1), 0, round(Radius[l]/2, 1), round(Radius[l], 1)])
-					elif image_plotsymmetry == False:
-						plt.yticks([0, round(Radius[l]/2, 1), round(Radius[l], 1)])
-					#endif
-					xticks(fontsize=18)
-					yticks(fontsize=18)
-
-				else:
-					#Label and save the vertical 2D Plots.
-					fig,ax,im = SymmetryConverter2D(Image,Isymlist[l],R_mesh[l],Z_mesh[l],Radius[l],Height[l])
-					#Image plotting details, invert Y-axis to fit 1D profiles.
-					plt.title(MovieITERlist[l][k], y=1.10, fontsize=26)
-					plt.xlabel('Radial Distance R [cm]',fontsize=24)
-					plt.ylabel('Axial Distance Z [cm]',fontsize=24)
+					Xlabel,Ylabel = 'Axial Distance Z [cm]','Radial Distance R [cm]'
+				elif image_rotate == False:
+					Xlabel,Ylabel = 'Radial Distance R [cm]','Axial Distance Z [cm]'
 					plt.gca().invert_yaxis()
-					if image_plotsymmetry == True:
-						plt.xticks([round(-Radius[l], 1), round(-Radius[l]/2, 1), 0, round(Radius[l]/2, 1), round(Radius[l], 1)])
-					elif image_plotsymmetry == False:
-						plt.xticks([0, round(Radius[l]/2, 1), round(Radius[l], 1)])
-					#endif
-					xticks(fontsize=18)
-					yticks(fontsize=18)
 				#endif
 
+				#Image plotting details.
+				Title = str(MovieITERlist[l][k])
+				ImageOptions(ax,Xlabel,Ylabel,Title)
+
 				#Add Colourbar (Axis, Label, Bins)
-				Bins = 5
-				label = VariableLabelMaker(IterVariablelist)
-				cax = Colourbar(ax,label[i],Bins)
+				label,bins = VariableLabelMaker(IterVariablelist),5
+				cax = Colourbar(ax,label[i],bins)
 
 				#Save to seperate folders inside simulation folder.
 				num1,num2,num3 = k % 10, k/10 % 10, k/100 % 10
 				Number = str(num3)+str(num2)+str(num1)
 				savefig(DirMovieplots+IterVariablelist[i]+'_'+Number+'.png')
-#				plt.show()
-				plt.clf()
 				plt.close('all')
 
 				#Percentage Complete Readout.
@@ -2359,37 +2351,35 @@ if savefig_itermovie == True:
 				#endif
 			#endfor
 
-			#Normalize current variable in convergence trend.
-			normalize = max(ConvergenceTrend[i*len(Xaxis):(i+1)*len(Xaxis)])
-			for m in range(0,len(Xaxis)):
-				index = (i*len(Xaxis))+m
-				ConvergenceTrend[index] = ConvergenceTrend[index]/normalize
-			#endfor
-
 			#Create .mp4 movie from completed images.
 			Prefix = FolderNameTrimmer(Dirlist[l])
 			Automovie(DirMovieplots,Prefix+'_'+IterVariablelist[i])
 		#endfor
 
+
+		#=================#
+
+
 		#Plot a convergence check for all variables in each folder.
-		legend = VariableLabelMaker(IterVariablelist)
+		Legend = VariableLabelMaker(IterVariablelist)
 		fig, ax = plt.subplots(1, figsize=(10,10))
 
-		for j in range(0,len(iterprocesslist)):
-			start = j*len(Xaxis)
-			end = (j+1)*len(Xaxis)
-			plt.plot(Xaxis,ConvergenceTrend[start:end], lw=2)
+		#Normalize and plot each variable in ConvergenceTrends to single figure.
+		for i in range(0,len(ConvergenceTrends)):
+			Normalize(ConvergenceTrends[i])
+			ax.plot(Xaxis,ConvergenceTrends[i], lw=2)
 		#endfor
-		plt.title('Convergence of '+str(IterVariablelist), fontsize=16, y=1.03)
-		plt.xlabel('Simulation Iteration', fontsize=24)
-		plt.ylabel('Normalized Mesh-Average Value', fontsize=24)
-		plt.legend(legend, prop={'size':16}, loc=4)
-		plt.ylim((0,1.02))
-		xticks(fontsize=18)
-		yticks(fontsize=18)
+			
+		#Image plotting details.
+		Title = 'Convergence of '+str(IterVariablelist)
+		Xlabel,Ylabel = 'Simulation Iteration','Normalized Mesh-Average Value'
+		ImageOptions(ax,Xlabel,Ylabel,Title,Crop=False)
+		ax.legend(legend, loc=4)
+		ax.set_ylim( 0,1.02 )
+
+		#Save figure.
 		savefig(DirConvergence+FolderNameTrimmer(Dirlist[l])+'_Convergence.png')
 		plt.close('all')
-
 	#endfor
 
 	print'------------------------------------'
@@ -2472,26 +2462,22 @@ if savefig_radialines or savefig_heightlines == True:
 					if len(Legendlist) < len(radialineouts):
 						Legendlist.append('Z='+str(round((radialineouts[j])*dz[l]*10, 2))+' mm')
 					#endif
-					ylabel = VariableLabelMaker(Variablelist)
+					Ylabels = VariableLabelMaker(Variablelist)
 
 					#Plot all requested radial lines on single image per variable.
-					Rlineout = PlotRadialProfile(Data[l],processlist[i],Variablelist[i],radialineouts[j],R_mesh[l],Isymlist[l])
+					Rlineout=PlotRadialProfile(Data[l],processlist[i],Variablelist[i],radialineouts[j])
 
 					#Plot lines for each variable at each requested slice.
-					ImagePlotter1D(Rlineout,Raxis,image_aspectratio,False)
+					ImagePlotter1D(Rlineout,Raxis,image_aspectratio,createfig=False)
 				#endfor
 
-				#Save lines in previously created folder.
-				plt.title('Radial Profiles for '+Variablelist[i]+' for \n'+Dirlist[l][2:-1]+' Simulation',position=(0.5,1.05))
-				plt.legend(Legendlist,loc=1)
-				plt.xlabel('Radial Distance R [cm]', fontsize=24)
-				plt.ylabel(ylabel[i], fontsize=24)
-				ax.tick_params(axis='x', labelsize=18)
-				ax.tick_params(axis='y', labelsize=18)
-				if image_plotgrid == True: plt.grid(True)
+				#Apply image options and axis labels.	
+				Title = 'Radial Profiles for '+Variablelist[i]+' for \n'+Dirlist[l][2:-1]
+				Xlabel,Ylabel = 'Radial Distance R [cm]',Ylabels[i]
+				ImageOptions(ax,Xlabel,Ylabel,Title,Legendlist,Crop=False)
 
+				#Save profiles in previously created folder.
 				plt.savefig(DirRlineouts+'1D_Radial_'+Variablelist[i]+' profiles.png')
-#				plt.show()
 				plt.close('fig')
 			#endfor
 			plt.close('all')
@@ -2511,32 +2497,27 @@ if savefig_radialines or savefig_heightlines == True:
 				fig,ax = figure(image_aspectratio,1)
 
 				for j in range(0,len(heightlineouts)):
-
 					#Plot all requested radial lines on single image per variable.
-					Zlineout = PlotAxialProfile(Data[l],processlist[i],Variablelist[i],heightlineouts[j],R_mesh[l],Z_mesh[l],Isymlist[l])
+					Zlineout=PlotAxialProfile(Data[l],processlist[i],Variablelist[i],heightlineouts[j])
 
 					#Plot lines for each variable at each requested slice.
-					ImagePlotter1D(Zlineout[::-1],Zaxis,image_aspectratio,False)
+					ImagePlotter1D(Zlineout[::-1],Zaxis,image_aspectratio,createfig=False)
 
 					#Perform SI conversion and save to legend.
 					if len(Legendlist) < len(heightlineouts):
 						Rlegend = heightlineouts[j]*dr[l]*10
 						Legendlist.append('R='+str(round(Rlegend, 2))+' mm')
 					#endif
-					ylabel = VariableLabelMaker(Variablelist)
+					Ylabels = VariableLabelMaker(Variablelist)
 				#endfor
 
-				#Save lines in previously created folder.
-				plt.title('Height Profiles for '+Variablelist[i]+' for \n'+Dirlist[l][2:-1]+' Simulation',position=(0.5,1.05))
-				plt.xlabel('Axial Distance Z [cm]', fontsize=24)
-				plt.ylabel(ylabel[i], fontsize=24)
-				ax.tick_params(axis='x', labelsize=18)
-				ax.tick_params(axis='y', labelsize=18)
-				plt.legend(Legendlist,loc=1)
-				if image_plotgrid == True: plt.grid(True)
+				#Apply image options and axis labels.
+				Title = 'Height Profiles for '+Variablelist[i]+' for \n'+Dirlist[l][2:-1]
+				Xlabel,Ylabel = 'Axial Distance Z [cm]',Ylabels[i]
+				ImageOptions(ax,Xlabel,Ylabel,Title,Legendlist,Crop=False)
 
+				#Save profiles in previously created folder.
 				plt.savefig(DirZlineouts+'1D_Height_'+Variablelist[i]+' profiles.png')
-#				plt.show()
 				plt.close('fig')
 			#endfor
 			plt.close('all')
@@ -2597,13 +2578,14 @@ if savefig_comparelineouts == True:
 
 				#Update legend with folder information.
 				Legendlist.append( FolderNameTrimmer(Dirlist[l]) )
-				ylabel = VariableLabelMaker(Variablelist)
+				Ylabels = VariableLabelMaker(Variablelist)
 
 				#Plot all radial profiles for all variables in one folder.
 				Rlineout = PlotRadialProfile(Data[l],processlist[k],Variablelist[k],radialineouts[j],R_mesh[l],Isymlist[l])
 
 				#Plot radial profile and allow for log y-axis if requested.
-				ImagePlotter1D(Rlineout,Raxis,image_aspectratio,False)
+				ImagePlotter1D(Rlineout,Raxis,image_aspectratio,createfig=False)
+
 
 				#Write data to ASCII files if requested.
 				if write_lineouts == True and l == 0:
@@ -2615,24 +2597,17 @@ if savefig_comparelineouts == True:
 					WriteDataToFile(Rlineout+['\n'], DirWrite+Variablelist[k], 'a')
 				#endif
 
-				#Organize and beautify the plots.
-				plt.title('Comparison of '+Variablelist[k]+' Profiles at Z='+str(round((radialineouts[j])*dz[l], 2))+'cm for \n'+Dirlist[l][2:-1]+' Simulation',position=(0.5,1.05))
-				plt.xlabel('Radial Distance R [cm]', fontsize=24)
-				plt.ylabel(ylabel[k], fontsize=24)
-				ax.tick_params(axis='x', labelsize=18)
-				ax.tick_params(axis='y', labelsize=18)
-				if image_plotgrid == True: plt.grid(True)
-				if len(legendoverride) > 0:
-					plt.legend(legendoverride, prop={'size':16}, loc=1)
-				else:
-					plt.legend(Legendlist, prop={'size':16}, loc=1)
+				#Apply image options and axis labels.
+				Title = 'Comparison of '+Variablelist[k]+' Profiles at Z='+str(round((radialineouts[j])*dz[l], 2))+'cm for \n'+Dirlist[l][2:-1]
+				Xlabel,Ylabel = 'Radial Distance R [cm]',Ylabels[k]
+				if len(legendoverride) > 0: Legend = legendoverride
+				else: Legend = Legendlist
 				#endif
+				ImageOptions(ax,Xlabel,Ylabel,Title,Legendlist,Crop=False)
 			#endfor
 
 			#Save one image per variable with data from all simulations.
 			plt.savefig(DirProfile+Variablelist[k]+'@ Z='+str(round((radialineouts[j])*dz[l], 2))+'cm profiles.png')
-	#		plt.show()
-			plt.clf
 			plt.close('all')
 		#endfor
 	#endfor
@@ -2669,13 +2644,14 @@ if savefig_comparelineouts == True:
 
 				#Update legend with folder information.
 				Legendlist.append( FolderNameTrimmer(Dirlist[l]) )
-				ylabel = VariableLabelMaker(Variablelist)
+				Ylabels = VariableLabelMaker(Variablelist)
 
 				#Obtain axial profile for each folder of the current variable.
 				Zlineout = PlotAxialProfile(Data[l],processlist[k],Variablelist[k],heightlineouts[j],R_mesh[l],Z_mesh[l],Isymlist[l])
 
 				#Plot axial profile and allow for log y-axis if requested.
-				ImagePlotter1D(Zlineout[::-1],Zaxis,image_aspectratio,False)
+				ImagePlotter1D(Zlineout[::-1],Zaxis,image_aspectratio,createfig=False)
+
 
 				#Write data to ASCII files if requested.
 				if write_lineouts == True and l == 0:
@@ -2687,24 +2663,17 @@ if savefig_comparelineouts == True:
 					WriteDataToFile(Zlineout+['\n'], DirWrite+Variablelist[k], 'a')
 				#endif
 
-				#Beautify and label the plots, allowing for manual renaming if requested.
-				plt.title('Comparison of '+Variablelist[k]+' Profiles at R='+str(round((heightlineouts[j])*dr[l], 2))+'cm for \n'+Dirlist[l][2:-1]+' Simulation',position=(0.5,1.05))
-				plt.xlabel('Axial Distance Z [cm]', fontsize=22)
-				plt.ylabel(ylabel[k], fontsize=22)
-				ax.tick_params(axis='x', labelsize=18)
-				ax.tick_params(axis='y', labelsize=18)
-				if image_plotgrid == True: plt.grid(True)
-				if len(legendoverride) > 0:
-					plt.legend(legendoverride, prop={'size':16}, loc=1)
-				else:
-					plt.legend(Legendlist, prop={'size':16}, loc=1)
+				#Apply image options and axis labels.
+				Title = 'Comparison of '+Variablelist[k]+' Profiles at Z='+str(round((heightlineouts[j])*dr[l], 2))+'cm for \n'+Dirlist[l][2:-1]
+				Xlabel,Ylabel = 'Axial Distance Z [cm]',Ylabels[k]
+				if len(legendoverride) > 0: Legend = legendoverride
+				else: Legend = Legendlist
 				#endif
+				ImageOptions(ax,Xlabel,Ylabel,Title,Legendlist,Crop=False)
 			#endfor
 
 			#Save one image per variable with data from all simulations.
 			plt.savefig(DirProfile+Variablelist[k]+'@ R='+str(round((heightlineouts[j])*dr[l], 2))+'cm profiles.png')
-	#		plt.show()
-			plt.clf
 			plt.close('all')
 		#endfor
 	#endfor
@@ -2731,11 +2700,11 @@ if savefig_multiprofiles == True:
 
 		#Create processlist for each folder as required.
 		processlist,Variablelist = VariableEnumerator(Variables,rawdata_2D[l],header_2Dlist[l])
-		multiprocesslist, multiVariablelist = VariableEnumerator(MultiVar,rawdata_2D[l],header_2Dlist[l])
+		multiprocesslist,multiVariablelist = VariableEnumerator(MultiVar,rawdata_2D[l],header_2Dlist[l])
 
 		#Create variable labels with SI unit conversions if required.
-		ylabel = VariableLabelMaker(Variablelist)
-		multiylabel = VariableLabelMaker(multiVariablelist)
+		Ylabel = VariableLabelMaker(Variablelist)
+		multiYlabel = VariableLabelMaker(multiVariablelist)
 
 		#Generate the vertical (height) lineouts for a given radius.
 		if len(heightlineouts) > 0:
@@ -2761,28 +2730,26 @@ if savefig_multiprofiles == True:
 
 					#Plot the initial variable in processlist first.
 					Zlineout = PlotAxialProfile(Data[l],processlist[i],Variablelist[i],heightlineouts[j],R_mesh[l],Z_mesh[l],Isymlist[l])
-					ImagePlotter1D(Zlineout[::-1],Zaxis,image_aspectratio,False)
+					ImagePlotter1D(Zlineout[::-1],Zaxis,image_aspectratio,createfig=False)
 
 					#Plot all of the requested comparison variables for this plot.
 					for m in range(0,len(multiprocesslist)):
 
 						#Plot profile for multiplot variables in compareprocesslist.
 						Zlineout = PlotAxialProfile(Data[l],multiprocesslist[m],multiVariablelist[m],heightlineouts[j],R_mesh[l],Z_mesh[l],Isymlist[l])
-						ImagePlotter1D(Zlineout[::-1],Zaxis,image_aspectratio,False)
+						ImagePlotter1D(Zlineout[::-1],Zaxis,image_aspectratio,createfig=False)
 
 						#Update legendlist with each variable compared.
 						legendlist.append(VariableLabelMaker(multiVariablelist)[m])
 					#endfor
 
-					#Save figures in original folder.
-					plt.title(str(round((heightlineouts[j])*dr[l], 2))+'cm Height profiles for '+Variablelist[i]+','' for \n'+Dirlist[l][2:-1],position=(0.5,1.05))
-					plt.legend(legendlist, prop={'size':14}, loc=1)
-					ax.tick_params(axis='x', labelsize=18)
-					ax.tick_params(axis='y', labelsize=18)
-					plt.xlabel('Axial Distance Z [cm]', fontsize=22)
-					plt.ylabel(ylabel[i], fontsize=22)
-					if image_plotgrid == True: plt.grid(True)
+					
+					#Apply image options and axis labels.
+					Title = str(round((heightlineouts[j])*dr[l], 2))+'cm Height profiles for '+Variablelist[i]+','' for \n'+Dirlist[l][2:-1]
+					Xlabel,Ylabel = 'Axial Distance Z [cm]',Ylabels[i]
+					ImageOptions(ax,Xlabel,Ylabel,Title,Legendlist,Crop=False)
 
+					#Save figures in original folder.
 					R = 'R='+str(round((heightlineouts[j])*dr[l], 2))+'_'
 					plt.savefig(DirZlineouts+R+Variablelist[i]+'_MultiProfiles.png')
 					plt.close('fig')
@@ -2832,18 +2799,15 @@ if savefig_multiprofiles == True:
 						legendlist.append(VariableLabelMaker(multiVariablelist)[m])
 					#endfor
 
-					#Save lines in previously created folder.
-					plt.title(str(round((radialineouts[j])*dz[l], 2))+'cm Radial Profiles for '+Variablelist[i]+' for \n'+Dirlist[l][2:-1],position=(0.5,1.05))
-					plt.legend(legendlist, prop={'size':14}, loc=1)
-					ax.tick_params(axis='x', labelsize=18)
-					ax.tick_params(axis='y', labelsize=18)
-					plt.xlabel('Radial Distance R [cm]', fontsize=22)
-					plt.ylabel(ylabel[i], fontsize=22)
-					if image_plotgrid == True: plt.grid(True)
 
+					#Apply image options and axis labels.
+					Title = str(round((radialineouts[j])*dz[l], 2))+'cm Radial Profiles for '+Variablelist[i]+' for \n'+Dirlist[l][2:-1]
+					Xlabel,Ylabel = 'Radial Distance R [cm]',Ylabels[i]
+					ImageOptions(ax,Xlabel,Ylabel,Title,Legendlist,Crop=False)
+
+					#Save lines in previously created folder.
 					Z = 'Z='+str(round((radialineouts[j])*dz[l], 2))+'_'
 					plt.savefig(DirRlineouts+Z+Variablelist[i]+'_MultiProfiles.png')
-					plt.close('fig')
 					plt.close('all')
 				#endfor
 			#endfor
@@ -3145,17 +3109,14 @@ if savefig_trendcomparison == True or print_DCbias == True:
 
 	#Plot and beautify the DCbias, applying normalization if requested.
 	fig,ax = figure(image_aspectratio,1)
-	TrendPlotter(DCbias,Xaxis,Normalize=520)
+	TrendPlotter(DCbias,Xaxis,Normalize=1)
 
-	plt.title('Trend in DCbias with changing '+TrendVariable+' \n'+Dirlist[l][2:-1] ,position=(0.5,1.05))
-	plt.ylabel('DC bias [V]', fontsize=24)
-	ax.tick_params(axis='x', labelsize=18)
-	ax.tick_params(axis='y', labelsize=18)
-	if len(xlabeloverride) > 0:
-		plt.xlabel(xlabeloverride[0], fontsize=24)
-	else:
-		plt.xlabel('Varied Property', fontsize=24)
-	#endif
+	#Apply image options and axis labels.
+	Title = 'Trend in DCbias with changing '+TrendVariable+' \n'+Dirlist[l][2:-1]
+	if len(xlabeloverride) > 0: Xlabel = xlabeloverride[0]
+	else: Xlabel = 'Varied Property'
+	Ylabel = 'DC bias [V]'
+	ImageOptions(ax,Xlabel,Ylabel,Title,Legendlist,Crop=False)
 
 	plt.savefig(DirTrends+'Powered Electrode DCbias.png')
 	plt.close('all')
@@ -3200,7 +3161,7 @@ if savefig_trendcomparison == True or print_totalpower == True:
 			Xaxis.append( FolderNameTrimmer(Dirlist[l]) )
 
 			#Extract full 2D power density image.
-			PowerDensity = ImageExtractor2D(Data[l][processlist[k]],R_mesh[l],Z_mesh[l])
+			PowerDensity = ImageExtractor2D(Data[l][processlist[k]])
 
 			#For power densities, convert from [Wcm-3] to [Wm-3].
 			for i in range(0,len(PowerDensity)):
@@ -3685,70 +3646,62 @@ if savefig_phaseresolve2D == True:
 			#Obtain maximum and minimum values of current variable over all phases.
 			MaxNormalize,MinNormalize = list(),list()
 			for j in range(0,phasecycles):
-				MaxNormalize.append( max(ImageExtractor2D(PhaseMovieData[l][j][PhaseProcesslist[i]],R_mesh[l],Z_mesh[l],PhaseVariablelist[i]).flatten()) )
-				MinNormalize.append( min(ImageExtractor2D(PhaseMovieData[l][j][PhaseProcesslist[i]],R_mesh[l],Z_mesh[l],PhaseVariablelist[i]).flatten()) )
+				MaxNormalize.append( max(ImageExtractor2D(PhaseMovieData[l][j][PhaseProcesslist[i]],PhaseVariablelist[i]).flatten()) )
+				MinNormalize.append( min(ImageExtractor2D(PhaseMovieData[l][j][PhaseProcesslist[i]],PhaseVariablelist[i]).flatten()) )
 			#endfor
-			MaxNormalize = max(MaxNormalize)
-			MinNormalize = min(MinNormalize)
+			MaxNormalize,MinNormalize = max(MaxNormalize),min(MinNormalize)
 
 			#Reshape specific part of 1D Data array into 2D image for plotting.
 			for j in range(0,len(Moviephaselist[l])):
 
 				#Extract full 2D image for further processing.  [ASSUMES SYMMETRIC IMAGE]
-				Image = ImageExtractor2D(PhaseMovieData[l][j][PhaseProcesslist[i]],R_mesh[l],Z_mesh[l],PhaseVariablelist[i])
+				Image = ImageExtractor2D(PhaseMovieData[l][j][PhaseProcesslist[i]],PhaseVariablelist[i])
 				#Create new image by reversing and adding itself on the LHS.
 				SymImage = np.zeros([len(Image),2*R_mesh[l]])
 				for m in range(0,len(Image)): SymImage[m] = np.concatenate([Image[m][::-1],Image[m]])
 				Image = SymImage
 
-				#Define image size and axis label names.
-				extent = [-Raxis[-1],Raxis[-1],Zaxis[0],Zaxis[-1]]
-				xlabel = 'Radial Distance R [cm]'
-				ylabel = 'Axial Distance Z [cm]'
-
 				#Ensure image is landscape for waveform to fit underneath.
+				Xlabel,Ylabel = 'Radial Distance R [cm]','Axial Distance Z [cm]'
 				height,width = len(Image), len(Image[0])
 				if height > width:
 					extent=[Zaxis[0],Zaxis[-1],-Raxis[-1],Raxis[-1]]
-					xlabel,ylabel = ylabel,xlabel
+					Xlabel,Ylabel = Ylabel,Xlabel
 					Image = np.transpose(Image)
+				else:
+					extent = [-Raxis[-1],Raxis[-1],Zaxis[0],Zaxis[-1]]
 				#endif
 
 				#Create figure and axes, plot image on top and waveform underneath.
 				fig,ax = figure(image_aspectratio,2)
-				fig.suptitle( 'Phase-Resolved '+PhaseVariablelist[i]+'\n'+str(Moviephaselist[l][j]), y=0.97, fontsize=18)
+				Title = 'Phase-Resolved '+PhaseVariablelist[i]+'\n'+str(Moviephaselist[l][j])
+				fig.suptitle(Title, y=0.97, fontsize=18)
 
+				#Plot 2D image and apply image options and cropping.
 				if image_contourplot == True:
 					im = ax[0].contour(Image,extent=extent,origin="lower", aspect='auto')
 					im = ax[0].imshow(Image,extent=extent,origin="lower", aspect='auto')
 				else:
 					im = ax[0].imshow(Image,extent=extent,origin="lower", aspect='auto')
 				#endif
-				ax[0].set_xlabel('Axial Distance Z [cm]', fontsize=24)
-				ax[0].set_ylabel('Radial Distance Z [cm]', fontsize=24)
-				ax[0].tick_params(axis='x', labelsize=18)
-				ax[0].tick_params(axis='y', labelsize=18)
+				ImageOptions(ax[0],Xlabel,Ylabel)
 				#Add Colourbar (Axis, Label, Bins)
-				label = VariableLabelMaker(PhaseVariablelist)
-				cax = Colourbar(ax[0],label[i],5)
-				im.set_clim(vmin=MinNormalize, vmax=MaxNormalize)
+#				label = VariableLabelMaker(PhaseVariablelist)
+#				cax = Colourbar(ax[0],label[i],5)
+#				im.set_clim(vmin=MinNormalize, vmax=MaxNormalize)
 
+				#Plot waveform and apply image options.
 				ax[1].plot(Phaseaxis, VoltageWaveform, lw=2)
 				ax[1].axvline(Phaseaxis[j], color='k', linestyle='--', lw=2)
-				ax[1].set_xlabel('Phase [$\omega$t/2$\pi$]', fontsize=24)
-				ax[1].set_ylabel('Potential [V]', fontsize=24)
-				ax[1].tick_params(axis='x', labelsize=18)
-				ax[1].tick_params(axis='y', labelsize=18)
-				ax[1].set_xlim(0,phasecycles)
-
-
-				#Calculate numbers used for filename ordering.
-				num1,num2,num3 = j % 10, j/10 % 10, j/100 % 10
-				Number = str(num3)+str(num2)+str(num1)
+				Xlabel,Ylabel = 'Phase [$\omega$t/2$\pi$]','Potential [V]'
+				ImageOptions(ax[1],Xlabel,Ylabel,Crop=False)
+	
 
 				#Cleanup layout and save images.
 				fig.tight_layout()
 				plt.subplots_adjust(top=0.90)
+				num1,num2,num3 = j % 10, j/10 % 10, j/100 % 10
+				Number = str(num3)+str(num2)+str(num1)
 				savefig(DirMovieplots+PhaseVariablelist[i]+'_'+Number+'.png')
 				plt.close('all')
 
@@ -3925,7 +3878,7 @@ if savefig_phaseresolvelines == True or savefig_sheathdynamics == True:
 						ZlineoutLoc = Lineouts[k]
 						PhaseResolvedlineout = PlotAxialProfile(PhaseMovieData[l][j],PhaseProcesslist[i],PhaseVariablelist[i],ZlineoutLoc,R_mesh[l],Z_mesh[l],Isymlist[l])
 						lineoutstring = ' @ Z='+str(round(ZlineoutLoc*dz[l],2))+'cm \n'
-						xlabel = 'Axial Distance Z [cm]'
+						Xlabel = 'Axial Distance Z [cm]'
 						axis = Zaxis
 
 					elif LineoutsOrientation[k] == 'Radial':
@@ -3933,7 +3886,7 @@ if savefig_phaseresolvelines == True or savefig_sheathdynamics == True:
 						RlineoutLoc = Lineouts[k]
 						PhaseResolvedlineout = PlotRadialProfile(PhaseMovieData[l][j],PhaseProcesslist[i],PhaseVariablelist[i],RlineoutLoc,R_mesh[l],Isymlist[l])
 						lineoutstring = ' @ R='+str(round(RlineoutLoc*dr[l],2))+'cm \n'
-						xlabel = 'Radial Distance R [cm]'
+						Xlabel = 'Radial Distance R [cm]'
 						axis = Raxis
 					#endif
 
@@ -3941,30 +3894,26 @@ if savefig_phaseresolvelines == True or savefig_sheathdynamics == True:
 					#Create figures and plot the 1D profiles. (ax[0]=variable, ax[1]=waveform)
 					if savefig_phaseresolvelines == True:
 						fig,ax = figure(image_aspectratio,2)
-						ylabels = VariableLabelMaker(PhaseVariablelist)
-						fig.suptitle( 'Phase-Resolved '+PhaseVariablelist[i]+' for '+VariedValuelist[l]+lineoutstring+str(Moviephaselist[l][j]), y=0.97, fontsize=16)
+						Ylabels = VariableLabelMaker(PhaseVariablelist)
+						fig.suptitle('Phase-Resolved '+PhaseVariablelist[i]+' for '+VariedValuelist[l]+lineoutstring+str(Moviephaselist[l][j]), y=0.97, fontsize=16)
 
+						#Plot profile and apply image options.
 						ax[0].plot(axis, PhaseResolvedlineout[::-1], lw=2)
-						ax[0].set_xlabel(xlabel, fontsize=24)
-						ax[0].set_ylabel(ylabels[i], fontsize=24)
-						ax[0].tick_params(axis='x', labelsize=18)
-						ax[0].tick_params(axis='y', labelsize=18)
+						ImageOptions(ax[0],Xlabel,Ylabels[i],Crop=False)
 						ax[0].set_ylim(VariableMin,VariableMax*1.02)
 
+						#Plot waveform and apply image options.
 						ax[1].plot(Phaseaxis, VoltageWaveform, lw=2)
 						ax[1].axvline(Phaseaxis[j], color='k', linestyle='--', lw=2)
-						ax[1].set_xlabel('Phase [$\omega$t/2$\pi$]', fontsize=24)
-						ax[1].set_ylabel('Potential [V]', fontsize=24)
-						ax[1].tick_params(axis='x', labelsize=18)
-						ax[1].tick_params(axis='y', labelsize=18)
-						ax[1].set_xlim(0,phasecycles)
+						Xlabel,Ylabel = 'Phase [$\omega$t/2$\pi$]','Potential [V]'
+						ImageOptions(ax[1],Xlabel,Ylabel,Crop=False)
 
-						#Calculate numbers used for filename ordering.
-						num1,num2,num3 = j % 10, j/10 % 10, j/100 % 10
-						Number = str(num3)+str(num2)+str(num1)
-
+				
+						#Clean up image and save with relevent filename.
 						fig.tight_layout()
 						plt.subplots_adjust(top=0.90)
+						num1,num2,num3 = j % 10, j/10 % 10, j/100 % 10
+						Number = str(num3)+str(num2)+str(num1)
 						plt.savefig(Dir1DProfiles+NameString+'_'+Number+'.png')
 						plt.close('all')
 					#endif
@@ -3983,6 +3932,9 @@ if savefig_phaseresolvelines == True or savefig_sheathdynamics == True:
 				#plot more detailed PROES sheath-dynamics if requested by user.
 				if savefig_sheathdynamics == True:
 
+					#Create folder to keep PROES images seperate.
+					Dir1DPROES = CreateNewFolder(DirPhaseResolved,'PROES_Images')
+
 					#Increase PROES image by required number of phasecycles.
 					for m in range(1,phasecycles):
 						for n in range(0,len(PROES)):
@@ -3997,38 +3949,36 @@ if savefig_phaseresolvelines == True or savefig_sheathdynamics == True:
 					x1,x2 = Phaseaxis[0],Phaseaxis[-1]
 					if LineoutsOrientation[k] == 'Axial':
 						lineoutstring = ' @ R='+str(round(ZlineoutLoc*dr[l],2))+'cm'
-						ylabel = 'Axial Distance Z [cm]'
+						Ylabel = 'Axial Distance Z [cm]'
 						y1,y2 = Zaxis[0],Zaxis[-1]
 					elif LineoutsOrientation[k] == 'Radial' and Isymlist[l] == 1:
 						lineoutstring = ' @ Z='+str(round(RlineoutLoc*dz[l],2))+'cm'
-						ylabel = 'Radial Distance R [cm]'
+						Ylabel = 'Radial Distance R [cm]'
 						y1,y2 = -Raxis[-1],Raxis[-1]
 					elif LineoutsOrientation[k] == 'Radial' and Isymlist[l] == 0:
 						lineoutstring = ' @ Z='+str(round(RlineoutLoc*dz[l],2))+'cm'
-						ylabel = 'Radial Distance R [cm]'
+						Ylabel = 'Radial Distance R [cm]'
 						y1,y2 = 0,Raxis[-1]
 					#endif
-
 
 					#Create PROES image along line of sight with phase-locked waveform.
 					fig.suptitle( 'Simulated '+PhaseVariablelist[i]+' PROES for '+VariedValuelist[l]+lineoutstring, y=0.95, fontsize=18)
 					im = ax[0].imshow(PROES,extent=[x1,x2,y1,y2],origin='bottom',aspect='auto')
-					ax[0].set_ylabel(ylabel, fontsize=24)
-					ax[0].tick_params(axis='x', labelsize=18)
-					ax[0].tick_params(axis='y', labelsize=18)
+					ImageOptions(ax[0],Xlabel='',Ylabel=Ylabel,Crop=True)
+					ax[0].set_xlim(x1,x2)
 					#Add Colourbar (Axis, Label, Bins)
-#					label = VariableLabelMaker(PhaseVariablelist)
-#					cax = Colourbar(ax[0],label[i],5)
+					label = VariableLabelMaker(PhaseVariablelist)
+					cax = Colourbar(ax[0],label[i],5)
 
+					#Plot Waveform.
 					ax[1].plot(Phaseaxis, VoltageWaveform, lw=2)
-					ax[1].set_xlabel('Phase [$\omega$t/2$\pi$]', fontsize=24)
-					ax[1].set_ylabel('Potential [V]', fontsize=24)
-					ax[1].tick_params(axis='x', labelsize=18)
-					ax[1].tick_params(axis='y', labelsize=18)
+					Xlabel,Ylabel = 'Phase [$\omega$t/2$\pi$]','Potential [V]'
+					ImageOptions(ax[1],Ylabel,Crop=False)
 
+					#Cleanup layout and save images.
 					fig.tight_layout()
 					plt.subplots_adjust(top=0.85)
-					plt.savefig(DirPhaseResolved+VariedValuelist[l]+' '+NameString+' PROES.png')
+					plt.savefig(Dir1DPROES+VariedValuelist[l]+' '+NameString+' PROES.png')
 					plt.close('all')
 
 
