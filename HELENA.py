@@ -98,28 +98,28 @@ phasecycles = 1								#Number of phase cycles to be plotted.
 #Requested TECPLOT Variables
 Variables = ArFull
 MultiVar = []						#Additional variables plotted ontop of [Variables]
-radialineouts = [] 					#Radial 1D-Profiles to be plotted (fixed Z-mesh)
-heightlineouts = [0]				#Axial 1D-Profiles to be plotted (fixed R-mesh)
+radialineouts = [47] 					#Radial 1D-Profiles to be plotted (fixed Z-mesh)
+heightlineouts = []				#Axial 1D-Profiles to be plotted (fixed R-mesh)
 TrendLocation = [] 					#Cell location For Trend Analysis [R,Z], ([] = min/max)
 #YPR H0;R47 #MSHC H0,20;R20
 
 
 #Requested plotting routines.
 savefig_itermovie = False					#Requires movie_icp.pdt
-savefig_plot2D = False						#Requires TECPLOT2D.PDT
+savefig_plot2D = True						#Requires TECPLOT2D.PDT
 
 savefig_radialines = False
 savefig_heightlines = False
 savefig_multiprofiles = False
-savefig_comparelineouts = False
+savefig_comparelineouts = True
 
 savefig_phaseresolvelines = False			#1D Phase Resolved Images
-savefig_phaseresolve2D = True				#2D Phase Resolved Images
+savefig_phaseresolve2D = False				#2D Phase Resolved Images
 savefig_sheathdynamics = False				#PROES style images
 
 
 #Steady-State diagnostics and terminal outputs.
-savefig_trendcomparison = False
+savefig_trendcomparison = True
 print_meshconvergence = False
 print_generaltrends = False
 print_KnudsenNumber = False
@@ -143,7 +143,6 @@ image_logplot = False
 image_rotate = True
 
 
-
 #Write data to ASCII files.
 write_trendcomparison = False
 write_phaseresolve = False					#### NOT IMPLIMENTED ####
@@ -157,10 +156,10 @@ write_plot2D = False
 #============================#
 
 #Overrides for automatic image labelling. (NB - Currently only for ComparisionProfiles)
-titleoverride = ['NotImplimented']
+titleoverride = []
 legendoverride = []
-xlabeloverride = []							#Only for Trend Plotter
-ylabeloverride = ['NotImplimented']
+xlabeloverride = []
+ylabeloverride = []
 cbaroverride = ['NotImplimented']
 gridoverride = ['NotImplimented']
 
@@ -1420,6 +1419,17 @@ def CropImage(ax=plt.gca()):
 #Returns nothing, current image is required, use figure().
 #ImageOptions(plt.gca(),Xlabel,Ylabel,Title,Legend,Crop=False)
 def ImageOptions(ax=plt.gca(),Xlabel='',Ylabel='',Title='',Legend=[],Crop=True):
+
+	#Apply user overrides to plots. ## Experimental ##
+	if len(titleoverride) > 0:
+		Title = titleoverride
+	if len(legendoverride) > 0:
+		Legend = legendoverride
+	if len(xlabeloverride) > 0:
+		Xlabel = Xlabeloverride
+	if len(ylabeloverride) > 0:
+		Ylabel = ylabeloverride
+	#endif
 
 	#Set title and legend if one is supplied.
 	if len(Title) > 0:
@@ -3416,8 +3426,7 @@ if bool(set(NeutSpecies).intersection(Variables)) == True:
 		DirTrends = CreateNewFolder(os.getcwd()+'/',TrendVariable+' Trends')
 
 		#Initiate lists required for storing data.
-		KnudsenAverage = list()
-		Xaxis = list()
+		KnudsenAverage,Xaxis = list(),list()
 
 		#For all folders.
 		for l in range(0,numfolders):
@@ -3463,42 +3472,36 @@ if bool(set(NeutSpecies).intersection(Variables)) == True:
 			#endif
 
 			#Label and save the 2D Plots.
-			fig,ax,im = SymmetryConverter2D(Knudsen,Isymlist[l],R_mesh[l],Z_mesh[l],Radius[l],Height[l])
-			#Image plotting details
-			plt.title('Knudsen Number Image for \n'+Dirlist[l][2:-1],y=1.03)
-			plt.xlabel('Radial Distance R [cm]',fontsize=24)
-			plt.ylabel('Axial Distance Z [cm]',fontsize=24)
+			fig,ax,im = SymmetryConverter2D(Knudsen)
+			
+			#Image plotting details, invert Y-axis to fit 1D profiles.
+			Title = 'Knudsen Number Image for \n'+Dirlist[l][2:-1]
+			Xlabel,Ylabel = 'Radial Distance R [cm]','Axial Distance Z [cm]'
+			ImageOptions(ax,Xlabel,Ylabel,Title)
 			plt.gca().invert_yaxis()
-			xticks(fontsize=18)
-			yticks(fontsize=18)
 
 			#Add Colourbar (Axis, Label, Bins)
-			Bins = 5
-			cax = Colourbar(ax,'Knudsen Number',Bins)
+			label,bins = 'Knudsen Number',5
+			cax = Colourbar(ax,label[k],bins)
 
 			#Save Figure
 			plt.savefig(Dir2Dplots+'KnudsenNumber.png')
-			plt.clf()
 			plt.close('all')
 		#endfor
+
 
 		#Plot a comparison of all average Knudsen numbers.
 		fig,ax = figure(image_aspectratio,1)
 		TrendPlotter(KnudsenAverage,Xaxis,Normalize=1)
 
-		plt.title('Average Knudsen Number with Changing '+TrendVariable+' \n'+Dirlist[l][2:-1] ,position=(0.5,1.05))
-		plt.ylabel('Average Knudsen Number', fontsize=24)
-		ax.tick_params(axis='x', labelsize=18)
-		ax.tick_params(axis='y', labelsize=18)
-		if len(xlabeloverride) > 0:
-			plt.xlabel(xlabeloverride[0], fontsize=24)
-		else:
-			plt.xlabel('Varied Property', fontsize=24)
-		#endif
+		#Image plotting details.
+		Title = 'Average Knudsen Number with Changing '+TrendVariable+' \n'+Dirlist[l][2:-1]
+		Xlabel,Ylabel = 'Varied Property','Average Knudsen Number'
+		ImageOptions(ax,Xlabel,Ylabel,Title)
 
+		#Save figure.
 		plt.savefig(DirTrends+'KnudsenNumber Comparison.png')
 		plt.close('all')
-
 	#endif
 #endif
 
