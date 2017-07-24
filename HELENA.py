@@ -42,9 +42,9 @@ from pylab import *
 #Define Misc parameters, Do Not Change Unless Required.
 
 #Enviroment variables.
-numfolders = 1			#Fudge
-Magmesh = 1				#initmesh.exe Mag-Factor
-ierr = 0				#OldDebugMode
+numfolders = 1			#Fudge factor.
+Magmesh = 1				#initmesh.exe magnification factor. (almost obsolete)
+ierr = 0				#OldDebugMode (almost obsolete)
 
 #Create switchboard directory for GUI.
 Switchboard = {}
@@ -56,13 +56,13 @@ DebugMode = False
 AxialLine = 80 						#Z-axis line for thrust calculation.  YPR=80, ESCTest=42,
 Manualbiasaxis = ''					#'Axial' or 'Radial'. (empty '' for auto)
 
-#List of recognised atomic sets, add new sets as required.
+#List of recognised atomic density sets, add new sets as required.
 ArgonReduced = ['AR','AR+','AR*']
 ArgonFull = ['AR3S','AR4SM','AR4SR','AR4SPM','AR4SPR','AR4P','AR4D','AR+','AR2+','AR2*']
 Oxygen = ['O','O+','O-','O*','O2','O2+','O2*']
 AtomicSet = ['E']+ArgonReduced+ArgonFull+Oxygen
 
-#List of neutral species for fluid analysis.
+#List of recognized neutral species for fluid analysis.
 NeutSpecies = ['AR','AR3S','O2']
 
 #Commonly used variable sets.
@@ -98,8 +98,8 @@ phasecycles = 1								#Number of phase cycles to be plotted.
 #Requested TECPLOT Variables
 Variables = ArFull
 MultiVar = []						#Additional variables plotted ontop of [Variables]
-radialineouts = [47] 					#Radial 1D-Profiles to be plotted (fixed Z-mesh)
-heightlineouts = []				#Axial 1D-Profiles to be plotted (fixed R-mesh)
+radialineouts = [47] 				#Radial 1D-Profiles to be plotted (fixed Z-mesh)
+heightlineouts = [0]				#Axial 1D-Profiles to be plotted (fixed R-mesh)
 TrendLocation = [] 					#Cell location For Trend Analysis [R,Z], ([] = min/max)
 #YPR H0;R47 #MSHC H0,20;R20
 
@@ -877,9 +877,9 @@ def CreateNewFolder(Dir,string):
 #===================##===================#
 
 
-print'---------------------'
-print'Beginning Data Readin'
-print'---------------------'
+print'-----------------------'
+print'Beginning Data Read-in.'
+print'-----------------------'
 
 #Extraction and organization of data from .PDT files.
 for l in range(0,numfolders):
@@ -1435,7 +1435,7 @@ def ImageOptions(ax=plt.gca(),Xlabel='',Ylabel='',Title='',Legend=[],Crop=True):
 	if len(Title) > 0:
 		ax.set_title(Title, fontsize=14, y=1.09)
 	if len(Legend) > 0:
-		ax.legend(Legend, frameon=False)
+		ax.legend(Legend, loc=1, frameon=False)
 	#endif
 
 	#Set labels and ticksize.
@@ -2610,10 +2610,7 @@ if savefig_comparelineouts == True:
 
 				#Apply image options and axis labels.
 				Title = 'Comparison of '+Variablelist[k]+' Profiles at Z='+str(round((radialineouts[j])*dz[l], 2))+'cm for \n'+Dirlist[l][2:-1]
-				Xlabel,Ylabel = 'Radial Distance R [cm]',Ylabels[k]
-				if len(legendoverride) > 0: Legend = legendoverride
-				else: Legend = Legendlist
-				#endif
+				Xlabel,Ylabel,Legend = 'Radial Distance R [cm]',Ylabels[k],Legendlist
 				ImageOptions(ax,Xlabel,Ylabel,Title,Legendlist,Crop=False)
 			#endfor
 
@@ -2676,10 +2673,7 @@ if savefig_comparelineouts == True:
 
 				#Apply image options and axis labels.
 				Title = 'Comparison of '+Variablelist[k]+' Profiles at Z='+str(round((heightlineouts[j])*dr[l], 2))+'cm for \n'+Dirlist[l][2:-1]
-				Xlabel,Ylabel = 'Axial Distance Z [cm]',Ylabels[k]
-				if len(legendoverride) > 0: Legend = legendoverride
-				else: Legend = Legendlist
-				#endif
+				Xlabel,Ylabel,Legend = 'Axial Distance Z [cm]',Ylabels[k],Legendlist
 				ImageOptions(ax,Xlabel,Ylabel,Title,Legendlist,Crop=False)
 			#endfor
 
@@ -3124,9 +3118,7 @@ if savefig_trendcomparison == True or print_DCbias == True:
 
 	#Apply image options and axis labels.
 	Title = 'Trend in DCbias with changing '+TrendVariable+' \n'+Dirlist[l][2:-1]
-	if len(xlabeloverride) > 0: Xlabel = xlabeloverride[0]
-	else: Xlabel = 'Varied Property'
-	Ylabel = 'DC bias [V]'
+	Xlabel,Ylabel = 'Varied Property','DC bias [V]'
 	ImageOptions(ax,Xlabel,Ylabel,Title,Legendlist,Crop=False)
 
 	plt.savefig(DirTrends+'Powered Electrode DCbias.png')
