@@ -106,7 +106,7 @@ TrendLocation = [] 					#Cell location For Trend Analysis [R,Z], ([] = min/max)
 
 #Requested plotting routines.
 savefig_itermovie = False					#Requires movie_icp.pdt
-savefig_plot2D = True						#Requires TECPLOT2D.PDT
+savefig_plot2D = False						#Requires TECPLOT2D.PDT
 
 savefig_radialines = False
 savefig_heightlines = False
@@ -632,17 +632,17 @@ def VariableLabelMaker(variablelist):
 
 		#Explicit Ionization Rates.
 		elif variablelist[i] == 'S-E':
-			Variable = 'Bulk Electron Excitation'
-			VariableUnit = '[m$^{3}$s$^{-1}$]'
+			Variable = 'Bulk Electron Production Rate'
+			VariableUnit = '[m$^{-3}$s$^{-1}$]'
 		elif variablelist[i] == 'SEB-E':
-			Variable = 'Secondary Electron Excitation'
-			VariableUnit = '[m$^{3}$s$^{-1}$]'
+			Variable = 'Secondary Electron Production Rate'
+			VariableUnit = '[m$^{-3}$s$^{-1}$]'
 		elif variablelist[i] == 'S-AR+':
 			Variable = 'Bulk Ar+ Ionization Rate'
-			VariableUnit = '[m$^{3}$s$^{-1}$]'
+			VariableUnit = '[m$^{-3}$s$^{-1}$]'
 		elif variablelist[i] == 'SEB-AR+':
 			Variable = 'Secondary Ar+ Ionization Rate'
-			VariableUnit = '[m$^{3}$s$^{-1}$]'
+			VariableUnit = '[m$^{-3}$s$^{-1}$]'
 
 		#Explicit Species Temperatures.
 		elif variablelist[i] == 'TE':
@@ -748,7 +748,7 @@ def VariableLabelMaker(variablelist):
 		#Implicit Variables.
 		elif IsStringInVariable(variablelist[i],Ionizationlist) == True:
 			Variable = variablelist[i]
-			VariableUnit = '[m$^{3}$s$^{-1}$]'
+			VariableUnit = '[m$^{-3}$s$^{-1}$]'
 		elif IsStringInVariable(variablelist[i],['T-']) == True:
 			Variable = variablelist[i]
 			VariableUnit = '[K]'
@@ -1283,7 +1283,7 @@ else:
 def VariableInterpolator(processlist,Variablelist,Comparisonlist):
 
 	#Return default if atomic physics is the same in all datasets.
-	if len(list(set(Comparisonlist).symmetric_difference(Variablelist))) == 0 :
+	if all(map(lambda x: x == Globalnumvars[0], Globalnumvars)) == True:
 		return(processlist, Variablelist)
 	#endif
 
@@ -1306,7 +1306,8 @@ def VariableInterpolator(processlist,Variablelist,Comparisonlist):
 		for i in range(0,len(interpolation)):
 			j = 0
 			while j < len(Variablelist):
-				if interpolation[i] in Variablelist[j]:
+				#Check for exact string match, e.g to avoid "AR in AR+".
+				if interpolation[i] == Variablelist[j]:
 					del Variablelist[j]
 					del processlist[j]
 				else:
@@ -1426,9 +1427,9 @@ def ImageOptions(ax=plt.gca(),Xlabel='',Ylabel='',Title='',Legend=[],Crop=True):
 	if len(legendoverride) > 0:
 		Legend = legendoverride
 	if len(xlabeloverride) > 0:
-		Xlabel = Xlabeloverride
+		Xlabel = xlabeloverride[0]
 	if len(ylabeloverride) > 0:
-		Ylabel = ylabeloverride
+		Ylabel = ylabeloverride[0]
 	#endif
 
 	#Set title and legend if one is supplied.
@@ -2961,7 +2962,6 @@ if savefig_trendcomparison == True or print_generaltrends == True:
 		#Save one image per variable with data from all simulations.
 		if len(heightlineouts) > 0:
 			plt.savefig(DirAxialTrends+'Axial Trends in '+Variablelist[k]+'.png')
-#			plt.show()
 			plt.clf
 			plt.close('all')
 		#endif
@@ -3030,7 +3030,6 @@ if savefig_trendcomparison == True or print_generaltrends == True:
 		#Save one image per variable with data from all simulations.
 		if len(radialineouts) > 0:
 			plt.savefig(DirRadialTrends+'Radial Trends in '+Variablelist[k]+'.png')
-#			plt.show()
 			plt.clf
 			plt.close('all')
 		#endif
@@ -3119,7 +3118,7 @@ if savefig_trendcomparison == True or print_DCbias == True:
 	#Apply image options and axis labels.
 	Title = 'Trend in DCbias with changing '+TrendVariable+' \n'+Dirlist[l][2:-1]
 	Xlabel,Ylabel = 'Varied Property','DC bias [V]'
-	ImageOptions(ax,Xlabel,Ylabel,Title,Legendlist,Crop=False)
+	ImageOptions(ax,Xlabel,Ylabel,Title,Crop=False)
 
 	plt.savefig(DirTrends+'Powered Electrode DCbias.png')
 	plt.close('all')
@@ -3961,6 +3960,7 @@ if savefig_phaseresolvelines == True or savefig_sheathdynamics == True:
 					fig.suptitle( 'Simulated '+PhaseVariablelist[i]+' PROES for '+VariedValuelist[l]+lineoutstring, y=0.95, fontsize=18)
 					im = ax[0].imshow(PROES,extent=[x1,x2,y1,y2],origin='bottom',aspect='auto')
 					ImageOptions(ax[0],Xlabel='',Ylabel=Ylabel,Crop=True)
+					ax[0].set_xticks([])
 					ax[0].set_xlim(x1,x2)
 					#Add Colourbar (Axis, Label, Bins)
 #					label = VariableLabelMaker(PhaseVariablelist)
