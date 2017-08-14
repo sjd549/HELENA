@@ -26,8 +26,8 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 from findtools.find_files import (find_files, Match)
 from matplotlib import pyplot as plt
 from matplotlib import ticker
-from scipy import ndimage
-#from tqdm import tqdm		#Progress bar
+from scipy import ndimage	
+from tqdm import tqdm		#Progress bar
 from pylab import *
 
 
@@ -99,7 +99,7 @@ phasecycles = 1								#Number of phase cycles to be plotted.
 Variables = ArFull
 MultiVar = []						#Additional variables plotted ontop of [Variables]
 radialineouts = [47] 				#Radial 1D-Profiles to be plotted (fixed Z-mesh)
-heightlineouts = [0]				#Axial 1D-Profiles to be plotted (fixed R-mesh)
+heightlineouts = []				#Axial 1D-Profiles to be plotted (fixed R-mesh)
 TrendLocation = [] 					#Cell location For Trend Analysis [R,Z], ([] = min/max)
 #YPR H0;R47 #MSHC H0,20;R20
 
@@ -111,16 +111,16 @@ savefig_plot2D = False						#Requires TECPLOT2D.PDT
 savefig_radialines = False
 savefig_heightlines = False
 savefig_multiprofiles = False
-savefig_comparelineouts = True
+savefig_comparelineouts = False
 
 savefig_phaseresolvelines = False			#1D Phase Resolved Images
 savefig_phaseresolve2D = False				#2D Phase Resolved Images
-savefig_sheathdynamics = False				#PROES style images
+savefig_sheathdynamics = True				#PROES style images
 
 
 #Steady-State diagnostics and terminal outputs.
-savefig_trendcomparison = True
-print_meshconvergence = False
+savefig_trendcomparison = False
+print_meshconvergence = False				#Make More General: <_numerictrendaxis>
 print_generaltrends = False
 print_KnudsenNumber = False
 print_totalpower = False
@@ -365,24 +365,19 @@ for l in range(0,numfolders):
 	try:
 		#Identify mesh size from TECPLOT2D file.
 		meshdata = open(TEC2D[l]).readlines()
-		for i in range(0,len(meshdata)):
-			if 'ZONE' in meshdata[i]:
-				#Split zone size at comma, R&Z values are given by "I=,J=" respectively.
-				R = filter(lambda x: x.isdigit(), meshdata[i].split(",")[0])
-				Z = filter(lambda x: x.isdigit(), meshdata[i].split(",")[1])
-				R_mesh.append( int(R) )
-				Z_mesh.append( int(Z) )
-			#endif
-		#endfor
+
+		#Zone line holds data, split at comma, R&Z values are given by "I=,J=" respectively.
+		R = filter(lambda x: 'ZONE' in x, meshdata)[0].split(",")[0].strip(' \t\n\r,=ZONE I')
+		Z = filter(lambda x: 'ZONE' in x, meshdata)[0].split(",")[1].strip(' \t\n\r,=ZONE J')
+		R_mesh.append( int(filter(lambda x: x.isdigit(), R)) )
+		Z_mesh.append( int(filter(lambda x: x.isdigit(), Z)) )
 
 	except ValueError:
 		#Identify mesh size from initmesh.out file. (Issues with Q-VT and Magmesh)
 		meshdata = open(mesh[l]).readline()
 		R_mesh.append([int(i) for i in meshdata.split()][1])
-		if Magmesh == 1:
-			Z_mesh.append([int(i)+1 for i in meshdata.split()][3])
-		elif Magmesh == 2:
-			Z_mesh.append([int(i)+3 for i in meshdata.split()][3])
+		if Magmesh == 1: Z_mesh.append([int(i)+1 for i in meshdata.split()][3])
+		elif Magmesh == 2: Z_mesh.append([int(i)+3 for i in meshdata.split()][3])
 		#endif
 
 	except:
@@ -432,44 +427,49 @@ for l in range(0,numfolders):
 	try:
 		SImeshdata = open(icpnam[l]).readlines()
 
-		for i in range(0,len(SImeshdata)):
-			#Identify geometry section for outread.
-			if SImeshdata[i][0:17].strip(' ') == '$DATAIN_GEOMETRY':
+		#Retrieve useful input variables from icp.nam.
+		NUMMETALS = int(filter(lambda x: x.isdigit(),filter(lambda x:'IMETALS' in x,SImeshdata)[0]))+1
+		MATERIALS = filter(lambda x: 'CMETAL=' in x, SImeshdata)[0].split()[1:NUMMETALS]
 
-				#Refresh geometry list between runs.
-				Geometrylist = list()
-				#Remove all wording, leaving only numbers in the geometry section.
-				for j in range(1,8):
-					Geometrylist.append(SImeshdata[i+j].strip(' \t\n\r,=AEIUDGHTRPSXZYM'))
-				#endfor
+		#Input frequencies/voltages/powers
+		VRFM = filter(lambda x: 'VRFM=' in x, SImeshdata)[0].split()[1:NUMMETALS]
+		VRFM2 = filter(lambda x: 'VRFM_2=' in x, SImeshdata)[0].split()[1:NUMMETALS]
+		FREQM = filter(lambda x: 'FREQM=' in x, SImeshdata)[0].split()[1:NUMMETALS]
+		FREQM2 = filter(lambda x: 'FREQM_2=' in x, SImeshdata)[0].split()[1:NUMMETALS]
+		FREQICP = float(filter(lambda x:'FREQ=' in x, SImeshdata)[0].strip(' \t\n\r,=FREQ'))
+		IRFPOW = float(filter(lambda x:'IRFPOW=' in x, SImeshdata)[0].strip(' \t\n\r,=IRFPOW'))
 
-				#Select if plasma size or total size has been used and output SI size.
-				if float(Geometrylist[3]) > 0.0:
-					Radius.append(float(Geometrylist[3]))
-				elif float(Geometrylist[5]) > 0.0:
-					Radius.append(float(Geometrylist[5]))
-				else:
-					ierr = 2
-				#endif
-				if float(Geometrylist[3]) > 0.0:
-					Height.append(float(Geometrylist[4]))
-				elif float(Geometrylist[5]) > 0.0:
-					Height.append(float(Geometrylist[6]))
-				else:
-					ierr = 2
-				#endif
-				Depth.append(float(Geometrylist[2]))
-				if image_plotsymmetry == True:
-					Isymlist.append(int(Geometrylist[1]))
-				else:
-					Isymlist.append(0)
-				#endif
+		#SI Conversion unit extraction.
+		RADIUS = float(filter(lambda x:'RADIUS=' in x, SImeshdata)[0].strip(' \t\n\r,=RADIUS'))
+		RADIUST = float(filter(lambda x:'RADIUST=' in x, SImeshdata)[0].strip(' \t\n\r,=RADIUST'))
+		HEIGHT = float(filter(lambda x:'HEIGHT=' in x, SImeshdata)[0].strip(' \t\n\r,=HEIGHT'))
+		HEIGHTT = float(filter(lambda x:'HEIGHTT=' in x, SImeshdata)[0].strip(' \t\n\r,=HEIGHTT'))
+		DEPTH = float(filter(lambda x:'DEPTH=' in x, SImeshdata)[0].strip(' \t\n\r,=DEPTH'))
+		SYM = float(filter(lambda x:'ISYM=' in x, SImeshdata)[0].strip(' \t\n\r,=ISYM'))
+		if image_plotsymmetry == True: Isymlist.append(SYM)
+		else: Isymlist.append(0)
+		if RADIUS > 0.0: Radius.append(RADIUS)
+		elif RADIUST > 0.0: Radius.append(RADIUST)
+		if HEIGHT > 0.0: Height.append(HEIGHT)
+		elif HEIGHTT > 0.0: Height.append(HEIGHTT)
+		Depth.append(DEPTH)
+		#endif
 
-				#Calculate SI units for plotting.
-				dr.append(Radius[-1]/(R_mesh[-1]-1))
-				dz.append(Height[-1]/(Z_mesh[-1]-1))
-			#endif
+		#clean up variables and assign required types.
+		for i in range(0,NUMMETALS-1):
+			MATERIALS[i] = MATERIALS[i].strip(',\'')
+			VRFM[i] = float(VRFM[i].strip(','))
+			VRFM2[i] = float(VRFM2[i].strip(','))
+			FREQM[i] = float(FREQM[i].strip(','))
+			FREQM2[i] = float(FREQM2[i].strip(','))
 		#endfor
+
+		#Obtain useful parameters for diagnostics
+		MinFreq = min(filter(lambda a: a != 0, FREQM+FREQM2+[FREQICP]))
+		MaxFreq = max(filter(lambda x: x != 0, FREQM+FREQM2+[FREQICP]))
+		dr.append(Radius[-1]/(R_mesh[-1]-1))
+		dz.append(Height[-1]/(Z_mesh[-1]-1))
+
 	except:
 		ierr = 2
 
@@ -882,7 +882,7 @@ print'Beginning Data Read-in.'
 print'-----------------------'
 
 #Extraction and organization of data from .PDT files.
-for l in range(0,numfolders):
+for l in tqdm(range(0,numfolders)):
 
 	#Load data from TECPLOT2D file and unpack into 1D array.
 	try:
@@ -941,8 +941,7 @@ for l in range(0,numfolders):
 
 	#Save all variables for folder[l] to Data and refresh lists.
 	Data.append(tempdata)
-	tempdata = list()
-	data_array = list()
+	tempdata,data_array = list(),list()
 
 
 #===================##===================#
@@ -1186,27 +1185,10 @@ for l in range(0,numfolders):
 	#endif
 
 
+
 #===================##===================#
 #===================##===================#
 #===================##===================#
-
-
-	#Percentage complete printout.
-	oldpercentage = int(((float(l)/numfolders)*100.0))
-	newpercentage = int(((float(l+1)/numfolders)*100.0))
-	if oldpercentage != newpercentage:
-		print newpercentage,'%'
-	#endif
-#endfor
-
-#Empty and delete any non-global data lists.
-tempdata,tempdata2 = list(),list()
-data_array,templineout = list(),list()
-del data_array,tempdata,tempdata2,templineout
-
-
-#=====================================================================#
-#=====================================================================#
 
 
 #Create global list of all variable names and find shortest list.
@@ -1227,7 +1209,14 @@ Comparisonlist = Globalvarlist[idx]
 
 #===================##===================#
 #===================##===================#
+#===================##===================#
 
+
+#Empty and delete any non-global data lists.
+tempdata,tempdata2 = list(),list()
+data_array,templineout = list(),list()
+del RADIUS,RADIUST,HEIGHT,HEIGHTT,DEPTH,SYM
+del data_array,tempdata,tempdata2,templineout
 
 
 #Alert user that readin process has ended and continue with selected diagnostics.
@@ -1359,6 +1348,7 @@ def ImageExtractor2D(Data,Variable=[],R_mesh=R_mesh[l],Z_mesh=Z_mesh[l]):
 
 #Create figure of desired size and with variable axes.
 #Returns figure and axes seperately.
+#figure(image_aspectratio,1)
 def figure(aspectratio,subplots=1):
 	if len(aspectratio) == 2:
 		fig, ax = plt.subplots(subplots, figsize=(aspectratio[0],aspectratio[1]))
@@ -1434,7 +1424,7 @@ def ImageOptions(ax=plt.gca(),Xlabel='',Ylabel='',Title='',Legend=[],Crop=True):
 
 	#Set title and legend if one is supplied.
 	if len(Title) > 0:
-		ax.set_title(Title, fontsize=14, y=1.09)
+		ax.set_title(Title, fontsize=14, y=1.03)
 	if len(Legend) > 0:
 		ax.legend(Legend, loc=1, frameon=False)
 	#endif
@@ -1709,7 +1699,7 @@ def Colourbar(ax,Label,Bins):
 #Generates an SI axis for a 1D profile plot.
 #Takes orientation and symmetry options.
 #Returns 1D array in units of [cm].
-def GenerateAxis(Orientation,Isym):
+def GenerateAxis(Orientation,Isym=Isymlist[l]):
 	#Generate SI scale axes for lineout plots.
 	axis = list()
 
@@ -2204,9 +2194,6 @@ def PlotVoltageWaveform(Data,orientation,folder=l):
 #Generate and save image of required variable for given mesh size.
 if savefig_plot2D == True:
 
-	#Refresh percentage counters.
-	New, Old = 0.0, 1.0
-
 	for l in range(0,numfolders):
 		#Create new folder to keep output plots.
 		Dir2Dplots = CreateNewFolder(Dirlist[l],'2Dplots')
@@ -2220,7 +2207,7 @@ if savefig_plot2D == True:
 		NoSymTicks = [0, round(R/2, 1), round(R, 1)]
 
 		#Reshape specific part of 1D Data array into 2D image for plotting.
-		for k in range(0,len(processlist)):
+		for k in tqdm(range(0,len(processlist))):
 
 			#Extract full 2D image for further processing.
 			Image = ImageExtractor2D(Data[l][processlist[k]],Variablelist[k])
@@ -2253,17 +2240,6 @@ if savefig_plot2D == True:
 			#Save Figure
 			plt.savefig(Dir2Dplots+'2DPlot '+Variablelist[k]+'.png')
 			plt.close('all')
-
-			#Percentage Complete Readout.
-			New += 1.0
-			Old += 1.0
-			Total = len(processlist)*numfolders
-			oldpercentage = int( (New/Total )*100.0 )
-			newpercentage = int( (Old/Total )*100.0 )
-			if round(oldpercentage,-1) != round(newpercentage,-1):
-				print int(round(oldpercentage,-1)),'%'
-				a=1
-			#endif
 		#endfor
 	#endfor
 
@@ -2281,12 +2257,6 @@ if savefig_plot2D == True:
 
 #Plot 2D images at different iterations towards convergence from movie_icp.
 if savefig_itermovie == True:
-
-	#Refresh percentage counters and calculate total loop cycles for percentage.
-	New, Old, Total = 0.0, 1.0, 0
-	for l in range(0,numfolders):
-		Total += len(IterVariables)*len(MovieITERlist[l])
-	#endfor
 
 	#for all folders being processed.
 	for l in range(0,numfolders):
@@ -2308,7 +2278,7 @@ if savefig_itermovie == True:
 		#endfor
 
 		#for all variables requested by the user.
-		for i in range(0,len(iterprocesslist)):
+		for i in tqdm(range(0,len(iterprocesslist))):
 
 			#Create new folder to keep output plots.
 			DirMovieplots = CreateNewFolder(DirConvergence,IterVariablelist[i]+'_2DConvergence/')
@@ -2352,15 +2322,6 @@ if savefig_itermovie == True:
 				Number = str(num3)+str(num2)+str(num1)
 				savefig(DirMovieplots+IterVariablelist[i]+'_'+Number+'.png')
 				plt.close('all')
-
-				#Percentage Complete Readout.
-				New += 1.0
-				Old += 1.0
-				oldpercentage = int( (New/Total)*100.0 )
-				newpercentage = int( (Old/Total)*100.0 )
-				if round(oldpercentage,-1) != round(newpercentage,-1):
-					print int(round(newpercentage,-1)),'%'
-				#endif
 			#endfor
 
 			#Create .mp4 movie from completed images.
@@ -2465,7 +2426,7 @@ if savefig_radialines or savefig_heightlines == True:
 			DirRlineouts = CreateNewFolder(Dirlist[l],'Radial_Profiles/')
 
 			#Loop over all required variables and requested profile locations.
-			for i in range(0,len(processlist)):
+			for i in tqdm(range(0,len(processlist))):
 				#Create fig of desired size.
 				fig,ax = figure(image_aspectratio,1)
 
@@ -2504,7 +2465,7 @@ if savefig_radialines or savefig_heightlines == True:
 			Legendlist = list()
 
 			#Collect and plot required data.
-			for i in range(0,len(processlist)):
+			for i in tqdm(range(0,len(processlist))):
 				#Create fig of desired size.
 				fig,ax = figure(image_aspectratio,1)
 
@@ -2568,7 +2529,7 @@ if savefig_comparelineouts == True:
 		DirProfile = CreateNewFolder(DirComparisons,ProfileFolder)
 
 		#For each requested comparison variable.
-		for k in range(0,len(Variables)):
+		for k in tqdm(range(0,len(Variables))):
 
 			#Loop escape if variables that do not exist have been requested.
 			if k >= 1 and k > len(Variablelist)-1:
@@ -2631,7 +2592,7 @@ if savefig_comparelineouts == True:
 		DirProfile = CreateNewFolder(DirComparisons,ProfileFolder)
 
 		#For each requested comparison variable.
-		for k in range(0,len(Variables)):
+		for k in tqdm(range(0,len(Variables))):
 
 			#Loop escape if variables that do not exist have been requested.
 			if k >= 1 and k > len(Variablelist)-1:
@@ -2719,7 +2680,7 @@ if savefig_multiprofiles == True:
 			Zaxis = GenerateAxis('Axial',Isymlist[l])
 
 			#Perform the plotting for all requested variables.
-			for i in range(0,len(processlist)):
+			for i in tqdm(range(0,len(processlist))):
 
 				#Extract the lineout data from the main data array.
 				for j in range(0,len(heightlineouts)):
@@ -2775,7 +2736,7 @@ if savefig_multiprofiles == True:
 			Raxis = GenerateAxis('Radial',Isymlist[l])
 
 			#Perform the plotting for all requested variables.
-			for i in range(0,len(processlist)):
+			for i in tqdm(range(0,len(processlist))):
 
 				#Perform the plotting for all requested variables.
 				for j in range(0,len(radialineouts)):
@@ -2884,7 +2845,7 @@ if savefig_trendcomparison == True or print_generaltrends == True:
 	DirTrends = CreateNewFolder(os.getcwd()+'/',TrendVariable+' Trends')
 
 	#For each requested comparison variable.
-	for k in range(0,len(Variables)):
+	for k in tqdm(range(0,len(Variables))):
 
 		#Create processlist for largest output, only compare variables shared between all folders.
 		processlist,Variablelist = VariableEnumerator(Variables,max(rawdata_2D),max(header_2Dlist))
@@ -3260,7 +3221,7 @@ if savefig_trendcomparison == True or print_thrust == True:
 	for l in range(0,numfolders):
 
 		#Create extract data for the neutral flux and neutral velocity.
-		processlist,Variablelist = VariableEnumerator(['AR','VZ-NEUTRAL','VZ-ION+','FZ-AR','FZ-AR+','PRESSURE'],rawdata_2D[l],header_2Dlist[l])
+		processlist,Variablelist = VariableEnumerator(['AR3S','VZ-NEUTRAL','VZ-ION+','FZ-AR3S','FZ-AR+','PRESSURE'],rawdata_2D[l],header_2Dlist[l])
 
 		#Update X-axis with folder information.
 		Xaxis.append( FolderNameTrimmer(Dirlist[l]) )
@@ -3561,16 +3522,13 @@ if any([savefig_trendcomparison, print_generaltrends, print_KnudsenNumber, print
 #Plot 2D images over all saved phase cycles with included wavevform guide.
 if savefig_phaseresolve2D == True:
 
-	#Initialize required lists and refresh percentage counters.
-	WaveformTitles = list()
+	#Initialize required lists.
 	VoltageWaveform = list()
-	New = 0.0
-	Old = 1.0
 
 	#for all folders being processed.
 	for l in range(0,numfolders):
 
-		#Create global folder to keep output plots.
+		#Create global folder to keep output plots and collect graph title.
 		DirPhaseResolved = CreateNewFolder(Dirlist[l],'2DPhase/')
 
 		#Create processlist for each folder as required. (Always get PPOT)
@@ -3587,8 +3545,13 @@ if savefig_phaseresolve2D == True:
 			for i in range(0,len(Moviephaselist[l])):
 				RElectrodeLoc = ElectrodeLoc(electrodeloc,'Phase')[0]
 				ZElectrodeLoc = ElectrodeLoc(electrodeloc,'Phase')[1]
-				VoltageWaveform.append( PlotAxialProfile(PhaseMovieData[l][i], PPOT,'PPOT',ZElectrodeLoc,R_mesh[l],Z_mesh[l],Isymlist[l])[RElectrodeLoc])
+				VoltageWaveform.append( PlotAxialProfile(PhaseMovieData[l][i], PPOT,'PPOT',ZElectrodeLoc)[RElectrodeLoc])
 			#endfor
+		#endfor
+
+		#Generate SI scale axes.
+		Zaxis = GenerateAxis('Axial',Isymlist[l])
+		Raxis = GenerateAxis('Radial',Isymlist[l])
 		#endfor
 
 		#Generate a phase axis of units [omega*t/2pi] for plotting.
@@ -3597,43 +3560,28 @@ if savefig_phaseresolve2D == True:
 			Phaseaxis.append(  (np.pi*(i*2)/180)/(2*np.pi)  )
 		#endfor
 
-		#Generate SI scale axes.
-		Raxis,Zaxis = list(),list()
-		for i in range(0,Z_mesh[l]): Zaxis.append(i*dz[l])
- 		for i in range(0,R_mesh[l]): Raxis.append(i*dr[l])
-		#endfor
-
 		#Calculate time averaged waveform bias, i.e. waveform symmetry.
 		WaveformBias = list()
 		for m in range(0,len(VoltageWaveform)):
 			WaveformBias.append(sum(VoltageWaveform)/len(VoltageWaveform))
 		#endfor
 
-		#Extend the waveform to match requested number of phase cycles.
-		WaveformTitles.append( FolderNameTrimmer(Dirlist[l]) )
-		for m in range(0,(phasecycles-1)*len(VoltageWaveform)):
-			VoltageWaveform.append(VoltageWaveform[m])
-			WaveformBias.append(WaveformBias[m])
-		#endfor
-
 		#Plot the phase-resolved waveform.
-		fig, ax = plt.subplots(1, figsize=(10,10))
-		plt.plot(Phaseaxis,VoltageWaveform, lw=2)
-		plt.plot(Phaseaxis,WaveformBias, 'k--', lw=2)
-		plt.title('Phase-Resolved Voltage Waveform for '+WaveformTitles[l], y=1.03, fontsize=16)
-		plt.legend( ['rf self-bias: '+str(round(WaveformBias[0],2))] )
-		plt.xlabel('Phase [$\omega$t/2$\pi$]', fontsize=24)
-		plt.ylabel('Potential [V]', fontsize=24)
-		ax.tick_params(axis='x', labelsize=18)
-		ax.tick_params(axis='y', labelsize=18)
+		fig,ax = figure(image_aspectratio,1)
+		ax.plot(Phaseaxis,VoltageWaveform, lw=2)
+		ax.plot(Phaseaxis,WaveformBias, 'k--', lw=2)
+		Title = 'Phase-Resolved Voltage Waveform for '+FolderNameTrimmer(Dirlist[l])
+		Legend = ['rf self-bias: '+str(round(WaveformBias[0],2))+'V']
+		Xlabel,Ylabel = 'Phase [$\omega$t/2$\pi$]','Potential [V]'
+		ImageOptions(ax,Xlabel,Ylabel,Title,Legend,Crop=False)
 
-		plt.savefig(DirPhaseResolved+WaveformTitles[l]+' Waveform.png')
+		plt.savefig(DirPhaseResolved+FolderNameTrimmer(Dirlist[l])+' Waveform.png')
 		plt.close('all')
 
 		#===============#
 
 		#for all variables requested by the user.
-		for i in range(0,len(PhaseProcesslist)):
+		for i in tqdm(range(0,len(PhaseProcesslist))):
 
 			#Create new folder to keep specific plots.
 			DirMovieplots = CreateNewFolder(DirPhaseResolved,PhaseVariablelist[i]+'_2DPhaseResolved/')
@@ -3699,16 +3647,6 @@ if savefig_phaseresolve2D == True:
 				Number = str(num3)+str(num2)+str(num1)
 				savefig(DirMovieplots+PhaseVariablelist[i]+'_'+Number+'.png')
 				plt.close('all')
-
-				#Percentage Complete Readout.
-				New += 1.0
-				Old += 1.0
-				Total = len(PhaseProcesslist)*numfolders*len(Moviephaselist[l])
-				oldpercentage = int( (New/Total)*100.0 )
-				newpercentage = int( (Old/Total)*100.0 )
-				if round(oldpercentage,-1) != round(newpercentage,-1):
-					print int(round(newpercentage,-1)),'%'
-				#endif
 			#endfor
 
 			#Create .mp4 movie from completed images.
@@ -3732,17 +3670,13 @@ if savefig_phaseresolve2D == True:
 #Plot Phase-Resolved profiles with electrode voltage and requested variables.
 if savefig_phaseresolvelines == True or savefig_sheathdynamics == True:
 
-	#Refresh percentage counters.
-	Total = numfolders*len(PhaseVariables)*(len(heightlineouts)+len(radialineouts))
-	New = 0.0
-	Old = 1.0
-	#Initiate any required lists.
-	VariedValuelist = list()
+	#Tnitiate any required lists.
+	VoltageWaveform,VariedValuelist = list(),list()
 
 	#for all folders.
 	for l in range(0,numfolders):
 
-		#Create folders to keep output plots.
+		#Create global folder to keep output plots and collect graph title.
 		DirPhaseResolved = CreateNewFolder(Dirlist[l],'PhaseResolved_profiles/')
 
 		#Update X-axis with folder information.
@@ -3763,29 +3697,19 @@ if savefig_phaseresolvelines == True or savefig_sheathdynamics == True:
 		#endfor
 
 		#Generate SI scale axes for lineout plots.
-		Zaxis = list()
-		Raxis = list()
-		for i in range(0,Z_mesh[l]): Zaxis.append(i*dz[l])
-		if Isymlist[l] == 1:
-			for i in range(-R_mesh[l],R_mesh[l]):
-				Raxis.append(i*dr[l])
-			#endfor
-		elif Isymlist[l] == 0:
-			for i in range(0,R_mesh[l]):
-				Raxis.append(i*dr[l])
-			#endfor
-		#endif
+		Zaxis = GenerateAxis('Axial',Isymlist[l])
+		Raxis = GenerateAxis('Radial',Isymlist[l])
 
 		#==============#
 
-		VoltageWaveform = list()
-		#Obtain applied voltage waveform and normalization values seperately.
-		for j in range(0,len(Moviephaselist[l])):
-
-			#Obtain applied voltage waveform.
-			RElectrodeLoc = ElectrodeLoc(electrodeloc,'Phase')[0]
-			ZElectrodeLoc = ElectrodeLoc(electrodeloc,'Phase')[1]
-			VoltageWaveform.append( PlotAxialProfile(PhaseMovieData[l][j], PPOT,'PPOT',ZElectrodeLoc,R_mesh[l],Z_mesh[l],Isymlist[l])[RElectrodeLoc])
+		#Obtain applied voltage waveform, Refresh list between folders if needed.
+		if len(VoltageWaveform) > 0: VoltageWaveform = list()
+		for j in range(0,phasecycles):
+			for i in range(0,len(Moviephaselist[l])):
+				RElectrodeLoc = ElectrodeLoc(electrodeloc,'Phase')[0]
+				ZElectrodeLoc = ElectrodeLoc(electrodeloc,'Phase')[1]
+				VoltageWaveform.append( PlotAxialProfile(PhaseMovieData[l][i], PPOT,'PPOT',ZElectrodeLoc)[RElectrodeLoc])
+			#endfor
 		#endfor
 
 		#Calculate time averaged waveform bias, i.e. waveform symmetry.
@@ -3794,22 +3718,14 @@ if savefig_phaseresolvelines == True or savefig_sheathdynamics == True:
 			WaveformBias.append(sum(VoltageWaveform)/len(VoltageWaveform))
 		#endfor
 
-		#Extend the waveform to match requested number of phase cycles.
-		for m in range(0,(phasecycles-1)*len(VoltageWaveform)):
-			VoltageWaveform.append(VoltageWaveform[m])
-			WaveformBias.append(WaveformBias[m])
-		#endfor
-
 		#Plot the phase-resolved waveform.
 		fig,ax = figure(image_aspectratio,1)
-		plt.plot(Phaseaxis,VoltageWaveform, lw=2)
-		plt.plot(Phaseaxis,WaveformBias, 'k--', lw=2)
-		plt.title('Phase-Resolved Voltage Waveform for '+VariedValuelist[l], y=1.03, fontsize=16)
-		plt.legend( ['rf self-bias: '+str(round(WaveformBias[0],2))] )
-		plt.xlabel('Phase [$\omega$t/2$\pi$]', fontsize=24)
-		plt.ylabel('Potential [V]', fontsize=24)
-		ax.tick_params(axis='x', labelsize=18)
-		ax.tick_params(axis='y', labelsize=18)
+		ax.plot(Phaseaxis,VoltageWaveform, lw=2)
+		ax.plot(Phaseaxis,WaveformBias, 'k--', lw=2)
+		Title = 'Phase-Resolved Voltage Waveform for '+FolderNameTrimmer(Dirlist[l])
+		Legend = ['rf self-bias: '+str(round(WaveformBias[0],2))+'V']
+		Xlabel,Ylabel = 'Phase [$\omega$t/2$\pi$]','Potential [V]'
+		ImageOptions(ax,Xlabel,Ylabel,Title,Legend,Crop=False)
 
 		plt.savefig(DirPhaseResolved+VariedValuelist[l]+' Waveform.png')
 		plt.close('all')
@@ -3818,7 +3734,7 @@ if savefig_phaseresolvelines == True or savefig_sheathdynamics == True:
 
 
 		#for all requested variables.
-		for i in range(0,len(PhaseProcesslist)):
+		for i in tqdm(range(0,len(PhaseProcesslist))):
 
 			#Refresh lineout lists between variables.
 			LineoutsOrientation = list()
@@ -3836,16 +3752,17 @@ if savefig_phaseresolvelines == True or savefig_sheathdynamics == True:
 			for k in range(0,len(Lineouts)):
 
 				#Refresh required lists.
-				VariableMax = list()
-				VariableMin = list()
+				VariableMax,VariableMin = list(),list()
 				PROES = list()
 
 				#Create folders to keep output plots for each variable.
 				if LineoutsOrientation[k] == 'Axial':
 					NameString= PhaseVariablelist[i]+'_'+str(round(Lineouts[k]*dz[l],2))+'cm[Z]'
-				elif LineoutsOrientation[k] == 'Radial':
+				if LineoutsOrientation[k] == 'Radial':
 					NameString= PhaseVariablelist[i]+'_'+str(round(Lineouts[k]*dr[l],2))+'cm[R]'
-				Dir1DProfiles = CreateNewFolder(DirPhaseResolved,NameString+'_1Dprofiles/')
+				if savefig_phaseresolvelines == True:
+					Dir1DProfiles = CreateNewFolder(DirPhaseResolved,NameString+'_1Dprofiles/')
+				#endif
 
 				#Collect Normalization data for plotting.
 				for j in range(0,len(Moviephaselist[l])):
@@ -3870,19 +3787,17 @@ if savefig_phaseresolvelines == True or savefig_sheathdynamics == True:
 
 					if LineoutsOrientation[k] == 'Axial':
 						#Axial 1D profiles, using first hightlineout as axial location.
-						ZlineoutLoc = Lineouts[k]
+						ZlineoutLoc,axis = Lineouts[k],Zaxis
 						PhaseResolvedlineout = PlotAxialProfile(PhaseMovieData[l][j],PhaseProcesslist[i],PhaseVariablelist[i],ZlineoutLoc,R_mesh[l],Z_mesh[l],Isymlist[l])
 						lineoutstring = ' @ Z='+str(round(ZlineoutLoc*dz[l],2))+'cm \n'
 						Xlabel = 'Axial Distance Z [cm]'
-						axis = Zaxis
 
 					elif LineoutsOrientation[k] == 'Radial':
 						#Radial 1D profiles, using first radialineout as axial location.
-						RlineoutLoc = Lineouts[k]
+						RlineoutLoc,axis = Lineouts[k],Raxis
 						PhaseResolvedlineout = PlotRadialProfile(PhaseMovieData[l][j],PhaseProcesslist[i],PhaseVariablelist[i],RlineoutLoc,R_mesh[l],Isymlist[l])
 						lineoutstring = ' @ R='+str(round(RlineoutLoc*dr[l],2))+'cm \n'
 						Xlabel = 'Radial Distance R [cm]'
-						axis = Raxis
 					#endif
 
 
@@ -3903,7 +3818,6 @@ if savefig_phaseresolvelines == True or savefig_sheathdynamics == True:
 						Xlabel,Ylabel = 'Phase [$\omega$t/2$\pi$]','Potential [V]'
 						ImageOptions(ax[1],Xlabel,Ylabel,Crop=False)
 
-				
 						#Clean up image and save with relevent filename.
 						fig.tight_layout()
 						plt.subplots_adjust(top=0.90)
@@ -3913,8 +3827,40 @@ if savefig_phaseresolvelines == True or savefig_sheathdynamics == True:
 						plt.close('all')
 					#endif
 
+
+					PROES_DoF = True
 					#Collect each profile for stitching into a PROES image if required.
-					if savefig_sheathdynamics == True:
+					if PROES_DoF == True and savefig_sheathdynamics == True:
+
+						#Initiate lists and required constants.
+						IntegratedDoFArray,DoFArrays = list(),list()
+						GaussianCoeff = list()
+						DoFWidth = 41				#41=2cm YPR
+						
+						#Collect lineouts from DOF region and transpose to allow easy integration.
+						for lineoutLoc in range(RlineoutLoc-DoFWidth,RlineoutLoc+DoFWidth):
+							DoFArrays.append( PlotRadialProfile(PhaseMovieData[l][j],PhaseProcesslist[i],PhaseVariablelist[i],lineoutLoc,R_mesh[l],Isymlist[l]) )
+						#endfor
+						DoFArrays = np.asarray(DoFArrays)
+						DoFArrays = DoFArrays.transpose().tolist()
+
+						#Create gaussian function using DoFWidth.
+#						for m in range(0,len(DoFArrays)):
+#							a,b,c = 1,Rlineoutloc,DoFWidth
+#							Top, Bottom = ((m-b)^2), (2*c^2)
+#							GaussianCoeff.append( a*np.exp(-(Top/Bottom)) )
+						#endfor
+#						plt.plot(GaussianCoeff)
+#						plt.show()
+
+						#Integrate DoF lineouts to form a single PROES lineout. 
+						for m in range(0,len(PhaseResolvedlineout)):
+							IntegratedDoFArray.append( sum(DoFArrays[m]) )
+						#endif
+						PROES.append(IntegratedDoFArray)
+
+					#If no DoF then simply collect lineout from required location.
+					elif PROES_DoF == False and savefig_sheathdynamics == True:
 						PROES.append(PhaseResolvedlineout)
 					#endif
 				#endfor
@@ -3957,7 +3903,7 @@ if savefig_phaseresolvelines == True or savefig_sheathdynamics == True:
 					#endif
 
 					#Create PROES image along line of sight with phase-locked waveform.
-					fig.suptitle( 'Simulated '+PhaseVariablelist[i]+' PROES for '+VariedValuelist[l]+lineoutstring, y=0.95, fontsize=18)
+					fig.suptitle( 'Simulated '+PhaseVariablelist[i]+' PROES for '+VariedValuelist[l]+lineoutstring+'\n DoF = '+str(round(DoFWidth*dz[l],2))+' cm', y=0.95, fontsize=18)
 					im = ax[0].imshow(PROES,extent=[x1,x2,y1,y2],origin='bottom',aspect='auto')
 					ImageOptions(ax[0],Xlabel='',Ylabel=Ylabel,Crop=True)
 					ax[0].set_xticks([])
@@ -3981,21 +3927,38 @@ if savefig_phaseresolvelines == True or savefig_sheathdynamics == True:
 					#########################################
 					#			UNDER CONSTRUCTION			#
 					#########################################
-					if True == False:
-						#Collapse the 2D PROES image along the line of sight.
+					if True == True:
 						fig,ax = figure(image_aspectratio,1)
 
-						FlattenedPROES = list()
+						#Temporally collapse 2D PROES image through defined phase fraction.
+						SpatialPROES = list()
 						for m in range(0,len(PROES)):
-							FlattenedPROES.append( (sum(PROES[m][::])) )
+							SpatialPROES.append( (sum(PROES[m][::])) )
 						#endfor
 
-						print y1,y2
-						Filename = FolderNameTrimmer(Dirlist[l])+PhaseVariablelist[i]
-						WriteDataToFile(FlattenedPROES,Filename)
+						#Spatially Collapse 2D PROES image along the line of sight.
+						PROES,TemporalPROES = PROES.transpose().tolist(),list()
+						for m in range(0,len(PROES) ):
+							TemporalPROES.append( (sum(PROES[m][::])) )
+						#endfor
 
-						plt.plot(FlattenedPROES)
-						plt.show()
+						#Plot Temporal PROES with phase axis.
+						plt.plot(Phaseaxis,TemporalPROES)
+						Xlabel = 'Phase [$\omega$t/2$\pi$]'
+						Ylabel = 'Spatially Integrated '+PhaseVariablelist[i]
+						ImageOptions(ax,Xlabel,Ylabel,Crop=False)
+
+						plt.savefig(Dir1DPROES+VariedValuelist[l]+' '+NameString+' TemporalPROES.png')
+						plt.close('all')
+
+						#Plot Spatial PROES with required axis.
+						plt.plot(Raxis,SpatialPROES)
+						Xlabel = 'Phase [$\omega$t/2$\pi$]'
+						Ylabel = 'Temporally Integrated '+PhaseVariablelist[i]
+						ImageOptions(ax,Xlabel,Ylabel,Crop=False)
+
+						#plt.savefig(Dir1DPROES+VariedValuelist[l]+' '+NameString+' SpatialPROES.png')
+						plt.close('all')
 					#endif
 					#########################################
 					#			UNDER CONSTRUCTION			#
@@ -4017,15 +3980,6 @@ if savefig_phaseresolvelines == True or savefig_sheathdynamics == True:
 					#Create .mp4 movie from completed images.
 					Prefix = NameString+FolderNameTrimmer(Dirlist[l])
 					Automovie(Dir1DProfiles,Prefix+'_'+PhaseVariablelist[i])
-				#endif
-
-				#Percentage Complete Readout.
-				New += 1.0
-				Old += 1.0
-				oldpercentage = int( (New/Total)*100.0 )
-				newpercentage = int( (Old/Total)*100.0 )
-				if round(oldpercentage,-1) != round(newpercentage,-1):
-					print int(round(oldpercentage, 0)),'%'
 				#endif
 			#endfor
 		#endfor
@@ -4156,7 +4110,6 @@ if True == False:
 
 
 
-
 #====================================================================#
 				#MORE DETAILED GRAPHS/CONTOUR PLOTS#
 #====================================================================#
@@ -4179,6 +4132,7 @@ if True == False:
 
 #=====================================================================#
 #=====================================================================#
+
 
 
 
@@ -4257,3 +4211,25 @@ if use_GUI == True:
 
 #=====================================================================#
 #=====================================================================#
+
+
+
+# WAVEFORM OFFSET, MAY BE REQUIRED FOR STUFF?
+if True == False:
+	 Offset = m.ceil((1-(MinFreq/MaxFreq))*len(VoltageWaveform)*phasecycles)
+#endif
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
