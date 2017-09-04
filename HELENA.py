@@ -24,14 +24,13 @@ import os.path
 
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from findtools.find_files import (find_files, Match)
+from subprocess import Popen, PIPE
 from matplotlib import pyplot as plt
 from matplotlib import ticker
 from scipy import ndimage
 from tqdm import tqdm		#Progress bar
 from pylab import *
-
-
-
+		
 
 
 
@@ -111,15 +110,18 @@ savefig_plot2D = True						#Requires TECPLOT2D.PDT
 savefig_radialines = False
 savefig_heightlines = False
 savefig_multiprofiles = False
-savefig_comparelineouts = True
+savefig_comparelineouts = False
 
 savefig_phaseresolvelines = False			#1D Phase Resolved Images
 savefig_phaseresolve2D = False				#2D Phase Resolved Images
 savefig_sheathdynamics = False				#PROES style images
 
+savefig_IEDF = True							#IN DEVELOPMENT
+savefig_EEDF = False						#IN DEVELOPMENT
+
 
 #Steady-State diagnostics and terminal outputs.
-savefig_trendcomparison = True
+savefig_trendcomparison = False
 print_meshconvergence = False				#Make More General: <_numerictrendaxis>
 print_generaltrends = False
 print_KnudsenNumber = False
@@ -131,8 +133,8 @@ print_thrust = False
 #Image plotting options.
 image_extension = '.png'					#Extensions { '.png', '.jpg', '.eps' }
 image_aspectratio = [10,10]					#[x,y] in cm [Doesn't rotate dynamically]
-image_radialcrop = [0.6]					#[R,Z] in cm
-image_axialcrop = [1,4]						#[R,Z] in cm
+image_radialcrop = []#[0.6]					#[R,Z] in cm
+image_axialcrop = []#[1,4]						#[R,Z] in cm
 #YPR R[0.6];Z[1,4]
 
 image_plotsymmetry = True
@@ -155,16 +157,14 @@ write_plot2D = False
 
 #============================#
 
-#Overrides for automatic image labelling. (NB - Currently only for ComparisionProfiles)
+#Overrides the automatic image labelling.
 titleoverride = []
 legendoverride = []
 xlabeloverride = []
 ylabeloverride = []
 cbaroverride = ['NotImplimented']
-gridoverride = ['NotImplimented']
 
 #Commonly Used:
-#['$0$','$\\frac{\pi}{6}$','$\\frac{\pi}{3}$','$\\frac{\pi}{2}$','$\\frac{2\pi}{3}$','$\\frac{3\pi}{4}$','$\pi$']
 #'0','30','60','90','120','150','180','210','240','270','300','330'
 #'100','200','300','400','500','600','700','800','900','1000'
 #'13.56MHz','27.12MHz','40.68MHz','54.24MHz','67.80MHz'
@@ -174,17 +174,7 @@ gridoverride = ['NotImplimented']
 
 
 
-#CHANGELIST FOR NEXT GITHUB UPDATE (I really should have added each seperately...)
-#Changes up till now:
-#Foldernametrimmer indexing has been added
-#DoF and numfolder values have been moved
-#Data readin has been generalized and functionalized
-#Data formatting has been generalized and functionalized (for 2D, not 3D data)
-#Issues extracting 3D data due to R/Z mismatch, likely will need to remove
-#ImagePlotter2D now takes axis, still creates axis if one is not supplied.
-#Powers are changed from [cm-3] to [m-3] in the correct function.
-#Normalize() function added to TrendPlotter, Log() function implicit (I think).
-#Selectable image output extension (png, jpg, eps)
+
 
 
 
@@ -203,6 +193,7 @@ Dir = list()
 Dirlist = list()
 Variablelist = list()
 Variablelists = list()
+IEDFVariablelist = list()
 MovieVariablelist = list()
 MovieVariablelists = list()
 MovieITERlist = list()
@@ -232,18 +223,24 @@ rawdata_2D = list()
 rawdata_kin = list()
 rawdata_phasemovie = list()
 rawdata_itermovie_icp = list()
+rawdata_IEDF = list()
 rawdata_mcs = list()
 
 Data = list()					#Data[folder][Variable][Datapoint]
+DataIEDF = list()				#Data[folder][Variable][Datapoint]
+DataEEDF = list()				#Data[folder][Variable][Datapoint]
 IterMovieData = list()			#ITERMovieData[folder][timestep][variable][datapoints]
 PhaseMovieData = list()			#PhaseMovieData[folder][timestep][variable][datapoints]
 
 Moviephaselist = list()			#'CYCL = n'
 Movieiterlist = list()			#'ITER = n'
+EEDF_TDlist = list()			#'
 
 header_itermovie = list()
 header_phasemovie = list()
+header_IEDFlist = list()
 header_2Dlist = list()
+
 
 
 
@@ -264,7 +261,7 @@ print '   |  |__|  | |  |__   |  |     |  |__   |   \|  |   /  ^  \        '
 print '   |   __   | |   __|  |  |     |   __|  |  . `  |  /  /_\  \       '
 print '   |  |  |  | |  |____ |  `----.|  |____ |  |\   | /  _____  \      '
 print '   |__|  |__| |_______||_______||_______||__| \__|/__/     \__\     '
-print '                                                             v0.9.8 '
+print '                                                             v0.9.9 '
 print '--------------------------------------------------------------------'
 print ''
 print 'The following diagnostics were requested:'
@@ -300,8 +297,6 @@ print ''
 mem_bytes = os.sysconf('SC_PAGE_SIZE') * os.sysconf('SC_PHYS_PAGES')
 mem_gib = mem_bytes/(1024.**3)
 ext = image_extension
-
-print ext
 
 #Find all files ending in dir recursively from current directory.
 sh_files_pattern = Match(filetype='f', name='*.PDT')
@@ -592,6 +587,39 @@ def ExtractRawData(Dirlist,NameString,ListIndex=l):
 #enddef
 
 
+#Takes ASCII data in 2/3D format and converts to HELENA friendly structure.
+#Requires rawdata(2D/3D), header and variable number and mesh dimensions.
+#Returns 2D array of form [Variables,datapoint(R,Z)]
+#CurrentFolderData = SDFileFormatConvertorHPEM(rawdata_2D[l],header_2D[l],numvariables_2D[l])
+def SDFileFormatConvertorHPEM(Rawdata,header,numvariables,Rmesh=R_mesh[l],Zmesh=Z_mesh[l]):
+
+	#Excluding the header, split each row of data and append items to 1D list.
+	CurrentFolderData, DataArray1D = list(),list()
+	for i in range(header,len(Rawdata)):
+
+		#If end of phasecycle reached, break. (Applicable to 3D Datafiles only)
+		if "CYCL=" in Rawdata[i]: 
+			break
+		else: CurrentRow = Rawdata[i].split()
+
+		#For all elements in the current row, convert to string and save in list.
+		for j in range(0,len(CurrentRow)):
+			try: DataArray1D.append(float(CurrentRow[j]))
+			except: Avoids_String_Conversion_Error = 1
+		#endfor
+	#endfor
+
+	#Seperate total 1D array into 2D array with data for each variable.
+	for i in range(0,numvariables):
+		numstart = (Zmesh*Rmesh)*(i)
+		numend = (Zmesh*Rmesh)*(i+1)
+		CurrentFolderData.append(list(DataArray1D[numstart:numend]))
+	#endfor
+
+	return(CurrentFolderData)
+#enddef
+
+
 #Takes a 1D or 2D array and writes to a datafile in ASCII format.
 #Three imputs, Data to be written, Filename, 'w'rite or 'a'ppend.
 #WriteDataToFile(Image, FolderNameTrimmer(Dirlist[l])+Variablelist[k])
@@ -653,45 +681,6 @@ def ReadDataFromFile(Filename):
 	#endif
 
 	return(OutputData)
-#enddef
-
-
-#Takes folder directory and creates a movie from .png images contained within.
-def Automovie(FolderDir,Output):
-
-	#Correct file extention on name.
-	CurrentDir = os.getcwd()
-	Output = Output+'.mp4'
-	Morph, FPS = 1, 24
-
-	#Use ffmpeg to create the movies and save in relevent files.
-	os.chdir(FolderDir)
-	os.system("convert *.png -delay 1 -morph "+str(Morph)+" %05d.morph.jpg > /dev/null")
-	os.system("ffmpeg -nostats -loglevel 0 -r "+str(FPS)+" -i %05d.morph.jpg "+Output)
-	os.system("rm *.jpg")
-	os.chdir(CurrentDir)
-	return()
-#enddef
-
-
-#Takes array of strings and compares to variable string.
-#Returns true if any element of stringarray is in variable.
-def IsStringInVariable(variable,stringarray):
-
-#	#Should perform the same task but returns True every time.
-#	OutputType = ['EFLUX-Z','EFLUX-R','FZ-','FR-']
-#	if (String in variable for String in OutputType):
-#		print variable
-#	#endif
-
-	boolian = False
-	#Check if each element of string is inside variable.
-	for i in range(0,len(stringarray)):
-		if stringarray[i] in variable:
-			boolian = True
-		#endif
-	#endfor
-	return(boolian)
 #enddef
 
 
@@ -942,6 +931,40 @@ def VariableUnitConversion(profile,variable):
 #enddef
 
 
+#Takes array of strings and compares to variable string.
+#Returns true if any element of stringarray is in variable.
+def IsStringInVariable(variable,stringarray):
+
+#	#Should perform the same task but returns True every time.
+#	OutputType = ['EFLUX-Z','EFLUX-R','FZ-','FR-']
+#	if (String in variable for String in OutputType):
+#		print variable
+#	#endif
+
+	boolian = False
+	#Check if each element of string is inside variable.
+	for i in range(0,len(stringarray)):
+		if stringarray[i] in variable:
+			boolian = True
+		#endif
+	#endfor
+	return(boolian)
+#enddef
+
+
+#Creates a new folder if one does not already exist.
+#Takes destination dir and namestring, returns new directory.
+def CreateNewFolder(Dir,DirString):
+	try:
+		NewFolderDir = Dir+DirString+'/'
+		os.mkdir(NewFolderDir, 0755);
+	except:
+		a = 1
+	#endtry
+	return(NewFolderDir)
+#enddef
+
+
 #Takes folder names and returns item after requested underscore index.
 #Note, index > 1 will return between two underscores, not the entire string.
 def FolderNameTrimmer(DirString):
@@ -960,56 +983,89 @@ def FolderNameTrimmer(DirString):
 #enddef
 
 
-#Creates a new folder if one does not already exist.
-#Takes destination dir and namestring, returns new directory.
-def CreateNewFolder(Dir,DirString):
-	try:
-		NewFolderDir = Dir+DirString+'/'
-		os.mkdir(NewFolderDir, 0755);
-	except:
-		a = 1
-	#endtry
-	return(NewFolderDir)
+#Takes folder directory and creates a movie from .png images contained within.
+def Automovie(FolderDir,Output):
+
+	#Correct file extention on name.
+	HomeDir = os.getcwd()
+	Output = Output+'.mp4'
+	Morph, FPS = 1, 24
+
+	#Use ffmpeg to create the movies and save in relevent files.
+	os.chdir(FolderDir)
+	os.system("convert *.png -delay 1 -morph "+str(Morph)+" %05d.morph.jpg > /dev/null")
+	os.system("ffmpeg -nostats -loglevel 0 -r "+str(FPS)+" -i %05d.morph.jpg "+Output)
+	os.system("rm *.jpg")
+	os.chdir(HomeDir)
+	return()
 #enddef
 
 
-#Takes ASCII data in 2/3D format and converts to HELENA friendly structure.
-#Requires rawdata(2D/3D), header and variable number and mesh dimensions.
-#Returns 2D array of form [Variables,datapoint(R,Z)]
-#CurrentFolderData = SDFileFormatConvertorHPEM(rawdata_2D[l],header_2D[l],numvariables_2D[l])
-def SDFileFormatConvertorHPEM(Rawdata,header,numvariables,Rmesh=R_mesh[l],Zmesh=Z_mesh[l]):
+#Runs requested dataconversion script with pre-defined arguments.
+#Takes name of convert script, any predefined arguments and newly created files.
+#Returns nothing, runs script in each folder, expects to run over all folders.
+def AutoConvertData(Convertexe,args=[],DirAdditions=[]):
+	HomeDir = os.getcwd()
+	os.chdir(Dirlist[l])
 
-	#Excluding the header, split each row of data and append items to 1D list.
-	CurrentFolderData, DataArray1D = list(),list()
-	for i in range(header,len(Rawdata)):
+	#Remove old files to avoid any overwrite errors.
+	for i in range(0,len(DirAdditions)): os.system('rm -f '+DirAdditions[i])
 
-		#If end of phasecycle reached, break. (Applicable to 3D Datafiles only)
-		if "CYCL=" in Rawdata[i]: 
-			break
-		else: CurrentRow = Rawdata[i].split()
+	#Use predefined arguments if supplied, suppresses output to devnull.
+	if len(args) > 0:
+		with open(os.devnull, 'w') as fp:
+			subprocess = Popen(Convertexe, stdin=PIPE, stdout=fp) #noshell=True
+			subprocess.communicate(os.linesep.join(args))
+		#endwith
 
-		#For all elements in the current row, convert to string and save in list.
-		for j in range(0,len(CurrentRow)):
-			try: DataArray1D.append(float(CurrentRow[j]))
-			except: Avoids_String_Conversion_Error = 1
-		#endfor
-	#endfor
+	#If no arguments supplied, run script and allow user inputs.
+	elif len(args) == 0:
+		os.system(Convertexe)
+	#endif
 
-	#Seperate total 1D array into 2D array with data for each variable.
-	for i in range(0,numvariables):
-		numstart = (Zmesh*Rmesh)*(i)
-		numend = (Zmesh*Rmesh)*(i+1)
-		CurrentFolderData.append(list(DataArray1D[numstart:numend]))
-	#endfor
+	#Update Dir with new filenames, must be supplied manually for now.
+	for i in range(0,len(DirAdditions)): Dir.append(Dirlist[l]+DirAdditions[i])
 
-	return(CurrentFolderData)
+	os.chdir(HomeDir)
+	return()
 #enddef
-
 
 #===================##===================#
 #===================##===================#
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#====================================================================#
+				 	 #READING DATA INTO MEMORY#
+#====================================================================#
 
 print'-----------------------'
 print'Beginning Data Read-in.'
@@ -1042,8 +1098,95 @@ for l in tqdm(range(0,numfolders)):
 
 #===================##===================#
 #===================##===================#
+
+	#IEDF/NEDF file readin.
+	if savefig_IEDF == True:
+
+		#Define arguments and autorun conv_prof.exe if possible.
+		IEDFVarArgs = ['1','1','1','1','1'] #### THIS IS HACKY, WON'T ALWAYS WORK ####
+		args = ['pcmc.prof','title','1','1','1'] + IEDFVarArgs + ['0','0']
+		DirAdditions = ['iprofile_tec2d.pdt','nprofile_tec2d.pdt']
+		try: AutoConvertData('./conv_prof.exe',args,DirAdditions)
+		except: print Dirlist[l]
+
+		#Load data from IEDFprofile file and unpack into 1D array.
+		rawdata, nn_IEDF = ExtractRawData(Dir,'iprofile_tec2d.pdt',l)
+		rawdata_IEDF.append(rawdata)
+
+		#Read through all variables for each file and stop when list ends.
+		IEDFVariablelist,HeaderEndMarker = ['Theta [deg]','Energy [eV]'],'ZONE'
+		for i in range(2,nn_IEDF):
+			#Grab EDFangle(I),EDFbins(J) values from the ZONE line, these outline the datablock size.
+			if HeaderEndMarker in str(rawdata_IEDF[l][i]): 
+				I = int(filter(lambda x: x.isdigit(), rawdata_IEDF[l][i].split(',')[0]))
+				J = int(filter(lambda x: x.isdigit(), rawdata_IEDF[l][i].split(',')[1]))
+				EDFangle, EDFbins = I,J
+				break
+			else: IEDFVariablelist.append(str(rawdata_IEDF[l][i][:-2].strip(' \t\n\r\"')))
+			#endif
+		#endfor
+		numvariables_IEDF,header_IEDF = len(IEDFVariablelist),len(IEDFVariablelist)+2
+		header_IEDFlist.append(header_IEDF)
+
+		#Seperate total 1D data array into sets of data for each variable.
+		CurrentFolderData = SDFileFormatConvertorHPEM(rawdata_IEDF[l],header_IEDF,numvariables_IEDF,I,J)
+
+		#Save all variables for folder[l] to Data.
+		#Data is now 3D array of form [folder,variable,datapoint(R,Z)]
+		DataIEDF.append(CurrentFolderData)
+	#endif
+
+
+#===================##===================#
 #===================##===================#
 
+	#EEDF data readin.
+	if savefig_EEDF == True:
+
+		#Load data from MCS.PDT file and unpack into 1D array.
+		rawdata, nn_mcs = ExtractRawData(Dir,'boltz_tec.pdt',l)
+		rawdata_mcs.append(rawdata)
+
+		#Unpack each row of data points into single array of floats.
+		#Removing 'spacing' between the floats and ignoring variables above data.
+		Energy,Fe = list(),list()
+		for i in range(3,len(rawdata_mcs[l])):
+			if 'ZONE' in rawdata_mcs[l][i]:
+				EEDF_TDlist.append( rawdata_mcs[l][i].split('"')[-2].strip(' ') )
+				DataEEDF.append([Energy,Fe])
+				Energy,Fe = list(),list()
+			#endif
+			try:
+				Energy.append( float(rawdata_mcs[l][i].split()[0]) )
+				Fe.append( float(rawdata_mcs[l][i].split()[1]) )
+			except:
+				NaN_Value = 1
+			#endtry
+		#endfor
+		a,b = 0,5
+		for i in range(a,b):
+			plt.plot(DataEEDF[i][0],DataEEDF[i][1], lw=2)
+		plt.legend(EEDF_TDlist[a:b])
+		plt.xlabel('Energy [eV]')
+		plt.ylabel('F(e) [eV-3/2]')
+		plt.show()
+	#endif
+
+
+#===================##===================#
+#===================##===================#
+
+	#Kinetics data readin - NOT CURRENTLY USED
+	if True == False:
+
+		#Load data from TECPLOT_KIN file and unpack into 1D array.
+		rawdata, nn_kin = ExtractRawData(Dir,'TECPLOT_KIN.PDT',l)
+		rawdata_kin.append(rawdata)
+	#endif
+
+
+#===================##===================#
+#===================##===================#
 
 	if savefig_itermovie == True:
 
@@ -1136,8 +1279,6 @@ for l in tqdm(range(0,numfolders)):
 
 #===================##===================#
 #===================##===================#
-#===================##===================#
-
 
 	if True in [savefig_phaseresolve2D,savefig_phaseresolvelines,savefig_sheathdynamics]:
 
@@ -1222,6 +1363,7 @@ for l in tqdm(range(0,numfolders)):
 	
 					plt.imshow(Image)
 					plt.show()
+					plt.close('all')
 				#endfor
 			#endif
 		#endif
@@ -1293,47 +1435,6 @@ for l in tqdm(range(0,numfolders)):
 #===================##===================#
 
 
-	#Species EDF data readin - NOT CURRENTLY USED
-	if True == False:
-
-		#Load data from MCS.PDT file and unpack into 1D array.
-		rawdata, nn_mcs = ExtractRawData(Dir,'MCS.PDT',l)
-		rawdata_mcs.append(rawdata)
-
-		header_mcs = 2
-		nn_mcs = 81
-		#Unpack each row of data points into single array of floats.
-		#Removing 'spacing' between the floats and ignoring variables above data.
-		for i in range(header_mcs,nn_mcs):
-			rowlength = len(rawdata_mcs[l][i].split())
-			for j in range(0,rowlength):
-				try:
-					data_array.append(float( rawdata_mcs[l][i].split()[j] ))
-				except:
-					NaN_Value = 1
-				#endtry
-			#endfor
-		#endfor
-		plt.plot(data_array)
-		plt.show()
-	#endif
-
-
-	#Kinetics data readin - NOT CURRENTLY USED
-	if True == False:
-
-		#Load data from TECPLOT_KIN file and unpack into 1D array.
-		rawdata, nn_kin = ExtractRawData(Dir,'TECPLOT_KIN.PDT',l)
-		rawdata_kin.append(rawdata)
-	#endif
-
-
-
-#===================##===================#
-#===================##===================#
-#===================##===================#
-
-
 #Create global list of all variable names and find shortest list.
 for m in range(0,numfolders):
 	#Alphabetize the Variablelist and keep global alphabetized list.
@@ -1352,18 +1453,19 @@ Comparisonlist = Globalvarlist[idx]
 
 #===================##===================#
 #===================##===================#
-#===================##===================#
 
 
 #Empty and delete any non-global data lists.
 tempdata,tempdata2 = list(),list()
 data_array,templineout = list(),list()
+Energy,Fe,rawdata_mcs = list(),list(),list()
 del RADIUS,RADIUST,HEIGHT,HEIGHTT,DEPTH,SYM
 del data_array,tempdata,tempdata2,templineout
+del Energy,Fe,rawdata_mcs
 
 
 #Alert user that readin process has ended and continue with selected diagnostics.
-if any([savefig_plot2D, savefig_phaseresolve2D, savefig_itermovie, savefig_radialines, savefig_heightlines, savefig_comparelineouts, savefig_multiprofiles, savefig_phaseresolvelines, savefig_sheathdynamics, savefig_trendcomparison, print_generaltrends, print_KnudsenNumber, print_totalpower, print_DCbias, print_thrust]) == True:
+if any([savefig_plot2D, savefig_phaseresolve2D, savefig_itermovie, savefig_radialines, savefig_heightlines, savefig_comparelineouts, savefig_multiprofiles, savefig_phaseresolvelines, savefig_sheathdynamics, savefig_trendcomparison, print_generaltrends, print_KnudsenNumber, print_totalpower, print_DCbias, print_thrust, savefig_IEDF, savefig_EEDF]) == True:
 	print '----------------------------------------'
 	print 'Data Readin Complete, Starting Analysis:'
 	print '----------------------------------------'
@@ -1439,12 +1541,12 @@ def ImageExtractor2D(Data,Variable=[],R_mesh=R_mesh[l],Z_mesh=Z_mesh[l]):
 
 #Create figure of desired size and with variable axes.
 #Returns figure and axes seperately.
-#figure(image_aspectratio,1)
-def figure(aspectratio,subplots=1):
+#fig,ax = figure(image_aspectratio,1)
+def figure(aspectratio,subplots=1,shareX=False):
 	if len(aspectratio) == 2:
-		fig, ax = plt.subplots(subplots, figsize=(aspectratio[0],aspectratio[1]))
+		fig, ax = plt.subplots(subplots, figsize=(aspectratio[0],aspectratio[1]),sharex=shareX)
 	else:
-		fig, ax = plt.subplots(subplots, figsize=(9,9))
+		fig, ax = plt.subplots(subplots, figsize=(9,9), sharex=shareX)
 	#endif
 	return(fig,ax)
 #enddef
@@ -1494,7 +1596,6 @@ def CropImage(ax=plt.gca()):
 
 #=========================#
 #=========================#
-
 
 
 #Applies plt.options to current figure based on user input.
@@ -2882,6 +2983,96 @@ if savefig_multiprofiles == True:
 
 
 
+#====================================================================#
+				 #GENERAL ENERGY DISTRIBUTION ANALYSIS#
+#====================================================================#
+
+#====================================================================#
+				#ION-NEUTRAL ANGULAR ENERGY DISTRIBUTIONS#
+#====================================================================#
+
+EDFVariables = ['AR^1.1J','EB-1.1J','ION-TOT1.1J']
+if savefig_IEDF == True:
+
+	#For all simulation folders.
+	for l in range(0,numfolders):
+
+		#Create new folder for keeping EEDF/IEDF if required.
+		DirEDF = CreateNewFolder(Dirlist[l],'EDFPlots')
+
+		#Create processlist for requested EDF species and extract images.
+		processlist,Variablelist = VariableEnumerator(EDFVariables,rawdata_IEDF[l],header_IEDFlist[l])
+
+		#For all requested variables.
+		for i in range(0,len(processlist)):
+			EDFprofile = list()
+
+			#Extract image from required variable and create required profile lists.
+			Image = ImageExtractor2D(DataIEDF[l][processlist[i]],R_mesh=EDFangle,Z_mesh=EDFbins)
+
+			#Flatten angular distribution across all angles to produce energy distribution.
+			for j in range(0,len(Image)): EDFprofile.append(sum(Image[j]))
+
+			#Transpose Image for plotting and reverse both lists due to reading error.
+			Image, EDFprofile = Image[::-1].transpose(), EDFprofile[::-1]
+
+
+			#Plot the angular distribution and EDF of the required species.
+			fig,ax = figure([13,9],2)
+			fig.suptitle(Dirlist[l][2::]+'\n'+Variablelist[i]+' Angular Energy Distribution Function', y=0.995, fontsize=16)
+			Ticks = np.arange(-len(Image)/2, len(Image)/2, len(Image)/6)
+
+			im = ax[0].imshow(Image)
+#			ax[0].set_yticks(Ticks)
+			ImageOptions(ax[0],Ylabel='Angular Dispersion [deg]',Crop=False)				
+			#Add Colourbar (Axis, Label, Bins)
+			cax = Colourbar(ax[0],Variablelist[i]+' EDF($\\theta$)',5)
+
+			ax[1].plot(EDFprofile, lw=2)
+			Xlabel,Ylabel = 'Energy [eV]',Variablelist[i]+' EDF($\\theta$)'
+			ImageOptions(ax[1],Xlabel,Ylabel,Crop=False)
+
+			plt.tight_layout()
+			plt.savefig(DirEDF+Variablelist[i]+'_EDF'+ext)
+			plt.close('all')
+		#endfor
+	#endfor
+#endif
+
+#===============================#
+
+if any([savefig_IEDF, savefig_EEDF]) == True:
+	print'--------------------------------'
+	print'# EEDF/IEDF Processing Complete.'
+	print'--------------------------------'
+#endif
+
+#=====================================================================#
+#=====================================================================#
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -3924,7 +4115,7 @@ if savefig_phaseresolvelines == True or savefig_sheathdynamics == True:
 					#Plot Waveform.
 					ax[1].plot(Phaseaxis, VoltageWaveform, lw=2)
 					Xlabel,Ylabel = 'Phase [$\omega$t/2$\pi$]','Potential [V]'
-					ImageOptions(ax[1],Ylabel,Crop=False)
+					ImageOptions(ax[1],Xlabel,Ylabel,Crop=False)
 
 					#Cleanup layout and save images.
 					fig.tight_layout()
@@ -4085,7 +4276,8 @@ if savefig_phaseresolvelines == True or savefig_sheathdynamics == True:
 # ierr 5  ==  Can't find movie1 file  	    CRITICAL ERROR (Exit)
 # ierr 6  ==  Can't find movie_icp file     CRITICAL ERROR (Exit)
 
-
+# Disabled the following warning message regarding scalar assignment of 'arr' axis.
+# /home/sjd549/.local/lib/python2.7/site-packages/numpy/ma/core.py:6385
 
 
 
@@ -4227,3 +4419,21 @@ if use_GUI == True:
 if True == False:
 	 Offset = m.ceil((1-(MinFreq/MaxFreq))*len(VoltageWaveform)*phasecycles)
 #endif
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
