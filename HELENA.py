@@ -30,8 +30,6 @@ from matplotlib import ticker
 from scipy import ndimage
 from tqdm import tqdm		#Progress bar
 from pylab import *
-		
-
 
 
 #====================================================================#
@@ -94,7 +92,7 @@ NEDFVariables = []										#Requested nprofile_2d variables (no spaces)
 IterVariables = ['S-E','E','PPOT','TE']		#Requested Movie_icp (iteration) Variables.
 PhaseVariables = ['S-E','E','PPOT','TE']	#Requested Movie1 (phase) Variables.
 electrodeloc = [30,47]						#Centre Cell of powered electrode [R,Z]. (T,B,L,R)
-phasecycles = 2								#Number of phase cycles to be plotted.
+phasecycles = 1								#Number of phase cycles to be plotted.
 #YPR [30,47] #SPR [0,107] #MSHC [0,12]
 
 #Requested TECPLOT Variables
@@ -108,17 +106,17 @@ TrendLocation = [] 					#Cell location For Trend Analysis [R,Z], ([] = min/max)
 
 #Requested plotting routines.
 savefig_itermovie = False					#Requires movie_icp.pdt
-savefig_plot2D = False						#Requires TECPLOT2D.PDT
+savefig_plot2D = True						#Requires TECPLOT2D.PDT
 
 savefig_radialines = False
 savefig_heightlines = False
 savefig_multiprofiles = False
-savefig_comparelineouts = False
+savefig_comparelineouts = True
 
 savefig_phaseresolvelines = False			#1D Phase Resolved Images
 savefig_phaseresolve2D = False				#2D Phase Resolved Images
 savefig_sheathdynamics = False				#PROES style images
-DoFWidth = 41								#PROES Depth of Field	
+DoFWidth = 41								#PROES Depth of Field	#Cells
 #YPR 41=2cm   #MSHC 10=0.47cm
 
 savefig_IEDF = False						#IN DEVELOPMENT, WORKS BUT UNRELIABLE.
@@ -126,7 +124,7 @@ savefig_EEDF = False						#IN DEVELOPMENT, NO PLOTTING ROUTINE.
 
 
 #Steady-State diagnostics and terminal outputs.
-savefig_trendcomparison = False
+savefig_trendcomparison = True
 print_meshconvergence = False				#Make More General: <_numerictrendaxis>
 print_generaltrends = False
 print_KnudsenNumber = False
@@ -138,8 +136,8 @@ print_thrust = False
 #Image plotting options.
 image_extension = '.png'					#Extensions { '.png', '.jpg', '.eps' }
 image_aspectratio = [10,10]					#[x,y] in cm [Doesn't rotate dynamically]
-image_radialcrop = [0.6]					#[R,Z] in cm
-image_axialcrop = [1,4]						#[R,Z] in cm
+image_radialcrop = []#[0.6]					#[R,Z] in cm
+image_axialcrop = []#[1,4]					#[R,Z] in cm
 #YPR R[0.6];Z[1,4]   #MSHC R[0.0,1.0];Z[0.5,2.5]
 
 image_plotsymmetry = True
@@ -181,12 +179,21 @@ cbaroverride = ['NotImplimented']
 
 
 
-#ADDITIONS FOR GIT
-#CropImage(Crop=True) now takes 2D Crop list as override input.
-#PROES images R-axis now correct orientation and correctly uses image_plotsymmetry.
-#PROES images come with colourbar (Phaselock slightly broken as a result)
-#PROES images and temporally integrated plots now normalized to DoF
-#PROES image and temporally integrated plot data can be written to ASCII
+
+
+#####TODO#####
+#need to check for any other normalization factors, homogonize the function.
+#need to fix the 2D plot and phase image rotation, it breaks pretty easily when rotated.
+#need to update the cbar function and introduce an override.
+#need to get seaborn introduced into the program en-masse.
+#need to introduce 'garbage collection' at the end of each diagnostic.
+#meshconvergence --> numerictrendaxis needs made for comparisons.
+
+#need to clean up the phase data in general and functionalise as much as possible.
+#need to clean up the IEDF/NEDF/EEDF sections and functionalise.
+#need to add the ability to compare IEDF/NEDF profiles between folders.
+
+
 
 
 
@@ -667,15 +674,15 @@ def WriteDataToFile(data,filename,structure='w'):
 
 #Reads 1D or 2D data from textfile in ASCII format.
 #One input, filename string, returns data array.
-def ReadDataFromFile(Filename):
+def ReadDataFromFile(Filename,Dimension='1D'):
 	OutputData = list()
 
 	#Determine dimensionality of profile.
-	if isinstance(Data[0], (list, np.ndarray) ) == True:
+	if Dimension == '2D':
 		#Read in 2D data from ASCII formatted file.
 		datafile = open(Filename)
 		RawData = datafile.readlines()
-		for m in range(0,Height):
+		for m in range(0,len(RawData)):
 			Row = RawData[m].split()
 			for n in range(0,len(Row)):
 				Row[n] = float(Row[n])
@@ -684,7 +691,7 @@ def ReadDataFromFile(Filename):
 		#endfor
 
 	#Lowest dimention is scalar: ==> 1D array.
-	elif isinstance(Data, (list, np.ndarray) ) == True:
+	elif Dimension == '1D':
 		#Read in 1D data from ASCII formatted file.
 		datafile = open(Filename)
 		Row = datafile.readline().split()
@@ -1669,39 +1676,48 @@ def ImageOptions(ax=plt.gca(),Xlabel='',Ylabel='',Title='',Legend=[],Crop=True):
 
 #Takes 1D or 2D array and returns array normalized to maximum value.
 #If NormFactor is defined, array will be normalized to this instead.
+#Returns normalized image/profile and the max/min normalization factors.
 def Normalize(profile,NormFactor=0):
 	NormalizedImage = list()
 
 	#determine dimensionality of profile and select normaliztion method.
 	if isinstance(profile[0], (list, np.ndarray) ) == True:
 
-		#Normalize 2D array to local maximum.
-		if NormFactor == 0:
-			FlatImage = [item for sublist in profile for item in sublist]
-			NormFactor = max(FlatImage)
+		#Obtain max and min normalization factors for 2D array.
+		FlatImage = [item for sublist in profile for item in sublist]
+		MaxNormFactor,MinNormFactor = max(FlatImage),min(FlatImage)
+
+		#Fix for division by zero and other infinity related things...
+		if 'inf' in str(MaxNormFactor) or MaxNormFactor == 0.0: MaxNormFactor = 1.0
+		if 'inf' in str(MinNormFactor) or MinNormFactor == 0.0: MinNormFactor = 0.0
 		#endif
+
+		#Normalize 2D array to local maximum.
+		if NormFactor == 0: NormFactor = MaxNormFactor
 		for i in range(0,len(profile)):
 			NormalizedImage.append( [x/NormFactor for x in profile[i]] )
 		#endfor
 		profile = NormalizedImage
-		return(profile)
+		return(profile,MaxNormFactor,MinNormFactor)
 
 	#Lowest dimention is still list.
 	elif isinstance(profile, (list, np.ndarray) ) == True:
 
-		#Fix for division by zero.
-		if NormFactor == 0:
-			if max(profile) != 0: NormFactor = max(profile)
-			else: NormFactor = 1
-		#endif
+		#Obtain max and min normalization factors for 1D profile.
+		MaxNormFactor,MinNormFactor = max(profile),min(profile)
+
+		#Fix for division by zero and other infinity related things...
+		if 'inf' in str(MaxNormFactor) or MaxNormFactor == 0.0: MaxNormFactor = 1.0
+		if 'inf' in str(MinNormFactor) or MinNormFactor == 0.0: MinNormFactor = 0.0
 
 		#Normalize 1D array to local maximum.
+		if NormFactor == 0: NormFactor = MaxNormFactor
 		for i in range(0,len(profile)):
 			profile[i] = profile[i]/NormFactor
 		#endfor
 	#endif
 
-	return(profile)
+	return(profile,MaxNormFactor,MinNormFactor)
 #enddef
 
 
@@ -1746,7 +1762,7 @@ def ImagePlotter2D(Image,extent,aspectratio,fig=111,ax=111):
 
 	#Generate new figure if required. {kinda hacky...}
 	if fig == 111 and ax == 111:
-		fig, ax = figure(aspectratio)
+		fig,ax = figure(aspectratio)
 	elif fig == 111:
 		fig = figure(aspectratio)
 	#endif
@@ -1895,7 +1911,7 @@ def SymmetryConverter2D(Image,Isym=Isymlist[l],R_mesh=R_mesh[l],Z_mesh=Z_mesh[l]
 
 
 #Creates and plots a colourbar with given label and binsize.
-def Colourbar(ax,Label,Bins):
+def Colourbar(ax,Label,Bins,Norm=[]):
 
 	#Colourbar plotting details
 	divider = make_axes_locatable(ax)
@@ -1909,6 +1925,9 @@ def Colourbar(ax,Label,Bins):
 	#Size of font
 	cbar.ax.yaxis.offsetText.set(size=18)
 	yticks(fontsize=18)
+
+	#Apply normalized colourbar if limits specified.
+	if len(Norm) == 2: im.set_clim(vmin=Norm[0], vmax=Norm[1])
 
 	return(cbar)
 #enddef
@@ -3832,8 +3851,11 @@ if savefig_phaseresolve2D == True:
 			#Obtain maximum and minimum values of current variable over all phases.
 			MaxNormalize,MinNormalize = list(),list()
 			for j in range(0,phasecycles):
-				MaxNormalize.append( max(ImageExtractor2D(PhaseMovieData[l][j][PhaseProcesslist[i]],PhaseVariablelist[i]).flatten()) )
-				MinNormalize.append( min(ImageExtractor2D(PhaseMovieData[l][j][PhaseProcesslist[i]],PhaseVariablelist[i]).flatten()) )
+				Image = ImageExtractor2D(PhaseMovieData[l][j][PhaseProcesslist[i]],PhaseVariablelist[i])
+				if image_logplot == True: Image = np.log(Image)
+				
+				MaxNormalize.append(Normalize(Image)[1])
+				MinNormalize.append(Normalize(Image)[2])
 			#endfor
 			MaxNormalize,MinNormalize = max(MaxNormalize),min(MinNormalize)
 
@@ -3864,10 +3886,8 @@ if savefig_phaseresolve2D == True:
 					Xlabel,Ylabel = Ylabel,Xlabel
 					Image = np.transpose(Image)
 				#else maintain image as default orientation.
-				elif sym == 1:
-					extent = [-Raxis[0],Raxis[-1],Zaxis[0],Zaxis[-1]]
-				elif sym == 2:
-					extent = [-Raxis[-1],Raxis[-1],Zaxis[0],Zaxis[-1]]
+				elif sym == 1: extent = [-Raxis[0],Raxis[-1],Zaxis[0],Zaxis[-1]]
+				elif sym == 2: extent = [-Raxis[-1],Raxis[-1],Zaxis[0],Zaxis[-1]]
 				#endif
 
 				#Create figure and axes, plot image on top and waveform underneath.
@@ -3881,8 +3901,7 @@ if savefig_phaseresolve2D == True:
 
 				#Add Colourbar (Axis, Label, Bins)
 				label = VariableLabelMaker(PhaseVariablelist)
-				cax = Colourbar(ax[0],label[i],5)
-				im.set_clim(vmin=MinNormalize, vmax=MaxNormalize)
+				cax = Colourbar(ax[0],label[i],5,Norm=[MinNormalize,MaxNormalize])
 
 				#Plot waveform and apply image options.
 				ax[1].plot(Phaseaxis, VoltageWaveform, lw=2)
@@ -3963,6 +3982,12 @@ if savefig_phaseresolvelines == True or savefig_sheathdynamics == True:
 
 		plt.savefig(DirPhaseResolved+VariedValuelist[l]+' Waveform'+ext)
 		plt.close('all')
+
+		#Write PROES data in ASCII format if required.
+		if write_phaseresolve == True:
+			DirASCIIPROES = CreateNewFolder(DirPhaseResolved,'PROES_Data')
+			WriteDataToFile([Phaseaxis,VoltageWaveform], DirASCIIPROES+'VoltageWaveform')
+		#endif
 
 		#==============#
 
