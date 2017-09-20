@@ -85,33 +85,33 @@ O2 = ['O2','O2+','O','O+','O-','E','TE','P-POT','TG-AVE','PRESSURE','EF-TOT','PO
 #====================================================================#
 
 #Requested IEDF/NEDF Variables.
-IEDFVariables = ['AR^0.23','EB-0.23','ION-TOT0.2']		#Requested iprofile_2d variables (no spaces)
+IEDFVariables = ['AR^1.1J','EB-1.1J','ION-TOT1.1J','AR^1.3A','EB-1.3A']		#Requested iprofile_2d variables (no spaces)
 NEDFVariables = []										#Requested nprofile_2d variables (no spaces)
 
 #Requested movie1/movie_icp Variables.
 IterVariables = ['S-E','E','PPOT','TE']		#Requested Movie_icp (iteration) Variables.
 PhaseVariables = ['S-E','E','PPOT','TE']	#Requested Movie1 (phase) Variables.
-electrodeloc = [30,47]						#Centre Cell of powered electrode [R,Z]. (T,B,L,R)
-phasecycles = 1								#Number of phase cycles to be plotted.
+electrodeloc = [0,12]						#Centre Cell of powered electrode [R,Z]. (T,B,L,R)
+phasecycles = 2								#Number of phase cycles to be plotted.
 #YPR [30,47] #SPR [0,107] #MSHC [0,12]
 
 #Requested TECPLOT Variables
-Variables = ArFull
-MultiVar = []						#Additional variables plotted ontop of [Variables]
-radialineouts = [47] 					#Radial 1D-Profiles to be plotted (fixed Z-mesh) --
-heightlineouts = []					#Axial 1D-Profiles to be plotted (fixed R-mesh) |
+Variables = ['E']
+MultiVar = ['AR+']						#Additional variables plotted ontop of [Variables]
+radialineouts = [] 					#Radial 1D-Profiles to be plotted (fixed Z-mesh) --
+heightlineouts = [0]					#Axial 1D-Profiles to be plotted (fixed R-mesh) |
 TrendLocation = [] 					#Cell location For Trend Analysis [R,Z], ([] = min/max)
 #YPR H0;R47 #MSHC H0,20;R20
 
 
 #Requested plotting routines.
 savefig_itermovie = False					#Requires movie_icp.pdt
-savefig_plot2D = True						#Requires TECPLOT2D.PDT
+savefig_plot2D = False						#Requires TECPLOT2D.PDT
 
 savefig_radialines = False
 savefig_heightlines = False
-savefig_multiprofiles = False
-savefig_comparelineouts = True
+savefig_multiprofiles = True
+savefig_comparelineouts = False
 
 savefig_phaseresolvelines = False			#1D Phase Resolved Images
 savefig_phaseresolve2D = False				#2D Phase Resolved Images
@@ -124,7 +124,7 @@ savefig_EEDF = False						#IN DEVELOPMENT, NO PLOTTING ROUTINE.
 
 
 #Steady-State diagnostics and terminal outputs.
-savefig_trendcomparison = True
+savefig_trendcomparison = False
 print_meshconvergence = False				#Make More General: <_numerictrendaxis>
 print_generaltrends = False
 print_KnudsenNumber = False
@@ -281,7 +281,7 @@ print '   |  |__|  | |  |__   |  |     |  |__   |   \|  |   /  ^  \        '
 print '   |   __   | |   __|  |  |     |   __|  |  . `  |  /  /_\  \       '
 print '   |  |  |  | |  |____ |  `----.|  |____ |  |\   | /  _____  \      '
 print '   |__|  |__| |_______||_______||_______||__| \__|/__/     \__\     '
-print '                                                             v0.9.9 '
+print '                                                            v0.10.1 '
 print '--------------------------------------------------------------------'
 print ''
 print 'The following diagnostics were requested:'
@@ -1677,6 +1677,7 @@ def ImageOptions(ax=plt.gca(),Xlabel='',Ylabel='',Title='',Legend=[],Crop=True):
 #Takes 1D or 2D array and returns array normalized to maximum value.
 #If NormFactor is defined, array will be normalized to this instead.
 #Returns normalized image/profile and the max/min normalization factors.
+#NormProfile,Min,Max = Normalize(profile,NormFactor=0)
 def Normalize(profile,NormFactor=0):
 	NormalizedImage = list()
 
@@ -1717,7 +1718,7 @@ def Normalize(profile,NormFactor=0):
 		#endfor
 	#endif
 
-	return(profile,MaxNormFactor,MinNormFactor)
+	return(profile,MinNormFactor,MaxNormFactor)
 #enddef
 
 
@@ -2541,7 +2542,7 @@ if savefig_itermovie == True:
 
 		#Normalize and plot each variable in ConvergenceTrends to single figure.
 		for i in range(0,len(ConvergenceTrends)):
-			Normalize(ConvergenceTrends[i])
+			ConvergenceTrends[i] = Normalize(ConvergenceTrends[i])
 			ax.plot(Xaxis,ConvergenceTrends[i], lw=2)
 		#endfor
 
@@ -2637,7 +2638,6 @@ if savefig_radialines or savefig_heightlines == True:
 					if len(Legendlist) < len(radialineouts):
 						Legendlist.append('Z='+str(round((radialineouts[j])*dz[l]*10, 2))+' mm')
 					#endif
-					Ylabels = VariableLabelMaker(Variablelist)
 
 					#Plot all requested radial lines on single image per variable.
 					Rlineout=PlotRadialProfile(Data[l],processlist[i],Variablelist[i],radialineouts[j])
@@ -2648,7 +2648,7 @@ if savefig_radialines or savefig_heightlines == True:
 
 				#Apply image options and axis labels.
 				Title = 'Radial Profiles for '+Variablelist[i]+' for \n'+Dirlist[l][2:-1]
-				Xlabel,Ylabel = 'Radial Distance R [cm]',Ylabels[i]
+				Xlabel,Ylabel = 'Radial Distance R [cm]',VariableLabelMaker(Variablelist[i])[0]
 				ImageOptions(ax,Xlabel,Ylabel,Title,Legendlist,Crop=False)
 
 				#Save profiles in previously created folder.
@@ -2683,12 +2683,11 @@ if savefig_radialines or savefig_heightlines == True:
 						Rlegend = heightlineouts[j]*dr[l]*10
 						Legendlist.append('R='+str(round(Rlegend, 2))+' mm')
 					#endif
-					Ylabels = VariableLabelMaker(Variablelist)
 				#endfor
 
 				#Apply image options and axis labels.
 				Title = 'Height Profiles for '+Variablelist[i]+' for \n'+Dirlist[l][2:-1]
-				Xlabel,Ylabel = 'Axial Distance Z [cm]',Ylabels[i]
+				Xlabel,Ylabel = 'Axial Distance Z [cm]',VariableLabelMaker(Variablelist[i])[0]
 				ImageOptions(ax,Xlabel,Ylabel,Title,Legendlist,Crop=False)
 
 				#Save profiles in previously created folder.
@@ -2915,8 +2914,8 @@ if savefig_multiprofiles == True:
 
 					#Apply image options and axis labels.
 					Title = str(round((heightlineouts[j])*dr[l], 2))+'cm Height profiles for '+Variablelist[i]+','' for \n'+Dirlist[l][2:-1]
-					Xlabel,Ylabel = 'Axial Distance Z [cm]',Ylabels[i]
-					ImageOptions(ax,Xlabel,Ylabel,Title,Legendlist,Crop=False)
+					Xlabel,Ylabel = 'Axial Distance Z [cm]',VariableLabelMaker(Variablelist[i])[0]
+					ImageOptions(ax,Xlabel,Ylabel,Title,legendlist,Crop=False)
 
 					#Save figures in original folder.
 					R = 'R='+str(round((heightlineouts[j])*dr[l], 2))+'_'
@@ -2971,8 +2970,8 @@ if savefig_multiprofiles == True:
 
 					#Apply image options and axis labels.
 					Title = str(round((radialineouts[j])*dz[l], 2))+'cm Radial Profiles for '+Variablelist[i]+' for \n'+Dirlist[l][2:-1]
-					Xlabel,Ylabel = 'Radial Distance R [cm]',Ylabels[i]
-					ImageOptions(ax,Xlabel,Ylabel,Title,Legendlist,Crop=False)
+					Xlabel,Ylabel = 'Radial Distance R [cm]',VariableLabelMaker(Variablelist[i])[0]
+					ImageOptions(ax,Xlabel,Ylabel,Title,legendlist,Crop=False)
 
 					#Save lines in previously created folder.
 					Z = 'Z='+str(round((radialineouts[j])*dz[l], 2))+'_'
@@ -3089,6 +3088,8 @@ if any([savefig_IEDF, savefig_EEDF]) == True:
 
 #=====================================================================#
 #=====================================================================#
+
+
 
 
 
@@ -3854,8 +3855,8 @@ if savefig_phaseresolve2D == True:
 				Image = ImageExtractor2D(PhaseMovieData[l][j][PhaseProcesslist[i]],PhaseVariablelist[i])
 				if image_logplot == True: Image = np.log(Image)
 				
-				MaxNormalize.append(Normalize(Image)[1])
-				MinNormalize.append(Normalize(Image)[2])
+				MinNormalize.append(Normalize(Image)[1])
+				MaxNormalize.append(Normalize(Image)[2])
 			#endfor
 			MaxNormalize,MinNormalize = max(MaxNormalize),min(MinNormalize)
 
