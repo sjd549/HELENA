@@ -15,6 +15,14 @@
 #Hpem ELectronic ENgine Analysis#
 #################################
 
+#apt-get install ffmpeg
+#apt-get install python-pip
+#apt-get install python-matplotlib
+#apt-get install python-numpy
+#apt-get install python-scipy
+#pip install findtools
+#pip install tqdm
+
 import matplotlib.cm as cm
 import numpy as np
 import scipy as sp
@@ -91,15 +99,17 @@ NEDFVariables = []										#Requested nprofile_2d variables (no spaces)
 #Requested movie1/movie_icp Variables.
 IterVariables = ['S-E','E','PPOT','TE']		#Requested Movie_icp (iteration) Variables.
 PhaseVariables = ['S-E','E','PPOT','TE']	#Requested Movie1 (phase) Variables.
-electrodeloc = [0,12]						#Centre Cell of powered electrode [R,Z]. (T,B,L,R)
-phasecycles = 2								#Number of phase cycles to be plotted.
-#YPR [30,47] #SPR [0,107] #MSHC [0,12]
+electrodeloc = [0,0]						#Centre Cell of powered electrode [R,Z]. (T,B,L,R)
+phasecycles = 1								#Number of phase cycles to be plotted.
+DoFWidth = 41								#PROES Depth of Field Cells
+#electrodeloc	#YPR [30,47] #SPR [0,107] #MSHC [0,12]
+#DOFWidth		#YPR 41=2cm   #MSHC 10=0.47cm
 
 #Requested TECPLOT Variables
-Variables = ['E']
-MultiVar = ['AR+']						#Additional variables plotted ontop of [Variables]
+Variables = ArFull
+MultiVar = []						#Additional variables plotted ontop of [Variables]
 radialineouts = [] 					#Radial 1D-Profiles to be plotted (fixed Z-mesh) --
-heightlineouts = [0]					#Axial 1D-Profiles to be plotted (fixed R-mesh) |
+heightlineouts = []					#Axial 1D-Profiles to be plotted (fixed R-mesh) |
 TrendLocation = [] 					#Cell location For Trend Analysis [R,Z], ([] = min/max)
 #YPR H0;R47 #MSHC H0,20;R20
 
@@ -108,16 +118,13 @@ TrendLocation = [] 					#Cell location For Trend Analysis [R,Z], ([] = min/max)
 savefig_itermovie = False					#Requires movie_icp.pdt
 savefig_plot2D = False						#Requires TECPLOT2D.PDT
 
-savefig_radialines = False
-savefig_heightlines = False
-savefig_multiprofiles = True
-savefig_comparelineouts = False
+savefig_monoprofiles = False				#Singe Variables; fixed height/radius
+savefig_multiprofiles = False				#Multi-Variables; same folder
+savefig_comparelineouts = False				#Multi-Variables; all folders
 
 savefig_phaseresolvelines = False			#1D Phase Resolved Images
 savefig_phaseresolve2D = False				#2D Phase Resolved Images
 savefig_sheathdynamics = False				#PROES style images
-DoFWidth = 41								#PROES Depth of Field	#Cells
-#YPR 41=2cm   #MSHC 10=0.47cm
 
 savefig_IEDF = False						#IN DEVELOPMENT, WORKS BUT UNRELIABLE.
 savefig_EEDF = False						#IN DEVELOPMENT, NO PLOTTING ROUTINE.
@@ -136,8 +143,8 @@ print_thrust = False
 #Image plotting options.
 image_extension = '.png'					#Extensions { '.png', '.jpg', '.eps' }
 image_aspectratio = [10,10]					#[x,y] in cm [Doesn't rotate dynamically]
-image_radialcrop = []#[0.6]					#[R,Z] in cm
-image_axialcrop = []#[1,4]					#[R,Z] in cm
+image_radialcrop = []						#[R,Z] in cm
+image_axialcrop = []						#[R,Z] in cm
 #YPR R[0.6];Z[1,4]   #MSHC R[0.0,1.0];Z[0.5,2.5]
 
 image_plotsymmetry = True
@@ -294,7 +301,7 @@ if savefig_phaseresolve2D == True:
 	print'# 2D Phase Resolved Movie Processing'
 if True in [savefig_phaseresolvelines,savefig_sheathdynamics]:
 	print'# 1D Phase Resolved Profile Processing'
-if True in [savefig_radialines,savefig_heightlines,savefig_multiprofiles]:
+if True in [savefig_monoprofiles,savefig_multiprofiles,savefig_comparelineouts]:
 	print'# 1D Steady-State Profile Processing'
 if True in [print_generaltrends,print_KnudsenNumber,print_totalpower,print_DCbias,print_thrust]:
 	print'# 1D Specific Trend Analysis'
@@ -1485,7 +1492,7 @@ del Energy,Fe,rawdata_mcs
 
 
 #Alert user that readin process has ended and continue with selected diagnostics.
-if any([savefig_plot2D, savefig_phaseresolve2D, savefig_itermovie, savefig_radialines, savefig_heightlines, savefig_comparelineouts, savefig_multiprofiles, savefig_phaseresolvelines, savefig_sheathdynamics, savefig_trendcomparison, print_generaltrends, print_KnudsenNumber, print_totalpower, print_DCbias, print_thrust, savefig_IEDF, savefig_EEDF]) == True:
+if any([savefig_plot2D, savefig_phaseresolve2D, savefig_itermovie, savefig_monoprofiles, savefig_multiprofiles, savefig_comparelineouts, savefig_phaseresolvelines, savefig_sheathdynamics, savefig_trendcomparison, print_generaltrends, print_KnudsenNumber, print_totalpower, print_DCbias, print_thrust, savefig_IEDF, savefig_EEDF]) == True:
 	print '----------------------------------------'
 	print 'Data Readin Complete, Starting Analysis:'
 	print '----------------------------------------'
@@ -1651,6 +1658,11 @@ def ImageOptions(ax=plt.gca(),Xlabel='',Ylabel='',Title='',Legend=[],Crop=True):
 	ax.set_ylabel(Ylabel, fontsize=24)
 	ax.tick_params(axis='x', labelsize=18)
 	ax.tick_params(axis='y', labelsize=18)
+
+	#Force scientific notation for all axes, accounting for non-scalar x-axes.
+	try: ax.ticklabel_format(style='sci',scilimits=(-2,3),axis='both')
+	except: ax.ticklabel_format(style='sci',scilimits=(-2,3),axis='y')
+	#endtry
 
 	#Set grid, default is off.
 	if image_plotgrid == True: ax.grid(True)
@@ -1912,17 +1924,21 @@ def SymmetryConverter2D(Image,Isym=Isymlist[l],R_mesh=R_mesh[l],Z_mesh=Z_mesh[l]
 
 
 #Creates and plots a colourbar with given label and binsize.
+#Takes colourbar axis, label string, number of colour bins
+#Also takes normalization factors in form [min,max].
+#Returns cbar axis if further changes are required.
 def Colourbar(ax,Label,Bins,Norm=[]):
 
 	#Colourbar plotting details
 	divider = make_axes_locatable(ax)
 	cax = divider.append_axes("right", size="5%", pad=0.1)
 	cbar = plt.colorbar(im, cax=cax)
-	#Number of ticks
+	#Number of ticks, set scientific notation.
 	tick_locator = ticker.MaxNLocator(nbins=Bins)
 	cbar.locator = tick_locator
-	cbar.update_ticks()
 	cbar.set_label(Label, rotation=270,labelpad=30,fontsize=24)
+	cbar.formatter.set_powerlimits((-2,3))
+	cbar.update_ticks()
 	#Size of font
 	cbar.ax.yaxis.offsetText.set(size=18)
 	yticks(fontsize=18)
@@ -2611,7 +2627,7 @@ if savefig_itermovie == True:
 
 
 #Generate and save lineouts of requested variables for given location.
-if savefig_radialines or savefig_heightlines == True:
+if savefig_monoprofiles == True:
 
 	for l in range(0,numfolders):
 
@@ -2624,7 +2640,7 @@ if savefig_radialines or savefig_heightlines == True:
 		Legendlist = list()
 
 		#Generate the radial (horizontal) lineouts for a specific height.
-		if savefig_radialines == True and len(radialineouts) > 0:
+		if len(radialineouts) > 0:
 			#Create folder to keep output plots.
 			DirRlineouts = CreateNewFolder(Dirlist[l],'Radial_Profiles/')
 
@@ -2636,7 +2652,7 @@ if savefig_radialines or savefig_heightlines == True:
 				for j in range(0,len(radialineouts)):
 					#Update legend with location of each lineout.
 					if len(Legendlist) < len(radialineouts):
-						Legendlist.append('Z='+str(round((radialineouts[j])*dz[l]*10, 2))+' mm')
+						Legendlist.append('Z='+str(round((radialineouts[j])*dz[l], 2))+' cm')
 					#endif
 
 					#Plot all requested radial lines on single image per variable.
@@ -2648,7 +2664,7 @@ if savefig_radialines or savefig_heightlines == True:
 
 				#Apply image options and axis labels.
 				Title = 'Radial Profiles for '+Variablelist[i]+' for \n'+Dirlist[l][2:-1]
-				Xlabel,Ylabel = 'Radial Distance R [cm]',VariableLabelMaker(Variablelist[i])[0]
+				Xlabel,Ylabel = 'Radial Distance R [cm]',VariableLabelMaker(Variablelist)[i]
 				ImageOptions(ax,Xlabel,Ylabel,Title,Legendlist,Crop=False)
 
 				#Save profiles in previously created folder.
@@ -2661,7 +2677,7 @@ if savefig_radialines or savefig_heightlines == True:
 #===================##===================#
 
 		#Generate the vertical (height) lineouts for a given radius.
-		if savefig_heightlines == True and len(heightlineouts) > 0:
+		if len(heightlineouts) > 0:
 			#Create folder to keep output plots.
 			DirZlineouts = CreateNewFolder(Dirlist[l],'Axial_Profiles/')
 			Legendlist = list()
@@ -2680,14 +2696,13 @@ if savefig_radialines or savefig_heightlines == True:
 
 					#Perform SI conversion and save to legend.
 					if len(Legendlist) < len(heightlineouts):
-						Rlegend = heightlineouts[j]*dr[l]*10
-						Legendlist.append('R='+str(round(Rlegend, 2))+' mm')
+						Legendlist.append('R='+str(round(heightlineouts[j]*dr[l], 2))+' cm')
 					#endif
 				#endfor
 
 				#Apply image options and axis labels.
 				Title = 'Height Profiles for '+Variablelist[i]+' for \n'+Dirlist[l][2:-1]
-				Xlabel,Ylabel = 'Axial Distance Z [cm]',VariableLabelMaker(Variablelist[i])[0]
+				Xlabel,Ylabel = 'Axial Distance Z [cm]',VariableLabelMaker(Variablelist)[i]
 				ImageOptions(ax,Xlabel,Ylabel,Title,Legendlist,Crop=False)
 
 				#Save profiles in previously created folder.
@@ -3187,7 +3202,7 @@ if savefig_trendcomparison == True or print_generaltrends == True:
 				Xaxis,MaxTrend,MinTrend = MinMaxTrends(heightlineouts[j],'Axial',k)
 				Trend = MaxTrend
 				#Append the radial position to the legendlist.
-				Legendlist.append( 'R='+str(round((heightlineouts[j]*dr[l]*10), 2))+'mm' )
+				Legendlist.append( 'R='+str(round((heightlineouts[j]*dr[l]), 2))+'cm' )
 			#endif
 
 			#Plot trends for each variable over all folders, applying image options.
@@ -3200,22 +3215,14 @@ if savefig_trendcomparison == True or print_generaltrends == True:
 				WriteDataToFile(Trend, DirASCII+Variablelist[k]+' Trends')
 			#endif
 
-			#Beautify the plot before saving.
-			plt.title('Trend in max '+Variablelist[k]+' with changing '+TrendVariable+' \n'+Dirlist[l][2:-1] ,position=(0.5,1.05))
-			plt.ylabel('Max '+YaxisLegend[k], fontsize=24)
-			ax.tick_params(axis='x', labelsize=18)
-			ax.tick_params(axis='y', labelsize=18)
-			plt.legend(Legendlist, prop={'size':16}, loc=1)
-			if len(xlabeloverride) > 0:
-				plt.xlabel(xlabeloverride[0], fontsize=24)
-			else:
-				plt.xlabel('Varied Property', fontsize=24)
-			#endif
+			#Apply image options and axis labels.
+			Title='Trend in max '+Variablelist[k]+' with changing '+TrendVariable+' \n'+Dirlist[l][2:-1]
+			Xlabel,Ylabel = 'Varied Property','Max '+YaxisLegend[k]
+			ImageOptions(ax,Xlabel,Ylabel,Title,Legendlist,Crop=False)
 
 		#Save one image per variable with data from all simulations.
 		if len(heightlineouts) > 0:
 			plt.savefig(DirAxialTrends+'Axial Trends in '+Variablelist[k]+ext)
-			plt.clf
 			plt.close('all')
 		#endif
 
@@ -3255,7 +3262,7 @@ if savefig_trendcomparison == True or print_generaltrends == True:
 				Xaxis,MaxTrend,MinTrend = MinMaxTrends(radialineouts[j],'Radial',k)
 				Trend = MaxTrend
 				#Append the axial position to the legendlist.
-				Legendlist.append( 'Z='+str(round((radialineouts[j]*dz[l]*10), 2))+'mm' )
+				Legendlist.append( 'Z='+str(round((radialineouts[j]*dz[l]), 2))+'cm' )
 			#endif
 
 			#Plot trends for each variable over all folders, applying image options.
@@ -3268,22 +3275,14 @@ if savefig_trendcomparison == True or print_generaltrends == True:
 				WriteDataToFile(MaxTrend, DirASCII+Variablelist[k]+' Trends')
 			#endif
 
-			#Beautify the plot before saving.
-			plt.title('Trend in max '+Variablelist[k]+' with changing '+TrendVariable+' \n'+Dirlist[l][2:-1] ,position=(0.5,1.05))
-			plt.ylabel('Max '+YaxisLegend[k], fontsize=24)
-			ax.tick_params(axis='x', labelsize=18)
-			ax.tick_params(axis='y', labelsize=18)
-			plt.legend(Legendlist, prop={'size':16}, loc=1)
-			if len(xlabeloverride) > 0:
-				plt.xlabel(xlabeloverride[0], fontsize=24)
-			else:
-				plt.xlabel('Varied Property', fontsize=24)
-			#endif
+			#Apply image options and axis labels.
+			Title='Trend in max '+Variablelist[k]+' with changing '+TrendVariable+' \n'+Dirlist[l][2:-1]
+			Xlabel,Ylabel = 'Varied Property','Max '+YaxisLegend[k]
+			ImageOptions(ax,Xlabel,Ylabel,Title,Legendlist,Crop=False)
 
 		#Save one image per variable with data from all simulations.
 		if len(radialineouts) > 0:
 			plt.savefig(DirRadialTrends+'Radial Trends in '+Variablelist[k]+ext)
-			plt.clf
 			plt.close('all')
 		#endif
 	#endfor
