@@ -15,13 +15,34 @@
 #Hpem ELectronic ENgine Analysis#
 #################################
 
-#apt-get install ffmpeg
-#apt-get install python-pip
-#apt-get install python-matplotlib
-#apt-get install python-numpy
-#apt-get install python-scipy
-#pip install findtools
-#pip install tqdm
+
+#====================================================================#
+				 #PROGRAM FLAGS AND MODULE IMPORTS#
+#====================================================================#
+
+from optparse import OptionParser
+parser = OptionParser()
+parser.add_option("-f", "--first", action="store_true", dest="install", default=False, help="Install prompt for required python modules")
+(options, args) = parser.parse_args()
+
+if 'True' in str(options): 
+	import os, sys
+	import os.path
+
+	print ''
+	print 'First time use requires installation of additional python modules'
+	print 'Please type your password when prompted to allow installation:'
+	print ''
+	os.system('sudo apt-get install python-pip')
+	os.system('sudo apt-get install python-matplotlib')
+	os.system('sudo apt-get install python-numpy')
+	os.system('sudo apt-get install python-scipy')
+	os.system('sudo apt-get install ffmpeg')
+	os.system('pip install findtools')
+	os.system('pip install tqdm')
+	print ''
+	print ''
+#endif
 
 import matplotlib.cm as cm
 import numpy as np
@@ -36,7 +57,7 @@ from subprocess import Popen, PIPE
 from matplotlib import pyplot as plt
 from matplotlib import ticker
 from scipy import ndimage
-from tqdm import tqdm		#Progress bar
+from tqdm import tqdm
 from pylab import *
 
 
@@ -99,7 +120,7 @@ NEDFVariables = []										#Requested nprofile_2d variables (no spaces)
 #Requested movie1/movie_icp Variables.
 IterVariables = ['S-E','E','PPOT','TE']		#Requested Movie_icp (iteration) Variables.
 PhaseVariables = ['S-E','E','PPOT','TE']	#Requested Movie1 (phase) Variables.
-electrodeloc = [0,0]						#Centre Cell of powered electrode [R,Z]. (T,B,L,R)
+electrodeloc = [0,12]						#Centre Cell of powered electrode [R,Z]. (T,B,L,R)
 phasecycles = 1								#Number of phase cycles to be plotted.
 DoFWidth = 41								#PROES Depth of Field Cells
 #electrodeloc	#YPR [30,47] #SPR [0,107] #MSHC [0,12]
@@ -108,9 +129,9 @@ DoFWidth = 41								#PROES Depth of Field Cells
 #Requested TECPLOT Variables
 Variables = ArFull
 MultiVar = []						#Additional variables plotted ontop of [Variables]
-radialineouts = [] 					#Radial 1D-Profiles to be plotted (fixed Z-mesh) --
+radialineouts = [24,43] 					#Radial 1D-Profiles to be plotted (fixed Z-mesh) --
 heightlineouts = []					#Axial 1D-Profiles to be plotted (fixed R-mesh) |
-TrendLocation = [] 					#Cell location For Trend Analysis [R,Z], ([] = min/max)
+TrendLocation = [19] 					#Cell location For Trend Analysis [R,Z], ([] = min/max)
 #YPR H0;R47 #MSHC H0,20;R20
 
 
@@ -170,7 +191,8 @@ write_plot2D = False
 #Overrides the automatic image labelling.
 titleoverride = []
 legendoverride = []
-xlabeloverride = []
+xaxisoverride = ['0','30','60','90','120','150','180','210','240','270','300','330']
+xlabeloverride = ['Phase Offset [Deg]']
 ylabeloverride = []
 cbaroverride = ['NotImplimented']
 
@@ -1741,10 +1763,16 @@ def Normalize(profile,NormFactor=0):
 
 #Create figure and plot a 1D graph with associated image plotting requirements.
 #Returns plotted axes and figure if new ones were created.
-#Else plots to existing figure and returns nothing.
-def ImagePlotter1D(profile,axis,aspectratio,createfig=True):
+#Else plots to existing figure and returns the image object.
+#ImagePlotter2D(Image,extent,image_aspectratio,fig,ax[0]):
+def ImagePlotter1D(profile,axis,aspectratio,fig=111,ax=111):
 
-	if createfig == True: fig, ax = figure(aspectratio)
+	#Generate new figure if required. {kinda hacky...}
+	if fig == 111 and ax == 111:
+		fig,ax = figure(aspectratio)
+	elif fig == 111:
+		fig = figure(aspectratio)
+	#endif
 
 	#Apply any required numerical changes to the profile.
 	if image_logplot == True:
@@ -1753,11 +1781,10 @@ def ImagePlotter1D(profile,axis,aspectratio,createfig=True):
 		profile = Normalize(profile)
 	#endif
 
-	#Plot profile and apply any further image_<string> modifications.
-	plt.plot(axis,profile, lw=2)
-	if image_plotgrid == True: plt.grid(True)
+	#Plot profile and return.
+	im = ax.plot(axis,profile, lw=2)
 
-	try: return(fig,ax)
+	try: return(fig,ax,im)
 	except: return()
 #enddef
 
@@ -1830,15 +1857,12 @@ def TrendPlotter(TrendArray,Xaxis,NormFactor=0):
 	else:
 		#Plot results against strings pulled from folder names for batch studies.
 		plt.plot(range(0,numfolders),TrendArray, 'o-', lw=2)
-		if len(legendoverride) > 0:
-			plt.xticks(np.arange(0,numfolders), legendoverride)
+		if len(xaxisoverride) > 0:
+			plt.xticks(np.arange(0,numfolders), xaxisoverride)
 		else:
 			plt.xticks(np.arange(0,numfolders), Xaxis)
 		#endif
 	#endif
-
-	#Standard image_<string> user modifcations.
-	if image_plotgrid == True: plt.grid(True)
 
 	return()
 #enddef
@@ -2151,8 +2175,8 @@ def TrendAtGivenLocation(TrendLocation,process,variable):
 
 	#Refresh lists that change per image.
 	R,Z = TrendLocation[0],TrendLocation[1]
-	Xaxis = list()
 	Trend = list()
+	Xaxis = list()
 
 	#For all simulation folders.
 	for l in range(0,numfolders):
@@ -2179,8 +2203,7 @@ def TrendAtGivenLocation(TrendLocation,process,variable):
 
 	#Normalize to maximum value in each profile if required.
 	if image_normalize == True:
-		Image = Image.flatten()
-		Trend = Trend/max(Image)
+		Trend,Min,Max = Normalize(Image,NormFactor=0)
 	#endif
 
 	return(Xaxis,Trend)
@@ -2200,9 +2223,8 @@ def TrendAtGivenLocation(TrendLocation,process,variable):
 def MinMaxTrends(lineout,Orientation,process):
 
 	#Refresh lists that change per profile.
+	MaxValueTrend, MinValueTrend = list(), list()
 	Xaxis = list()
-	MaxValueTrend = list()
-	MinValueTrend = list()
 	p = process
 
 	#For each folder in the directory.
@@ -2244,13 +2266,8 @@ def MinMaxTrends(lineout,Orientation,process):
 
 	#Normalize to maximum value in each profile if required.
 	if image_normalize == True:
-		NormalizeMax = max(MaxValueTrend)
-		NormalizeMin = min(MinValueTrend)
-		for i in range(0,len(MaxValueTrend)):
-			MaxValueTrend[i] = MaxValueTrend[i]/NormalizeMax
-			try: MinValueTrend[i] = MinValueTrend[i]/NormalizeMin
-			except: MinValueTrend[i] = 0
-		#endfor
+		MaxValueTrend,MaxMin,MaxMax = Normalize(MaxValueTrend,NormFactor=0)
+		MinValueTrend,MinMin,MinMax = Normalize(MinValueTrend,NormFactor=0)
 	#endif
 
 	return(Xaxis,MaxValueTrend,MinValueTrend)
@@ -2659,7 +2676,7 @@ if savefig_monoprofiles == True:
 					Rlineout=PlotRadialProfile(Data[l],processlist[i],Variablelist[i],radialineouts[j])
 
 					#Plot lines for each variable at each requested slice.
-					ImagePlotter1D(Rlineout,Raxis,image_aspectratio,createfig=False)
+					ImagePlotter1D(Rlineout,Raxis,image_aspectratio,fig,ax)
 				#endfor
 
 				#Apply image options and axis labels.
@@ -2669,7 +2686,7 @@ if savefig_monoprofiles == True:
 
 				#Save profiles in previously created folder.
 				plt.savefig(DirRlineouts+'1D_Radial_'+Variablelist[i]+' profiles'+ext)
-				plt.close('fig')
+				plt.close(fig)
 			#endfor
 			plt.close('all')
 		#endif
@@ -2692,7 +2709,7 @@ if savefig_monoprofiles == True:
 					Zlineout=PlotAxialProfile(Data[l],processlist[i],Variablelist[i],heightlineouts[j])
 
 					#Plot lines for each variable at each requested slice.
-					ImagePlotter1D(Zlineout[::-1],Zaxis,image_aspectratio,createfig=False)
+					ImagePlotter1D(Zlineout[::-1],Zaxis,image_aspectratio,fig,ax)
 
 					#Perform SI conversion and save to legend.
 					if len(Legendlist) < len(heightlineouts):
@@ -2707,7 +2724,7 @@ if savefig_monoprofiles == True:
 
 				#Save profiles in previously created folder.
 				plt.savefig(DirZlineouts+'1D_Height_'+Variablelist[i]+' profiles'+ext)
-				plt.close('fig')
+				plt.close(fig)
 			#endfor
 			plt.close('all')
 		#endif
@@ -2773,7 +2790,7 @@ if savefig_comparelineouts == True:
 				Rlineout = PlotRadialProfile(Data[l],processlist[k],Variablelist[k],radialineouts[j],R_mesh[l],Isymlist[l])
 
 				#Plot radial profile and allow for log y-axis if requested.
-				ImagePlotter1D(Rlineout,Raxis,image_aspectratio,createfig=False)
+				ImagePlotter1D(Rlineout,Raxis,image_aspectratio,fig,ax)
 
 
 				#Write data to ASCII files if requested.
@@ -2836,7 +2853,7 @@ if savefig_comparelineouts == True:
 				Zlineout = PlotAxialProfile(Data[l],processlist[k],Variablelist[k],heightlineouts[j],R_mesh[l],Z_mesh[l],Isymlist[l])
 
 				#Plot axial profile and allow for log y-axis if requested.
-				ImagePlotter1D(Zlineout[::-1],Zaxis,image_aspectratio,createfig=False)
+				ImagePlotter1D(Zlineout[::-1],Zaxis,image_aspectratio,fig,ax)
 
 
 				#Write data to ASCII files if requested.
@@ -2908,34 +2925,34 @@ if savefig_multiprofiles == True:
 					DirZlineouts = CreateNewFolder(Dirlineouts,'R='+Slice+'cm/')
 
 					#Create legendlist
-					legendlist = list()
-					legendlist.append(VariableLabelMaker(Variablelist)[i])
+					Legendlist = list()
+					Legendlist.append(VariableLabelMaker(Variablelist)[i])
 
 					#Plot the initial variable in processlist first.
 					Zlineout = PlotAxialProfile(Data[l],processlist[i],Variablelist[i],heightlineouts[j],R_mesh[l],Z_mesh[l],Isymlist[l])
-					ImagePlotter1D(Zlineout[::-1],Zaxis,image_aspectratio,createfig=False)
+					ImagePlotter1D(Zlineout[::-1],Zaxis,image_aspectratio,fig,ax)
 
 					#Plot all of the requested comparison variables for this plot.
 					for m in range(0,len(multiprocesslist)):
 
 						#Plot profile for multiplot variables in compareprocesslist.
 						Zlineout = PlotAxialProfile(Data[l],multiprocesslist[m],multiVariablelist[m],heightlineouts[j],R_mesh[l],Z_mesh[l],Isymlist[l])
-						ImagePlotter1D(Zlineout[::-1],Zaxis,image_aspectratio,createfig=False)
+						ImagePlotter1D(Zlineout[::-1],Zaxis,image_aspectratio,fig,ax)
 
 						#Update legendlist with each variable compared.
-						legendlist.append(VariableLabelMaker(multiVariablelist)[m])
+						Legendlist.append(VariableLabelMaker(multiVariablelist)[m])
 					#endfor
 
 
 					#Apply image options and axis labels.
 					Title = str(round((heightlineouts[j])*dr[l], 2))+'cm Height profiles for '+Variablelist[i]+','' for \n'+Dirlist[l][2:-1]
-					Xlabel,Ylabel = 'Axial Distance Z [cm]',VariableLabelMaker(Variablelist[i])[0]
-					ImageOptions(ax,Xlabel,Ylabel,Title,legendlist,Crop=False)
+					Xlabel,Ylabel = 'Axial Distance Z [cm]',VariableLabelMaker(Variablelist)[i]
+					ImageOptions(ax,Xlabel,Ylabel,Title,Legendlist,Crop=False)
 
 					#Save figures in original folder.
 					R = 'R='+str(round((heightlineouts[j])*dr[l], 2))+'_'
 					plt.savefig(DirZlineouts+R+Variablelist[i]+'_MultiProfiles'+ext)
-					plt.close('fig')
+					plt.close(fig)
 					plt.close('all')
 				#endfor
 			#endfor
@@ -2964,33 +2981,34 @@ if savefig_multiprofiles == True:
 					DirRlineouts = CreateNewFolder(Dirlineouts,'Z='+Slice+'cm/')
 
 					#Create legendlist
-					legendlist = list()
-					legendlist.append(VariableLabelMaker(Variablelist)[i])
+					Legendlist = list()
+					Legendlist.append(VariableLabelMaker(Variablelist)[i])
 
 					#Plot profile for initial variable in processlist.
 					Rlineout = PlotRadialProfile(Data[l],processlist[i],Variablelist[i],radialineouts[j],R_mesh[l],Isymlist[l])
-					ImagePlotter1D(Rlineout,Raxis,image_aspectratio,False)
+					ImagePlotter1D(Rlineout,Raxis,image_aspectratio,fig,ax)
 
 					#Plot all of the requested comparison variables for this plot.
 					for m in range(0,len(multiprocesslist)):
 
 						#Plot profile for multiplot variables in compareprocesslist.
 						Rlineout = PlotRadialProfile(Data[l],multiprocesslist[m],multiVariablelist[m],radialineouts[j],R_mesh[l],Isymlist[l])
-						ImagePlotter1D(Rlineout,Raxis,image_aspectratio,False)
+						ImagePlotter1D(Rlineout,Raxis,image_aspectratio,fig,ax)
 
 						#Update legendlist with each variable compared.
-						legendlist.append(VariableLabelMaker(multiVariablelist)[m])
+						Legendlist.append(VariableLabelMaker(multiVariablelist)[m])
 					#endfor
 
 
 					#Apply image options and axis labels.
 					Title = str(round((radialineouts[j])*dz[l], 2))+'cm Radial Profiles for '+Variablelist[i]+' for \n'+Dirlist[l][2:-1]
-					Xlabel,Ylabel = 'Radial Distance R [cm]',VariableLabelMaker(Variablelist[i])[0]
-					ImageOptions(ax,Xlabel,Ylabel,Title,legendlist,Crop=False)
+					Xlabel,Ylabel = 'Radial Distance R [cm]',VariableLabelMaker(Variablelist)[i]
+					ImageOptions(ax,Xlabel,Ylabel,Title,Legendlist,Crop=False)
 
 					#Save lines in previously created folder.
 					Z = 'Z='+str(round((radialineouts[j])*dz[l], 2))+'_'
 					plt.savefig(DirRlineouts+Z+Variablelist[i]+'_MultiProfiles'+ext)
+					plt.close(fig)
 					plt.close('all')
 				#endfor
 			#endfor
@@ -3207,6 +3225,9 @@ if savefig_trendcomparison == True or print_generaltrends == True:
 
 			#Plot trends for each variable over all folders, applying image options.
 			TrendPlotter(Trend,Xaxis,NormFactor=0)
+			Title='Trend in max '+Variablelist[k]+' with changing '+TrendVariable+' \n'+Dirlist[l][2:-1]
+			Xlabel,Ylabel = 'Varied Property','Max '+YaxisLegend[k]
+			ImageOptions(ax,Xlabel,Ylabel,Title,Legendlist,Crop=False)
 
 			#Write data to ASCII format datafile if requested.
 			if write_trendcomparison == True:
@@ -3214,11 +3235,6 @@ if savefig_trendcomparison == True or print_generaltrends == True:
 				DCASCII = [Xaxis,Trend]
 				WriteDataToFile(Trend, DirASCII+Variablelist[k]+' Trends')
 			#endif
-
-			#Apply image options and axis labels.
-			Title='Trend in max '+Variablelist[k]+' with changing '+TrendVariable+' \n'+Dirlist[l][2:-1]
-			Xlabel,Ylabel = 'Varied Property','Max '+YaxisLegend[k]
-			ImageOptions(ax,Xlabel,Ylabel,Title,Legendlist,Crop=False)
 
 		#Save one image per variable with data from all simulations.
 		if len(heightlineouts) > 0:
@@ -3267,6 +3283,9 @@ if savefig_trendcomparison == True or print_generaltrends == True:
 
 			#Plot trends for each variable over all folders, applying image options.
 			TrendPlotter(MaxTrend,Xaxis,NormFactor=0)
+			Title='Trend in max '+Variablelist[k]+' with changing '+TrendVariable+' \n'+Dirlist[l][2:-1]
+			Xlabel,Ylabel = 'Varied Property','Max '+YaxisLegend[k]
+			ImageOptions(ax,Xlabel,Ylabel,Title,Legendlist,Crop=False)
 
 			#Write data to ASCII format datafile if requested.
 			if write_trendcomparison == True:
@@ -3274,11 +3293,6 @@ if savefig_trendcomparison == True or print_generaltrends == True:
 				DCASCII = [Xaxis,MaxTrend]
 				WriteDataToFile(MaxTrend, DirASCII+Variablelist[k]+' Trends')
 			#endif
-
-			#Apply image options and axis labels.
-			Title='Trend in max '+Variablelist[k]+' with changing '+TrendVariable+' \n'+Dirlist[l][2:-1]
-			Xlabel,Ylabel = 'Varied Property','Max '+YaxisLegend[k]
-			ImageOptions(ax,Xlabel,Ylabel,Title,Legendlist,Crop=False)
 
 		#Save one image per variable with data from all simulations.
 		if len(radialineouts) > 0:
