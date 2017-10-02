@@ -120,7 +120,7 @@ PR_PCMC = ['AR^0.23','EB-0.23','ION-TOT0.23']
 #====================================================================#
 
 #Requested IEDF/NEDF Variables.
-IEDFVariables = ['AR^0.5S','EB-0.5S','ION-TOT0.5S']		#Requested iprofile_2d variables (no spaces)
+IEDFVariables = ['AR^0.5S','EB-0.5S','ION-TOT0.5S','AR^1.1B','EB-1.1B','ION-TOT1.1']		#Requested iprofile_2d variables (no spaces)
 NEDFVariables = []										#Requested nprofile_2d variables (no spaces)
 #MSHC 
 
@@ -144,17 +144,17 @@ TrendLocation = [19] 					#Cell location For Trend Analysis [R,Z], ([] = min/max
 
 #Requested plotting routines.
 savefig_itermovie = False					#Requires movie_icp.pdt
-savefig_plot2D = True						#Requires TECPLOT2D.PDT
+savefig_plot2D = False						#Requires TECPLOT2D.PDT
 
 savefig_monoprofiles = False				#Single Variables; fixed height/radius
 savefig_multiprofiles = False				#Multi-Variables; same folder
 savefig_comparelineouts = False				#Multi-Variables; all folders
 
 savefig_phaseresolvelines = False			#1D Phase Resolved Images
-savefig_phaseresolve2D = False				#2D Phase Resolved Images
+savefig_phaseresolve2D = True				#2D Phase Resolved Images
 savefig_sheathdynamics = False				#PROES style images
 
-savefig_IEDF = True						#IN DEVELOPMENT, WORKS BUT UNRELIABLE.
+savefig_IEDF = False						#IN DEVELOPMENT, WORKS BUT UNRELIABLE.
 savefig_EEDF = False						#IN DEVELOPMENT, NO PLOTTING ROUTINE.
 
 
@@ -171,8 +171,8 @@ print_thrust = False
 #Image plotting options.
 image_extension = '.png'					#Extensions { '.png', '.jpg', '.eps' }
 image_aspectratio = [10,10]					#[x,y] in cm [Doesn't rotate dynamically]
-image_radialcrop = [0.0,1.0]						#[R,Z] in cm
-image_axialcrop = [0.5,2.5]						#[R,Z] in cm
+image_radialcrop = []						#[R,Z] in cm
+image_axialcrop = []						#[R,Z] in cm
 #YPR R[0.6];Z[1,4]   #MSHC R[0.0,1.0];Z[0.5,2.5]
 
 image_plotsymmetry = True
@@ -1140,7 +1140,7 @@ print'-----------------------'
 for l in tqdm(range(0,numfolders)):
 
 	#Load data from TECPLOT2D file and unpack into 1D array.
-	rawdata, nn_2D = ExtractRawData(Dir,'TECPLOT2D.PDT')
+	rawdata, nn_2D = ExtractRawData(Dir,'TECPLOT2D.PDT',l)
 	rawdata_2D.append(rawdata)
 
 	#Read through all variables for each file and stop when list ends.
@@ -1154,7 +1154,7 @@ for l in tqdm(range(0,numfolders)):
 	header_2Dlist.append(header_2D)
 
 	#Seperate total 1D data array into sets of data for each variable.
-	CurrentFolderData = SDFileFormatConvertorHPEM(rawdata_2D[l],header_2D,numvariables_2D,l)
+	CurrentFolderData = SDFileFormatConvertorHPEM(rawdata_2D[l],header_2D,numvariables_2D)
 
 	#Save all variables for folder[l] to Data.
 	#Data is now 3D array of form [folder,variable,datapoint(R,Z)]
@@ -1622,8 +1622,8 @@ def SymmetryConverter(Image):
 		for m in range(0,len(Image)):
 			SymImage[m] = np.concatenate([Image[m][::-1],Image[m]])
 		#endfor
+		Image = SymImage
 	#endif
-	Image = SymImage
 
 	return(Image)
 #enddef
@@ -1901,7 +1901,7 @@ def ImagePlotter2D(Image,extent,aspectratio,fig=111,ax=111):
 	if image_logplot == True:
 		Image = np.log(Image)
 	elif image_normalize == True:
-		Image = Normalize(Image)
+		Image = Normalize(Image)[0]
 	#endif
 
 	#Plot image with or without contour plots, allowing for contour failures.
@@ -3908,31 +3908,12 @@ if savefig_phaseresolve2D == True:
 
 				#Extract full 2D image for further processing.
 				Image = ImageExtractor2D(PhaseMovieData[l][j][PhaseProcesslist[i]],PhaseVariablelist[i])
-				#Create new image by reversing and adding itself on the LHS if required.
-				if image_plotsymmetry == True:
-					SymImage = np.zeros([len(Image),2*R_mesh[l]])
-					for m in range(0,len(Image)): SymImage[m] = np.concatenate([Image[m][::-1],Image[m]])
-					Image,sym = SymImage,2
-				else: sym = 1
-				#endif
 
-				#Ensure image is landscape for waveform to fit underneath.
+				#Obtain image extent and axis labels based on image symmetry and rotation.
 				Xlabel,Ylabel = 'Radial Distance R [cm]','Axial Distance Z [cm]'
-				height,width = len(Image), len(Image[0])
-				Crop = [image_radialcrop,image_axialcrop]
-				#If image is 'profile', spin to 'landscape'.
-				if height*sym > width and sym == 1:
-					extent=[Zaxis[0],Zaxis[-1],Raxis[0],Raxis[-1]]
-					Xlabel,Ylabel = Ylabel,Xlabel
-					Image = np.transpose(Image)
-				elif height*sym > width and sym == 2:
-					extent=[Zaxis[0],Zaxis[-1],-Raxis[-1],Raxis[-1]]
-					Xlabel,Ylabel = Ylabel,Xlabel
-					Image = np.transpose(Image)
-				#else maintain image as default orientation.
-				elif sym == 1: extent = [-Raxis[0],Raxis[-1],Zaxis[0],Zaxis[-1]]
-				elif sym == 2: extent = [-Raxis[-1],Raxis[-1],Zaxis[0],Zaxis[-1]]
-				#endif
+				if image_rotate == True: Xlabel,Ylabel = Ylabel,Xlabel
+				extent,aspectratio = DataExtent(l)
+
 
 				#Create figure and axes, plot image on top and waveform underneath.
 				fig,ax = figure(image_aspectratio,2)
@@ -3941,7 +3922,7 @@ if savefig_phaseresolve2D == True:
 
 				#Plot 2D image, applying image options and cropping as required.
 				fig,ax[0],im = ImagePlotter2D(Image,extent,image_aspectratio,fig,ax[0])
-				ImageOptions(ax[0],Xlabel,Ylabel,Crop=Crop)
+				ImageOptions(ax[0],Xlabel,Ylabel,Crop=True)
 
 				#Add Colourbar (Axis, Label, Bins)
 				Ylabel = VariableLabelMaker(PhaseVariablelist)
