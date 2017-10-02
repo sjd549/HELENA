@@ -95,7 +95,7 @@ ArReduced = ['AR','AR+','E','TE','P-POT','RHO','TG-AVE','PRESSURE','EF-TOT','POW
 ArFull = ['AR3S','AR4SM','AR4SR','AR4SPM','AR4SPR','AR4P','AR4D','AR','AR+','AR2+','AR2*','E','TE','P-POT','TG-AVE','RHO','PRESSURE','EF-TOT','POW-RF','POW-RF-E','S-AR+','SEB-AR+', 'VR-NEUTRAL','VZ-NEUTRAL','VR-ION+','VZ-ION+','FR-AR+','FZ-AR+']
 O2 = ['O2','O2+','O','O+','O-','E','TE','P-POT','TG-AVE','PRESSURE','EF-TOT','POW-RF','POW-RF-E','VR-NEUTRAL','VZ-NEUTRAL','VR-ION+','VZ-ION+','VR-ION-','VZ-ION-','FR-O-','FZ-O-']
 
-MSHC_PCMC = ['AR^1.1J','EB-1.1J','ION-TOT1.1J','AR^1.3A','EB-1.3A']
+MSHC_PCMC = ['AR^0.5S','EB-0.5S','ION-TOT0.5S','AR^1.1B','EB-1.1B','ION-TOT1.1B']
 PR_PCMC = ['AR^0.23','EB-0.23','ION-TOT0.23']
 
 
@@ -105,8 +105,9 @@ PR_PCMC = ['AR^0.23','EB-0.23','ION-TOT0.23']
 
 
 
-
-
+        
+        
+        
 
 
 
@@ -119,14 +120,14 @@ PR_PCMC = ['AR^0.23','EB-0.23','ION-TOT0.23']
 #====================================================================#
 
 #Requested IEDF/NEDF Variables.
-IEDFVariables = ['AR^0.23','EB-0.23','ION-TOT0.23']		#Requested iprofile_2d variables (no spaces)
+IEDFVariables = ['AR^0.5S','EB-0.5S','ION-TOT0.5S']		#Requested iprofile_2d variables (no spaces)
 NEDFVariables = []										#Requested nprofile_2d variables (no spaces)
 #MSHC 
 
 #Requested movie1/movie_icp Variables.
 IterVariables = ['S-E','E','TE','PPOT']		#Requested Movie_icp (iteration) Variables.
 PhaseVariables = ['S-E','E','TE','PPOT']	#Requested Movie1 (phase) Variables.
-electrodeloc = [0,0]						#Centre Cell of powered electrode [R,Z]. (T,B,L,R)
+electrodeloc = [0,12]						#Centre Cell of powered electrode [R,Z]. (T,B,L,R)
 phasecycles = 1								#Number of phase cycles to be plotted.
 DoFWidth = 41								#PROES Depth of Field Cells
 #electrodeloc	#YPR [30,47] #SPR [0,107] #MSHC [0,12]
@@ -136,14 +137,14 @@ DoFWidth = 41								#PROES Depth of Field Cells
 Variables = ArFull
 MultiVar = []						#Additional variables plotted ontop of [Variables]
 radialineouts = [] 					#Radial 1D-Profiles to be plotted (fixed Z-mesh) --
-heightlineouts = [0]					#Axial 1D-Profiles to be plotted (fixed R-mesh) |
-TrendLocation = [] 					#Cell location For Trend Analysis [R,Z], ([] = min/max)
+heightlineouts = [24,43]					#Axial 1D-Profiles to be plotted (fixed R-mesh) |
+TrendLocation = [19] 					#Cell location For Trend Analysis [R,Z], ([] = min/max)
 #YPR H0;R47 #MSHC H0,20;R20
 
 
 #Requested plotting routines.
 savefig_itermovie = False					#Requires movie_icp.pdt
-savefig_plot2D = False						#Requires TECPLOT2D.PDT
+savefig_plot2D = True						#Requires TECPLOT2D.PDT
 
 savefig_monoprofiles = False				#Single Variables; fixed height/radius
 savefig_multiprofiles = False				#Multi-Variables; same folder
@@ -153,7 +154,7 @@ savefig_phaseresolvelines = False			#1D Phase Resolved Images
 savefig_phaseresolve2D = False				#2D Phase Resolved Images
 savefig_sheathdynamics = False				#PROES style images
 
-savefig_IEDF = False						#IN DEVELOPMENT, WORKS BUT UNRELIABLE.
+savefig_IEDF = True						#IN DEVELOPMENT, WORKS BUT UNRELIABLE.
 savefig_EEDF = False						#IN DEVELOPMENT, NO PLOTTING ROUTINE.
 
 
@@ -170,8 +171,8 @@ print_thrust = False
 #Image plotting options.
 image_extension = '.png'					#Extensions { '.png', '.jpg', '.eps' }
 image_aspectratio = [10,10]					#[x,y] in cm [Doesn't rotate dynamically]
-image_radialcrop = []						#[R,Z] in cm
-image_axialcrop = []						#[R,Z] in cm
+image_radialcrop = [0.0,1.0]						#[R,Z] in cm
+image_axialcrop = [0.5,2.5]						#[R,Z] in cm
 #YPR R[0.6];Z[1,4]   #MSHC R[0.0,1.0];Z[0.5,2.5]
 
 image_plotsymmetry = True
@@ -649,10 +650,13 @@ def ExtractRawData(Dirlist,NameString,ListIndex=l):
 #Requires rawdata(2D/3D), header and variable number and mesh dimensions.
 #Returns 2D array of form [Variables,datapoint(R,Z)]
 #CurrentFolderData = SDFileFormatConvertorHPEM(rawdata_2D[l],header_2D,numvariables_2D)
-def SDFileFormatConvertorHPEM(Rawdata,header,numvariables,folder=l):
+def SDFileFormatConvertorHPEM(Rawdata,header,numvariables,Zmesh=0,Rmesh=0):
 
-	#Obtain any required global variables for current folder.
-	Rmesh,Zmesh = R_mesh[folder],Z_mesh[folder]
+	#WHY Rmesh=R_mesh[l],Zmesh=Z_mesh[l] NOT WORKING????
+	#If no mesh sizes supplied, collect sizes for current global folder.
+	if Rmesh == 0 or Zmesh == 0:
+		Rmesh,Zmesh = R_mesh[l],Z_mesh[l]
+	#endif
 
 	#Excluding the header, split each row of data and append items to 1D list.
 	CurrentFolderData, DataArray1D = list(),list()
@@ -1136,7 +1140,7 @@ print'-----------------------'
 for l in tqdm(range(0,numfolders)):
 
 	#Load data from TECPLOT2D file and unpack into 1D array.
-	rawdata, nn_2D = ExtractRawData(Dir,'TECPLOT2D.PDT',l)
+	rawdata, nn_2D = ExtractRawData(Dir,'TECPLOT2D.PDT')
 	rawdata_2D.append(rawdata)
 
 	#Read through all variables for each file and stop when list ends.
@@ -1607,6 +1611,30 @@ def ImageExtractor2D(Data,Variable=[],Rmesh=0,Zmesh=0):
 
 
 
+#Takes 2D image array and produces symmetric image about central axis.
+#Returns symmetric 2D image array.
+#Image = SymmetryConverter(Image)
+def SymmetryConverter(Image):
+
+	#Create new image by reversing and adding itself on the LHS.
+	if image_plotsymmetry == True and Isymlist[l] == 1:
+		SymImage = np.zeros([len(Image),2*len(Image[0])])
+		for m in range(0,len(Image)):
+			SymImage[m] = np.concatenate([Image[m][::-1],Image[m]])
+		#endfor
+	#endif
+	Image = SymImage
+
+	return(Image)
+#enddef
+
+
+
+#=========================#
+#=========================#
+
+
+
 #Create figure of desired size and with variable axes.
 #Returns figure and axes seperately.
 #fig,ax = figure(image_aspectratio,1)
@@ -1859,6 +1887,9 @@ def ImagePlotter2D(Image,extent,aspectratio,fig=111,ax=111):
 	elif fig == 111:
 		fig = figure(aspectratio)
 	#endif
+
+	#Apply image axis-symmetry if required.
+	Image = SymmetryConverter(Image)
 
 	#Rotate image if required
 	if image_rotate == True:
@@ -3078,7 +3109,7 @@ if savefig_IEDF == True:
 			EDFprofile = list()
 
 			#Extract image from required variable and create required profile lists.
-			Image = ImageExtractor2D(DataIEDF[l][processlist[i]],R_mesh=EDFangle,Z_mesh=EDFbins)
+			Image = ImageExtractor2D(DataIEDF[l][processlist[i]],Rmesh=EDFangle,Zmesh=EDFbins)
 
 			#Flatten angular distribution across all angles to produce energy distribution.
 			for j in range(0,len(Image)): EDFprofile.append(sum(Image[j]))
