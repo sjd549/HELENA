@@ -95,9 +95,14 @@ ArReduced = ['AR','AR+','E','TE','P-POT','RHO','TG-AVE','PRESSURE','EF-TOT','POW
 ArFull = ['AR3S','AR4SM','AR4SR','AR4SPM','AR4SPR','AR4P','AR4D','AR','AR+','AR2+','AR2*','E','TE','P-POT','TG-AVE','RHO','PRESSURE','EF-TOT','POW-RF','POW-RF-E','S-AR+','SEB-AR+', 'VR-NEUTRAL','VZ-NEUTRAL','VR-ION+','VZ-ION+','FR-AR+','FZ-AR+']
 O2 = ['O2','O2+','O','O+','O-','E','TE','P-POT','TG-AVE','PRESSURE','EF-TOT','POW-RF','POW-RF-E','VR-NEUTRAL','VZ-NEUTRAL','VR-ION+','VZ-ION+','VR-ION-','VZ-ION-','FR-O-','FZ-O-']
 
+MSHC_PCMC = ['AR^1.1J','EB-1.1J','ION-TOT1.1J','AR^1.3A','EB-1.3A']
+PR_PCMC = ['AR^0.23','EB-0.23','ION-TOT0.23']
+
 
 #Paper Trend Locations
 #SDoyle2017a: dz(5.50/118), dr(2.55/102) height=[24,43], Trend=[19]
+
+
 
 
 
@@ -114,13 +119,14 @@ O2 = ['O2','O2+','O','O+','O-','E','TE','P-POT','TG-AVE','PRESSURE','EF-TOT','PO
 #====================================================================#
 
 #Requested IEDF/NEDF Variables.
-IEDFVariables = ['AR^1.1J','EB-1.1J','ION-TOT1.1J','AR^1.3A','EB-1.3A']		#Requested iprofile_2d variables (no spaces)
+IEDFVariables = ['AR^0.23','EB-0.23','ION-TOT0.23']		#Requested iprofile_2d variables (no spaces)
 NEDFVariables = []										#Requested nprofile_2d variables (no spaces)
+#MSHC 
 
 #Requested movie1/movie_icp Variables.
-IterVariables = ['S-E','E','PPOT','TE']		#Requested Movie_icp (iteration) Variables.
-PhaseVariables = ['S-E','E','PPOT','TE']	#Requested Movie1 (phase) Variables.
-electrodeloc = [0,12]						#Centre Cell of powered electrode [R,Z]. (T,B,L,R)
+IterVariables = ['S-E','E','TE','PPOT']		#Requested Movie_icp (iteration) Variables.
+PhaseVariables = ['S-E','E','TE','PPOT']	#Requested Movie1 (phase) Variables.
+electrodeloc = [0,0]						#Centre Cell of powered electrode [R,Z]. (T,B,L,R)
 phasecycles = 1								#Number of phase cycles to be plotted.
 DoFWidth = 41								#PROES Depth of Field Cells
 #electrodeloc	#YPR [30,47] #SPR [0,107] #MSHC [0,12]
@@ -129,9 +135,9 @@ DoFWidth = 41								#PROES Depth of Field Cells
 #Requested TECPLOT Variables
 Variables = ArFull
 MultiVar = []						#Additional variables plotted ontop of [Variables]
-radialineouts = [24,43] 					#Radial 1D-Profiles to be plotted (fixed Z-mesh) --
-heightlineouts = []					#Axial 1D-Profiles to be plotted (fixed R-mesh) |
-TrendLocation = [19] 					#Cell location For Trend Analysis [R,Z], ([] = min/max)
+radialineouts = [] 					#Radial 1D-Profiles to be plotted (fixed Z-mesh) --
+heightlineouts = [0]					#Axial 1D-Profiles to be plotted (fixed R-mesh) |
+TrendLocation = [] 					#Cell location For Trend Analysis [R,Z], ([] = min/max)
 #YPR H0;R47 #MSHC H0,20;R20
 
 
@@ -139,7 +145,7 @@ TrendLocation = [19] 					#Cell location For Trend Analysis [R,Z], ([] = min/max
 savefig_itermovie = False					#Requires movie_icp.pdt
 savefig_plot2D = False						#Requires TECPLOT2D.PDT
 
-savefig_monoprofiles = False				#Singe Variables; fixed height/radius
+savefig_monoprofiles = False				#Single Variables; fixed height/radius
 savefig_multiprofiles = False				#Multi-Variables; same folder
 savefig_comparelineouts = False				#Multi-Variables; all folders
 
@@ -155,7 +161,7 @@ savefig_EEDF = False						#IN DEVELOPMENT, NO PLOTTING ROUTINE.
 savefig_trendcomparison = False
 print_meshconvergence = False				#Make More General: <_numerictrendaxis>
 print_generaltrends = False
-print_KnudsenNumber = False
+print_Knudsennumber = False
 print_totalpower = False
 print_DCbias = False
 print_thrust = False
@@ -191,8 +197,8 @@ write_plot2D = False
 #Overrides the automatic image labelling.
 titleoverride = []
 legendoverride = []
-xaxisoverride = ['0','30','60','90','120','150','180','210','240','270','300','330']
-xlabeloverride = ['Phase Offset [Deg]']
+xaxisoverride = []
+xlabeloverride = []
 ylabeloverride = []
 cbaroverride = ['NotImplimented']
 
@@ -224,6 +230,9 @@ cbaroverride = ['NotImplimented']
 
 
 
+#####PROBLEMS######
+#WHY Rmesh=R_mesh[l],Zmesh=Z_mesh[l] NOT WORKING FOR MULTIPLE FOLDERS???
+#AFFECTED:  PLOTAXIALPROFILE,PLOTRADIALPROFILE,IMAGEEXTRACTOR,DATAEXTENT
 
 
 
@@ -283,7 +292,7 @@ PhaseMovieData = list()			#PhaseMovieData[folder][timestep][variable][datapoints
 
 Moviephaselist = list()			#'CYCL = n'
 Movieiterlist = list()			#'ITER = n'
-EEDF_TDlist = list()			#'
+EEDF_TDlist = list()			#'???'
 
 header_itermovie = list()
 header_phasemovie = list()
@@ -325,12 +334,12 @@ if True in [savefig_phaseresolvelines,savefig_sheathdynamics]:
 	print'# 1D Phase Resolved Profile Processing'
 if True in [savefig_monoprofiles,savefig_multiprofiles,savefig_comparelineouts]:
 	print'# 1D Steady-State Profile Processing'
-if True in [print_generaltrends,print_KnudsenNumber,print_totalpower,print_DCbias,print_thrust]:
+if True in [print_generaltrends,print_Knudsennumber,print_totalpower,print_DCbias,print_thrust]:
 	print'# 1D Specific Trend Analysis'
 if savefig_trendcomparison == True:
 	print'# 1D Steady-State Trend Processing'
-if savefig_comparelineouts == True:
-	print'# 1D Steady-State Profile Comparisons'
+if True in [savefig_EEDF,savefig_IEDF]:
+	print'# Angular Energy Distribution Processing'
 print '-----------------------------------------'
 print ''
 
@@ -639,8 +648,11 @@ def ExtractRawData(Dirlist,NameString,ListIndex=l):
 #Takes ASCII data in 2/3D format and converts to HELENA friendly structure.
 #Requires rawdata(2D/3D), header and variable number and mesh dimensions.
 #Returns 2D array of form [Variables,datapoint(R,Z)]
-#CurrentFolderData = SDFileFormatConvertorHPEM(rawdata_2D[l],header_2D[l],numvariables_2D[l])
-def SDFileFormatConvertorHPEM(Rawdata,header,numvariables,Rmesh=R_mesh[l],Zmesh=Z_mesh[l]):
+#CurrentFolderData = SDFileFormatConvertorHPEM(rawdata_2D[l],header_2D,numvariables_2D)
+def SDFileFormatConvertorHPEM(Rawdata,header,numvariables,folder=l):
+
+	#Obtain any required global variables for current folder.
+	Rmesh,Zmesh = R_mesh[folder],Z_mesh[folder]
 
 	#Excluding the header, split each row of data and append items to 1D list.
 	CurrentFolderData, DataArray1D = list(),list()
@@ -1053,7 +1065,7 @@ def Automovie(FolderDir,Output):
 #Runs requested dataconversion script with pre-defined arguments.
 #Takes name of convert script, any predefined arguments and newly created files.
 #Returns nothing, runs script in each folder, expects to run over all folders.
-def AutoConvertData(Convertexe,args=[],DirAdditions=[]):
+def AutoConvProfData(Convertexe,args=[],DirAdditions=[]):
 	HomeDir = os.getcwd()
 	os.chdir(Dirlist[l])
 
@@ -1138,7 +1150,7 @@ for l in tqdm(range(0,numfolders)):
 	header_2Dlist.append(header_2D)
 
 	#Seperate total 1D data array into sets of data for each variable.
-	CurrentFolderData = SDFileFormatConvertorHPEM(rawdata_2D[l],header_2D,numvariables_2D)
+	CurrentFolderData = SDFileFormatConvertorHPEM(rawdata_2D[l],header_2D,numvariables_2D,l)
 
 	#Save all variables for folder[l] to Data.
 	#Data is now 3D array of form [folder,variable,datapoint(R,Z)]
@@ -1155,7 +1167,7 @@ for l in tqdm(range(0,numfolders)):
 		IEDFVarArgs = ['1','1','1','1','1'] #### THIS IS HACKY, WON'T ALWAYS WORK ####
 		args = ['pcmc.prof','title','1','1','1'] + IEDFVarArgs + ['0','0']
 		DirAdditions = ['iprofile_tec2d.pdt','nprofile_tec2d.pdt','iprofile_tec1d.pdt', 'nprofile_tec1d.pdt']
-		try: AutoConvertData('./conv_prof.exe',args,DirAdditions)
+		try: AutoConvProfData('./conv_prof.exe',args,DirAdditions)
 		except: print Dirlist[l]
 
 		#Load data from IEDFprofile file and unpack into 1D array.
@@ -1277,7 +1289,7 @@ for l in tqdm(range(0,numfolders)):
 		MovieVariablelists.append(MovieVariablelist)
 		MovieVariablelist = list()
 		MovieITERlist_temp = list()
-
+		data_array = list()
 
 		#Unpack each row of 7 data points into single array of floats.
 		#Removing 'spacing' between the floats and ignoring variables above data.
@@ -1514,7 +1526,7 @@ del Energy,Fe,rawdata_mcs
 
 
 #Alert user that readin process has ended and continue with selected diagnostics.
-if any([savefig_plot2D, savefig_phaseresolve2D, savefig_itermovie, savefig_monoprofiles, savefig_multiprofiles, savefig_comparelineouts, savefig_phaseresolvelines, savefig_sheathdynamics, savefig_trendcomparison, print_generaltrends, print_KnudsenNumber, print_totalpower, print_DCbias, print_thrust, savefig_IEDF, savefig_EEDF]) == True:
+if any([savefig_plot2D, savefig_phaseresolve2D, savefig_itermovie, savefig_monoprofiles, savefig_multiprofiles, savefig_comparelineouts, savefig_phaseresolvelines, savefig_sheathdynamics, savefig_trendcomparison, print_generaltrends, print_Knudsennumber, print_totalpower, print_DCbias, print_thrust, savefig_IEDF, savefig_EEDF]) == True:
 	print '----------------------------------------'
 	print 'Data Readin Complete, Starting Analysis:'
 	print '----------------------------------------'
@@ -1560,17 +1572,24 @@ else:
 
 #Returns a 2D array of inputted data with size [R_mesh] x [Z_mesh]
 #Can optionally perform variable unit conversion if required.
-def ImageExtractor2D(Data,Variable=[],R_mesh=R_mesh[l],Z_mesh=Z_mesh[l]):
+#Image = ImageExtractor2D(Data,Variable=[]):
+def ImageExtractor2D(Data,Variable=[],Rmesh=0,Zmesh=0):
+
+	#WHY Rmesh=R_mesh[l],Zmesh=Z_mesh[l] NOT WORKING????
+	#If no mesh sizes supplied, collect sizes for current global folder.
+	if Rmesh == 0 or Zmesh == 0:
+		Rmesh,Zmesh = R_mesh[l],Z_mesh[l]
+	#endif
 
 	#Create empty 2D image of required size.
-	numrows = len(Data)/R_mesh
-	Image = np.zeros([numrows,R_mesh])
+	numrows = len(Data)/Rmesh
+	Image = np.zeros([numrows,Rmesh])
 
 	#Reshape data into 2D array for further processing.
 	for j in range(0,numrows):
-		for i in range(0,R_mesh):
-			Start = R_mesh*j
-			Row = Z_mesh-1-j
+		for i in range(0,Rmesh):
+			Start = Rmesh*j
+			Row = Zmesh-1-j
 			Image[Row,i] = Data[Start+i]
 		#endfor
 	#endfor
@@ -1614,8 +1633,8 @@ def figure(aspectratio,subplots=1,shareX=False):
 def CropImage(ax=plt.gca(),Extent=[]):
 
 		#Obtain default limits and change to local crop variables.
-		R1,R2 = ax.get_ylim()[0],ax.get_ylim()[1]
-		Z1,Z2 = ax.get_xlim()[0],ax.get_xlim()[1]
+		R1,R2 = ax.get_xlim()[0],ax.get_xlim()[1]
+		Z1,Z2 = ax.get_ylim()[0],ax.get_ylim()[1]
 		if len(Extent) == 2:
 			radialcrop,axialcrop = Extent[0],Extent[1]
 		else:
@@ -1761,6 +1780,40 @@ def Normalize(profile,NormFactor=0):
 #=========================#
 
 
+
+#Takes current image datails and returns extent and rotated aspectratio
+#If mesh uses symmetry, will double radius extent centered on zero.
+#extent,aspectratio = DataExtent(l)
+def DataExtent(folder=l,aspectratio=image_aspectratio):
+
+	#Obtain global variables for current folder.
+	Isym = Isymlist[folder]
+	radius,height = Radius[folder],Height[folder]
+
+	#Rotated Image: [X,Y] = [Height,Radius]
+	if image_rotate == True:
+		aspectratio = aspectratio[::-1]
+		if Isym == 1: extent=[0,height, -radius,radius]
+		elif Isym == 0: extent=[0,height, 0,radius]
+		#endif
+
+	#Default mesh orientation: [X,Y] = [Radius,Height]
+	elif image_rotate == False:
+		if Isym == 1: extent = [-radius,radius, 0,height]
+		elif Isym == 0: extent=[0,radius, 0,height]
+		#endif
+	#endif
+
+	return(extent,aspectratio)
+#enddef
+
+
+
+#=========================#
+#=========================#
+
+
+
 #Create figure and plot a 1D graph with associated image plotting requirements.
 #Returns plotted axes and figure if new ones were created.
 #Else plots to existing figure and returns the image object.
@@ -1805,6 +1858,12 @@ def ImagePlotter2D(Image,extent,aspectratio,fig=111,ax=111):
 		fig,ax = figure(aspectratio)
 	elif fig == 111:
 		fig = figure(aspectratio)
+	#endif
+
+	#Rotate image if required
+	if image_rotate == True:
+		Image = np.asarray(Image)
+		Image = Image.transpose().tolist()
 	#endif
 
 	#Apply any required numerical changes to the image.
@@ -1865,79 +1924,6 @@ def TrendPlotter(TrendArray,Xaxis,NormFactor=0):
 	#endif
 
 	return()
-#enddef
-
-
-
-#=========================#
-#=========================#
-
-
-
-#Takes 2D image array and produces rotated and plotted figure.
-#Returns fig,ax,im for further beautification if required.
-#fix,ax,im = SymmetryConverter2D(Image)
-def SymmetryConverter2D(Image,Isym=Isymlist[l],R_mesh=R_mesh[l],Z_mesh=Z_mesh[l],Radius=Radius[l],Height=Height[l]):
-
-	#Obtain image standard (non-rotated) aspect ratio.
-	if len(image_aspectratio) == 2:
-		aspectratio = image_aspectratio
-	else:
-		aspectratio = [9,9]
-	#endif
-
-	#Rotate image by 90 degrees anticlockwise and plot.
-	if image_rotate == True:
-		#Flip image axes and aspect ratios.
-		RotateImage,SymRotateImage = Image.swapaxes(0,1),list()
-		aspectratio = aspectratio[::-1]
-
-		#If mesh uses symmetry, modify Image to conform to this.
-		if Isym == 1:
-			#Create new image by reversing height profiles and adding to beginning of image.
-			for i in range(R_mesh):
-				SymRotateImage.append(RotateImage[(R_mesh-1)-i])
-				if i == (R_mesh-1):
-					for j in range(R_mesh):
-						SymRotateImage.append(RotateImage[j])
-					#endfor
-				#endif
-			#endfor
-
-			extent=[0,Height, -Radius,Radius]
-			fig,ax,im = ImagePlotter2D(SymRotateImage,extent,aspectratio)
-
-		#If the mesh does not use symmetry, simply plot the data as is.
-		elif Isym == 0:
-			extent=[0,Height, 0,Radius]
-			fig,ax,im = ImagePlotter2D(RotateImage,extent,aspectratio)
-		#endif
-
-#=========================#
-
-	#plot image as default mesh orientation.
-	elif image_rotate == False:
-		numrows = len(Image)
-		SymImage = np.zeros([numrows,2*R_mesh])
-
-		#If mesh uses symmetry, modify Image to conform to this.
-		if Isym == 1:
-			#Create new image by reversing and adding itself on the LHS.
-			for m in range(0,len(Image)):
-				SymImage[m] = np.concatenate([Image[m][::-1],Image[m]])
-			#endfor
-
-			extent = [-Radius,Radius, 0,Height]
-			fig,ax,im = ImagePlotter2D(SymImage,extent,aspectratio)
-
-		#If the mesh does not use symmetry, simply plot the data as is.
-		elif Isym == 0:
-			extent=[0,Radius, 0,Height]
-			fig,ax,im = ImagePlotter2D(Image,extent,aspectratio)
-		#endif
-	#endif
-
-	return(fig,ax,im)
 #enddef
 
 
@@ -2019,11 +2005,17 @@ def GenerateAxis(Orientation,Isym=Isymlist[l],phasepoints=range(0,180)):
 
 #Obtains a radial 1D profile at a requested axial location.
 #Returns a 1D array for plotting and performs unit conversion.
-def PlotRadialProfile(Data,process,variable,lineout,R_mesh=R_mesh[l],Isym=Isymlist[l]):
+def PlotRadialProfile(Data,process,variable,lineout,Rmesh=0,Isym=0):
+
+	#WHY Rmesh=R_mesh[l],Zmesh=Z_mesh[l] NOT WORKING????
+	#If no mesh sizes supplied, collect sizes for current global folder.
+	if Rmesh == 0 or Isym == 0:
+		Rmesh,ISym = R_mesh[l],Isymlist[l]
+	#endif
 
 	#Obtain start location for requested data and perform SI conversion.
-	ZStart = R_mesh*lineout
-	ZEnd = R_mesh*(lineout+1)
+	ZStart = Rmesh*lineout
+	ZEnd = Rmesh*(lineout+1)
 
 	#Plot lines for each variable at each requested slice, ignoring ones that fail.
 	try:
@@ -2060,14 +2052,18 @@ def PlotRadialProfile(Data,process,variable,lineout,R_mesh=R_mesh[l],Isym=Isymli
 
 #Obtains an axial 1D profile at a requested radial location.
 #Returns a 1D array for plotting and performs unit conversion.
-def PlotAxialProfile(Data,process,variable,lineout,R_mesh=R_mesh[l],Z_mesh=Z_mesh[l],Isym=Isymlist[l]):
+def PlotAxialProfile(Data,process,variable,lineout,Rmesh=0,Zmesh=0,Isym=0):
 
-	#Refresh lineout data between lines.
-	Zlineout = list()
+	#WHY Rmesh=R_mesh[l],Zmesh=Z_mesh[l] NOT WORKING FOR MULTIPLE FOLDERS???
+	#If no mesh sizes supplied, collect sizes for current global folder.
+	if Rmesh == 0 or Zmesh == 0 or Isym == 0:
+		Rmesh,Zmesh,ISym = R_mesh[l],Z_mesh[l],Isymlist[l]
+	#endif
 
 	#Pull out Z-data point from each radial line of data and list them.
-	for i in range(0,Z_mesh):
-		datapoint = R_mesh*i + lineout
+	Zlineout = list()
+	for i in range(0,Zmesh):
+		datapoint = Rmesh*i + lineout
 		try:
 			Zlineout.append(Data[process][datapoint])
 		except:
@@ -2449,7 +2445,8 @@ if savefig_plot2D == True:
 			Image = ImageExtractor2D(Data[l][processlist[k]],Variablelist[k])
 
 			#Generate and rotate figure as requested.
-			fig,ax,im = SymmetryConverter2D(Image)
+			extent,aspectratio = DataExtent(l)
+			fig,ax,im = ImagePlotter2D(Image,extent,aspectratio)
 
 			#Define image beautification variables.
 			if image_rotate == True:
@@ -2535,7 +2532,8 @@ if savefig_itermovie == True:
 				ConvergenceTrends[-1].append( sum(Image.flatten())/len(Image.flatten()) )
 
 				#Generate and rotate figure as requested.
-				fig,ax,im = SymmetryConverter2D(Image)
+				extent,aspectratio = DataExtent(l)
+				fig,ax,im = ImagePlotter2D(Image,extent,aspectratio)
 
 				#Define image axis labels.
 				if image_rotate == True:
@@ -2575,12 +2573,12 @@ if savefig_itermovie == True:
 
 		#Normalize and plot each variable in ConvergenceTrends to single figure.
 		for i in range(0,len(ConvergenceTrends)):
-			ConvergenceTrends[i] = Normalize(ConvergenceTrends[i])
+			ConvergenceTrends[i] = Normalize(ConvergenceTrends[i])[0]
 			ax.plot(Xaxis,ConvergenceTrends[i], lw=2)
 		#endfor
 
 		#Image plotting details.
-		Title = 'Convergence of '+str(IterVariablelist)
+		Title = 'Convergence of '+str(IterVariablelist)+' for \n'+Dirlist[l][2:-1]
 		Xlabel,Ylabel = 'Simulation Iteration','Normalized Mesh-Average Value'
 		ImageOptions(ax,Xlabel,Ylabel,Title,Crop=False)
 		ax.legend(Legend, loc=4)
@@ -3092,10 +3090,9 @@ if savefig_IEDF == True:
 			#Plot the angular distribution and EDF of the required species.
 			fig,ax = figure([13,9],2)
 			fig.suptitle(Dirlist[l][2::]+'\n'+Variablelist[i]+' Angular Energy Distribution Function', y=0.995, fontsize=16)
-			Ticks = np.arange(-len(Image)/2, len(Image)/2, len(Image)/6)
+			Extent=[0,len(Image[0]), -len(Image)/2,len(Image)/2]
 
-			im = ax[0].imshow(Image)
-#			ax[0].set_yticks(Ticks)
+			im = ax[0].imshow(Image,extent=Extent)
 			ImageOptions(ax[0],Ylabel='Angular Dispersion [deg]',Crop=False)				
 			#Add Colourbar (Axis, Label, Bins)
 			cax = Colourbar(ax[0],Variablelist[i]+' EDF($\\theta$)',5)
@@ -3103,6 +3100,7 @@ if savefig_IEDF == True:
 			ax[1].plot(EDFprofile, lw=2)
 			Xlabel,Ylabel = 'Energy [eV]',Variablelist[i]+' EDF($\\theta$)'
 			ImageOptions(ax[1],Xlabel,Ylabel,Crop=False)
+			ax[1].set_xlim(0,50)
 
 			plt.tight_layout()
 			plt.savefig(DirEDF+Variablelist[i]+'_EDF'+ext)
@@ -3548,6 +3546,7 @@ if savefig_trendcomparison == True or print_thrust == True:
 		NeutralMass = Argon*1.67E-27		 #Kg
 
 		DefaultTechnique = True
+		#Both techniques assume cylindrical geometry, cartesian geometry will be overestimated.
 		if DefaultTechnique == True:
 
 			#Thrust based on integration over concentric ion/neutral momentum loss rate.
@@ -3662,7 +3661,7 @@ if savefig_trendcomparison == True or print_thrust == True:
 
 
 if bool(set(NeutSpecies).intersection(Variables)) == True:
-	if savefig_trendcomparison == True or print_KnudsenNumber == True:
+	if savefig_trendcomparison == True or print_Knudsennumber == True:
 
 		#Create Trend folder to keep output plots.
 		TrendVariable = filter(lambda x: x.isalpha(), FolderNameTrimmer(Dirlist[0]))
@@ -3686,7 +3685,7 @@ if bool(set(NeutSpecies).intersection(Variables)) == True:
 
 			#Create empty image array based on mesh size and symmetry options.
 			numrows = len(Data[l][0])/R_mesh[l]
-			Knudsen = np.zeros([Z_mesh[l],R_mesh[l]])
+			Image = np.zeros([Z_mesh[l],R_mesh[l]])
 
 			#Produce Knudsen number 2D image using density image.
 			for j in range(0,Z_mesh[l]):
@@ -3700,7 +3699,7 @@ if bool(set(NeutSpecies).intersection(Variables)) == True:
 					except:
 						KnudsenNumber = 0
 					#endtry
-					Knudsen[Row,i] = KnudsenNumber
+					Image[Row,i] = KnudsenNumber
 				#endfor
 			#endfor
 
@@ -3708,14 +3707,15 @@ if bool(set(NeutSpecies).intersection(Variables)) == True:
 			Dir2Dplots = CreateNewFolder(Dirlist[l],'2Dplots')
 
 			#Display average Knudsen number to terminal if requested.
-			KnudsenAverage.append( sum(Knudsen)/(len(Knudsen[0])*len(Knudsen)) )
-			if print_KnudsenNumber == True:
+			KnudsenAverage.append( sum(Image)/(len(Image[0])*len(Image)) )
+			if print_Knudsennumber == True:
 				print Dirlist[l]
 				print 'Average Knudsen Number:', KnudsenAverage[l]
 			#endif
 
 			#Label and save the 2D Plots.
-			fig,ax,im = SymmetryConverter2D(Knudsen)
+			extent,aspectratio = DataExtent(l)
+			fig,ax,im = ImagePlotter2D(Image,extent,aspectratio)
 
 			#Image plotting details, invert Y-axis to fit 1D profiles.
 			Title = 'Knudsen Number Image for \n'+Dirlist[l][2:-1]
@@ -3731,7 +3731,6 @@ if bool(set(NeutSpecies).intersection(Variables)) == True:
 			plt.savefig(Dir2Dplots+'KnudsenNumber'+ext)
 			plt.close('all')
 		#endfor
-
 
 		#Plot a comparison of all average Knudsen numbers.
 		fig,ax = figure(image_aspectratio,1)
@@ -3750,7 +3749,7 @@ if bool(set(NeutSpecies).intersection(Variables)) == True:
 
 #===============================#
 
-if any([savefig_trendcomparison, print_generaltrends, print_KnudsenNumber, print_totalpower, print_DCbias, print_thrust]) == True:
+if any([savefig_trendcomparison, print_generaltrends, print_Knudsennumber, print_totalpower, print_DCbias, print_thrust]) == True:
 	print'---------------------------'
 	print'# Trend Processing Complete'
 	print'---------------------------'
@@ -3914,8 +3913,8 @@ if savefig_phaseresolve2D == True:
 				ImageOptions(ax[0],Xlabel,Ylabel,Crop=Crop)
 
 				#Add Colourbar (Axis, Label, Bins)
-				label = VariableLabelMaker(PhaseVariablelist)
-				cax = Colourbar(ax[0],label[i],5,Norm=[MinNormalize,MaxNormalize])
+				Ylabel = VariableLabelMaker(PhaseVariablelist)
+				cax = Colourbar(ax[0],Ylabel[i],5,Norm=[MinNormalize,MaxNormalize])
 
 				#Plot waveform and apply image options.
 				ax[1].plot(Phaseaxis, VoltageWaveform, lw=2)
@@ -4077,12 +4076,12 @@ if savefig_phaseresolvelines == True or savefig_sheathdynamics == True:
 					#Create figures and plot the 1D profiles. (ax[0]=variable, ax[1]=waveform)
 					if savefig_phaseresolvelines == True:
 						fig,ax = figure(image_aspectratio,2)
-						Ylabels = VariableLabelMaker(PhaseVariablelist)
+						Ylabel = VariableLabelMaker(PhaseVariablelist)
 						fig.suptitle('Phase-Resolved '+PhaseVariablelist[i]+' for '+VariedValuelist[l]+lineoutstring+str(Moviephaselist[l][j]), y=0.97, fontsize=16)
 
 						#Plot profile and apply image options.
 						ax[0].plot(axis, PhaseResolvedlineout[::-1], lw=2)
-						ImageOptions(ax[0],Xlabel,Ylabels[i],Crop=False)
+						ImageOptions(ax[0],Xlabel,Ylabel[i],Crop=False)
 						ax[0].set_ylim(VariableMin,VariableMax*1.02)
 
 						#Plot waveform and apply image options.
@@ -4117,23 +4116,21 @@ if savefig_phaseresolvelines == True or savefig_sheathdynamics == True:
 						DoFArrays = np.asarray(DoFArrays)
 						DoFArrays = DoFArrays.transpose().tolist()
 
-						#Create gaussian function using DoFWidth.
+						#Create gaussian function centred on RlineoutLoc with DoFWidth.
 #						for m in range(0,len(DoFArrays)):
-#							a,b,c = 1,Rlineoutloc,DoFWidth
-#							Top, Bottom = ((m-b)^2), (2*c^2)
+#							a,b,c = float(1),float(RlineoutLoc),float(DoFWidth)
+#							Top, Bottom = (float(m)-b**2), (2*c**2)
 #							GaussianCoeff.append( a*np.exp(-(Top/Bottom)) )
 						#endfor
-#						plt.plot(GaussianCoeff)
-#						plt.show()
 
-						#Integrate DoF lineouts to form a single PROES lineout.
+						#Integrate DoF lineouts to form a single phase point PROES lineout.
 						for m in range(0,len(PhaseResolvedlineout)):
 							IntegratedDoFArray.append( sum(DoFArrays[m])/(DoFWidth*2+1) )
 						#endif
 						PROES.append(IntegratedDoFArray)
 
 					#If no DoF then simply collect lineout from required location.
-					elif PROES_DoF == False and savefig_sheathdynamics == True:
+					elif DoFWidth == 0 and savefig_sheathdynamics == True:
 						PROES.append(PhaseResolvedlineout)
 					#endif
 				#endfor
