@@ -92,22 +92,24 @@ NeutSpecies = ['AR','AR3S','O2']
 
 #Commonly used variable sets.
 ArReduced = ['AR','AR+','E','TE','P-POT','RHO','TG-AVE','PRESSURE','EF-TOT','POW-RF','POW-RF-E','S-AR+','SEB-AR+', 'VR-NEUTRAL','VZ-NEUTRAL','VR-ION+','VZ-ION+','FR-AR+','FZ-AR+']
-ArFull = ['AR3S','AR4SM','AR4SR','AR4SPM','AR4SPR','AR4P','AR4D','AR','AR+','AR2+','AR2*','E','TE','P-POT','TG-AVE','RHO','PRESSURE','EF-TOT','POW-RF','POW-RF-E','S-AR+','SEB-AR+', 'VR-NEUTRAL','VZ-NEUTRAL','VR-ION+','VZ-ION+','FR-AR+','FZ-AR+']
+ArFull = ['AR3S','AR4SM','AR4SR','AR4SPM','AR4SPR','AR4P','AR4D','AR','AR+','AR2+','AR2*','E','TE','P-POT','TG-AVE','RHO','PRESSURE','EF-TOT','POW-RF','POW-RF-E','S-AR+','S-AR4P','SEB-AR+','SEB-AR4P','VR-NEUTRAL','VZ-NEUTRAL','VR-ION+','VZ-ION+','FR-AR+','FZ-AR+']
 O2 = ['O2','O2+','O','O+','O-','E','TE','P-POT','TG-AVE','PRESSURE','EF-TOT','POW-RF','POW-RF-E','VR-NEUTRAL','VZ-NEUTRAL','VR-ION+','VZ-ION+','VR-ION-','VZ-ION-','FR-O-','FZ-O-']
 
 MSHC_PCMC = ['AR^0.5S','EB-0.5S','ION-TOT0.5S','AR^1.1B','EB-1.1B','ION-TOT1.1B']
-PR_PCMC = ['AR^0.23','EB-0.23','ION-TOT0.23']
+PR_PCMC = ['AR^0.25','EB-0.25','ION-TOT0.2']
 
+MSHC_Phase = ['AR4P','S-AR+','S-AR4P','TE','PPOT']
+PR_Phase = ['AR4P','S-AR+','S-AR4P','TE','PPOT']
 
 #Paper Trend Locations
 #SDoyle2017a: dz(5.50/118), dr(2.55/102) height=[24,43], Trend=[19]
-
-
-
+#SDole2017b: PROES, (Z=1.52,2.3,3.23) radialineouts = [31,47,66]
 
         
         
         
+
+
 
 
 
@@ -120,38 +122,38 @@ PR_PCMC = ['AR^0.23','EB-0.23','ION-TOT0.23']
 #====================================================================#
 
 #Requested IEDF/NEDF Variables.
-IEDFVariables = ['AR^0.5S','EB-0.5S','ION-TOT0.5S','AR^1.1B','EB-1.1B','ION-TOT1.1']		#Requested iprofile_2d variables (no spaces)
+IEDFVariables = ['AR^0.25','EB-0.25','ION-TOT0.2']		#Requested iprofile_2d variables (no spaces)
 NEDFVariables = []										#Requested nprofile_2d variables (no spaces)
 #MSHC 
 
 #Requested movie1/movie_icp Variables.
 IterVariables = ['S-E','E','TE','PPOT']		#Requested Movie_icp (iteration) Variables.
-PhaseVariables = ['S-E','E','TE','PPOT']	#Requested Movie1 (phase) Variables.
-electrodeloc = [0,12]						#Centre Cell of powered electrode [R,Z]. (T,B,L,R)
+PhaseVariables = ['S-AR+','S-AR4P','AR4P','TE','PPOT']	#Requested Movie1 (phase) Variables.
+electrodeloc = [30,47]						#Centre Cell of powered electrode [R,Z]. (T,B,L,R)
 phasecycles = 1								#Number of phase cycles to be plotted.
-DoFWidth = 41								#PROES Depth of Field Cells
+DoFWidth = 1								#PROES Depth of Field Cells
 #electrodeloc	#YPR [30,47] #SPR [0,107] #MSHC [0,12]
 #DOFWidth		#YPR 41=2cm   #MSHC 10=0.47cm
 
 #Requested TECPLOT Variables
 Variables = ArFull
 MultiVar = []						#Additional variables plotted ontop of [Variables]
-radialineouts = [] 					#Radial 1D-Profiles to be plotted (fixed Z-mesh) --
-heightlineouts = [24,43]					#Axial 1D-Profiles to be plotted (fixed R-mesh) |
-TrendLocation = [19] 					#Cell location For Trend Analysis [R,Z], ([] = min/max)
+radialineouts = [31,47,66] 					#Radial 1D-Profiles to be plotted (fixed Z-mesh) --
+heightlineouts = []					#Axial 1D-Profiles to be plotted (fixed R-mesh) |
+TrendLocation = [] 					#Cell location For Trend Analysis [R,Z], ([] = min/max)
 #YPR H0;R47 #MSHC H0,20;R20
 
 
 #Requested plotting routines.
 savefig_itermovie = False					#Requires movie_icp.pdt
-savefig_plot2D = False						#Requires TECPLOT2D.PDT
+savefig_plot2D = True						#Requires TECPLOT2D.PDT
 
 savefig_monoprofiles = False				#Single Variables; fixed height/radius
 savefig_multiprofiles = False				#Multi-Variables; same folder
 savefig_comparelineouts = False				#Multi-Variables; all folders
 
 savefig_phaseresolvelines = False			#1D Phase Resolved Images
-savefig_phaseresolve2D = True				#2D Phase Resolved Images
+savefig_phaseresolve2D = False				#2D Phase Resolved Images
 savefig_sheathdynamics = False				#PROES style images
 
 savefig_IEDF = False						#IN DEVELOPMENT, WORKS BUT UNRELIABLE.
@@ -171,8 +173,8 @@ print_thrust = False
 #Image plotting options.
 image_extension = '.png'					#Extensions { '.png', '.jpg', '.eps' }
 image_aspectratio = [10,10]					#[x,y] in cm [Doesn't rotate dynamically]
-image_radialcrop = []						#[R,Z] in cm
-image_axialcrop = []						#[R,Z] in cm
+image_radialcrop = [0.6]					#[R,Z] in cm
+image_axialcrop = [1,4]						#[R,Z] in cm
 #YPR R[0.6];Z[1,4]   #MSHC R[0.0,1.0];Z[0.5,2.5]
 
 image_plotsymmetry = True
@@ -181,13 +183,13 @@ image_normalize = False
 image_plotgrid = False
 image_plotmesh = False						#### NOT IMPLIMENTED ####
 image_logplot = False
-image_rotate = True
+image_rotate = False
 
 
 #Write data to ASCII files.
 write_trendcomparison = False
-write_phaseresolve = False
-write_lineouts = False
+write_phaseresolve = True
+write_lineouts = True
 write_plot2D = False
 
 
@@ -218,8 +220,6 @@ cbaroverride = ['NotImplimented']
 
 
 #####TODO#####
-#need to check for any other normalization factors, homogonize the function.
-#need to fix the 2D plot and phase image rotation, it breaks pretty easily when rotated.
 #need to update the cbar function and introduce an override.
 #need to get seaborn introduced into the program en-masse.
 #need to introduce 'garbage collection' at the end of each diagnostic.
@@ -320,7 +320,7 @@ print '   |  |__|  | |  |__   |  |     |  |__   |   \|  |   /  ^  \        '
 print '   |   __   | |   __|  |  |     |   __|  |  . `  |  /  /_\  \       '
 print '   |  |  |  | |  |____ |  `----.|  |____ |  |\   | /  _____  \      '
 print '   |__|  |__| |_______||_______||_______||__| \__|/__/     \__\     '
-print '                                                            v0.10.1 '
+print '                                                            v0.10.2 '
 print '--------------------------------------------------------------------'
 print ''
 print 'The following diagnostics were requested:'
@@ -1682,10 +1682,15 @@ def CropImage(ax=plt.gca(),Extent=[]):
 			Z1,Z2 = axialcrop[0],axialcrop[1]
 		#endif
 
-		#Rotate cropping dimentions if image is rotated.
-		if image_rotate == True:
+		#Rotate cropping dimentions to match image rotation.
+		if image_rotate == 90 or image_rotate == True:
 			R1,Z1 = Z1,R1
 			R2,Z2 = Z2,R2
+		elif image_rotate == 180 or image_rotate == False:
+			Z1,Z2 = Z2,Z1
+		elif image_rotate == 270:
+			R1,Z2 = Z2,R1
+			R2,Z1 = Z1,R2
 		#endif
 
 		#Apply cropping dimensions to image.
@@ -2041,7 +2046,7 @@ def PlotRadialProfile(Data,process,variable,lineout,Rmesh=0,Isym=0):
 	#WHY Rmesh=R_mesh[l],Zmesh=Z_mesh[l] NOT WORKING????
 	#If no mesh sizes supplied, collect sizes for current global folder.
 	if Rmesh == 0 or Isym == 0:
-		Rmesh,ISym = R_mesh[l],Isymlist[l]
+		Rmesh,Isym = R_mesh[l],Isymlist[l]
 	#endif
 
 	#Obtain start location for requested data and perform SI conversion.
@@ -3105,7 +3110,7 @@ if savefig_IEDF == True:
 		processlist,Variablelist = VariableEnumerator(IEDFVariables,rawdata_IEDF[l],header_IEDFlist[l])
 
 		#For all requested variables.
-		for i in range(0,len(processlist)):
+		for i in tqdm(range(0,len(processlist))):
 			EDFprofile = list()
 
 			#Extract image from required variable and create required profile lists.
@@ -4084,7 +4089,6 @@ if savefig_phaseresolvelines == True or savefig_sheathdynamics == True:
 						Xlabel = 'Radial Distance R [cm]'
 					#endif
 
-
 					#Create figures and plot the 1D profiles. (ax[0]=variable, ax[1]=waveform)
 					if savefig_phaseresolvelines == True:
 						fig,ax = figure(image_aspectratio,2)
@@ -4155,7 +4159,7 @@ if savefig_phaseresolvelines == True or savefig_sheathdynamics == True:
 				#plot more detailed PROES sheath-dynamics if requested by user.
 				if savefig_sheathdynamics == True:
 
-					#Create folder to keep PROES images seperate.
+					#Create folders to keep PROES images seperate.
 					Dir1DPROES = CreateNewFolder(DirPhaseResolved,'PROES_Images')
 
 					#Increase PROES image by required number of phasecycles.
@@ -4172,17 +4176,21 @@ if savefig_phaseresolvelines == True or savefig_sheathdynamics == True:
 					x1,x2 = Phaseaxis[0],Phaseaxis[-1]
 					if LineoutsOrientation[k] == 'Axial':
 						lineoutstring = ' @ R='+str(round(ZlineoutLoc*dr[l],2))+'cm'
+						NameString = PhaseVariablelist[i]+'_'+lineoutstring[2::]
 						Ylabel = 'Axial Distance Z [cm]'
 						y1,y2 = Zaxis[0],Zaxis[-1]
 					elif LineoutsOrientation[k] == 'Radial' and Isymlist[l] == 1:
 						lineoutstring = ' @ Z='+str(round(RlineoutLoc*dz[l],2))+'cm'
+						NameString = PhaseVariablelist[i]+lineoutstring[2::]
 						Ylabel = 'Radial Distance R [cm]'
 						y1,y2 = Raxis[-1],-Raxis[-1]
 					elif LineoutsOrientation[k] == 'Radial' and Isymlist[l] == 0:
 						lineoutstring = ' @ Z='+str(round(RlineoutLoc*dz[l],2))+'cm'
+						NameString = PhaseVariablelist[i]+lineoutstring[2::]
 						Ylabel = 'Radial Distance R [cm]'
 						y1,y2 = Raxis[-1],0
 					#endif
+					DirPROESloc = CreateNewFolder(Dir1DPROES,lineoutstring[3::])
 
 					#Create PROES image along line of sight with phase-locked waveform.
 					fig.suptitle( 'Simulated '+PhaseVariablelist[i]+' PROES for '+VariedValuelist[l]+lineoutstring+'\n DoF = '+str(round(DoFWidth*dz[l],2))+' cm', y=0.95, fontsize=18)
@@ -4202,7 +4210,7 @@ if savefig_phaseresolvelines == True or savefig_sheathdynamics == True:
 					#Cleanup layout and save images.
 					fig.tight_layout()
 					plt.subplots_adjust(top=0.85)
-					plt.savefig(Dir1DPROES+VariedValuelist[l]+' '+NameString+' PROES'+ext)
+					plt.savefig(DirPROESloc+VariedValuelist[l]+' '+NameString+' PROES'+ext)
 					plt.close('all')
 
 					#Write PROES data in ASCII format if required.
@@ -4211,53 +4219,50 @@ if savefig_phaseresolvelines == True or savefig_sheathdynamics == True:
 						WriteDataToFile(PROES, DirASCIIPROES+PhaseVariablelist[i]+'_PROES')
 					#endif
 
+					#==============##==============#
 
-					#########################################
-					#			UNDER CONSTRUCTION			#
-					#########################################
-					if True == True:
+					#Temporally collapse 2D PROES image through defined phase fraction.
+					SpatialPROES = list()
+					for m in range(0,len(PROES)):
+						SpatialPROES.append( (sum(PROES[m][::])) ) 	#NEEDS 'MATHS-ING'
+					#endfor
 
-						#Temporally collapse 2D PROES image through defined phase fraction.
-						SpatialPROES = list()
-						for m in range(0,len(PROES)):
-							SpatialPROES.append( (sum(PROES[m][::])) ) 	#NEEDS 'MATHS-ING'
-						#endfor
+					#Spatially Collapse 2D PROES image along the line of sight.
+					PROES,TemporalPROES = PROES.transpose().tolist(),list()
+					for m in range(0,len(PROES) ):
+						TemporalPROES.append( (sum(PROES[m][::]))/(len(PROES)/2) )
+					#endfor
 
-						#Spatially Collapse 2D PROES image along the line of sight.
-						PROES,TemporalPROES = PROES.transpose().tolist(),list()
-						for m in range(0,len(PROES) ):
-							TemporalPROES.append( (sum(PROES[m][::]))/(len(PROES)/2) )
-						#endfor
+					#Plot Temporally collapsed PROES with phase axis.
+					fig,ax = figure(image_aspectratio,2)
+					ax[0].plot(Phaseaxis,TemporalPROES, lw=2)
+					Ylabel = 'Spatially Integrated '+PhaseVariablelist[i]
+					ImageOptions(ax[0],Ylabel=Ylabel,Crop=False)
 
-						#Plot Temporal PROES with phase axis.
-						fig,ax = figure(image_aspectratio,2)
-						ax[0].plot(Phaseaxis,TemporalPROES, lw=2)
-						Ylabel = 'Spatially Integrated '+PhaseVariablelist[i]
-						ImageOptions(ax[0],Ylabel=Ylabel,Crop=False)
+					#Plot Waveform onto Temporally collapsed PROES.
+					ax[1].plot(Phaseaxis, VoltageWaveform, lw=2)
+					Xlabel,Ylabel = 'Phase [$\omega$t/2$\pi$]','Electrode Potential [V]'
+					ImageOptions(ax[1],Xlabel,Ylabel,Crop=False)
 
-						#Plot Waveform.
-						ax[1].plot(Phaseaxis, VoltageWaveform, lw=2)
-						Xlabel,Ylabel = 'Phase [$\omega$t/2$\pi$]','Electrode Potential [V]'
-						ImageOptions(ax[1],Xlabel,Ylabel,Crop=False)
+					plt.savefig(DirPROESloc+VariedValuelist[l]+' '+NameString+' TemporalPROES'+ext)
+					plt.close('all')
 
-						plt.savefig(Dir1DPROES+VariedValuelist[l]+' '+NameString+' TemporalPROES'+ext)
-						plt.close('all')
+					#Plot Spatially collapsed PROES with required axis.
+					fig,ax = figure(image_aspectratio,2)
+					ax[0].plot(Raxis,SpatialPROES, lw=2)
+					Xlabel = 'Phase [$\omega$t/2$\pi$]'
+					Ylabel = 'Temporally Integrated '+PhaseVariablelist[i]
+					ImageOptions(ax[0],Xlabel,Ylabel,Crop=False)
 
+					#Plot Waveform onto Spatially collapsed PROES.
+					ax[1].plot(Phaseaxis, VoltageWaveform, lw=2)
+					Xlabel,Ylabel = 'Phase [$\omega$t/2$\pi$]','Electrode Potential [V]'
+					ImageOptions(ax[1],Xlabel,Ylabel,Crop=False)
 
-						#Plot Spatial PROES with required axis.
-						fig,ax = figure(image_aspectratio,1)
-						plt.plot(Raxis,SpatialPROES, lw=2)
-						Xlabel = 'Phase [$\omega$t/2$\pi$]'
-						Ylabel = 'Temporally Integrated '+PhaseVariablelist[i]
-						ImageOptions(ax,Xlabel,Ylabel,Crop=False)
+					#plt.savefig(DirPROESloc+VariedValuelist[l]+' '+NameString+' SpatialPROES'+ext)
+					plt.close('all')
 
-						#plt.savefig(Dir1DPROES+VariedValuelist[l]+' '+NameString+' SpatialPROES'+ext)
-						plt.close('all')
-					#endif
-					#########################################
-					#			UNDER CONSTRUCTION			#
-					#########################################
-
+					#==============##==============#
 
 					if l == numfolders and k == len(Lineouts):
 						print'-------------------------------'
