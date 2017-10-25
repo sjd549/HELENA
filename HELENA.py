@@ -91,24 +91,25 @@ AtomicSet = ['E']+ArgonReduced+ArgonFull+Oxygen
 NeutSpecies = ['AR','AR3S','O2']
 
 #Commonly used variable sets.
-ArReduced = ['AR','AR+','E','TE','P-POT','RHO','TG-AVE','PRESSURE','EF-TOT','POW-RF','POW-RF-E','S-AR+','SEB-AR+', 'VR-NEUTRAL','VZ-NEUTRAL','VR-ION+','VZ-ION+','FR-AR+','FZ-AR+']
-ArFull = ['AR3S','AR4SM','AR4SR','AR4SPM','AR4SPR','AR4P','AR4D','AR','AR+','AR2+','AR2*','E','TE','P-POT','TG-AVE','RHO','PRESSURE','EF-TOT','POW-RF','POW-RF-E','S-AR+','S-AR4P','SEB-AR+','SEB-AR4P','VR-NEUTRAL','VZ-NEUTRAL','VR-ION+','VZ-ION+','FR-AR+','FZ-AR+']
+Ar = ['AR3S','AR4SM','AR4SR','AR4SPM','AR4SPR','AR4P','AR4D','AR','AR+','AR2+','AR2*','E','TE','P-POT','TG-AVE','RHO','PRESSURE','EF-TOT','POW-RF','POW-RF-E','S-AR+','S-AR4P','SEB-AR+','SEB-AR4P','VR-NEUTRAL','VZ-NEUTRAL','VR-ION+','VZ-ION+','FR-AR+','FZ-AR+']
 O2 = ['O2','O2+','O','O+','O-','E','TE','P-POT','TG-AVE','PRESSURE','EF-TOT','POW-RF','POW-RF-E','VR-NEUTRAL','VZ-NEUTRAL','VR-ION+','VZ-ION+','VR-ION-','VZ-ION-','FR-O-','FZ-O-']
+ArO2 = Ar+O2
 
 MSHC_PCMC = ['AR^0.5S','EB-0.5S','ION-TOT0.5S','AR^1.1B','EB-1.1B','ION-TOT1.1B']
 PR_PCMC = ['AR^0.25','EB-0.25','ION-TOT0.2']
 
-MSHC_Phase = ['AR4P','S-AR+','S-AR4P','TE','PPOT']
-PR_Phase = ['AR4P','S-AR+','S-AR4P','TE','PPOT']
+MSHC_Phase = ['S-AR+','S-AR4P','TE','PPOT']
+PR_Phase = ['S-E','S-AR+','S-AR4P','TE','PPOT']
+
+
 
 #Paper Trend Locations
 #SDoyle2017a: dz(5.50/118), dr(2.55/102) height=[24,43], Trend=[19]
-#SDole2017b: PROES, (Z=1.52,2.3,3.23) radialineouts = [31,47,66]
+#SDoyle2017b: PROES, (Z=1.52,2.3,3.23) radialineouts = [31,47,66]
 
         
         
         
-
 
 
 
@@ -128,25 +129,25 @@ NEDFVariables = []										#Requested nprofile_2d variables (no spaces)
 
 #Requested movie1/movie_icp Variables.
 IterVariables = ['S-E','E','TE','PPOT']		#Requested Movie_icp (iteration) Variables.
-PhaseVariables = ['S-AR+','S-AR4P','AR4P','TE','PPOT']	#Requested Movie1 (phase) Variables.
+PhaseVariables = PR_Phase					#Requested Movie1 (phase) Variables.
 electrodeloc = [30,47]						#Centre Cell of powered electrode [R,Z]. (T,B,L,R)
-phasecycles = 1								#Number of phase cycles to be plotted.
-DoFWidth = 1								#PROES Depth of Field Cells
-#electrodeloc	#YPR [30,47] #SPR [0,107] #MSHC [0,12]
+phasecycles = 2								#Number of phase cycles to be plotted.
+DoFWidth = 41								#PROES Depth of Field Cells
+#electrodeloc	#YPR [30,47],[16,47] #SPR [0,107] #MSHC [0,12]
 #DOFWidth		#YPR 41=2cm   #MSHC 10=0.47cm
 
 #Requested TECPLOT Variables
-Variables = ArFull
+Variables = Ar
 MultiVar = []						#Additional variables plotted ontop of [Variables]
-radialineouts = [31,47,66] 					#Radial 1D-Profiles to be plotted (fixed Z-mesh) --
+radialineouts = [47] 					#Radial 1D-Profiles to be plotted (fixed Z-mesh) --
 heightlineouts = []					#Axial 1D-Profiles to be plotted (fixed R-mesh) |
 TrendLocation = [] 					#Cell location For Trend Analysis [R,Z], ([] = min/max)
 #YPR H0;R47 #MSHC H0,20;R20
 
 
 #Requested plotting routines.
-savefig_itermovie = False					#Requires movie_icp.pdt
-savefig_plot2D = True						#Requires TECPLOT2D.PDT
+savefig_itermovie = True					#Requires movie_icp.pdt
+savefig_plot2D = False						#Requires TECPLOT2D.PDT
 
 savefig_monoprofiles = False				#Single Variables; fixed height/radius
 savefig_multiprofiles = False				#Multi-Variables; same folder
@@ -183,16 +184,14 @@ image_normalize = False
 image_plotgrid = False
 image_plotmesh = False						#### NOT IMPLIMENTED ####
 image_logplot = False
-image_rotate = False
+image_rotate = True
 
 
 #Write data to ASCII files.
 write_trendcomparison = False
 write_phaseresolve = True
-write_lineouts = True
+write_lineouts = False
 write_plot2D = False
-
-
 
 
 #============================#
@@ -488,17 +487,17 @@ for l in range(0,numfolders):
 		SImeshdata = open(icpnam[l]).readlines()
 
 		#Retrieve useful input variables from icp.nam.
-		NUMPHASE = int(filter(lambda x: x.isdigit(),filter(lambda x:'IMOVIE_FRAMES' in x,SImeshdata)[0]))
-		NUMMETALS = int(filter(lambda x: x.isdigit(),filter(lambda x:'IMETALS' in x,SImeshdata)[0]))+1
-		MATERIALS = filter(lambda x: 'CMETAL=' in x, SImeshdata)[0].split()[1:NUMMETALS]
+#		NUMPHASE = int(filter(lambda x: x.isdigit(),filter(lambda x:'IMOVIE_FRAMES' in x,SImeshdata)[0]))
+#		NUMMETALS = int(filter(lambda x: x.isdigit(),filter(lambda x:'IMETALS' in x,SImeshdata)[0]))+1
+#		MATERIALS = filter(lambda x: 'CMETAL=' in x, SImeshdata)[0].split()[1:NUMMETALS]
 
 		#Input frequencies/voltages/powers
-		VRFM = filter(lambda x: 'VRFM=' in x, SImeshdata)[0].split()[1:NUMMETALS]
-		VRFM2 = filter(lambda x: 'VRFM_2=' in x, SImeshdata)[0].split()[1:NUMMETALS]
-		FREQM = filter(lambda x: 'FREQM=' in x, SImeshdata)[0].split()[1:NUMMETALS]
-		FREQM2 = filter(lambda x: 'FREQM_2=' in x, SImeshdata)[0].split()[1:NUMMETALS]
-		FREQICP = float(filter(lambda x:'FREQ=' in x, SImeshdata)[0].strip(' \t\n\r,=FREQ'))
-		IRFPOW = float(filter(lambda x:'IRFPOW=' in x, SImeshdata)[0].strip(' \t\n\r,=IRFPOW'))
+#		VRFM = filter(lambda x: 'VRFM=' in x, SImeshdata)[0].split()[1:NUMMETALS]
+#		VRFM2 = filter(lambda x: 'VRFM_2=' in x, SImeshdata)[0].split()[1:NUMMETALS]
+#		FREQM = filter(lambda x: 'FREQM=' in x, SImeshdata)[0].split()[1:NUMMETALS]
+#		FREQM2 = filter(lambda x: 'FREQM_2=' in x, SImeshdata)[0].split()[1:NUMMETALS]
+#		FREQICP = float(filter(lambda x:'FREQ=' in x, SImeshdata)[0].strip(' \t\n\r,=FREQ'))
+#		IRFPOW = float(filter(lambda x:'IRFPOW=' in x, SImeshdata)[0].strip(' \t\n\r,=IRFPOW'))
 
 		#SI Conversion unit extraction.
 		RADIUS = float(filter(lambda x:'RADIUS=' in x, SImeshdata)[0].strip(' \t\n\r,=RADIUS'))
@@ -517,17 +516,17 @@ for l in range(0,numfolders):
 		#endif
 
 		#clean up variables and assign required types.
-		for i in range(0,NUMMETALS-1):
-			MATERIALS[i] = MATERIALS[i].strip(',\'')
-			VRFM[i] = float(VRFM[i].strip(','))
-			VRFM2[i] = float(VRFM2[i].strip(','))
-			FREQM[i] = float(FREQM[i].strip(','))
-			FREQM2[i] = float(FREQM2[i].strip(','))
+#		for i in range(0,NUMMETALS-1):
+#			MATERIALS[i] = MATERIALS[i].strip(',\'')
+#			VRFM[i] = float(VRFM[i].strip(','))
+#			VRFM2[i] = float(VRFM2[i].strip(','))
+#			FREQM[i] = float(FREQM[i].strip(','))
+#			FREQM2[i] = float(FREQM2[i].strip(','))
 		#endfor
 
 		#Obtain useful parameters for diagnostics
-		MinFreq = min(filter(lambda a: a != 0, FREQM+FREQM2+[FREQICP]))
-		MaxFreq = max(filter(lambda x: x != 0, FREQM+FREQM2+[FREQICP]))
+#		MinFreq = min(filter(lambda a: a != 0, FREQM+FREQM2+[FREQICP]))
+#		MaxFreq = max(filter(lambda x: x != 0, FREQM+FREQM2+[FREQICP]))
 		dr.append(Radius[-1]/(R_mesh[-1]-1))
 		dz.append(Height[-1]/(Z_mesh[-1]-1))
 
@@ -2523,7 +2522,6 @@ if savefig_plot2D == True:
 			#CONVERGENCE CHECKING MOVIES -- ITERATION BASED#
 #====================================================================#
 
-
 #Plot 2D images at different iterations towards convergence from movie_icp.
 if savefig_itermovie == True:
 
@@ -2553,9 +2551,14 @@ if savefig_itermovie == True:
 			DirMovieplots = CreateNewFolder(DirConvergence,IterVariablelist[i]+'_2DConvergence/')
 
 			#Create empty image array based on mesh size and symmetry options.
-			numrows = len(IterMovieData[l][0][0])/R_mesh[l]
-			Image = np.zeros([numrows,R_mesh[l]])
-
+			try: 
+				numrows = len(IterMovieData[l][0][0])/R_mesh[l]
+				Image = np.zeros([numrows,R_mesh[l]])
+			except: 
+				print 'No Iteration Data Found For '+Dirlist[l]
+				break
+			#endtry
+			
 			#Append new list to convergenceTrends for each variable.
 			ConvergenceTrends.append(list())
 
@@ -2616,9 +2619,8 @@ if savefig_itermovie == True:
 		#Image plotting details.
 		Title = 'Convergence of '+str(IterVariablelist)+' for \n'+Dirlist[l][2:-1]
 		Xlabel,Ylabel = 'Simulation Iteration','Normalized Mesh-Average Value'
-		ImageOptions(ax,Xlabel,Ylabel,Title,Crop=False)
-		ax.legend(Legend, loc=4)
-		ax.set_ylim( 0,1.02 )
+		ImageOptions(ax,Xlabel,Ylabel,Title,Legend,Crop=False)
+		ax.set_ylim(0,1.02)
 
 		#Save figure.
 		savefig(DirConvergence+FolderNameTrimmer(Dirlist[l])+'_Convergence'+ext)
