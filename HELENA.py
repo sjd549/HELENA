@@ -319,7 +319,7 @@ print '   |  |__|  | |  |__   |  |     |  |__   |   \|  |   /  ^  \        '
 print '   |   __   | |   __|  |  |     |   __|  |  . `  |  /  /_\  \       '
 print '   |  |  |  | |  |____ |  `----.|  |____ |  |\   | /  _____  \      '
 print '   |__|  |__| |_______||_______||_______||__| \__|/__/     \__\     '
-print '                                                            v0.10.2 '
+print '                                                            v0.10.3 '
 print '--------------------------------------------------------------------'
 print ''
 print 'The following diagnostics were requested:'
@@ -1664,9 +1664,14 @@ def figure(aspectratio,subplots=1,shareX=False):
 #CropImage(ax[0],[[Rcrop],[Zcrop]]), assumes default axis.
 def CropImage(ax=plt.gca(),Extent=[]):
 
-		#Obtain default limits and change to local crop variables.
+		#Obtain default limits and rotate if needed.
 		R1,R2 = ax.get_xlim()[0],ax.get_xlim()[1]
 		Z1,Z2 = ax.get_ylim()[0],ax.get_ylim()[1]
+		if image_rotate == True: 
+			R1,Z1, R2,Z2 = Z1,R1, Z2,R2
+		#endif
+
+		#Set requested cropping limits from function-call or from global.
 		if len(Extent) == 2:
 			radialcrop,axialcrop = Extent[0],Extent[1]
 		else:
@@ -1687,7 +1692,9 @@ def CropImage(ax=plt.gca(),Extent=[]):
 		#endif
 
 		#Rotate cropping dimentions to match image rotation.
-		if image_rotate == 90 or image_rotate == True:
+		if image_rotate == 00:
+			Z1,Z2 = Z1,Z2
+		elif image_rotate == 90 or image_rotate == True:
 			R1,Z1 = Z1,R1
 			R2,Z2 = Z2,R2
 		elif image_rotate == 180 or image_rotate == False:
