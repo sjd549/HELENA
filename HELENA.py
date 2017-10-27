@@ -123,23 +123,23 @@ PR_Phase = ['S-E','S-AR+','S-AR4P','TE','PPOT']
 #====================================================================#
 
 #Requested IEDF/NEDF Variables.
-IEDFVariables = ['AR^0.25','EB-0.25','ION-TOT0.2']		#Requested iprofile_2d variables (no spaces)
-NEDFVariables = []										#Requested nprofile_2d variables (no spaces)
+IEDFVariables = []		#Requested iprofile_2d variables (no spaces)
+NEDFVariables = []		#Requested nprofile_2d variables (no spaces)
 #MSHC 
 
 #Requested movie1/movie_icp Variables.
 IterVariables = ['E','S-E','PPOT','TE']		#Requested Movie_icp (iteration) Variables.
 PhaseVariables = PR_Phase					#Requested Movie1 (phase) Variables.
-electrodeloc = [30,47]						#Centre Cell of powered electrode [R,Z]. (T,B,L,R)
+electrodeloc = [0,0]						#Centre Cell of powered electrode [R,Z]. (T,B,L,R)
 phasecycles = 1								#Number of phase cycles to be plotted.
-DoFWidth = 41								#PROES Depth of Field Cells
+DoFWidth = 1								#PROES Depth of Field Cells
 #electrodeloc	#YPR [30,47],[16,47] #SPR [0,107] #MSHC [0,12]
 #DOFWidth		#YPR 41=2cm   #MSHC 10=0.47cm
 
 #Requested TECPLOT Variables
 Variables = Ar
 MultiVar = []						#Additional variables plotted ontop of [Variables]
-radialineouts = [47] 					#Radial 1D-Profiles to be plotted (fixed Z-mesh) --
+radialineouts = [] 					#Radial 1D-Profiles to be plotted (fixed Z-mesh) --
 heightlineouts = []					#Axial 1D-Profiles to be plotted (fixed R-mesh) |
 TrendLocation = [] 					#Cell location For Trend Analysis [R,Z], ([] = min/max)
 #YPR H0;R47 #MSHC H0,20;R20
@@ -149,7 +149,7 @@ TrendLocation = [] 					#Cell location For Trend Analysis [R,Z], ([] = min/max)
 savefig_itermovie = False					#Requires movie_icp.pdt
 savefig_plot2D = True						#Requires TECPLOT2D.PDT
 
-savefig_monoprofiles = False				#Single Variables; fixed height/radius
+savefig_monoprofiles = True					#Single Variables; fixed height/radius
 savefig_multiprofiles = False				#Multi-Variables; same folder
 savefig_comparelineouts = False				#Multi-Variables; all folders
 
@@ -174,17 +174,17 @@ print_thrust = False
 #Image plotting options.
 image_extension = '.png'					#Extensions { '.png', '.jpg', '.eps' }
 image_aspectratio = [10,10]					#[x,y] in cm [Doesn't rotate dynamically]
-image_radialcrop = [0.6]					#[R,Z] in cm
-image_axialcrop = [1,4]						#[R,Z] in cm
+image_radialcrop = []						#[R,Z] in cm
+image_axialcrop = []						#[R,Z] in cm
 #YPR R[0.6];Z[1,4]   #MSHC R[0.0,1.0];Z[0.5,2.5]
 
-image_plotsymmetry = True
+image_plotsymmetry = False
 image_contourplot = True
 image_normalize = False
 image_plotgrid = False
 image_plotmesh = False						#### NOT IMPLIMENTED ####
 image_logplot = False
-image_rotate = True
+image_rotate = False
 
 
 #Write data to ASCII files.
@@ -223,16 +223,11 @@ cbaroverride = ['NotImplimented']
 #need to get seaborn introduced into the program en-masse.
 #need to introduce 'garbage collection' at the end of each diagnostic.
 #meshconvergence --> numerictrendaxis needs made for comparisons.
+#Generally rename the switchboard to increase clarity.
 
 #need to clean up the phase data in general and functionalise as much as possible.
 #need to clean up the IEDF/NEDF/EEDF sections and functionalise.
 #need to add the ability to compare IEDF/NEDF profiles between folders.
-
-
-
-#####PROBLEMS######
-#WHY Rmesh=R_mesh[l],Zmesh=Z_mesh[l] NOT WORKING FOR MULTIPLE FOLDERS???
-#AFFECTED:  PLOTAXIALPROFILE,PLOTRADIALPROFILE,IMAGEEXTRACTOR,DATAEXTENT
 
 
 
@@ -775,16 +770,16 @@ def VariableLabelMaker(variablelist):
 			Variable = 'Bulk e$^-$ Source Rate'
 			VariableUnit = '[m$^{-3}$s$^{-1}$]'
 		elif variablelist[i] == 'SEB-E':
-			Variable = '2ndry e$^-$ Source Rate'
+			Variable = 'Secondry e$^-$ Source Rate'
 			VariableUnit = '[m$^{-3}$s$^{-1}$]'
 		elif variablelist[i] == 'EB-ESORC':
-			Variable = '2ndry e$^-$ Relaxation Rate'
+			Variable = 'Secondry e$^-$ Relaxation Rate'
 			VariableUnit = '[m$^{-3}$s$^{-1}$]'
 		elif variablelist[i] == 'S-AR+':
 			Variable = 'Bulk Ar+ Ionization Rate'
 			VariableUnit = '[m$^{-3}$s$^{-1}$]'
 		elif variablelist[i] == 'SEB-AR+':
-			Variable = '2ndry Ar+ Ionization Rate'
+			Variable = 'Secondry Ar+ Ionization Rate'
 			VariableUnit = '[m$^{-3}$s$^{-1}$]'
 
 		#Explicit Species Temperatures.
@@ -1761,6 +1756,7 @@ def ImageOptions(ax=plt.gca(),Xlabel='',Ylabel='',Title='',Legend=[],Crop=True):
 			CropImage(ax)
 		#endif
 	#endif
+
 	return()
 #enddef
 
