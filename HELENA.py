@@ -96,16 +96,21 @@ O2 = ['O2','O2+','O','O+','O-','E','TE','P-POT','TG-AVE','PRESSURE','EF-TOT','PO
 ArO2 = Ar+O2
 
 MSHC_PCMC = ['AR^0.5S','EB-0.5S','ION-TOT0.5S','AR^1.1B','EB-1.1B','ION-TOT1.1B']
-PR_PCMC = ['AR^0.25','EB-0.25','ION-TOT0.2']
+PR_PCMC = ['AR^0.25','EB-0.25','ION-TOT0.25']
 
 MSHC_Phase = ['S-E','S-AR+','S-AR4P','TE','PPOT']
 PR_Phase = ['S-E','S-AR+','S-AR4P','TE','PPOT']
+PR_Phase2 = ['S-E','S-AR+','SEB-AR+','SEB-AR4P','SRCE-2437','TE','PPOT']
 
 
 
 #Paper Trend Locations
-#SDoyle2017a: dz(5.50/118), dr(2.55/102) height=[24,43], Trend=[19]
-#SDoyle2017b: PROES, (Z=1.52,2.3,3.23) radialineouts = [31,47,66]
+#SDoyle2017a: 
+#dz(5.50/118), dr(2.55/102) height=[24,43], Trend=[19]
+
+#SDoyle2017b: 
+#PROES, (Z=1.52,2.3,3.23) radialineouts = [31,47,66]
+#Dielectric locations: [16,31],[16,47],[16,66]
 
         
         
@@ -123,15 +128,17 @@ PR_Phase = ['S-E','S-AR+','S-AR4P','TE','PPOT']
 #====================================================================#
 
 #Requested IEDF/NEDF Variables.
-IEDFVariables = []		#Requested iprofile_2d variables (no spaces)
+IEDFVariables = PR_PCMC		#Requested iprofile_2d variables (no spaces)
 NEDFVariables = []		#Requested nprofile_2d variables (no spaces)
 #MSHC 
 
 #Requested movie1/movie_icp Variables.
 IterVariables = ['E','S-E','PPOT','TE']		#Requested Movie_icp (iteration) Variables.
 PhaseVariables = PR_Phase					#Requested Movie1 (phase) Variables.
-electrodeloc = [0,0]						#Centre Cell of powered electrode [R,Z]. (T,B,L,R)
-phasecycles = 1								#Number of phase cycles to be plotted.
+electrodeloc = [30,47]						#Cell location of powered electrode [R,Z].
+waveformlocs = [[1,31],[1,47],[1,66]]		#Cell location of additional waveforms [R,Z].
+
+phasecycles = 2								#Number of phase cycles to be plotted.
 DoFWidth = 1								#PROES Depth of Field Cells
 #electrodeloc	#YPR [30,47],[16,47] #SPR [0,107] #MSHC [0,12]
 #DOFWidth		#YPR 41=2cm   #MSHC 10=0.47cm
@@ -139,7 +146,7 @@ DoFWidth = 1								#PROES Depth of Field Cells
 #Requested TECPLOT Variables
 Variables = Ar
 MultiVar = []						#Additional variables plotted ontop of [Variables]
-radialineouts = [] 					#Radial 1D-Profiles to be plotted (fixed Z-mesh) --
+radialineouts = [31,47,66] 				#Radial 1D-Profiles to be plotted (fixed Z-mesh) --
 heightlineouts = []					#Axial 1D-Profiles to be plotted (fixed R-mesh) |
 TrendLocation = [] 					#Cell location For Trend Analysis [R,Z], ([] = min/max)
 #YPR H0;R47 #MSHC H0,20;R20
@@ -147,15 +154,15 @@ TrendLocation = [] 					#Cell location For Trend Analysis [R,Z], ([] = min/max)
 
 #Requested plotting routines.
 savefig_itermovie = False					#Requires movie_icp.pdt
-savefig_plot2D = True						#Requires TECPLOT2D.PDT
+savefig_plot2D = False						#Requires TECPLOT2D.PDT
 
-savefig_monoprofiles = True					#Single Variables; fixed height/radius
+savefig_monoprofiles = False				#Single Variables; fixed height/radius
 savefig_multiprofiles = False				#Multi-Variables; same folder
 savefig_comparelineouts = False				#Multi-Variables; all folders
 
-savefig_phaseresolvelines = False			#1D Phase Resolved Images
-savefig_phaseresolve2D = False				#2D Phase Resolved Images
-savefig_sheathdynamics = False				#PROES style images
+savefig_phaseresolve1D = True				#1D Phase Resolved Images
+savefig_phaseresolve2D = True				#2D Phase Resolved Images
+savefig_PROES = False						#Phase-Resolved 2D Images
 
 savefig_IEDF = False						#IN DEVELOPMENT, WORKS BUT UNRELIABLE.
 savefig_EEDF = False						#IN DEVELOPMENT, NO PLOTTING ROUTINE.
@@ -164,7 +171,7 @@ savefig_EEDF = False						#IN DEVELOPMENT, NO PLOTTING ROUTINE.
 #Steady-State diagnostics and terminal outputs.
 savefig_trendcomparison = False
 print_meshconvergence = False				#Make More General: <_numerictrendaxis>
-print_generaltrends = False
+print_generaltrends = False					#Verbose Min/Max Trend Output.
 print_Knudsennumber = False
 print_totalpower = False
 print_DCbias = False
@@ -174,17 +181,17 @@ print_thrust = False
 #Image plotting options.
 image_extension = '.png'					#Extensions { '.png', '.jpg', '.eps' }
 image_aspectratio = [10,10]					#[x,y] in cm [Doesn't rotate dynamically]
-image_radialcrop = []						#[R,Z] in cm
-image_axialcrop = []						#[R,Z] in cm
+image_radialcrop = [0.6]						#[R,Z] in cm
+image_axialcrop = [1,4]						#[R,Z] in cm
 #YPR R[0.6];Z[1,4]   #MSHC R[0.0,1.0];Z[0.5,2.5]
 
-image_plotsymmetry = False
+image_plotsymmetry = True
 image_contourplot = True
 image_normalize = False
 image_plotgrid = False
 image_plotmesh = False						#### NOT IMPLIMENTED ####
 image_logplot = False
-image_rotate = False
+image_rotate = True
 
 
 #Write data to ASCII files.
@@ -314,7 +321,7 @@ print '   |  |__|  | |  |__   |  |     |  |__   |   \|  |   /  ^  \        '
 print '   |   __   | |   __|  |  |     |   __|  |  . `  |  /  /_\  \       '
 print '   |  |  |  | |  |____ |  `----.|  |____ |  |\   | /  _____  \      '
 print '   |__|  |__| |_______||_______||_______||__| \__|/__/     \__\     '
-print '                                                            v0.10.3 '
+print '                                                            v0.10.4 '
 print '--------------------------------------------------------------------'
 print ''
 print 'The following diagnostics were requested:'
@@ -323,9 +330,9 @@ if savefig_plot2D == True:
 	print'# 2D Steady-State Image Processing'
 if savefig_itermovie == True:
 	print'# 2D Convergence Movie Processing'
-if savefig_phaseresolve2D == True:
+if True in [savefig_phaseresolve2D,savefig_PROES] == True:
 	print'# 2D Phase Resolved Movie Processing'
-if True in [savefig_phaseresolvelines,savefig_sheathdynamics]:
+if True in [savefig_phaseresolve1D]:
 	print'# 1D Phase Resolved Profile Processing'
 if True in [savefig_monoprofiles,savefig_multiprofiles,savefig_comparelineouts]:
 	print'# 1D Steady-State Profile Processing'
@@ -568,9 +575,9 @@ def VariableEnumerator(Variables,Rawdata,Header):
 
 			#Compare variables and if they match, add to the process list.
 			#Default uses [1:-3] slice for the variable string.
-			if Variables[j] == Rawdata[i].replace(" ", "")[1:-3]:
+			if Variables[j] == Rawdata[i].strip(' ,"\n').replace(' ',''):
 				processlist.append(i)
-				variablelist.append(Rawdata[i].replace(" ", "")[1:-3])
+				variablelist.append(Rawdata[i].strip(' ,"\n').replace(' ',''))
 				break
 			#endif
 		#endfor
@@ -642,11 +649,11 @@ def ExtractRawData(Dirlist,NameString,ListIndex=l):
 
 #Takes ASCII data in 2/3D format and converts to HELENA friendly structure.
 #Requires rawdata(2D/3D), header and variable number and mesh dimensions.
+#Allows for an optional offset in 'starting' variable number.
 #Returns 2D array of form [Variables,datapoint(R,Z)]
 #CurrentFolderData = SDFileFormatConvertorHPEM(rawdata_2D[l],header_2D,numvariables_2D)
-def SDFileFormatConvertorHPEM(Rawdata,header,numvariables,Zmesh=0,Rmesh=0):
+def SDFileFormatConvertorHPEM(Rawdata,header,numvariables,offset=0,Zmesh=0,Rmesh=0):
 
-	#WHY Rmesh=R_mesh[l],Zmesh=Z_mesh[l] NOT WORKING????
 	#If no mesh sizes supplied, collect sizes for current global folder.
 	if Rmesh == 0 or Zmesh == 0:
 		Rmesh,Zmesh = R_mesh[l],Z_mesh[l]
@@ -669,9 +676,11 @@ def SDFileFormatConvertorHPEM(Rawdata,header,numvariables,Zmesh=0,Rmesh=0):
 	#endfor
 
 	#Seperate total 1D array into 2D array with data for each variable.
+	#Offset data by a certain number of variable 'chunks' if requested.
+	offset = (Rmesh*Zmesh)*offset	   #Convert from variables to rows.
 	for i in range(0,numvariables):
-		numstart = (Zmesh*Rmesh)*(i)
-		numend = (Zmesh*Rmesh)*(i+1)
+		numstart = (Zmesh*Rmesh)*(i)+offset
+		numend = (Zmesh*Rmesh)*(i+1)+offset
 		CurrentFolderData.append(list(DataArray1D[numstart:numend]))
 	#endfor
 
@@ -875,6 +884,9 @@ def VariableLabelMaker(variablelist):
 		elif IsStringInVariable(variablelist[i],Ionizationlist) == True:
 			Variable = variablelist[i]
 			VariableUnit = '[m$^{-3}$s$^{-1}$]'
+		elif IsStringInVariable(variablelist[i],['SRCE-']) == True:
+			Variable = Variablelist[i]
+			VariableUnit = '[m$^{-3}$s$^{-1}$]'
 		elif IsStringInVariable(variablelist[i],['T-']) == True:
 			Variable = variablelist[i]
 			VariableUnit = '[K]'
@@ -1025,9 +1037,8 @@ def CreateNewFolder(Dir,DirString):
 
 #Takes folder names and returns item after requested underscore index.
 #Note, index > 1 will return between two underscores, not the entire string.
-def FolderNameTrimmer(DirString):
+def FolderNameTrimmer(DirString,Index=1):
 	try:
-		Index = 1
 		for i in range(0,Index):
 			underscoreloc = str(DirString[::-1]).index('_')
 			cutoff = (len(DirString)-underscoreloc)
@@ -1035,8 +1046,9 @@ def FolderNameTrimmer(DirString):
 			DirString = DirString[:cutoff-1]
 		#endfor
 	except:
-		NameString = str(DirString[2:])
+		NameString = str(DirString[2:-1])
 	#endtry
+
 	return(NameString)
 #enddef
 
@@ -1338,7 +1350,7 @@ for l in tqdm(range(0,numfolders)):
 #===================##===================#
 #===================##===================#
 
-	if True in [savefig_phaseresolve2D,savefig_phaseresolvelines,savefig_sheathdynamics]:
+	if True in [savefig_phaseresolve2D,savefig_phaseresolve1D,savefig_PROES]:
 
 		#Load data from movie_icp file and unpack into 1D array.
 		rawdata,nn_phasemovie = ExtractRawData(Dir,'movie1.pdt',l)
@@ -1346,19 +1358,21 @@ for l in tqdm(range(0,numfolders)):
 
 		#Read through all variables for each file and stop when list ends. 
 		#Movie1 has geometry at top, therefore len(header) != len(variables).
-		VariableEndMarker,HeaderEndMarker,SaveVariable = 'GEOMETRY','ZONE',True
-#		Variablelist = ['Radius','Height']
-		Variablelist = list()
+		VariableEndMarker,HeaderEndMarker = 'GEOMETRY','ZONE'
+#		Variablelist = ['Radius','Height']		#NewMethod
+		Variablelist = list()					#OldMethod
 		for i in range(2,nn_phasemovie):
 			if HeaderEndMarker in str(rawdata_phasemovie[l][i]): 
 				header_phase = i+2
 				break
 			if VariableEndMarker in str(rawdata_phasemovie[l][i]):
-				SaveVariable = False
-			elif SaveVariable == True and len(rawdata_phasemovie[l][i]) > 1: 
+#				NumVariables = (i-1)	#Including R,Z		#NewMethod
+				NumVariables = (i-3)	#Not Including R,Z	#OldMethod
+			if len(rawdata_phasemovie[l][i]) > 1: 
 				Variablelist.append(str(rawdata_phasemovie[l][i][:-2].strip(' \t\n\r\"')))
 			#endif
 		#endfor
+		Variablelist = Variablelist[0:NumVariables]	#Keep Variables up till 'GEOMETRY'
 		numvariables_phase = len(Variablelist)
 		header_phasemovie.append(header_phase)
 
@@ -1377,6 +1391,9 @@ for l in tqdm(range(0,numfolders)):
 		OldMethod = True
 		if OldMethod == False:
 
+			#Fudged numbers until the icp.nam dictionary is fixed.
+			NUMPHASE = 180
+
 			#Rough method of obtaining the movie1.pdt cycle locations for data extraction.
 			Cyclelocations = list()
 			for j in range(0,len(rawdata_phasemovie[l])):
@@ -1388,7 +1405,7 @@ for l in tqdm(range(0,numfolders)):
 			#Cycle through all phases for current datafile, appending per cycle.
 			CurrentFolderData,CurrentFolderPhaselist = list(),list()
 			for i in range(0,NUMPHASE):
-				CurrentPhaseData = SDFileFormatConvertorHPEM(rawdata_phasemovie[l],Cyclelocations[i],numvariables_phase,2)
+				CurrentPhaseData = SDFileFormatConvertorHPEM(rawdata_phasemovie[l],Cyclelocations[i],numvariables_phase,offset=2)
 
 				CurrentFolderPhaselist.append('CYCL = '+str(i+1))
 				CurrentFolderData.append(CurrentPhaseData)
@@ -1397,8 +1414,14 @@ for l in tqdm(range(0,numfolders)):
 			PhaseMovieData.append(CurrentFolderData)
 		#endif
 
+			#========== NOTES ==========#
+			#Inclusion of the optional 'offset' allows for saving of R,Z but offseting of data.
+			#Maybe not offset the data and figure out how to change the diagnostics to reflect 
+			#this change and allow the phasedata to work in the same way as the 2D data.
+
 			Test = True
 			if Test == True:
+				#[Folder][Phase][Variable][Data]
 				print len(PhaseMovieData), numfolders
 				print len(PhaseMovieData[0]), NUMPHASE
 				print len(PhaseMovieData[0][0]), len(Variablelist)
@@ -1494,9 +1517,9 @@ for l in tqdm(range(0,numfolders)):
 
 
 #Create global list of all variable names and find shortest list.
-for m in range(0,numfolders):
+for l in range(0,numfolders):
 	#Alphabetize the Variablelist and keep global alphabetized list.
-	tempvarlist = VariableEnumerator(Variables,rawdata_2D[m],header_2Dlist[m])[1]
+	tempvarlist = VariableEnumerator(Variables,rawdata_2D[l],header_2Dlist[l])[1]
 	tempvarlist = sort(tempvarlist)
 	numvars = len(tempvarlist)
 
@@ -1523,7 +1546,7 @@ del Energy,Fe,rawdata_mcs
 
 
 #Alert user that readin process has ended and continue with selected diagnostics.
-if any([savefig_plot2D, savefig_phaseresolve2D, savefig_itermovie, savefig_monoprofiles, savefig_multiprofiles, savefig_comparelineouts, savefig_phaseresolvelines, savefig_sheathdynamics, savefig_trendcomparison, print_generaltrends, print_Knudsennumber, print_totalpower, print_DCbias, print_thrust, savefig_IEDF, savefig_EEDF]) == True:
+if any([savefig_plot2D, savefig_phaseresolve2D, savefig_itermovie, savefig_monoprofiles, savefig_multiprofiles, savefig_comparelineouts, savefig_phaseresolve1D, savefig_PROES, savefig_trendcomparison, print_generaltrends, print_Knudsennumber, print_totalpower, print_DCbias, print_thrust, savefig_IEDF, savefig_EEDF]) == True:
 	print '----------------------------------------'
 	print 'Data Readin Complete, Starting Analysis:'
 	print '----------------------------------------'
@@ -2127,43 +2150,23 @@ def PlotAxialProfile(Data,process,variable,lineout,Rmesh=0,Zmesh=0,Isym=0):
 
 
 
-#Locate powered electrode for bias extraction.
+#Convert cell location for use with WaveformExtractor function.
 #Returns mesh location based on input string or [R,Z] list.
-def ElectrodeLoc(location,data):
+#Rcell,Zcell = Waveformloc(electrodeloc,'Phase')
+def WaveformLoc(location,origintype):
 
-	#Check for string reference to powered electrode location.
-	if isinstance(location[0], basestring) == True:
-		#Upper Central Electrode.
-		if location[0] == 'T':
-			RlineoutLoc = 0
-			ZlineoutLoc = R_mesh[l]/2
-		#RHSCenterEdge electrode.
-		elif location[0] == 'R':
-			RlineoutLoc = Z_mesh[l]/2
-			ZlineoutLoc = R_mesh
-		#LHSCenterEdge electrode.
-		elif location[0] == 'L':
-			RlineoutLoc = Z_mesh[l]/2
-			ZlineoutLoc = 0
-		#Bottom Central Electrode.
-		if location[0] == 'B':
-			RlineoutLoc = Z_mesh[l]-1
-			ZlineoutLoc = R_mesh[l]/2
-
-	#If integer reference found: convert, else default location (CentralTopCell)
-	elif isinstance(location[0], basestring) == False:
-		#if data is from movie1, Zaxis is back to front.
-		if len(location) == 2 and data == 'Phase':
-			RlineoutLoc = (Z_mesh[l]-location[1])-1
-			ZlineoutLoc = location[0]
-		#if data is from TECPLOT2D, Zaxis is correct orientation.
-		elif len(location) == 2 and data == '2D':
-			RlineoutLoc = location[1]
-			ZlineoutLoc = location[0]
-		else:
-			RlineoutLoc = Z_mesh[l]/2
-			ZlineoutLoc = 0
-		#endif
+	#if data is from movie1, Zaxis is back to front.
+	if len(location) == 2 and origintype == 'Phase':
+		RlineoutLoc = (Z_mesh[l]-location[1])-1
+		ZlineoutLoc = location[0]
+	#if data is from TECPLOT2D, Zaxis is correct orientation.
+	elif len(location) == 2 and origintype == '2D':
+		RlineoutLoc = location[1]
+		ZlineoutLoc = location[0]
+	else:
+		RlineoutLoc = Z_mesh[l]/2
+		ZlineoutLoc = 0
+	#endif
 
 	return(RlineoutLoc,ZlineoutLoc)
 #enddef
@@ -2177,13 +2180,13 @@ def ElectrodeLoc(location,data):
 
 #Takes phasedata for current folder and PPOT process number.
 #Returns two arrays: VoltageWaveform at electrode location and average waveform.
-#VoltageWaveform,WaveformBias = WaveformExtractor(PhaseMovieData[l],PPOT)
-def WaveformExtractor(PhaseData,PPOT,OriginType='Phase'):
+#VoltageWaveform,WaveformBias = WaveformExtractor(PhaseMovieData[l],PPOT,waveformlocs[0])
+def WaveformExtractor(PhaseData,PPOT,waveformlocation=electrodeloc):
 
 	#Create required lists and extract electrode location.
 	VoltageWaveform,WaveformBias = list(),list()
-	RLoc = ElectrodeLoc(electrodeloc,OriginType)[0]
-	ZLoc = ElectrodeLoc(electrodeloc,OriginType)[1]
+	RLoc = WaveformLoc(waveformlocation,'Phase')[0]
+	ZLoc = WaveformLoc(waveformlocation,'Phase')[1]
 
 	#Obtain applied voltage waveform, Refresh list between folders if needed.
 	for j in range(0,phasecycles):
@@ -2294,15 +2297,17 @@ def MinMaxTrends(lineout,Orientation,process):
 		try: MinValueTrend.append(min(Profile))
 		except: MinValueTrend.append(float('NaN'))
 		#endtry
-	#endfor
 
-	#Display Min/Max value trends to terminal if requested.
-	if print_generaltrends == True:
-		print VariableLabelMaker(Variablelist)[p]
-		print Orientation+'Maximum: ', round(max(MaxValueTrend), 5)
-		print Orientation+'Minimum: ', round(min(MinValueTrend), 5)
-		print ''
-	#endif
+		#Display Min/Max value trends to terminal if requested.
+		if print_generaltrends == True:
+			VariableName = VariableLabelMaker(Variablelist)[p]
+			print FolderNameTrimmer(Dirlist[l])
+			print VariableName+' '+Orientation+'Maximum: ', round(max(MaxValueTrend), 5)
+			print VariableName+' '+Orientation+'Minimum: ', round(min(MinValueTrend), 5)
+		if print_generaltrends == True and l == numfolders-1:
+			print ''
+		#endif
+	#endfor
 
 	#Normalize to maximum value in each profile if required.
 	if image_normalize == True:
@@ -2327,9 +2332,9 @@ def DCbiasMagnitude(PPOTlineout):
 
 	#Identify if radial or axial.
 	if len(PPOTlineout) == Z_mesh[l]:
-		electrodelocation = electrodeloc[1]
+		electrodelocation = WaveformLoc(electrodeloc,'2D')[1]
 	elif len(PPOTlineout) in [R_mesh[l],R_mesh[l]*2]:
-		electrodelocation = electrodeloc[0]
+		electrodelocation = WaveformLoc(electrodeloc,'2D')[0]
 	#endif
 
 	#Identify Min/Max Potential magnitudes and location of max potential.
@@ -2411,6 +2416,7 @@ def DCbiasMagnitude(PPOTlineout):
 		plt.xlabel('Cell Number')
 		plt.ylabel('Voltage [V]')
 		plt.legend(['PreBulk','PostBulk','Bulk'])
+		plt.title('DCBIAS_DEBUG'+str(l+electrodelocation))
 		plt.savefig(DirTrends+'DCBIAS_DEBUG'+str(l+electrodelocation)+'.png')
 		plt.close('all')
 	#endif
@@ -2719,9 +2725,15 @@ if savefig_monoprofiles == True:
 
 					#Plot all requested radial lines on single image per variable.
 					Rlineout=PlotRadialProfile(Data[l],processlist[i],Variablelist[i],radialineouts[j])
-
 					#Plot lines for each variable at each requested slice.
 					ImagePlotter1D(Rlineout,Raxis,image_aspectratio,fig,ax)
+
+					#Write data to ASCII files if requested.
+					if write_lineouts == True:
+						SaveString = '_R='+str(round((radialineouts[j])*dz[l], 2))+'cm'
+						DirWrite = CreateNewFolder(DirRlineouts, 'Radial_Data')
+						WriteDataToFile([Raxis,Rlineout], DirWrite+Variablelist[i]+SaveString)
+					#endif
 				#endfor
 
 				#Apply image options and axis labels.
@@ -2750,15 +2762,21 @@ if savefig_monoprofiles == True:
 				fig,ax = figure(image_aspectratio,1)
 
 				for j in range(0,len(heightlineouts)):
-					#Plot all requested radial lines on single image per variable.
-					Zlineout=PlotAxialProfile(Data[l],processlist[i],Variablelist[i],heightlineouts[j])
-
-					#Plot lines for each variable at each requested slice.
-					ImagePlotter1D(Zlineout[::-1],Zaxis,image_aspectratio,fig,ax)
-
 					#Perform SI conversion and save to legend.
 					if len(Legendlist) < len(heightlineouts):
 						Legendlist.append('R='+str(round(heightlineouts[j]*dr[l], 2))+' cm')
+					#endif
+
+					#Plot all requested radial lines on single image per variable.
+					Zlineout=PlotAxialProfile(Data[l],processlist[i],Variablelist[i],heightlineouts[j])
+					#Plot lines for each variable at each requested slice.
+					ImagePlotter1D(Zlineout[::-1],Zaxis,image_aspectratio,fig,ax)
+
+					#Write data to ASCII files if requested.
+					if write_lineouts == True:
+						SaveString = '_Z='+str(round((heightlineouts[j])*dr[l], 2))+'cm'
+						DirWrite = CreateNewFolder(DirZlineouts, 'Axial_Data')
+						WriteDataToFile([Zaxis,Zlineout], DirWrite+Variablelist[i]+SaveString)
 					#endif
 				#endfor
 
@@ -2903,7 +2921,7 @@ if savefig_comparelineouts == True:
 
 				#Write data to ASCII files if requested.
 				if write_lineouts == True and l == 0:
-					WriteFolder = 'R='+str(round((heightlineouts[j])*dr[l], 2))+'cm Data'
+					WriteFolder = 'R='+str(round((heightlineouts[j])*dr[l], 2))+'cm_Data'
 					DirWrite = CreateNewFolder(DirComparisons, WriteFolder)
 					try: os.remove(DirWrite+Variablelist[k])
 					except: a=1
@@ -2997,7 +3015,6 @@ if savefig_multiprofiles == True:
 					#Save figures in original folder.
 					R = 'R='+str(round((heightlineouts[j])*dr[l], 2))+'_'
 					plt.savefig(DirZlineouts+R+Variablelist[i]+'_MultiProfiles'+ext)
-					plt.close(fig)
 					plt.close('all')
 				#endfor
 			#endfor
@@ -3053,7 +3070,6 @@ if savefig_multiprofiles == True:
 					#Save lines in previously created folder.
 					Z = 'Z='+str(round((radialineouts[j])*dz[l], 2))+'_'
 					plt.savefig(DirRlineouts+Z+Variablelist[i]+'_MultiProfiles'+ext)
-					plt.close(fig)
 					plt.close('all')
 				#endfor
 			#endfor
@@ -3115,7 +3131,7 @@ if savefig_IEDF == True:
 	for l in range(0,numfolders):
 
 		#Create new folder for keeping EEDF/IEDF if required.
-		DirEDF = CreateNewFolder(Dirlist[l],'EDFPlots')
+		DirEDF = CreateNewFolder(Dirlist[l],'EDFplots')
 
 		#Create processlist for requested EDF species and extract images.
 		processlist,Variablelist = VariableEnumerator(IEDFVariables,rawdata_IEDF[l],header_IEDFlist[l])
@@ -3375,8 +3391,8 @@ if savefig_trendcomparison == True or print_DCbias == True:
 		Xaxis.append( FolderNameTrimmer(Dirlist[l]) )
 
 		#Locate powered electrode for bias extraction.
-		Rlineoutloc = ElectrodeLoc(electrodeloc,'2D')[0]
-		Zlineoutloc = ElectrodeLoc(electrodeloc,'2D')[1]
+		Rlineoutloc = WaveformLoc(electrodeloc,'2D')[0]
+		Zlineoutloc = WaveformLoc(electrodeloc,'2D')[1]
 
 		#Obtain radial and axial profiles for further processing.
 		try: Rlineout = PlotRadialProfile(Data[l],Process[0],Variable[0],Rlineoutloc,R_mesh[l],  Isymlist[l])
@@ -3860,13 +3876,14 @@ if any([savefig_trendcomparison, print_generaltrends, print_Knudsennumber, print
 if savefig_phaseresolve2D == True:
 
 	#Initialize required lists.
-	VoltageWaveform = list()
+	VoltageWaveforms,WaveformBiases,VariedValuelist = list(),list(),list()
 
 	#for all folders being processed.
 	for l in range(0,numfolders):
 
 		#Create global folder to keep output plots and collect graph title.
 		DirPhaseResolved = CreateNewFolder(Dirlist[l],'2DPhase/')
+		VariedValuelist.append( FolderNameTrimmer(Dirlist[l]) )
 
 		#Create processlist for each folder as required. (Always get PPOT)
 		Processlist,Variablelist = VariableEnumerator(PhaseVariables,rawdata_phasemovie[l],header_phasemovie[l])
@@ -3884,25 +3901,39 @@ if savefig_phaseresolve2D == True:
 
 		#=============#
 
-		#Extract waveform from desired electrode location.
-		VoltageWaveform,WaveformBias = WaveformExtractor(PhaseMovieData[l],PPOT)
+		#Extract waveforms from desired electrode locations.
+		for j in range(0,len(waveformlocs)):
+			VoltageWaveforms.append(WaveformExtractor(PhaseMovieData[l],PPOT,waveformlocs[j])[0])
+			WaveformBiases.append(WaveformExtractor(PhaseMovieData[l],PPOT,waveformlocs[j])[1])
+		#endfor
+		ElectrodeWaveform,ElectrodeBias = WaveformExtractor(PhaseMovieData[l],PPOT)
 
 		#Plot the phase-resolved waveform.
 		fig,ax = figure(image_aspectratio,1)
-		ax.plot(Phaseaxis,VoltageWaveform, lw=2)
-		ax.plot(Phaseaxis,WaveformBias, 'k--', lw=2)
+
+		ax.plot(Phaseaxis,ElectrodeWaveform, lw=2)
+		for j in range(0,len(waveformlocs)): 
+			ax.plot(Phaseaxis,VoltageWaveforms[j], lw=2)
+			#ax.plot(Phaseaxis,WaveformBiases[j], 'k--', lw=2)
+		#endfor
+		#ax.plot(Phaseaxis,ElectrodeBias, 'k--', lw=2)
+
 		Title = 'Phase-Resolved Voltage Waveform for '+FolderNameTrimmer(Dirlist[l])
-		Legend = ['rf self-bias: '+str(round(WaveformBias[0],2))+'V']
+		Legend = ['rf self-bias: '+str(round(ElectrodeBias[0],2))+'V']
 		Xlabel,Ylabel = 'Phase [$\omega$t/2$\pi$]','Electrode Potential [V]'
 		ImageOptions(ax,Xlabel,Ylabel,Title,Legend,Crop=False)
 
-		plt.savefig(DirPhaseResolved+FolderNameTrimmer(Dirlist[l])+' Waveform'+ext)
+		plt.savefig(DirPhaseResolved+VariedValuelist[l]+' Waveform'+ext)
 		plt.close('all')
 
 		#Write PROES data in ASCII format if required.
 		if write_phaseresolve == True:
+			ASCIIWaveforms = [Phaseaxis,ElectrodeWaveform]
+			for j in range(0,len(waveformlocs)):
+				ASCIIWaveforms.append(VoltageWaveforms[j])
+			#endfor
 			DirASCIIPhase = CreateNewFolder(DirPhaseResolved,'2DPhase_Data')
-			WriteDataToFile([Phaseaxis,VoltageWaveform], DirASCIIPhase+'VoltageWaveforms')
+			WriteDataToFile(ASCIIWaveforms, DirASCIIPhase+'VoltageWaveforms')
 		#endif
 
 		#===============#
@@ -3951,7 +3982,7 @@ if savefig_phaseresolve2D == True:
 				cax = Colourbar(ax[0],Ylabel[i],5,Norm=[MinNormalize,MaxNormalize])
 
 				#Plot waveform and apply image options.
-				ax[1].plot(Phaseaxis, VoltageWaveform, lw=2)
+				ax[1].plot(Phaseaxis, ElectrodeWaveform, lw=2)
 				ax[1].axvline(Phaseaxis[j], color='k', linestyle='--', lw=2)
 				Xlabel,Ylabel = 'Phase [$\omega$t/2$\pi$]','Electrode Potential [V]'
 				ImageOptions(ax[1],Xlabel,Ylabel,Crop=False)
@@ -3964,10 +3995,12 @@ if savefig_phaseresolve2D == True:
 				savefig(DirMovieplots+Variablelist[i]+'_'+Number+ext)
 				plt.close('all')
 
-				#Write PROES data in ASCII format if required.
+
+				#Write Phase data in ASCII format if required.
 				if write_phaseresolve == True:
-					SaveString = DirASCIIPhase+Variablelist[i]+'_'+str(Moviephaselist[l][j])
 					DirASCIIPhase = CreateNewFolder(DirPhaseResolved,'2DPhase_Data')
+					Cycle = str( Moviephaselist[l][j].replace(" ", "") )
+					SaveString = DirASCIIPhase+Variablelist[i]+'_'+Cycle
 					WriteDataToFile(Image, SaveString)
 				#endif
 			#endfor
@@ -3987,20 +4020,200 @@ if savefig_phaseresolve2D == True:
 
 
 #====================================================================#
-			#PHASE RESOLVED PROFILES & SHEATH DYNAMICS (PROES)#
+						#1D PHASE RESOLVED MOVIES#
 #====================================================================#
 
 #Plot Phase-Resolved profiles with electrode voltage and requested variables.
-if savefig_phaseresolvelines == True or savefig_sheathdynamics == True:
+if savefig_phaseresolve1D == True:
 
 	#Tnitiate any required lists.
-	VoltageWaveform,VariedValuelist = list(),list()
+	VoltageWaveforms,WaveformBiases,VariedValuelist = list(),list(),list()
 
 	#for all folders.
 	for l in range(0,numfolders):
 
-		#Create global folder to keep output plots and collect graph title.
-		DirPhaseResolved = CreateNewFolder(Dirlist[l],'PhaseResolved_profiles/')
+		#Create global folders to keep output plots and collect graph title.
+		DirPhaseResolved = CreateNewFolder(Dirlist[l],'1DPhase/')
+		VariedValuelist.append( FolderNameTrimmer(Dirlist[l]) )
+
+		#Create processlist for each folder as required. (Always get PPOT)
+		Processlist,Variablelist = VariableEnumerator(PhaseVariables,rawdata_phasemovie[l],header_phasemovie[l])
+		PPOT = VariableEnumerator(['PPOT'],rawdata_phasemovie[l],header_phasemovie[l])[0][0]
+
+		#Subtract 2 from process as variables R&Z are not saved properly in phasedata.
+		for i in range(0,len(Processlist)): Processlist[i] -= 2
+		PPOT -= 2
+
+		#Generate SI scale axes for lineout plots. ([omega*t/2pi] and [cm] respectively)
+		Phaseaxis = GenerateAxis('Phase',Isymlist[l],Moviephaselist[l])
+		Raxis = GenerateAxis('Radial',Isymlist[l])
+		Zaxis = GenerateAxis('Axial',Isymlist[l])
+
+
+		#=============#
+
+		#Extract waveforms from desired electrode locations.
+		for j in range(0,len(waveformlocs)):
+			VoltageWaveforms.append(WaveformExtractor(PhaseMovieData[l],PPOT,waveformlocs[j])[0])
+			WaveformBiases.append(WaveformExtractor(PhaseMovieData[l],PPOT,waveformlocs[j])[1])
+		#endfor
+		ElectrodeWaveform,ElectrodeBias = WaveformExtractor(PhaseMovieData[l],PPOT)
+
+		#Plot the phase-resolved waveform.
+		fig,ax = figure(image_aspectratio,1)
+
+		ax.plot(Phaseaxis,ElectrodeWaveform, lw=2)
+		for j in range(0,len(waveformlocs)): 
+			ax.plot(Phaseaxis,VoltageWaveforms[j], lw=2)
+			#ax.plot(Phaseaxis,WaveformBiases[j], 'k--', lw=2)
+		#endfor
+		#ax.plot(Phaseaxis,ElectrodeBias, 'k--', lw=2)
+
+		Title = 'Phase-Resolved Voltage Waveform for '+FolderNameTrimmer(Dirlist[l])
+		Legend = ['rf self-bias: '+str(round(ElectrodeBias[0],2))+'V']
+		Xlabel,Ylabel = 'Phase [$\omega$t/2$\pi$]','Electrode Potential [V]'
+		ImageOptions(ax,Xlabel,Ylabel,Title,Legend,Crop=False)
+
+		plt.savefig(DirPhaseResolved+VariedValuelist[l]+' Waveform'+ext)
+		plt.close('all')
+
+		#Write waveform data in ASCII format if required.
+		if write_phaseresolve == True:
+			ASCIIWaveforms = [Phaseaxis,ElectrodeWaveform]
+			for j in range(0,len(waveformlocs)):
+				ASCIIWaveforms.append(VoltageWaveforms[j])
+			#endfor
+			DirASCIIPhase = CreateNewFolder(DirPhaseResolved,'1DPhase_Data')
+			WriteDataToFile(ASCIIWaveforms, DirASCIIPhase+'VoltageWaveforms')
+		#endif
+
+		#==============#
+
+
+		#for all requested variables.
+		for i in tqdm(range(0,len(Processlist))):
+
+			#Refresh lineout lists between variables.
+			Lineouts,LineoutsOrientation = list(),list()
+
+			#Concatinate all requested lineouts together, keeping seperate orientation.
+			for m in range(0,len(radialineouts)):
+				Lineouts.append(radialineouts[m])
+				LineoutsOrientation.append('Radial')
+			for m in range(0,len(heightlineouts)):
+				Lineouts.append(heightlineouts[m])
+				LineoutsOrientation.append('Axial')
+
+			#For all requested lineouts and orientations.
+			for k in range(0,len(Lineouts)):
+
+				#Refresh required lists.
+				VariableMax,VariableMin = list(),list()
+
+				#Create folders to keep output plots for each variable.
+				if LineoutsOrientation[k] == 'Axial':
+					NameString= Variablelist[i]+'_'+str(round(Lineouts[k]*dz[l],2))+'cm[Z]'
+				if LineoutsOrientation[k] == 'Radial':
+					NameString= Variablelist[i]+'_'+str(round(Lineouts[k]*dr[l],2))+'cm[R]'
+				if savefig_phaseresolve1D == True:
+					Dir1DProfiles = CreateNewFolder(DirPhaseResolved,NameString+'_1Dprofiles/')
+				#endif
+
+				#Collect Normalization data for plotting.
+				for j in range(0,len(Moviephaselist[l])):
+					#Record local maximum and minimum for each phase.
+					if LineoutsOrientation[k] == 'Axial': Profile = PlotAxialProfile(PhaseMovieData[l][j],Processlist[i],Variablelist[i],Lineouts[k])
+					elif LineoutsOrientation[k] == 'Radial': Profile = PlotRadialProfile(PhaseMovieData[l][j],Processlist[i],Variablelist[i],Lineouts[k])
+					#endif
+					Profile,Minimum,Maximum = Normalize(Profile)
+					VariableMax.append(Maximum)
+					VariableMin.append(Minimum)
+				#endfor
+				#Find global maximum and minimum for all phases.
+				VariableMax = max(VariableMax)
+				VariableMin = min(VariableMin)
+
+				#for all recorded phases, plot spatially varying variable and waveform.
+				for j in range(0,len(Moviephaselist[l])):
+
+					if LineoutsOrientation[k] == 'Axial':
+						#Axial 1D profiles, using first hightlineout as axial location.
+						ZlineoutLoc,axis = Lineouts[k],Zaxis
+						PhaseResolvedlineout = PlotAxialProfile(PhaseMovieData[l][j],Processlist[i],Variablelist[i],ZlineoutLoc,R_mesh[l],Z_mesh[l],Isymlist[l])
+						lineoutstring = ' @ Z='+str(round(ZlineoutLoc*dz[l],2))+'cm \n'
+						Xlabel = 'Axial Distance Z [cm]'
+
+					elif LineoutsOrientation[k] == 'Radial':
+						#Radial 1D profiles, using first radialineout as axial location.
+						RlineoutLoc,axis = Lineouts[k],Raxis
+						PhaseResolvedlineout = PlotRadialProfile(PhaseMovieData[l][j],Processlist[i],Variablelist[i],RlineoutLoc,R_mesh[l],Isymlist[l])
+						lineoutstring = ' @ R='+str(round(RlineoutLoc*dr[l],2))+'cm \n'
+						Xlabel = 'Radial Distance R [cm]'
+					#endif
+
+					#Create figures and plot the 1D profiles. (ax[0]=variable, ax[1]=waveform)
+					fig,ax = figure(image_aspectratio,2)
+					Ylabel = VariableLabelMaker(Variablelist)
+					fig.suptitle('Phase-Resolved '+Variablelist[i]+' for '+VariedValuelist[l]+lineoutstring+str(Moviephaselist[l][j]), y=0.97, fontsize=16)
+
+					#Plot profile and apply image options.
+					ax[0].plot(axis, PhaseResolvedlineout[::-1], lw=2)
+					ImageOptions(ax[0],Xlabel,Ylabel[i],Crop=False)
+					ax[0].set_ylim(VariableMin,VariableMax*1.02)
+
+					#Plot waveform and apply image options.
+					ax[1].plot(Phaseaxis, ElectrodeWaveform, lw=2)
+					ax[1].axvline(Phaseaxis[j], color='k', linestyle='--', lw=2)
+					Xlabel,Ylabel = 'Phase [$\omega$t/2$\pi$]','Electrode Potential [V]'
+					ImageOptions(ax[1],Xlabel,Ylabel,Crop=False)
+
+					#Clean up image and save with relevent filename.
+					fig.tight_layout()
+					plt.subplots_adjust(top=0.90)
+					num1,num2,num3 = j % 10, j/10 % 10, j/100 % 10
+					Number = str(num3)+str(num2)+str(num1)
+					plt.savefig(Dir1DProfiles+NameString+'_'+Number+ext)
+					plt.close('all')
+
+					#Write Phase data in ASCII format if required.
+					if write_phaseresolve == True:
+						DirASCIIPhase = CreateNewFolder(DirPhaseResolved,'1DPhase_Data')
+						Cycle = str( Moviephaselist[l][j].replace(" ", "") )
+						SaveString = DirASCIIPhase+Variablelist[i]+'_'+Cycle
+						WriteDataToFile(PhaseResolvedlineout[::-1], SaveString)
+					#endif
+				#endfor
+
+				#Create .mp4 movie from completed images.
+				Prefix = NameString+FolderNameTrimmer(Dirlist[l])
+				Automovie(Dir1DProfiles,Prefix+'_'+Variablelist[i])
+			#endfor
+		#endfor
+	#endfor
+
+	print'---------------------------------------'
+	print'# 1D Phase-Resolved Processing Complete'
+	print'---------------------------------------'
+#endif
+
+
+
+
+#====================================================================#
+				#SHEATH DYNAMICS AND PROES IMAGES#
+#====================================================================#
+
+#Plot Phase-Resolved profiles with electrode voltage and requested variables.
+if savefig_PROES == True:
+
+	#Tnitiate any required lists.
+	VoltageWaveforms,WaveformBiases,VariedValuelist = list(),list(),list()
+
+	#for all folders.
+	for l in range(0,numfolders):
+
+		#Create global folders to keep output plots and collect graph title.
+		DirPROES = CreateNewFolder(Dirlist[l],'PROES')
 
 		#Update X-axis with folder information.
 		VariedValuelist.append( FolderNameTrimmer(Dirlist[l]) )
@@ -4021,25 +4234,39 @@ if savefig_phaseresolvelines == True or savefig_sheathdynamics == True:
 
 		#=============#
 
-		#Extract waveform from desired electrode location.
-		VoltageWaveform,WaveformBias = WaveformExtractor(PhaseMovieData[l],PPOT)
+		#Extract waveforms from desired electrode locations.
+		for j in range(0,len(waveformlocs)):
+			VoltageWaveforms.append(WaveformExtractor(PhaseMovieData[l],PPOT,waveformlocs[j])[0])
+			WaveformBiases.append(WaveformExtractor(PhaseMovieData[l],PPOT,waveformlocs[j])[1])
+		#endfor
+		ElectrodeWaveform,ElectrodeBias = WaveformExtractor(PhaseMovieData[l],PPOT)
 
 		#Plot the phase-resolved waveform.
 		fig,ax = figure(image_aspectratio,1)
-		ax.plot(Phaseaxis,VoltageWaveform, lw=2)
-		ax.plot(Phaseaxis,WaveformBias, 'k--', lw=2)
+
+		ax.plot(Phaseaxis,ElectrodeWaveform, lw=2)
+		for j in range(0,len(waveformlocs)): 
+			ax.plot(Phaseaxis,VoltageWaveforms[j], lw=2)
+			#ax.plot(Phaseaxis,WaveformBiases[j], 'k--', lw=2)
+		#endfor
+		#ax.plot(Phaseaxis,ElectrodeBias, 'k--', lw=2)
+
 		Title = 'Phase-Resolved Voltage Waveform for '+FolderNameTrimmer(Dirlist[l])
-		Legend = ['rf self-bias: '+str(round(WaveformBias[0],2))+'V']
+		Legend = ['rf self-bias: '+str(round(ElectrodeBias[0],2))+'V']
 		Xlabel,Ylabel = 'Phase [$\omega$t/2$\pi$]','Electrode Potential [V]'
 		ImageOptions(ax,Xlabel,Ylabel,Title,Legend,Crop=False)
 
-		plt.savefig(DirPhaseResolved+VariedValuelist[l]+' Waveform'+ext)
+		plt.savefig(DirPROES+VariedValuelist[l]+' Waveform'+ext)
 		plt.close('all')
 
 		#Write PROES data in ASCII format if required.
 		if write_phaseresolve == True:
-			DirASCIIPROES = CreateNewFolder(DirPhaseResolved,'PROES_Data')
-			WriteDataToFile([Phaseaxis,VoltageWaveform], DirASCIIPROES+'VoltageWaveforms')
+			ASCIIWaveforms = [Phaseaxis,ElectrodeWaveform]
+			for j in range(0,len(waveformlocs)):
+				ASCIIWaveforms.append(VoltageWaveforms[j])
+			#endfor
+			DirASCIIPROES = CreateNewFolder(DirPROES,'PROES_Data')
+			WriteDataToFile(ASCIIWaveforms, DirASCIIPROES+'VoltageWaveforms')
 		#endif
 
 		#==============#
@@ -4049,8 +4276,7 @@ if savefig_phaseresolvelines == True or savefig_sheathdynamics == True:
 		for i in tqdm(range(0,len(Processlist))):
 
 			#Refresh lineout lists between variables.
-			LineoutsOrientation = list()
-			Lineouts = list()
+			Lineouts,LineoutsOrientation = list(),list()
 
 			#Concatinate all requested lineouts together, keeping seperate orientation.
 			for m in range(0,len(radialineouts)):
@@ -4072,254 +4298,168 @@ if savefig_phaseresolvelines == True or savefig_sheathdynamics == True:
 					NameString= Variablelist[i]+'_'+str(round(Lineouts[k]*dz[l],2))+'cm[Z]'
 				if LineoutsOrientation[k] == 'Radial':
 					NameString= Variablelist[i]+'_'+str(round(Lineouts[k]*dr[l],2))+'cm[R]'
-				if savefig_phaseresolvelines == True:
+				if savefig_phaseresolve1D == True:
 					Dir1DProfiles = CreateNewFolder(DirPhaseResolved,NameString+'_1Dprofiles/')
 				#endif
-
-				#Collect Normalization data for plotting.
-				for j in range(0,len(Moviephaselist[l])):
-					#Record local maximum and minimum for each phase.
-					if LineoutsOrientation[k] == 'Axial':
-						ZlineoutLoc = Lineouts[k]
-						VariableMax.append( max(PlotAxialProfile(PhaseMovieData[l][j],Processlist[i],Variablelist[i],ZlineoutLoc,R_mesh[l],Z_mesh[l],Isymlist[l])) )
-						VariableMin.append( min(PlotAxialProfile(PhaseMovieData[l][j],Processlist[i],Variablelist[i],ZlineoutLoc,R_mesh[l],Z_mesh[l],Isymlist[l])) )
-					elif LineoutsOrientation[k] == 'Radial':
-						RlineoutLoc = Lineouts[k]
-						VariableMax.append( max(PlotRadialProfile(PhaseMovieData[l][j],Processlist[i],Variablelist[i],RlineoutLoc,R_mesh[l],Isymlist[l])) )
-						VariableMin.append( min(PlotRadialProfile(PhaseMovieData[l][j],Processlist[i],Variablelist[i],RlineoutLoc,R_mesh[l],Isymlist[l])) )
-					#endif
-				#endfor
-				#Find global maximum and minimum for all phases.
-				VariableMax = max(VariableMax)
-				VariableMin = min(VariableMin)
-
 
 				#for all recorded phases, plot spatially varying variable and waveform.
 				for j in range(0,len(Moviephaselist[l])):
 
-					if LineoutsOrientation[k] == 'Axial':
-						#Axial 1D profiles, using first hightlineout as axial location.
-						ZlineoutLoc,axis = Lineouts[k],Zaxis
-						PhaseResolvedlineout = PlotAxialProfile(PhaseMovieData[l][j],Processlist[i],Variablelist[i],ZlineoutLoc,R_mesh[l],Z_mesh[l],Isymlist[l])
-						lineoutstring = ' @ Z='+str(round(ZlineoutLoc*dz[l],2))+'cm \n'
-						Xlabel = 'Axial Distance Z [cm]'
-
-					elif LineoutsOrientation[k] == 'Radial':
-						#Radial 1D profiles, using first radialineout as axial location.
-						RlineoutLoc,axis = Lineouts[k],Raxis
-						PhaseResolvedlineout = PlotRadialProfile(PhaseMovieData[l][j],Processlist[i],Variablelist[i],RlineoutLoc,R_mesh[l],Isymlist[l])
-						lineoutstring = ' @ R='+str(round(RlineoutLoc*dr[l],2))+'cm \n'
-						Xlabel = 'Radial Distance R [cm]'
-					#endif
-
-					#Create figures and plot the 1D profiles. (ax[0]=variable, ax[1]=waveform)
-					if savefig_phaseresolvelines == True:
-						fig,ax = figure(image_aspectratio,2)
-						Ylabel = VariableLabelMaker(Variablelist)
-						fig.suptitle('Phase-Resolved '+Variablelist[i]+' for '+VariedValuelist[l]+lineoutstring+str(Moviephaselist[l][j]), y=0.97, fontsize=16)
-
-						#Plot profile and apply image options.
-						ax[0].plot(axis, PhaseResolvedlineout[::-1], lw=2)
-						ImageOptions(ax[0],Xlabel,Ylabel[i],Crop=False)
-						ax[0].set_ylim(VariableMin,VariableMax*1.02)
-
-						#Plot waveform and apply image options.
-						ax[1].plot(Phaseaxis, VoltageWaveform, lw=2)
-						ax[1].axvline(Phaseaxis[j], color='k', linestyle='--', lw=2)
-						Xlabel,Ylabel = 'Phase [$\omega$t/2$\pi$]','Electrode Potential [V]'
-						ImageOptions(ax[1],Xlabel,Ylabel,Crop=False)
-
-						#Clean up image and save with relevent filename.
-						fig.tight_layout()
-						plt.subplots_adjust(top=0.90)
-						num1,num2,num3 = j % 10, j/10 % 10, j/100 % 10
-						Number = str(num3)+str(num2)+str(num1)
-						plt.savefig(Dir1DProfiles+NameString+'_'+Number+ext)
-						plt.close('all')
-					#endif
+					#Refresh lists between each phasecycle.
+					IntegratedDoFArray,DoFArrays = list(),list()
 
 					#Collect each profile for stitching into a PROES image if required.
-					if DoFWidth > 0 and savefig_sheathdynamics == True:
+					if DoFWidth > 0:
 
-						#Initiate lists and required constants.
-						IntegratedDoFArray,DoFArrays = list(),list()
-						GaussianCoeff = list()
-
+						#Determine range of lineouts within the depth of field.
+						DOFRegion = [(Lineouts[k]-DoFWidth),(Lineouts[k]+DoFWidth)]
 						#Collect lineouts from DOF region and transpose to allow easy integration.
-						for lineoutLoc in range(RlineoutLoc-DoFWidth,RlineoutLoc+DoFWidth):
-							DoFArrays.append( PlotRadialProfile(PhaseMovieData[l][j],Processlist[i],Variablelist[i],lineoutLoc,R_mesh[l],Isymlist[l]) )
+						for RLineoutLoc in range(DOFRegion[0],DOFRegion[1]):
+							DoFArrays.append(PlotRadialProfile(PhaseMovieData[l][j],Processlist[i],Variablelist[i],RLineoutLoc))
 						#endfor
-						DoFArrays = np.asarray(DoFArrays)
-						DoFArrays = DoFArrays.transpose().tolist()
-
-						#Create gaussian function centred on RlineoutLoc with DoFWidth.
-#						for m in range(0,len(DoFArrays)):
-#							a,b,c = float(1),float(RlineoutLoc),float(DoFWidth)
-#							Top, Bottom = (float(m)-b**2), (2*c**2)
-#							GaussianCoeff.append( a*np.exp(-(Top/Bottom)) )
-						#endfor
+						DoFArrays = np.asarray(DoFArrays).transpose().tolist()
 
 						#Integrate DoF lineouts to form a single phase point PROES lineout.
-						for m in range(0,len(PhaseResolvedlineout)):
+						for m in range(0,len(DoFArrays)):
 							IntegratedDoFArray.append( sum(DoFArrays[m])/(DoFWidth*2+1) )
 						#endif
 						PROES.append(IntegratedDoFArray)
 
 					#If no DoF then simply collect lineout from required location.
-					elif DoFWidth == 0 and savefig_sheathdynamics == True:
-						PROES.append(PhaseResolvedlineout)
+					elif DoFWidth == 0:
+						PROES.append( PlotRadialProfile(PhaseMovieData[l][j],Processlist[i],Variablelist[i],Lineouts[k]) )
 					#endif
 				#endfor
 
-
-				#==============#
-				# 	  PROES    #
-				#==============#
-
-				#plot more detailed PROES sheath-dynamics if requested by user.
-				if savefig_sheathdynamics == True:
-
-					#Create folders to keep PROES images seperate.
-					Dir1DPROES = CreateNewFolder(DirPhaseResolved,'PROES_Images')
-
-					#Increase PROES image by required number of phasecycles.
-					for m in range(1,phasecycles):
-						for n in range(0,len(PROES)):
-							PROES.append(PROES[n])
-						#endfor
+				#Increase PROES image by required number of phasecycles.
+				for m in range(1,phasecycles):
+					for n in range(0,len(PROES)):
+						PROES.append(PROES[n])
 					#endfor
+				#endfor
 
-					#Create figure and rotate PROES such that phaseaxis aligns with waveform.
-					fig,ax = figure(image_aspectratio,2)
-					PROES = ndimage.rotate(PROES, 90)
-					#Choose correct axial or radial distance axis.
-					x1,x2 = Phaseaxis[0],Phaseaxis[-1]
-					if LineoutsOrientation[k] == 'Axial':
-						lineoutstring = ' @ R='+str(round(ZlineoutLoc*dr[l],2))+'cm'
-						NameString = Variablelist[i]+'_'+lineoutstring[2::]
-						Ylabel = 'Axial Distance Z [cm]'
-						y1,y2 = Zaxis[0],Zaxis[-1]
-					elif LineoutsOrientation[k] == 'Radial' and Isymlist[l] == 1:
-						lineoutstring = ' @ Z='+str(round(RlineoutLoc*dz[l],2))+'cm'
-						NameString = Variablelist[i]+lineoutstring[2::]
-						Ylabel = 'Radial Distance R [cm]'
-						y1,y2 = Raxis[-1],-Raxis[-1]
-					elif LineoutsOrientation[k] == 'Radial' and Isymlist[l] == 0:
-						lineoutstring = ' @ Z='+str(round(RlineoutLoc*dz[l],2))+'cm'
-						NameString = Variablelist[i]+lineoutstring[2::]
-						Ylabel = 'Radial Distance R [cm]'
-						y1,y2 = Raxis[-1],0
-					#endif
-					DirPROESloc = CreateNewFolder(Dir1DPROES,lineoutstring[3::])
 
-					#Create PROES image along line of sight with phase-locked waveform.
-					fig.suptitle( 'Simulated '+Variablelist[i]+' PROES for '+VariedValuelist[l]+lineoutstring+'\n DoF = '+str(round(DoFWidth*dz[l],2))+' cm', y=0.95, fontsize=18)
-					im = ax[0].imshow(PROES,extent=[x1,x2,y1,y2],origin='bottom',aspect='auto')
-					ImageOptions(ax[0],Xlabel='',Ylabel=Ylabel,Crop=True)
-					ax[0].set_xticks([])
-					ax[0].set_xlim(x1,x2)
-					#Add Colourbar (Axis, Label, Bins)
-					label = VariableLabelMaker(Variablelist)
-					cax = Colourbar(ax[0],label[i],5)
+				#Create figure and rotate PROES such that phaseaxis aligns with waveform.
+				fig,ax = figure(image_aspectratio,2)
+				PROES = ndimage.rotate(PROES, 90)
+				#Choose correct axial or radial distance axis and create associated folder.
+				x1,x2 = Phaseaxis[0],Phaseaxis[-1]
+				if LineoutsOrientation[k] == 'Axial':
+					lineoutstring = ' @ R='+str(round(Lineouts[k]*dr[l],2))+'cm'
+					NameString = Variablelist[i]+'_'+lineoutstring[2::]
+					Ylabel = 'Axial Distance Z [cm]'
+					y1,y2 = Zaxis[0],Zaxis[-1]
+				elif LineoutsOrientation[k] == 'Radial' and Isymlist[l] == 1:
+					lineoutstring = ' @ Z='+str(round(Lineouts[k]*dz[l],2))+'cm'
+					NameString = Variablelist[i]+lineoutstring[2::]
+					Ylabel = 'Radial Distance R [cm]'
+					y1,y2 = Raxis[-1],-Raxis[-1]
+				elif LineoutsOrientation[k] == 'Radial' and Isymlist[l] == 0:
+					lineoutstring = ' @ Z='+str(round(Lineouts[k]*dz[l],2))+'cm'
+					NameString = Variablelist[i]+lineoutstring[2::]
+					Ylabel = 'Radial Distance R [cm]'
+					y1,y2 = Raxis[-1],0
+				#endif
+				DirPROESloc = CreateNewFolder(DirPROES,lineoutstring[3::])
 
-					#Plot Waveform.
-					ax[1].plot(Phaseaxis, VoltageWaveform, lw=2)
-					Xlabel,Ylabel = 'Phase [$\omega$t/2$\pi$]','Electrode Potential [V]'
-					ImageOptions(ax[1],Xlabel,Ylabel,Crop=False)
+				#Create PROES image along line of sight with phase-locked waveform.
+				fig.suptitle( 'Simulated '+Variablelist[i]+' PROES for '+VariedValuelist[l]+lineoutstring+'\n DoF = '+str(round(DoFWidth*dz[l],2))+' cm', y=0.95, fontsize=18)
+				im = ax[0].imshow(PROES,extent=[x1,x2,y1,y2],origin='bottom',aspect='auto')
+				ImageOptions(ax[0],Xlabel='',Ylabel=Ylabel,Crop=True)
+				ax[0].set_xticks([])
+				ax[0].set_xlim(x1,x2)
+				#Add Colourbar (Axis, Label, Bins)
+				label = VariableLabelMaker(Variablelist)
+				cax = Colourbar(ax[0],label[i],5)
 
-					#Cleanup layout and save images.
-					fig.tight_layout()
-					plt.subplots_adjust(top=0.85)
-					plt.savefig(DirPROESloc+VariedValuelist[l]+' '+NameString+' PROES'+ext)
-					plt.close('all')
+				#Plot Waveform.
+				ax[1].plot(Phaseaxis, ElectrodeWaveform, lw=2)
+				ax[1].plot(Phaseaxis, ElectrodeBias, 'k--', lw=2)
+				Xlabel,Ylabel = 'Phase [$\omega$t/2$\pi$]','Electrode Potential [V]'
+				ImageOptions(ax[1],Xlabel,Ylabel,Crop=False)
 
-					#Write PROES data in ASCII format if required.
-					if write_phaseresolve == True:
-						DirASCIIPROES = CreateNewFolder(DirPhaseResolved,'PROES_Data')
-						WriteDataToFile(PROES, DirASCIIPROES+Variablelist[i]+'_PROES')
-					#endif
+				#Cleanup layout and save images.
+				fig.tight_layout()
+				plt.subplots_adjust(top=0.85)
+				plt.savefig(DirPROESloc+VariedValuelist[l]+' '+NameString+' PROES'+ext)
+				plt.close('all')
 
-					#==============##==============#
-
-					#Temporally collapse 2D PROES image through defined phase fraction.
-					SpatialPROES = list()
-					for m in range(0,len(PROES)):
-						SpatialPROES.append( (sum(PROES[m][::])) ) 	#NEEDS 'MATHS-ING'
-					#endfor
-
-					#Spatially Collapse 2D PROES image along the line of sight.
-					PROES,TemporalPROES = PROES.transpose().tolist(),list()
-					for m in range(0,len(PROES) ):
-						TemporalPROES.append( (sum(PROES[m][::]))/(len(PROES)/2) )
-					#endfor
-
-					#Plot Temporally collapsed PROES with phase axis.
-					fig,ax = figure(image_aspectratio,2)
-					ax[0].plot(Phaseaxis,TemporalPROES, lw=2)
-					Ylabel = 'Spatially Integrated '+Variablelist[i]
-					ImageOptions(ax[0],Ylabel=Ylabel,Crop=False)
-
-					#Plot Waveform onto Temporally collapsed PROES.
-					ax[1].plot(Phaseaxis, VoltageWaveform, lw=2)
-					Xlabel,Ylabel = 'Phase [$\omega$t/2$\pi$]','Electrode Potential [V]'
-					ImageOptions(ax[1],Xlabel,Ylabel,Crop=False)
-
-					plt.savefig(DirPROESloc+VariedValuelist[l]+' '+NameString+' TemporalPROES'+ext)
-					plt.close('all')
-
-					#Plot Spatially collapsed PROES with required axis.
-					fig,ax = figure(image_aspectratio,2)
-					ax[0].plot(Raxis,SpatialPROES, lw=2)
-					Xlabel = 'Phase [$\omega$t/2$\pi$]'
-					Ylabel = 'Temporally Integrated '+Variablelist[i]
-					ImageOptions(ax[0],Xlabel,Ylabel,Crop=False)
-
-					#Plot Waveform onto Spatially collapsed PROES.
-					ax[1].plot(Phaseaxis, VoltageWaveform, lw=2)
-					Xlabel,Ylabel = 'Phase [$\omega$t/2$\pi$]','Electrode Potential [V]'
-					ImageOptions(ax[1],Xlabel,Ylabel,Crop=False)
-
-					#plt.savefig(DirPROESloc+VariedValuelist[l]+' '+NameString+' SpatialPROES'+ext)
-					plt.close('all')
-
-					#==============##==============#
-
-					if l == numfolders and k == len(Lineouts):
-						print'-------------------------------'
-						print'# PROES Image analysis Complete'
-						print'-------------------------------'
-					#endif
+				#Write PROES data in ASCII format if required.
+				if write_phaseresolve == True:
+					DirASCIIPROES = CreateNewFolder(DirPROES,'PROES_Data')
+					DirASCIIPROESloc = CreateNewFolder(DirASCIIPROES,lineoutstring[3::])
+					WriteDataToFile(PROES, DirASCIIPROESloc+Variablelist[i]+'_PROES')
 				#endif
 
-				#==============#
-				# 	  PROES    #
-				#==============#
 
-				if savefig_phaseresolvelines == True:
-					#Create .mp4 movie from completed images.
-					Prefix = NameString+FolderNameTrimmer(Dirlist[l])
-					Automovie(Dir1DProfiles,Prefix+'_'+Variablelist[i])
-				#endif
+
+				#==============##==============#
+
+				#Temporally collapse 2D PROES image through defined phase fraction.
+				SpatialPROES = list()
+				for m in range(0,len(PROES)):
+					SpatialPROES.append( (sum(PROES[m][::])) ) 	#NEEDS 'MATHS-ING'
+				#endfor
+
+				#Spatially Collapse 2D PROES image along the line of sight.
+				PROES,TemporalPROES = PROES.transpose().tolist(),list()
+				for m in range(0,len(PROES) ):
+					TemporalPROES.append( (sum(PROES[m][::]))/(len(PROES)/2) )
+				#endfor
+
+				#Plot Temporally collapsed PROES with phase axis.
+				fig,ax = figure(image_aspectratio,2)
+				ax[0].plot(Phaseaxis,TemporalPROES, lw=2)
+				Ylabel = 'Spatially Integrated '+Variablelist[i]
+				ImageOptions(ax[0],Ylabel=Ylabel,Crop=False)
+
+				#Plot Waveform onto Temporally collapsed PROES.
+				ax[1].plot(Phaseaxis, ElectrodeWaveform, lw=2)
+				ax[1].plot(Phaseaxis, ElectrodeBias, 'k--', lw=2)
+				Xlabel,Ylabel = 'Phase [$\omega$t/2$\pi$]','Electrode Potential [V]'
+				ImageOptions(ax[1],Xlabel,Ylabel,Crop=False)
+
+				plt.savefig(DirPROESloc+VariedValuelist[l]+' '+NameString+' TemporalPROES'+ext)
+				plt.close('all')
+
+				#Plot Spatially collapsed PROES with required axis.
+				fig,ax = figure(image_aspectratio,2)
+				ax[0].plot(Raxis,SpatialPROES, lw=2)
+				Xlabel = 'Phase [$\omega$t/2$\pi$]'
+				Ylabel = 'Temporally Integrated '+Variablelist[i]
+				ImageOptions(ax[0],Xlabel,Ylabel,Crop=False)
+
+				#Plot Waveform onto Spatially collapsed PROES.
+				ax[1].plot(Phaseaxis, ElectrodeWaveform, lw=2)
+				ax[1].plot(Phaseaxis, ElectrodeBias, 'k--', lw=2)
+				Xlabel,Ylabel = 'Phase [$\omega$t/2$\pi$]','Electrode Potential [V]'
+				ImageOptions(ax[1],Xlabel,Ylabel,Crop=False)
+
+				#plt.savefig(DirPROESloc+VariedValuelist[l]+' '+NameString+' SpatialPROES'+ext)
+				plt.close('all')
+
+				#==============##==============#
+
 			#endfor
+			if l == numfolders and k == len(Lineouts):
+				print'-------------------------------'
+				print'# PROES Image analysis Complete'
+				print'-------------------------------'
+			#endif
 		#endfor
 	#endfor
+#endif
 
+#===============================#
+
+if any([savefig_phaseresolve1D ,savefig_phaseresolve2D ,savefig_PROES]) == True:
 	print'----------------------------------'
 	print'# Phase Resolved Profiles Complete'
 	print'----------------------------------'
 #endif
 
-
 #=====================================================================#
 #=====================================================================#
-
-
-
-
-
-
-
-
 
 
 
