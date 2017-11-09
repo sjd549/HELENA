@@ -87,7 +87,7 @@ ArgonFull = ['AR3S','AR4SM','AR4SR','AR4SPM','AR4SPR','AR4P','AR4D','AR+','AR2+'
 Oxygen = ['O','O+','O-','O*','O2','O2+','O2*']
 AtomicSet = ['E']+ArgonReduced+ArgonFull+Oxygen
 
-#List of recognized neutral (ground-level) species for fluid analysis.
+#List of recognized ground-state neutral species for fluid analysis.
 NeutSpecies = ['AR','AR3S','O2']
 
 #Commonly used variable sets.
@@ -109,8 +109,8 @@ PR_Phase2 = ['S-E','S-AR+','SEB-AR+','SEB-AR4P','SRCE-2437','TE','PPOT']
 #dz(5.50/118), dr(2.55/102) height=[24,43], Trend=[19]
 
 #SDoyle2017b: 
-#PROES, (Z=1.52,2.3,3.23) radialineouts = [31,47,66]
-#Dielectric locations: [16,31],[16,47],[16,66]
+#PROES, (Z=1.52,2.25,3.23) radialineouts = [31,46,66]
+#Dielectric locations: [16,31],[16,46],[16,66]
 
         
         
@@ -128,48 +128,47 @@ PR_Phase2 = ['S-E','S-AR+','SEB-AR+','SEB-AR4P','SRCE-2437','TE','PPOT']
 #====================================================================#
 
 #Requested IEDF/NEDF Variables.
-IEDFVariables = PR_PCMC		#Requested iprofile_2d variables (no spaces)
+IEDFVariables = []		#Requested iprofile_2d variables (no spaces)
 NEDFVariables = []		#Requested nprofile_2d variables (no spaces)
-#MSHC 
 
 #Requested movie1/movie_icp Variables.
 IterVariables = ['E','S-E','PPOT','TE']		#Requested Movie_icp (iteration) Variables.
-PhaseVariables = PR_Phase					#Requested Movie1 (phase) Variables.
-electrodeloc = [30,47]						#Cell location of powered electrode [R,Z].
-waveformlocs = [[1,31],[1,47],[1,66]]		#Cell location of additional waveforms [R,Z].
+PhaseVariables = PR_Phase2					#Requested Movie1 (phase) Variables.
+electrodeloc = [30,46]						#Cell location of powered electrode [R,Z].
+waveformlocs = [[16,31],[16,46],[16,66]]		#Cell locations of additional waveforms [R,Z].
 
 phasecycles = 2								#Number of phase cycles to be plotted.
-DoFWidth = 1								#PROES Depth of Field Cells
-#electrodeloc	#YPR [30,47],[16,47] #SPR [0,107] #MSHC [0,12]
+DoFWidth = 41								#PROES Depth of Field Cells
+#electrodeloc	#YPR [30,46],[16,46] #SPR [0,107] #MSHC [0,12]
 #DOFWidth		#YPR 41=2cm   #MSHC 10=0.47cm
 
 #Requested TECPLOT Variables
 Variables = Ar
 MultiVar = []						#Additional variables plotted ontop of [Variables]
-radialineouts = [31,47,66] 				#Radial 1D-Profiles to be plotted (fixed Z-mesh) --
-heightlineouts = []					#Axial 1D-Profiles to be plotted (fixed R-mesh) |
+radialineouts = [] 					#Radial 1D-Profiles to be plotted (fixed Z-mesh) --
+heightlineouts = [0]					#Axial 1D-Profiles to be plotted (fixed R-mesh) |
 TrendLocation = [] 					#Cell location For Trend Analysis [R,Z], ([] = min/max)
 #YPR H0;R47 #MSHC H0,20;R20
 
 
-#Requested plotting routines.
+#Requested diagnostics and plotting routines.
 savefig_itermovie = False					#Requires movie_icp.pdt
-savefig_plot2D = False						#Requires TECPLOT2D.PDT
+savefig_plot2D = True						#Requires TECPLOT2D.PDT
 
 savefig_monoprofiles = False				#Single Variables; fixed height/radius
 savefig_multiprofiles = False				#Multi-Variables; same folder
 savefig_comparelineouts = False				#Multi-Variables; all folders
+savefig_trendcomparison = False				#Single Variables; fixed cell location (or max/min)
 
-savefig_phaseresolve1D = True				#1D Phase Resolved Images
-savefig_phaseresolve2D = True				#2D Phase Resolved Images
+savefig_phaseresolve1D = False				#1D Phase Resolved Images
+savefig_phaseresolve2D = False				#2D Phase Resolved Images
 savefig_PROES = False						#Phase-Resolved 2D Images
 
 savefig_IEDF = False						#IN DEVELOPMENT, WORKS BUT UNRELIABLE.
 savefig_EEDF = False						#IN DEVELOPMENT, NO PLOTTING ROUTINE.
 
 
-#Steady-State diagnostics and terminal outputs.
-savefig_trendcomparison = False
+#Steady-State diagnostics terminal output toggles.
 print_meshconvergence = False				#Make More General: <_numerictrendaxis>
 print_generaltrends = False					#Verbose Min/Max Trend Output.
 print_Knudsennumber = False
@@ -330,7 +329,7 @@ if savefig_plot2D == True:
 	print'# 2D Steady-State Image Processing'
 if savefig_itermovie == True:
 	print'# 2D Convergence Movie Processing'
-if True in [savefig_phaseresolve2D,savefig_PROES] == True:
+if True in [savefig_phaseresolve2D,savefig_PROES]:
 	print'# 2D Phase Resolved Movie Processing'
 if True in [savefig_phaseresolve1D]:
 	print'# 1D Phase Resolved Profile Processing'
@@ -723,17 +722,19 @@ def WriteDataToFile(data,filename,structure='w'):
 #Reads 1D or 2D data from textfile in ASCII format.
 #One input, filename string, returns data array.
 def ReadDataFromFile(Filename,Dimension='1D'):
+	datafile = open(Filename)
 	OutputData = list()
 
 	#Determine dimensionality of profile.
 	if Dimension == '2D':
-		#Read in 2D data from ASCII formatted file.
-		datafile = open(Filename)
+		#Read in 2D data from ASCII formatted file.	
 		RawData = datafile.readlines()
 		for m in range(0,len(RawData)):
 			Row = RawData[m].split()
 			for n in range(0,len(Row)):
-				Row[n] = float(Row[n])
+				#Convert to float if possible.
+				try: Row[n] = float(Row[n])
+				except: Row[n] = Row[n]
 			#endfor
 			OutputData.append(Row)
 		#endfor
@@ -741,7 +742,6 @@ def ReadDataFromFile(Filename,Dimension='1D'):
 	#Lowest dimention is scalar: ==> 1D array.
 	elif Dimension == '1D':
 		#Read in 1D data from ASCII formatted file.
-		datafile = open(Filename)
 		Row = datafile.readline().split()
 		for m in range(0,len(Row)):
 			OutputData.append(float(Row[m]))
@@ -3292,7 +3292,7 @@ if savefig_trendcomparison == True or print_generaltrends == True:
 
 			#Write data to ASCII format datafile if requested.
 			if write_trendcomparison == True:
-				DirASCII = CreateNewFolder(DirTrends,'Trend Data')
+				DirASCII = CreateNewFolder(DirTrends,'Trend_Data')
 				DCASCII = [Xaxis,Trend]
 				WriteDataToFile(Trend, DirASCII+Variablelist[k]+' Trends')
 			#endif
@@ -3350,7 +3350,7 @@ if savefig_trendcomparison == True or print_generaltrends == True:
 
 			#Write data to ASCII format datafile if requested.
 			if write_trendcomparison == True:
-				DirASCII = CreateNewFolder(DirTrends,'Trend Data')
+				DirASCII = CreateNewFolder(DirTrends,'Trend_Data')
 				DCASCII = [Xaxis,MaxTrend]
 				WriteDataToFile(MaxTrend, DirASCII+Variablelist[k]+' Trends')
 			#endif
@@ -3433,9 +3433,9 @@ if savefig_trendcomparison == True or print_DCbias == True:
 
 	#Write data to ASCII format datafile if requested.
 	if write_trendcomparison == True:
-		DirASCII = CreateNewFolder(DirTrends,'Trend Data')
+		DirASCII = CreateNewFolder(DirTrends,'Trend_Data')
 		DCASCII = [Xaxis,DCbias]
-		WriteDataToFile(DCbias, DirASCII+'DCbias trends')
+		WriteDataToFile(DCASCII, DirASCII+'DCbias trends')
 	#endif
 
 	#Plot and beautify the DCbias, applying normalization if requested.
@@ -3467,7 +3467,10 @@ if savefig_trendcomparison == True or print_totalpower == True:
 
 	#Create required lists.
 	RequestedPowers,DepositedPowerList = list(),list()
-	Xaxis = list()
+	Xaxis,Powers = list(),list()
+
+	#Update X-axis with folder information.
+	for l in range(0,numfolders): Xaxis.append( FolderNameTrimmer(Dirlist[l]) )
 
 	#Identify which power densities have been requested.
 	for i in range(0,len(Variables)):
@@ -3483,9 +3486,6 @@ if savefig_trendcomparison == True or print_totalpower == True:
 
 			#Create extract data for the neutral flux and neutral velocity.
 			processlist,Variablelist = VariableEnumerator(RequestedPowers,rawdata_2D[l],header_2Dlist[l])
-
-			#Update X-axis with folder information.
-			Xaxis.append( FolderNameTrimmer(Dirlist[l]) )
 
 			#Extract full 2D power density image. [W/m3]
 			PowerDensity = ImageExtractor2D(Data[l][processlist[k]])
@@ -3516,18 +3516,13 @@ if savefig_trendcomparison == True or print_totalpower == True:
 
 		#Plot and beautify each requested power deposition seperately.
 		fig,ax = figure(image_aspectratio,1)
-		Power = DepositedPowerList[k*numfolders:(k+1)*numfolders]
-		TrendPlotter(Power,Xaxis,NormFactor=0)
+		Powers.append( DepositedPowerList[k*numfolders:(k+1)*numfolders] )
+		TrendPlotter(Powers[k],Xaxis,NormFactor=0)
 
-		plt.title('Power Deposition with changing '+TrendVariable+' \n'+Dirlist[l][2:-1] ,position=(0.5,1.05))
-		plt.ylabel('RF-Power Deposited [W]', fontsize=24)
-		ax.tick_params(axis='x', labelsize=18)
-		ax.tick_params(axis='y', labelsize=18)
-		if len(xlabeloverride) > 0:
-			plt.xlabel(xlabeloverride[0], fontsize=24)
-		else:
-			plt.xlabel('Varied Property', fontsize=24)
-		#endif
+		#Apply image options and axis labels.
+		Title = 'Power Deposition with changing '+TrendVariable+' \n'+Dirlist[l][2:-1]
+		Xlabel,Ylabel = 'Varied Property','Power Deposited [W]'
+		ImageOptions(ax,Xlabel,Ylabel,Title,Legend=RequestedPowers,Crop=False)
 
 		plt.savefig(DirTrends+RequestedPowers[k]+' Deposition Trends'+ext)
 		plt.close('all')
@@ -3535,22 +3530,19 @@ if savefig_trendcomparison == True or print_totalpower == True:
 
 	#Plot a comparison of all power depositions requested.
 	fig,ax = figure(image_aspectratio,1)
-	for k in range(0,len(RequestedPowers)):
-		Power = DepositedPowerList[k*numfolders:(k+1)*numfolders]
-		TrendPlotter(Power,Xaxis,NormFactor=0)
-	#endfor
+	for k in range(0,len(RequestedPowers)):TrendPlotter(Powers[k],Xaxis,NormFactor=0)
 
-	plt.title('Power Deposition with changing '+TrendVariable+' \n'+Dirlist[l][2:-1] ,position=(0.5,1.05))
-	plt.ylabel('Power Deposited [W]', fontsize=24)
-	plt.legend(RequestedPowers)
-	ax.tick_params(axis='x', labelsize=18)
-	ax.tick_params(axis='y', labelsize=18)
-	if len(xlabeloverride) > 0:
-		plt.xlabel(xlabeloverride[0], fontsize=24)
-	else:
-		plt.xlabel('Varied Property', fontsize=24)
+	#Apply image options and axis labels.
+	Title = 'Power Deposition with changing '+TrendVariable+' \n'+Dirlist[l][2:-1]
+	Xlabel,Ylabel = 'Varied Property','Power Deposited [W]'
+	ImageOptions(ax,Xlabel,Ylabel,Title,Legend=RequestedPowers,Crop=False)
+
+	#Write data to ASCII format datafile if requested.
+	if write_trendcomparison == True:
+		DirASCII, TotalPowerASCII = CreateNewFolder(DirTrends,'Trend_Data'), [Xaxis]
+		for k in range(0,len(RequestedPowers)): TotalPowerASCII.append(Powers[k])
+		WriteDataToFile(TotalPowerASCII, DirASCII+'TotalPower Trends')
 	#endif
-
 
 	plt.savefig(DirTrends+'Power Deposition Comparison'+ext)
 	plt.close('all')
@@ -3918,7 +3910,7 @@ if savefig_phaseresolve2D == True:
 		#endfor
 		#ax.plot(Phaseaxis,ElectrodeBias, 'k--', lw=2)
 
-		Title = 'Phase-Resolved Voltage Waveform for '+FolderNameTrimmer(Dirlist[l])
+		Title = 'Phase-Resolved Voltage Waveforms for '+FolderNameTrimmer(Dirlist[l])
 		Legend = ['rf self-bias: '+str(round(ElectrodeBias[0],2))+'V']
 		Xlabel,Ylabel = 'Phase [$\omega$t/2$\pi$]','Electrode Potential [V]'
 		ImageOptions(ax,Xlabel,Ylabel,Title,Legend,Crop=False)
@@ -3966,7 +3958,6 @@ if savefig_phaseresolve2D == True:
 				Xlabel,Ylabel = 'Radial Distance R [cm]','Axial Distance Z [cm]'
 				if image_rotate == True: Xlabel,Ylabel = Ylabel,Xlabel
 				extent,aspectratio = DataExtent(l)
-
 
 				#Create figure and axes, plot image on top and waveform underneath.
 				fig,ax = figure(image_aspectratio,2)
@@ -4069,7 +4060,7 @@ if savefig_phaseresolve1D == True:
 		#endfor
 		#ax.plot(Phaseaxis,ElectrodeBias, 'k--', lw=2)
 
-		Title = 'Phase-Resolved Voltage Waveform for '+FolderNameTrimmer(Dirlist[l])
+		Title = 'Phase-Resolved Voltage Waveforms for '+FolderNameTrimmer(Dirlist[l])
 		Legend = ['rf self-bias: '+str(round(ElectrodeBias[0],2))+'V']
 		Xlabel,Ylabel = 'Phase [$\omega$t/2$\pi$]','Electrode Potential [V]'
 		ImageOptions(ax,Xlabel,Ylabel,Title,Legend,Crop=False)
@@ -4093,6 +4084,9 @@ if savefig_phaseresolve1D == True:
 		#for all requested variables.
 		for i in tqdm(range(0,len(Processlist))):
 
+			#Create new folder to keep specific plots.
+			DirMovieplots = CreateNewFolder(DirPhaseResolved,Variablelist[i]+'_1DPhaseResolved/')
+
 			#Refresh lineout lists between variables.
 			Lineouts,LineoutsOrientation = list(),list()
 
@@ -4112,11 +4106,11 @@ if savefig_phaseresolve1D == True:
 
 				#Create folders to keep output plots for each variable.
 				if LineoutsOrientation[k] == 'Axial':
-					NameString= Variablelist[i]+'_'+str(round(Lineouts[k]*dz[l],2))+'cm[Z]'
-				if LineoutsOrientation[k] == 'Radial':
 					NameString= Variablelist[i]+'_'+str(round(Lineouts[k]*dr[l],2))+'cm[R]'
+				if LineoutsOrientation[k] == 'Radial':
+					NameString= Variablelist[i]+'_'+str(round(Lineouts[k]*dz[l],2))+'cm[Z]'
 				if savefig_phaseresolve1D == True:
-					Dir1DProfiles = CreateNewFolder(DirPhaseResolved,NameString+'_1Dprofiles/')
+					Dir1DProfiles = CreateNewFolder(DirMovieplots,NameString)
 				#endif
 
 				#Collect Normalization data for plotting.
@@ -4137,17 +4131,14 @@ if savefig_phaseresolve1D == True:
 				for j in range(0,len(Moviephaselist[l])):
 
 					if LineoutsOrientation[k] == 'Axial':
-						#Axial 1D profiles, using first hightlineout as axial location.
 						ZlineoutLoc,axis = Lineouts[k],Zaxis
 						PhaseResolvedlineout = PlotAxialProfile(PhaseMovieData[l][j],Processlist[i],Variablelist[i],ZlineoutLoc,R_mesh[l],Z_mesh[l],Isymlist[l])
-						lineoutstring = ' @ Z='+str(round(ZlineoutLoc*dz[l],2))+'cm \n'
+						lineoutstring = ' @ R='+str(round(Lineouts[k]*dr[l],2))+'cm \n'
 						Xlabel = 'Axial Distance Z [cm]'
-
 					elif LineoutsOrientation[k] == 'Radial':
-						#Radial 1D profiles, using first radialineout as axial location.
 						RlineoutLoc,axis = Lineouts[k],Raxis
 						PhaseResolvedlineout = PlotRadialProfile(PhaseMovieData[l][j],Processlist[i],Variablelist[i],RlineoutLoc,R_mesh[l],Isymlist[l])
-						lineoutstring = ' @ R='+str(round(RlineoutLoc*dr[l],2))+'cm \n'
+						lineoutstring = ' @ Z='+str(round(Lineouts[k]*dz[l],2))+'cm \n'
 						Xlabel = 'Radial Distance R [cm]'
 					#endif
 
@@ -4178,15 +4169,16 @@ if savefig_phaseresolve1D == True:
 					#Write Phase data in ASCII format if required.
 					if write_phaseresolve == True:
 						DirASCIIPhase = CreateNewFolder(DirPhaseResolved,'1DPhase_Data')
+						DirASCIIPhaseloc = CreateNewFolder(DirASCIIPhase,lineoutstring[3:-2])
 						Cycle = str( Moviephaselist[l][j].replace(" ", "") )
-						SaveString = DirASCIIPhase+Variablelist[i]+'_'+Cycle
+						SaveString = DirASCIIPhaseloc+Variablelist[i]+'_'+Cycle
 						WriteDataToFile(PhaseResolvedlineout[::-1], SaveString)
 					#endif
 				#endfor
 
 				#Create .mp4 movie from completed images.
-				Prefix = NameString+FolderNameTrimmer(Dirlist[l])
-				Automovie(Dir1DProfiles,Prefix+'_'+Variablelist[i])
+				Prefix = FolderNameTrimmer(Dirlist[l])+'_'+NameString
+				Automovie(Dir1DProfiles,Prefix)
 			#endfor
 		#endfor
 	#endfor
@@ -4251,7 +4243,7 @@ if savefig_PROES == True:
 		#endfor
 		#ax.plot(Phaseaxis,ElectrodeBias, 'k--', lw=2)
 
-		Title = 'Phase-Resolved Voltage Waveform for '+FolderNameTrimmer(Dirlist[l])
+		Title = 'Phase-Resolved Voltage Waveforms for '+FolderNameTrimmer(Dirlist[l])
 		Legend = ['rf self-bias: '+str(round(ElectrodeBias[0],2))+'V']
 		Xlabel,Ylabel = 'Phase [$\omega$t/2$\pi$]','Electrode Potential [V]'
 		ImageOptions(ax,Xlabel,Ylabel,Title,Legend,Crop=False)
