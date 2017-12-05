@@ -99,7 +99,7 @@ MSHC_PCMC = ['AR^0.5S','EB-0.5S','ION-TOT0.5S','AR^1.1B','EB-1.1B','ION-TOT1.1B'
 PR_PCMC = ['AR^0.25','EB-0.25','ION-TOT0.25']
 
 MSHC_Phase = ['S-E','S-AR+','S-AR4P','TE','PPOT']
-PR_Phase = ['S-E','S-AR+','S-AR4P','TE','PPOT']
+PR_Phase = ['S-E','S-AR+','S-AR4P','SEB-AR4P','TE','PPOT']
 PR_Phase2 = ['S-E','S-AR+','SEB-AR+','SEB-AR4P','SRCE-2437','TE','PPOT']
 
 
@@ -128,32 +128,33 @@ PR_Phase2 = ['S-E','S-AR+','SEB-AR+','SEB-AR4P','SRCE-2437','TE','PPOT']
 #====================================================================#
 
 #Requested IEDF/NEDF Variables.
-IEDFVariables = []		#Requested iprofile_2d variables (no spaces)
-NEDFVariables = []		#Requested nprofile_2d variables (no spaces)
+IEDFVariables = PR_PCMC		#Requested iprofile_2d variables (no spaces)
+NEDFVariables = []			#Requested nprofile_2d variables (no spaces)
 
 #Requested movie1/movie_icp Variables.
 IterVariables = ['E','S-E','PPOT','TE']		#Requested Movie_icp (iteration) Variables.
-PhaseVariables = PR_Phase2					#Requested Movie1 (phase) Variables.
+PhaseVariables = PR_Phase					#Requested Movie1 (phase) Variables.
 electrodeloc = [30,46]						#Cell location of powered electrode [R,Z].
 waveformlocs = [[16,31],[16,46],[16,66]]		#Cell locations of additional waveforms [R,Z].
 
 phasecycles = 2								#Number of phase cycles to be plotted.
 DoFWidth = 41								#PROES Depth of Field Cells
 #electrodeloc	#YPR [30,46],[16,46] #SPR [0,107] #MSHC [0,12]
+#waveformlocs 	#YPR [[16,31],[16,46],[16,66]]
 #DOFWidth		#YPR 41=2cm   #MSHC 10=0.47cm
 
 #Requested TECPLOT Variables
 Variables = Ar
 MultiVar = []						#Additional variables plotted ontop of [Variables]
-radialineouts = [] 					#Radial 1D-Profiles to be plotted (fixed Z-mesh) --
-heightlineouts = [0]					#Axial 1D-Profiles to be plotted (fixed R-mesh) |
+radialineouts = [31,46,66] 					#Radial 1D-Profiles to be plotted (fixed Z-mesh) --
+heightlineouts = []					#Axial 1D-Profiles to be plotted (fixed R-mesh) |
 TrendLocation = [] 					#Cell location For Trend Analysis [R,Z], ([] = min/max)
-#YPR H0;R47 #MSHC H0,20;R20
+#YPR H0;R[31,46,66] #MSHC H0,20;R20
 
 
 #Requested diagnostics and plotting routines.
 savefig_itermovie = False					#Requires movie_icp.pdt
-savefig_plot2D = True						#Requires TECPLOT2D.PDT
+savefig_plot2D = False						#Requires TECPLOT2D.PDT
 
 savefig_monoprofiles = False				#Single Variables; fixed height/radius
 savefig_multiprofiles = False				#Multi-Variables; same folder
@@ -180,7 +181,7 @@ print_thrust = False
 #Image plotting options.
 image_extension = '.png'					#Extensions { '.png', '.jpg', '.eps' }
 image_aspectratio = [10,10]					#[x,y] in cm [Doesn't rotate dynamically]
-image_radialcrop = [0.6]						#[R,Z] in cm
+image_radialcrop = [0.6]					#[R,Z] in cm
 image_axialcrop = [1,4]						#[R,Z] in cm
 #YPR R[0.6];Z[1,4]   #MSHC R[0.0,1.0];Z[0.5,2.5]
 
@@ -1199,7 +1200,7 @@ for l in tqdm(range(0,numfolders)):
 		header_IEDFlist.append(header_IEDF)
 
 		#Seperate total 1D data array into sets of data for each variable.
-		CurrentFolderData = SDFileFormatConvertorHPEM(rawdata_IEDF[l],header_IEDF,numvariables_IEDF,I,J)
+		CurrentFolderData = SDFileFormatConvertorHPEM(rawdata_IEDF[l],header_IEDF,numvariables_IEDF,0,I,J)
 
 		#Save all variables for folder[l] to Data.
 		#Data is now 3D array of form [folder,variable,datapoint(R,Z)]
@@ -4284,15 +4285,6 @@ if savefig_PROES == True:
 				#Refresh required lists.
 				VariableMax,VariableMin = list(),list()
 				PROES = list()
-
-				#Create folders to keep output plots for each variable.
-				if LineoutsOrientation[k] == 'Axial':
-					NameString= Variablelist[i]+'_'+str(round(Lineouts[k]*dz[l],2))+'cm[Z]'
-				if LineoutsOrientation[k] == 'Radial':
-					NameString= Variablelist[i]+'_'+str(round(Lineouts[k]*dr[l],2))+'cm[R]'
-				if savefig_phaseresolve1D == True:
-					Dir1DProfiles = CreateNewFolder(DirPhaseResolved,NameString+'_1Dprofiles/')
-				#endif
 
 				#for all recorded phases, plot spatially varying variable and waveform.
 				for j in range(0,len(Moviephaselist[l])):
