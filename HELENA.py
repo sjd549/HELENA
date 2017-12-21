@@ -99,8 +99,7 @@ MSHC_PCMC = ['AR^0.5S','EB-0.5S','ION-TOT0.5S','AR^1.1B','EB-1.1B','ION-TOT1.1B'
 PR_PCMC = ['AR^0.25','EB-0.25','ION-TOT0.25']
 
 MSHC_Phase = ['S-E','S-AR+','S-AR4P','TE','PPOT']
-PR_Phase = ['S-E','S-AR+','S-AR4P','SEB-AR4P','TE','PPOT']
-PR_Phase2 = ['S-E','S-AR+','SEB-AR+','SEB-AR4P','SRCE-2437','TE','PPOT']
+PR_Phase = ['S-E','S-AR+','SEB-AR+','SEB-AR4P','SRCE-2437','TE','PPOT','FR-E']
 
 
 
@@ -138,7 +137,7 @@ electrodeloc = [30,46]						#Cell location of powered electrode [R,Z].
 waveformlocs = [[16,31],[16,46],[16,66]]		#Cell locations of additional waveforms [R,Z].
 
 phasecycles = 2								#Number of phase cycles to be plotted.
-DoFWidth = 41								#PROES Depth of Field Cells
+DoFWidth = 1								#PROES Depth of Field Cells (0 -> 1 cell)
 #electrodeloc	#YPR [30,46],[16,46] #SPR [0,107] #MSHC [0,12]
 #waveformlocs 	#YPR [[16,31],[16,46],[16,66]]
 #DOFWidth		#YPR 41=2cm   #MSHC 10=0.47cm
@@ -146,7 +145,7 @@ DoFWidth = 41								#PROES Depth of Field Cells
 #Requested TECPLOT Variables
 Variables = Ar
 MultiVar = []						#Additional variables plotted ontop of [Variables]
-radialineouts = [31,46,66] 					#Radial 1D-Profiles to be plotted (fixed Z-mesh) --
+radialineouts = [31,46,66] 				#Radial 1D-Profiles to be plotted (fixed Z-mesh) --
 heightlineouts = []					#Axial 1D-Profiles to be plotted (fixed R-mesh) |
 TrendLocation = [] 					#Cell location For Trend Analysis [R,Z], ([] = min/max)
 #YPR H0;R[31,46,66] #MSHC H0,20;R20
@@ -154,12 +153,12 @@ TrendLocation = [] 					#Cell location For Trend Analysis [R,Z], ([] = min/max)
 
 #Requested diagnostics and plotting routines.
 savefig_itermovie = False					#Requires movie_icp.pdt
-savefig_plot2D = False						#Requires TECPLOT2D.PDT
+savefig_plot2D = False					#Requires TECPLOT2D.PDT
 
 savefig_monoprofiles = False				#Single Variables; fixed height/radius
 savefig_multiprofiles = False				#Multi-Variables; same folder
 savefig_comparelineouts = False				#Multi-Variables; all folders
-savefig_trendcomparison = False				#Single Variables; fixed cell location (or max/min)
+savefig_trendcomparison = True				#Single Variables; fixed cell location (or max/min)
 
 savefig_phaseresolve1D = False				#1D Phase Resolved Images
 savefig_phaseresolve2D = False				#2D Phase Resolved Images
@@ -863,10 +862,10 @@ def VariableLabelMaker(variablelist):
 			Variable = 'Axial E-Field Strength'
 			VariableUnit = '[Vcm$^{-1}$]'
 		elif variablelist[i] == 'JZ-NET':
-			Variable = 'Axial Net Current Density'
+			Variable = 'Axial Current Density'
 			VariableUnit = '[mA cm$^{-2}$]'
 		elif variablelist[i] == 'JR-NET':
-			Variable = 'Radial Net Current Density'
+			Variable = 'Radial Current Density'
 			VariableUnit = '[mA cm$^{-2}$]'
 
 		#Explicit Power Deposition.
@@ -1914,7 +1913,7 @@ def ImagePlotter1D(profile,axis,aspectratio,fig=111,ax=111):
 
 #Create figure and plot a 2D image with associated image plotting requirements.
 #Returns plotted image, axes and figure after applying basic data restructuring.
-#ImagePlotter2D(Image,extent,image_aspectratio,fig,ax[0]):
+#ImagePlotter2D(Image,extent,image_aspectratio,Variablename,fig,ax[0]):
 def ImagePlotter2D(Image,extent,aspectratio,variable='N/A',fig=111,ax=111):
 
 	#Generate new figure if required. {kinda hacky...}
@@ -2044,7 +2043,7 @@ def GenerateAxis(Orientation,Isym=Isymlist[l],phasepoints=range(0,180)):
 
 	if Orientation == 'Radial':
 		if Isym == 1:
-			for i in range(0,2*R_mesh[l]):
+			for i in range(-R_mesh[l],R_mesh[l]):
 				axis.append(i*dr[l])
 		#endfor
 		else:
@@ -2075,7 +2074,6 @@ def GenerateAxis(Orientation,Isym=Isymlist[l],phasepoints=range(0,180)):
 #Returns a 1D array for plotting and performs unit conversion.
 def PlotRadialProfile(Data,process,variable,lineout,Rmesh=0,Isym=0):
 
-	#WHY Rmesh=R_mesh[l],Zmesh=Z_mesh[l] NOT WORKING????
 	#If no mesh sizes supplied, collect sizes for current global folder.
 	if Rmesh == 0 or Isym == 0:
 		Rmesh,Isym = R_mesh[l],Isymlist[l]
@@ -2086,25 +2084,29 @@ def PlotRadialProfile(Data,process,variable,lineout,Rmesh=0,Isym=0):
 	ZEnd = Rmesh*(lineout+1)
 
 	#Plot lines for each variable at each requested slice, ignoring ones that fail.
-	try:
-		#If mesh is symmetric, copy the data over and make full plot.
-		if Isym == 1:
-			Zend = len(Data[process])-ZStart
-			Zstart = len(Data[process])-ZEnd
-			Rlineout = Data[process][Zstart:Zend][::-1]
+	#If mesh is symmetric, copy the data over and make full plot.
+	if Isym == 1:
+		Zend = len(Data[process])-ZStart
+		Zstart = len(Data[process])-ZEnd
+		Rlineout = Data[process][Zstart:Zend][::-1]
+		#If variable is radially symmetric, add negative to symmetry
+		if IsRadialVariable(variable) == True:
+			for m in range(0,len(Rlineout)):
+				Rlineout.append(-Data[process][Zstart:Zend][m])
+			#endfor
+		#If variable is axially symmetric, add positive.
+		elif IsRadialVariable(variable) == False:
 			for m in range(0,len(Rlineout)):
 				Rlineout.append(Data[process][Zstart:Zend][m])
 			#endfor
-
-		#If the data isn't symmetric, just plot as is.
-		elif Isym == 0:
-			Zend = len(Data[process])-ZStart
-			Zstart = len(Data[process])-ZEnd
-			Rlineout = Data[process][Zstart:Zend]
 		#endif
-	except:
-		This_Means_A_Variable_Was_Missing_From_The_Data = 1
-	#endtry
+
+	#If the data isn't symmetric, just plot as is.
+	elif Isym == 0:
+		Zend = len(Data[process])-ZStart
+		Zstart = len(Data[process])-ZEnd
+		Rlineout = Data[process][Zstart:Zend]
+	#endif
 
 	#Convert units if required and plot.
 	Rlineout = VariableUnitConversion(Rlineout,variable)
@@ -3292,10 +3294,12 @@ if savefig_trendcomparison == True or print_generaltrends == True:
 			ImageOptions(ax,Xlabel,Ylabel,Title,Legendlist,Crop=False)
 
 			#Write data to ASCII format datafile if requested.
-			if write_trendcomparison == True:
+			if write_trendcomparison == True and j == 0:
 				DirASCII = CreateNewFolder(DirTrends,'Trend_Data')
-				DCASCII = [Xaxis,Trend]
-				WriteDataToFile(Trend, DirASCII+Variablelist[k]+' Trends')
+				try: os.remove(DirASCII+Variablelist[k]+' Trends')
+				except: a=1
+			if write_lineouts == True:
+				WriteDataToFile(Trend+['\n'], DirASCII+Variablelist[k]+' Trends', 'a')
 			#endif
 
 		#Save one image per variable with data from all simulations.
@@ -3344,16 +3348,18 @@ if savefig_trendcomparison == True or print_generaltrends == True:
 			#endif
 
 			#Plot trends for each variable over all folders, applying image options.
-			TrendPlotter(MaxTrend,Xaxis,NormFactor=0)
+			TrendPlotter(Trend,Xaxis,NormFactor=0)
 			Title='Trend in max '+Variablelist[k]+' with changing '+TrendVariable+' \n'+Dirlist[l][2:-1]
 			Xlabel,Ylabel = 'Varied Property','Max '+YaxisLegend[k]
 			ImageOptions(ax,Xlabel,Ylabel,Title,Legendlist,Crop=False)
 
 			#Write data to ASCII format datafile if requested.
-			if write_trendcomparison == True:
+			if write_trendcomparison == True and j == 0:
 				DirASCII = CreateNewFolder(DirTrends,'Trend_Data')
-				DCASCII = [Xaxis,MaxTrend]
-				WriteDataToFile(MaxTrend, DirASCII+Variablelist[k]+' Trends')
+				try: os.remove(DirASCII+Variablelist[k]+' Trends')
+				except: a=1
+			if write_lineouts == True:
+				WriteDataToFile(Trend+['\n'], DirASCII+Variablelist[k]+' Trends', 'a')
 			#endif
 
 		#Save one image per variable with data from all simulations.
@@ -4041,7 +4047,6 @@ if savefig_phaseresolve1D == True:
 		Raxis = GenerateAxis('Radial',Isymlist[l])
 		Zaxis = GenerateAxis('Axial',Isymlist[l])
 
-
 		#=============#
 
 		#Extract waveforms from desired electrode locations.
@@ -4224,7 +4229,6 @@ if savefig_PROES == True:
 		Raxis = GenerateAxis('Radial',Isymlist[l])
 		Zaxis = GenerateAxis('Axial',Isymlist[l])
 
-
 		#=============#
 
 		#Extract waveforms from desired electrode locations.
@@ -4391,7 +4395,7 @@ if savefig_PROES == True:
 					TemporalPROES.append( (sum(PROES[m][::]))/(len(PROES)/2) )
 				#endfor
 
-				#Plot Temporally collapsed PROES with phase axis.
+				#Plot Spatially Collapsed PROES with phase axis.
 				fig,ax = figure(image_aspectratio,2)
 				ax[0].plot(Phaseaxis,TemporalPROES, lw=2)
 				Ylabel = 'Spatially Integrated '+Variablelist[i]
@@ -4406,7 +4410,7 @@ if savefig_PROES == True:
 				plt.savefig(DirPROESloc+VariedValuelist[l]+' '+NameString+' TemporalPROES'+ext)
 				plt.close('all')
 
-				#Plot Spatially collapsed PROES with required axis.
+				#Plot Temporally Collapsed PROES with required axis.
 				fig,ax = figure(image_aspectratio,2)
 				ax[0].plot(Raxis,SpatialPROES, lw=2)
 				Xlabel = 'Phase [$\omega$t/2$\pi$]'
