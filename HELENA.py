@@ -78,7 +78,7 @@ Switchboard = {}
 DebugMode = False
 
 #Tweaks and fixes for 'volitile' diagnostics.
-AxialLine = 80 						#Z-axis line for thrust calculation.  YPR=80, ESCTest=42,
+AxialLine = 76						#Z-axis line for thrust calculation.  YPR=80, stdESCT=76,
 Manualbiasaxis = ''					#'Axial' or 'Radial'. (empty '' for auto)
 
 #List of recognised atomic density sets, add new sets as required.
@@ -91,16 +91,17 @@ AtomicSet = ['E']+ArgonReduced+ArgonFull+Oxygen
 NeutSpecies = ['AR','AR3S','O2']
 
 #Commonly used variable sets.
-Ar = ['AR3S','AR4SM','AR4SR','AR4SPM','AR4SPR','AR4P','AR4D','AR','AR+','AR2+','AR2*','E','TE','P-POT','TG-AVE','RHO','PRESSURE','EF-TOT','POW-RF','POW-RF-E','S-AR+','S-AR4P','SEB-AR+','SEB-AR4P','EB-ESORC','VR-NEUTRAL','VZ-NEUTRAL','VR-ION+','VZ-ION+','FR-AR+','FZ-AR+']
-O2 = ['O2','O2+','O','O+','O-','E','TE','P-POT','TG-AVE','PRESSURE','EF-TOT','POW-RF','POW-RF-E','VR-NEUTRAL','VZ-NEUTRAL','VR-ION+','VZ-ION+','VR-ION-','VZ-ION-','FR-O-','FZ-O-']
+Ar = ['AR3S','AR4SM','AR4SR','AR4SPM','AR4SPR','AR4P','AR4D','AR','AR+','AR2+','AR2*','E','TE','P-POT','TG-AVE','RHO','PRESSURE','EF-TOT','POW-RF','POW-RF-E','S-AR+','S-AR4P','SEB-AR+','SEB-AR4P','EB-ESORC','VR-NEUTRAL','VZ-NEUTRAL','VR-ION+','VZ-ION+','EFLUX-R','EFLUX-Z','FR-AR+','FZ-AR+']
+O2 = ['O2','O2+','O','O+','O-','E','TE','P-POT','TG-AVE','PRESSURE','EF-TOT','POW-RF','POW-RF-E','VR-NEUTRAL','VZ-NEUTRAL','VR-ION+','VZ-ION+','EFLUX-R','EFLUX-Z','FR-O-','FZ-O-']
 ArO2 = Ar+O2
 
+ESCT_PCMC = ['AR^0.3S','EB-0.3S','ION-TOT0.3S']
 MSHC_PCMC = ['AR^0.5S','EB-0.5S','ION-TOT0.5S','AR^1.1B','EB-1.1B','ION-TOT1.1B']
-PR_PCMC = ['AR^0.25','EB-0.25','ION-TOT0.25']
+PR_PCMC = ['AR^0.35','EB-0.35','ION-TOT0.35']
 
+PR_Phase = ['S-E','S-AR+','S-AR4P','SEB-AR+','SEB-AR4P','SRCE-2437','TE','PPOT','FR-E']
+ESCT_Phase = ['S-E','S-AR+','FZ-E','FZ-AR+','TE','PPOT']
 MSHC_Phase = ['S-E','S-AR+','S-AR4P','TE','PPOT']
-PR_Phase = ['S-E','S-AR+','SEB-AR+','SEB-AR4P','SRCE-2437','TE','PPOT','FR-E']
-
 
 
 #Paper Trend Locations
@@ -108,8 +109,8 @@ PR_Phase = ['S-E','S-AR+','SEB-AR+','SEB-AR4P','SRCE-2437','TE','PPOT','FR-E']
 #dz(5.50/118), dr(2.55/102) height=[24,43], Trend=[19]
 
 #SDoyle2017b: 
-#PROES, (Z=1.52,2.25,3.23) radialineouts = [31,46,66]
-#Dielectric locations: [16,31],[16,46],[16,66]
+#PROES, (Z=14.2, 21.0, 31.0) radialineouts = [29,44,64]
+#Dielectric locations: [16,29],[16,44],[16,64]
 
         
         
@@ -127,17 +128,17 @@ PR_Phase = ['S-E','S-AR+','SEB-AR+','SEB-AR4P','SRCE-2437','TE','PPOT','FR-E']
 #====================================================================#
 
 #Requested IEDF/NEDF Variables.
-IEDFVariables = PR_PCMC		#Requested iprofile_2d variables (no spaces)
+IEDFVariables = ESCT_PCMC#PR_PCMC		#Requested iprofile_2d variables (no spaces)
 NEDFVariables = []			#Requested nprofile_2d variables (no spaces)
 
 #Requested movie1/movie_icp Variables.
 IterVariables = ['E','S-E','PPOT','TE']		#Requested Movie_icp (iteration) Variables.
-PhaseVariables = PR_Phase					#Requested Movie1 (phase) Variables.
-electrodeloc = [30,46]						#Cell location of powered electrode [R,Z].
-waveformlocs = [[16,31],[16,46],[16,66]]		#Cell locations of additional waveforms [R,Z].
+PhaseVariables = ESCT_Phase					#Requested Movie1 (phase) Variables.
+electrodeloc = [0,0]#[30,44]						#Cell location of powered electrode [R,Z].
+waveformlocs = []#[[16,29],[16,44],[16,64]]		#Cell locations of additional waveforms [R,Z].
 
-phasecycles = 2								#Number of phase cycles to be plotted.
-DoFWidth = 1								#PROES Depth of Field Cells (0 -> 1 cell)
+phasecycles = 1								#Number of phase cycles to be plotted.
+DoFWidth = 0#41								#PROES Depth of Field Cells (0 -> 1 cell)
 #electrodeloc	#YPR [30,46],[16,46] #SPR [0,107] #MSHC [0,12]
 #waveformlocs 	#YPR [[16,31],[16,46],[16,66]]
 #DOFWidth		#YPR 41=2cm   #MSHC 10=0.47cm
@@ -145,20 +146,21 @@ DoFWidth = 1								#PROES Depth of Field Cells (0 -> 1 cell)
 #Requested TECPLOT Variables
 Variables = Ar
 MultiVar = []						#Additional variables plotted ontop of [Variables]
-radialineouts = [31,46,66] 				#Radial 1D-Profiles to be plotted (fixed Z-mesh) --
-heightlineouts = []					#Axial 1D-Profiles to be plotted (fixed R-mesh) |
-TrendLocation = [] 					#Cell location For Trend Analysis [R,Z], ([] = min/max)
+radialineouts = []#[44]#[29,44,64] 				#Radial 1D-Profiles to be plotted (fixed Z-mesh) --
+heightlineouts = [0]					#Axial 1D-Profiles to be plotted (fixed R-mesh) |
+TrendLocation = []#[0,48] 					#Cell location For Trend Analysis [R,Z], ([] = min/max)
 #YPR H0;R[31,46,66] #MSHC H0,20;R20
 
 
 #Requested diagnostics and plotting routines.
 savefig_itermovie = False					#Requires movie_icp.pdt
-savefig_plot2D = False					#Requires TECPLOT2D.PDT
+savefig_plot2D = True						#Requires TECPLOT2D.PDT
 
-savefig_monoprofiles = False				#Single Variables; fixed height/radius
+savefig_monoprofiles = False				#Single-Variables; fixed height/radius
 savefig_multiprofiles = False				#Multi-Variables; same folder
 savefig_comparelineouts = False				#Multi-Variables; all folders
-savefig_trendcomparison = True				#Single Variables; fixed cell location (or max/min)
+savefig_trendcomparison = False				#Single-Variables; fixed cell location (or max/min)
+savefig_pulseprofiles = False				#Single-Variables; movie_icp.pdt profiles
 
 savefig_phaseresolve1D = False				#1D Phase Resolved Images
 savefig_phaseresolve2D = False				#2D Phase Resolved Images
@@ -180,8 +182,8 @@ print_thrust = False
 #Image plotting options.
 image_extension = '.png'					#Extensions { '.png', '.jpg', '.eps' }
 image_aspectratio = [10,10]					#[x,y] in cm [Doesn't rotate dynamically]
-image_radialcrop = [0.6]					#[R,Z] in cm
-image_axialcrop = [1,4]						#[R,Z] in cm
+image_radialcrop = []#[0.6]					#[R,Z] in cm
+image_axialcrop = []#[1,4]						#[R,Z] in cm
 #YPR R[0.6];Z[1,4]   #MSHC R[0.0,1.0];Z[0.5,2.5]
 
 image_plotsymmetry = True
@@ -225,9 +227,11 @@ cbaroverride = ['NotImplimented']
 
 
 #####TODO#####
-#need to update the cbar function and introduce an override.
-#need to get seaborn introduced into the program en-masse.
-#need to introduce 'garbage collection' at the end of each diagnostic.
+#clean up unused functions and ensure homogeneity
+#allow for toggle on movie production
+#update the cbar function and introduce an override.
+#introduce seaborn into the program en-masse.
+#introduce 'garbage collection' at the end of each diagnostic.
 #meshconvergence --> numerictrendaxis needs made for comparisons.
 #Generally rename the switchboard to increase clarity.
 
@@ -320,7 +324,7 @@ print '   |  |__|  | |  |__   |  |     |  |__   |   \|  |   /  ^  \        '
 print '   |   __   | |   __|  |  |     |   __|  |  . `  |  /  /_\  \       '
 print '   |  |  |  | |  |____ |  `----.|  |____ |  |\   | /  _____  \      '
 print '   |__|  |__| |_______||_______||_______||__| \__|/__/     \__\     '
-print '                                                            v0.10.4 '
+print '                                                            v0.10.5 '
 print '--------------------------------------------------------------------'
 print ''
 print 'The following diagnostics were requested:'
@@ -1258,7 +1262,7 @@ for l in tqdm(range(0,numfolders)):
 #===================##===================#
 #===================##===================#
 
-	if savefig_itermovie == True:
+	if True in [savefig_itermovie,savefig_pulseprofiles]:
 
 		#Load data from movie_icp file and unpack into 1D array.
 		try:
@@ -1358,14 +1362,15 @@ for l in tqdm(range(0,numfolders)):
 
 		#Read through all variables for each file and stop when list ends. 
 		#Movie1 has geometry at top, therefore len(header) != len(variables).
-		VariableEndMarker,HeaderEndMarker = 'GEOMETRY','ZONE'
+		#Only the first encountered geometry is used to define variable zone.
+		VariableEndMarker,HeaderEndMarker,NumVariables = 'GEOMETRY','ZONE',0
 #		Variablelist = ['Radius','Height']		#NewMethod
 		Variablelist = list()					#OldMethod
 		for i in range(2,nn_phasemovie):
 			if HeaderEndMarker in str(rawdata_phasemovie[l][i]): 
 				header_phase = i+2
 				break
-			if VariableEndMarker in str(rawdata_phasemovie[l][i]):
+			if VariableEndMarker in str(rawdata_phasemovie[l][i]) and NumVariables==0:
 #				NumVariables = (i-1)	#Including R,Z		#NewMethod
 				NumVariables = (i-3)	#Not Including R,Z	#OldMethod
 			if len(rawdata_phasemovie[l][i]) > 1: 
@@ -1459,7 +1464,6 @@ for l in tqdm(range(0,numfolders)):
 
 
 		if OldMethod == True:
-
 			#Create Variablelists for each folder of data and refresh Variablelist
 			MovieVariablelist,Moviephaselist_temp = list(),list()
 			data_array = list()
@@ -1546,7 +1550,7 @@ del Energy,Fe,rawdata_mcs
 
 
 #Alert user that readin process has ended and continue with selected diagnostics.
-if any([savefig_plot2D, savefig_phaseresolve2D, savefig_itermovie, savefig_monoprofiles, savefig_multiprofiles, savefig_comparelineouts, savefig_phaseresolve1D, savefig_PROES, savefig_trendcomparison, print_generaltrends, print_Knudsennumber, print_totalpower, print_DCbias, print_thrust, savefig_IEDF, savefig_EEDF]) == True:
+if any([savefig_plot2D, savefig_phaseresolve2D, savefig_itermovie, savefig_monoprofiles, savefig_multiprofiles, savefig_comparelineouts, savefig_pulseprofiles, savefig_phaseresolve1D, savefig_PROES, savefig_trendcomparison, print_generaltrends, print_Knudsennumber, print_totalpower, print_DCbias, print_thrust, savefig_IEDF, savefig_EEDF]) == True:
 	print '----------------------------------------'
 	print 'Data Readin Complete, Starting Analysis:'
 	print '----------------------------------------'
@@ -2638,7 +2642,7 @@ if savefig_itermovie == True:
 		Title = 'Convergence of '+str(IterVariablelist)+' for \n'+Dirlist[l][2:-1]
 		Xlabel,Ylabel = 'Simulation Iteration','Normalized Mesh-Average Value'
 		ImageOptions(ax,Xlabel,Ylabel,Title,Legend,Crop=False)
-		ax.set_ylim(0,1.02)
+		ax.set_ylim(0,1.01+(len(Legend)*0.05))
 
 		#Save figure.
 		savefig(DirConvergence+FolderNameTrimmer(Dirlist[l])+'_Convergence'+ext)
@@ -3084,6 +3088,89 @@ if savefig_multiprofiles == True:
 	print'-----------------------------'
 #endif
 
+
+
+#====================================================================#
+			  #ITERMOVIE PROFILES - PULSE ANALYSIS#
+#====================================================================#
+
+
+
+#Plot 1D profile of itervariables at desired locations
+if savefig_pulseprofiles == True:
+
+	#for all folders being processed.
+	for l in range(0,numfolders):
+
+		#Create new folder and initiate required lists.
+		PulseTrends,Xaxis = list(),list()
+		DirPulse = CreateNewFolder(Dirlist[l],'Pulse_Profiles/')
+
+		#Create processlist for each folder as required.
+		iterprocesslist,IterVariablelist = VariableEnumerator(IterVariables,rawdata_itermovie_icp[l],header_itermovie[l])
+		#Skip over the R and Z processes as they are not saved properly in iterdata.
+		for i in range(0,len(iterprocesslist)):
+			iterprocesslist[i] = iterprocesslist[i]-2
+		#endfor
+
+		#Create list and x-axis for convergence trend plotting.
+		DtActual = 8.00E-6		#S
+		for i in range(0,len(MovieITERlist[l])):
+			Xaxis.append( float(filter(lambda x: x.isdigit(), MovieITERlist[l][i]))*DtActual )
+		#endfor
+
+		#for all variables requested by the user.
+		for i in tqdm(range(0,len(iterprocesslist))):
+
+			#Extract 2D image and take mesh averaged value for iteration trend.
+			PulseProfile = list()
+			for k in range(0,len(MovieITERlist[l])):
+				#for further processing.
+				Image = ImageExtractor2D(IterMovieData[l][k][iterprocesslist[i]],IterVariablelist[i])
+				PulseProfile.append( sum(Image.flatten())/len(Image.flatten()) )
+			#endfor
+			PulseTrends.append(PulseProfile)
+
+			#Plot each variable against simulation real-time.
+			fig, ax = plt.subplots(1, figsize=(10,10))
+			ax.plot(Xaxis,PulseProfile, lw=2)
+
+			#Image plotting details.
+			Title = 'Simulation Time Profile of '+str(IterVariablelist[i])+' for \n'+Dirlist[l][2:-1]
+			Xlabel,Ylabel = 'Simulation time [S]',VariableLabelMaker(IterVariablelist)[i]
+			ImageOptions(ax,Xlabel,Ylabel,Title,Legend=[],Crop=False)
+
+			#Save figure.
+			savefig(DirPulse+FolderNameTrimmer(Dirlist[l])+'_'+IterVariablelist[i]+ext)
+			plt.close('all')
+		#endfor
+
+		#=================#
+
+		#Plot mesh averaged value over 'real-time' in simulation.
+		Legend = VariableLabelMaker(IterVariablelist)
+		fig, ax = plt.subplots(1, figsize=(10,10))
+
+		#Plot each variable in ConvergenceTrends to single figure.
+		for i in range(0,len(PulseTrends)):
+			PulseTrends[i] = Normalize(PulseTrends[i])[0]
+			ax.plot(Xaxis,PulseTrends[i], lw=2)
+		#endfor
+
+		#Image plotting details.
+		Title = 'Simulation Time Profile of '+str(IterVariablelist)+' for \n'+Dirlist[l][2:-1]
+		Xlabel,Ylabel = 'Simulation time [S]','Normalized Mesh-Average Value'
+		ImageOptions(ax,Xlabel,Ylabel,Title,Legend,Crop=False)
+		ax.set_ylim(0,1.01+(len(Legend)*0.05))
+
+		#Save figure.
+		savefig(DirPulse+'Normalized_'+FolderNameTrimmer(Dirlist[l])+ext)
+		plt.close('all')
+	#endfor
+	print'-------------------------'
+	print'# Pulse Profiles Complete'
+	print'-------------------------'
+#endif
 
 #=====================================================================#
 #=====================================================================#
