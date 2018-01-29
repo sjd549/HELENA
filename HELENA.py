@@ -128,17 +128,17 @@ MSHC_Phase = ['S-E','S-AR+','S-AR4P','TE','PPOT']
 #====================================================================#
 
 #Requested IEDF/NEDF Variables.
-IEDFVariables = ESCT_PCMC#PR_PCMC		#Requested iprofile_2d variables (no spaces)
+IEDFVariables = PR_PCMC		#Requested iprofile_2d variables (no spaces)
 NEDFVariables = []			#Requested nprofile_2d variables (no spaces)
 
 #Requested movie1/movie_icp Variables.
 IterVariables = ['E','S-E','PPOT','TE']		#Requested Movie_icp (iteration) Variables.
-PhaseVariables = ESCT_Phase					#Requested Movie1 (phase) Variables.
-electrodeloc = [0,0]#[30,44]						#Cell location of powered electrode [R,Z].
-waveformlocs = []#[[16,29],[16,44],[16,64]]		#Cell locations of additional waveforms [R,Z].
+PhaseVariables = PR_Phase					#Requested Movie1 (phase) Variables.
+electrodeloc = [30,44]						#Cell location of powered electrode [R,Z].
+waveformlocs = [[16,29],[16,44],[16,64]]		#Cell locations of additional waveforms [R,Z].
 
-phasecycles = 1								#Number of phase cycles to be plotted.
-DoFWidth = 0#41								#PROES Depth of Field Cells (0 -> 1 cell)
+phasecycles = 2								#Number of phase cycles to be plotted.
+DoFWidth = 41								#PROES Depth of Field Cells (0 -> 1 cell)
 #electrodeloc	#YPR [30,46],[16,46] #SPR [0,107] #MSHC [0,12]
 #waveformlocs 	#YPR [[16,31],[16,46],[16,66]]
 #DOFWidth		#YPR 41=2cm   #MSHC 10=0.47cm
@@ -146,21 +146,21 @@ DoFWidth = 0#41								#PROES Depth of Field Cells (0 -> 1 cell)
 #Requested TECPLOT Variables
 Variables = Ar
 MultiVar = []						#Additional variables plotted ontop of [Variables]
-radialineouts = []#[44]#[29,44,64] 				#Radial 1D-Profiles to be plotted (fixed Z-mesh) --
-heightlineouts = [0]					#Axial 1D-Profiles to be plotted (fixed R-mesh) |
+radialineouts = [29,44,64] 				#Radial 1D-Profiles to be plotted (fixed Z-mesh) --
+heightlineouts = []					#Axial 1D-Profiles to be plotted (fixed R-mesh) |
 TrendLocation = []#[0,48] 					#Cell location For Trend Analysis [R,Z], ([] = min/max)
 #YPR H0;R[31,46,66] #MSHC H0,20;R20
 
 
 #Requested diagnostics and plotting routines.
 savefig_itermovie = False					#Requires movie_icp.pdt
-savefig_plot2D = True						#Requires TECPLOT2D.PDT
+savefig_plot2D = False						#Requires TECPLOT2D.PDT
 
 savefig_monoprofiles = False				#Single-Variables; fixed height/radius
 savefig_multiprofiles = False				#Multi-Variables; same folder
 savefig_comparelineouts = False				#Multi-Variables; all folders
 savefig_trendcomparison = False				#Single-Variables; fixed cell location (or max/min)
-savefig_pulseprofiles = False				#Single-Variables; movie_icp.pdt profiles
+savefig_pulseprofiles = True				#Single-Variables; plotted against real-time axis
 
 savefig_phaseresolve1D = False				#1D Phase Resolved Images
 savefig_phaseresolve2D = False				#2D Phase Resolved Images
@@ -182,8 +182,8 @@ print_thrust = False
 #Image plotting options.
 image_extension = '.png'					#Extensions { '.png', '.jpg', '.eps' }
 image_aspectratio = [10,10]					#[x,y] in cm [Doesn't rotate dynamically]
-image_radialcrop = []#[0.6]					#[R,Z] in cm
-image_axialcrop = []#[1,4]						#[R,Z] in cm
+image_radialcrop = [0.6]					#[R,Z] in cm
+image_axialcrop = [1,4]						#[R,Z] in cm
 #YPR R[0.6];Z[1,4]   #MSHC R[0.0,1.0];Z[0.5,2.5]
 
 image_plotsymmetry = True
@@ -324,7 +324,7 @@ print '   |  |__|  | |  |__   |  |     |  |__   |   \|  |   /  ^  \        '
 print '   |   __   | |   __|  |  |     |   __|  |  . `  |  /  /_\  \       '
 print '   |  |  |  | |  |____ |  `----.|  |____ |  |\   | /  _____  \      '
 print '   |__|  |__| |_______||_______||_______||__| \__|/__/     \__\     '
-print '                                                            v0.10.5 '
+print '                                                            v0.10.6 '
 print '--------------------------------------------------------------------'
 print ''
 print 'The following diagnostics were requested:'
@@ -337,7 +337,7 @@ if True in [savefig_phaseresolve2D,savefig_PROES]:
 	print'# 2D Phase Resolved Movie Processing'
 if True in [savefig_phaseresolve1D]:
 	print'# 1D Phase Resolved Profile Processing'
-if True in [savefig_monoprofiles,savefig_multiprofiles,savefig_comparelineouts]:
+if True in [savefig_monoprofiles,savefig_multiprofiles,savefig_comparelineouts,savefig_pulseprofiles]:
 	print'# 1D Steady-State Profile Processing'
 if True in [print_generaltrends,print_Knudsennumber,print_totalpower,print_DCbias,print_thrust]:
 	print'# 1D Specific Trend Analysis'
@@ -671,10 +671,10 @@ def SDFileFormatConvertorHPEM(Rawdata,header,numvariables,offset=0,Zmesh=0,Rmesh
 			break
 		else: CurrentRow = Rawdata[i].split()
 
-		#For all elements in the current row, convert to string and save in list.
+		#For all elements in the current row, convert to float and save in list.
 		for j in range(0,len(CurrentRow)):
 			try: DataArray1D.append(float(CurrentRow[j]))
-			except: Avoids_String_Conversion_Error = 1
+			except: String_Conversion_Error = 1
 		#endfor
 	#endfor
 
@@ -3107,10 +3107,10 @@ if savefig_pulseprofiles == True:
 		DirPulse = CreateNewFolder(Dirlist[l],'Pulse_Profiles/')
 
 		#Create processlist for each folder as required.
-		iterprocesslist,IterVariablelist = VariableEnumerator(IterVariables,rawdata_itermovie_icp[l],header_itermovie[l])
+		processlist,variablelist = VariableEnumerator(Variables,rawdata_itermovie_icp[l],header_itermovie[l])
 		#Skip over the R and Z processes as they are not saved properly in iterdata.
-		for i in range(0,len(iterprocesslist)):
-			iterprocesslist[i] = iterprocesslist[i]-2
+		for i in range(0,len(processlist)):
+			processlist[i] = processlist[i]-2
 		#endfor
 
 		#Create list and x-axis for convergence trend plotting.
@@ -3120,13 +3120,13 @@ if savefig_pulseprofiles == True:
 		#endfor
 
 		#for all variables requested by the user.
-		for i in tqdm(range(0,len(iterprocesslist))):
+		for i in tqdm(range(0,len(processlist))):
 
 			#Extract 2D image and take mesh averaged value for iteration trend.
 			PulseProfile = list()
 			for k in range(0,len(MovieITERlist[l])):
 				#for further processing.
-				Image = ImageExtractor2D(IterMovieData[l][k][iterprocesslist[i]],IterVariablelist[i])
+				Image = ImageExtractor2D(IterMovieData[l][k][processlist[i]],variablelist[i])
 				PulseProfile.append( sum(Image.flatten())/len(Image.flatten()) )
 			#endfor
 			PulseTrends.append(PulseProfile)
@@ -3136,19 +3136,26 @@ if savefig_pulseprofiles == True:
 			ax.plot(Xaxis,PulseProfile, lw=2)
 
 			#Image plotting details.
-			Title = 'Simulation Time Profile of '+str(IterVariablelist[i])+' for \n'+Dirlist[l][2:-1]
-			Xlabel,Ylabel = 'Simulation time [S]',VariableLabelMaker(IterVariablelist)[i]
+			Title = 'Simulation Time Profile of '+str(variablelist[i])+' for \n'+Dirlist[l][2:-1]
+			Xlabel,Ylabel = 'Simulation time [S]',VariableLabelMaker(variablelist)[i]
 			ImageOptions(ax,Xlabel,Ylabel,Title,Legend=[],Crop=False)
 
 			#Save figure.
-			savefig(DirPulse+FolderNameTrimmer(Dirlist[l])+'_'+IterVariablelist[i]+ext)
+			savefig(DirPulse+FolderNameTrimmer(Dirlist[l])+'_'+variablelist[i]+ext)
 			plt.close('all')
+
+			#Write data to ASCII files if requested.
+			if write_lineouts == True:
+				DirWrite = CreateNewFolder(DirPulse, 'Pulse_Data')
+				WriteDataToFile(Xaxis, DirWrite+variablelist[i], 'w')
+				WriteDataToFile(['\n']+PulseProfile, DirWrite+variablelist[i], 'a')
+			#endif
 		#endfor
 
 		#=================#
 
 		#Plot mesh averaged value over 'real-time' in simulation.
-		Legend = VariableLabelMaker(IterVariablelist)
+		Legend = VariableLabelMaker(variablelist)
 		fig, ax = plt.subplots(1, figsize=(10,10))
 
 		#Plot each variable in ConvergenceTrends to single figure.
@@ -3158,7 +3165,7 @@ if savefig_pulseprofiles == True:
 		#endfor
 
 		#Image plotting details.
-		Title = 'Simulation Time Profile of '+str(IterVariablelist)+' for \n'+Dirlist[l][2:-1]
+		Title = 'Simulation Time Profile of '+str(variablelist)+' for \n'+Dirlist[l][2:-1]
 		Xlabel,Ylabel = 'Simulation time [S]','Normalized Mesh-Average Value'
 		ImageOptions(ax,Xlabel,Ylabel,Title,Legend,Crop=False)
 		ax.set_ylim(0,1.01+(len(Legend)*0.05))
@@ -3217,6 +3224,7 @@ if savefig_pulseprofiles == True:
 
 if savefig_IEDF == True:
 
+	PeakeV = list()
 	#For all simulation folders.
 	for l in range(0,numfolders):
 
@@ -3224,8 +3232,8 @@ if savefig_IEDF == True:
 		DirEDF = CreateNewFolder(Dirlist[l],'EDFplots')
 
 		#Create processlist for requested EDF species and extract images.
-		processlist,Variablelist = VariableEnumerator(IEDFVariables,rawdata_IEDF[l],header_IEDFlist[l])
-
+		processlist,variablelist = VariableEnumerator(IEDFVariables,rawdata_IEDF[l],header_IEDFlist[l])
+		
 		#For all requested variables.
 		for i in tqdm(range(0,len(processlist))):
 			EDFprofile = list()
@@ -3240,26 +3248,35 @@ if savefig_IEDF == True:
 			Image, EDFprofile = Image[::-1].transpose(), EDFprofile[::-1]
 
 
+			if i == 0:
+				PeakeV.append( EDFprofile.index(max(EDFprofile)) )
+			#endif
+
+
 			#Plot the angular distribution and EDF of the required species.
 			fig,ax = figure([13,9],2)
-			fig.suptitle(Dirlist[l][2::]+'\n'+Variablelist[i]+' Angular Energy Distribution Function', y=0.995, fontsize=16)
+			fig.suptitle(Dirlist[l][2::]+'\n'+variablelist[i]+' Angular Energy Distribution Function', y=0.995, fontsize=16)
 			Extent=[0,len(Image[0]), -len(Image)/2,len(Image)/2]
 
 			im = ax[0].imshow(Image,extent=Extent)
 			ImageOptions(ax[0],Ylabel='Angular Dispersion [deg]',Crop=False)				
 			#Add Colourbar (Axis, Label, Bins)
-			cax = Colourbar(ax[0],Variablelist[i]+' EDF($\\theta$)',5)
+			cax = Colourbar(ax[0],variablelist[i]+' EDF($\\theta$)',5)
 
 			ax[1].plot(EDFprofile, lw=2)
-			Xlabel,Ylabel = 'Energy [eV]',Variablelist[i]+' EDF($\\theta$)'
+			Xlabel,Ylabel = 'Energy [eV]',variablelist[i]+' EDF($\\theta$)'
 			ImageOptions(ax[1],Xlabel,Ylabel,Crop=False)
 			ax[1].set_xlim(0,50)
 
 			plt.tight_layout()
-			plt.savefig(DirEDF+Variablelist[i]+'_EDF'+ext)
+			plt.savefig(DirEDF+variablelist[i]+'_EDF'+ext)
 			plt.close('all')
 		#endfor
 	#endfor
+
+#	plt.plot(PeakeV)
+#	plt.show()
+
 #endif
 
 #===============================#
@@ -3272,6 +3289,10 @@ if any([savefig_IEDF, savefig_EEDF]) == True:
 
 #=====================================================================#
 #=====================================================================#
+
+
+
+
 
 
 
@@ -4290,14 +4311,13 @@ if savefig_phaseresolve1D == True:
 
 #Plot Phase-Resolved profiles with electrode voltage and requested variables.
 if savefig_PROES == True:
-
-	#Tnitiate any required lists.
-	VoltageWaveforms,WaveformBiases,VariedValuelist = list(),list(),list()
+	VariedValuelist = list()
 
 	#for all folders.
 	for l in range(0,numfolders):
 
 		#Create global folders to keep output plots and collect graph title.
+		VoltageWaveforms,WaveformBiases = list(),list()
 		DirPROES = CreateNewFolder(Dirlist[l],'PROES')
 
 		#Update X-axis with folder information.
