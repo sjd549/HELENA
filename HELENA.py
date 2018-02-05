@@ -68,13 +68,14 @@ from pylab import *
 #Create switchboard directory for GUI.
 Switchboard = {}
 
-#Activates various debug outputs.
-Automovie_Off = True
+#Various debug and streamlining options.
+DisableMovie = False
 DebugMode = False
 
 #Tweaks and fixes for 'volitile' diagnostics.
 Magmesh = 1							#initmesh.exe magnification factor. (almost obsolete)
 Manualbiasaxis = ''					#'Axial' or 'Radial'. (empty '' for auto)
+
 
 #List of recognised atomic density sets, add new sets as required.
 ArgonReduced = ['AR','AR+','AR*']
@@ -1046,7 +1047,7 @@ def FolderNameTrimmer(DirString,Index=1):
 def Automovie(FolderDir,Output):
 
 	#Break if movies not requested
-	if Automovie_Off == True: return()
+	if DisableMovie == True: return()
 
 	#Correct file extention on name.
 	HomeDir = os.getcwd()
