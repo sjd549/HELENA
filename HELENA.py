@@ -65,20 +65,15 @@ from pylab import *
 				  		#DEFAULT PARAMETERS#
 #====================================================================#
 
-#Define Misc parameters, Do Not Change Unless Required.
-
-#Enviroment variables.
-Magmesh = 1				#initmesh.exe magnification factor. (almost obsolete)
-ierr = 0				#OldDebugMode (almost obsolete)
-
 #Create switchboard directory for GUI.
 Switchboard = {}
 
 #Activates various debug outputs.
+Automovie_Off = True
 DebugMode = False
 
 #Tweaks and fixes for 'volitile' diagnostics.
-AxialLine = 76						#Z-axis line for thrust calculation.  YPR=80, stdESCT=76,
+Magmesh = 1							#initmesh.exe magnification factor. (almost obsolete)
 Manualbiasaxis = ''					#'Axial' or 'Radial'. (empty '' for auto)
 
 #List of recognised atomic density sets, add new sets as required.
@@ -104,13 +99,7 @@ ESCT_Phase = ['S-E','S-AR+','FZ-E','FZ-AR+','TE','PPOT']
 MSHC_Phase = ['S-E','S-AR+','S-AR4P','TE','PPOT']
 
 
-#Paper Trend Locations
-#SDoyle2017a: 
-#dz(5.50/118), dr(2.55/102) height=[24,43], Trend=[19]
 
-#SDoyle2017b: 
-#PROES, (Z=14.2, 21.0, 31.0) radialineouts = [29,44,64]
-#Dielectric locations: [16,29],[16,44],[16,64]
 
         
         
@@ -118,10 +107,12 @@ MSHC_Phase = ['S-E','S-AR+','S-AR4P','TE','PPOT']
 
 
 
-
-
-
-
+#Commonly Used Diagnostic Settings
+#electrodeloc	#YPR [30,44],[16,44] #SPR [0,107] 	#MSHC [0,12]
+#waveformlocs 	#YPR [[16,29],[16,44],[16,64]]
+#DOFWidth		#YPR 41=2cm   						#MSHC 10=0.47cm
+#TrendLoc		#YPR H[0];R[31,46,66] 				#MSHC H[0,20];R[20]
+#ThrustCell		#YPR=80, stdESCT=76
 
 #====================================================================#
 					#SWITCHBOARD AND DIAGNOSTICS#
@@ -135,64 +126,61 @@ NEDFVariables = []			#Requested nprofile_2d variables (no spaces)
 IterVariables = ['E','S-E','PPOT','TE']		#Requested Movie_icp (iteration) Variables.
 PhaseVariables = PR_Phase					#Requested Movie1 (phase) Variables.
 electrodeloc = [30,44]						#Cell location of powered electrode [R,Z].
-waveformlocs = [[16,29],[16,44],[16,64]]		#Cell locations of additional waveforms [R,Z].
+waveformlocs = [[16,29],[16,44],[16,64]]	#Cell locations of additional waveforms [R,Z].
 
 phasecycles = 2								#Number of phase cycles to be plotted.
 DoFWidth = 41								#PROES Depth of Field Cells (0 -> 1 cell)
-#electrodeloc	#YPR [30,46],[16,46] #SPR [0,107] #MSHC [0,12]
-#waveformlocs 	#YPR [[16,31],[16,46],[16,66]]
-#DOFWidth		#YPR 41=2cm   #MSHC 10=0.47cm
 
 #Requested TECPLOT Variables
 Variables = Ar
-MultiVar = []						#Additional variables plotted ontop of [Variables]
+MultiVar = []							#Additional variables plotted ontop of [Variables]
 radialineouts = [29,44,64] 				#Radial 1D-Profiles to be plotted (fixed Z-mesh) --
-heightlineouts = []					#Axial 1D-Profiles to be plotted (fixed R-mesh) |
-TrendLocation = []#[0,48] 					#Cell location For Trend Analysis [R,Z], ([] = min/max)
-#YPR H0;R[31,46,66] #MSHC H0,20;R20
+heightlineouts = [0]					#Axial 1D-Profiles to be plotted (fixed R-mesh) |
+TrendLocation = [] 						#Cell location For Trend Analysis [R,Z], ([] = min/max)
 
 
 #Requested diagnostics and plotting routines.
-savefig_itermovie = False					#Requires movie_icp.pdt
-savefig_plot2D = False						#Requires TECPLOT2D.PDT
+savefig_convergence = False				#Requires movie_icp.pdt
+savefig_plot2D = False					#Requires TECPLOT2D.PDT
 
-savefig_monoprofiles = False				#Single-Variables; fixed height/radius
-savefig_multiprofiles = False				#Multi-Variables; same folder
-savefig_comparelineouts = False				#Multi-Variables; all folders
-savefig_trendcomparison = False				#Single-Variables; fixed cell location (or max/min)
-savefig_pulseprofiles = True				#Single-Variables; plotted against real-time axis
+savefig_monoprofiles = False			#Single-Variables; fixed height/radius
+savefig_multiprofiles = False			#Multi-Variables; same folder
+savefig_comparelineouts = False			#Multi-Variables; all folders
+savefig_trendcomparison = False			#Single-Variables; fixed cell location (or max/min)
+savefig_pulseprofiles = False			#Single-Variables; plotted against real-time axis
 
-savefig_phaseresolve1D = False				#1D Phase Resolved Images
-savefig_phaseresolve2D = False				#2D Phase Resolved Images
-savefig_PROES = False						#Phase-Resolved 2D Images
+savefig_phaseresolve1D = False			#1D Phase Resolved Images
+savefig_phaseresolve2D = False			#2D Phase Resolved Images
+savefig_PROES = False					#Phase-Resolved 2D Images
 
-savefig_IEDF = False						#IN DEVELOPMENT, WORKS BUT UNRELIABLE.
-savefig_EEDF = False						#IN DEVELOPMENT, NO PLOTTING ROUTINE.
+savefig_IEDF = False					#IN DEVELOPMENT, WORKS BUT UNRELIABLE.
+savefig_EEDF = False					#IN DEVELOPMENT, NO PLOTTING ROUTINE.
 
 
 #Steady-State diagnostics terminal output toggles.
-print_meshconvergence = False				#Make More General: <_numerictrendaxis>
-print_generaltrends = False					#Verbose Min/Max Trend Output.
+print_generaltrends = False				#Verbose Min/Max Trend Outputs.
 print_Knudsennumber = False
 print_totalpower = False
 print_DCbias = False
 print_thrust = False
+ThrustCell = 80							#Z-axis cell for thrust calculation.  
 
 
 #Image plotting options.
-image_extension = '.png'					#Extensions { '.png', '.jpg', '.eps' }
-image_aspectratio = [10,10]					#[x,y] in cm [Doesn't rotate dynamically]
-image_radialcrop = [0.6]					#[R,Z] in cm
-image_axialcrop = [1,4]						#[R,Z] in cm
+image_extension = '.png'				#Extensions { '.png', '.jpg', '.eps' }
+image_aspectratio = [10,10]				#[x,y] in cm [Doesn't rotate dynamically]
+image_radialcrop = [0.6]				#[R,Z] in cm
+image_axialcrop = [1,4]					#[R,Z] in cm
 #YPR R[0.6];Z[1,4]   #MSHC R[0.0,1.0];Z[0.5,2.5]
 
-image_plotsymmetry = True
-image_contourplot = True
-image_normalize = False
-image_plotgrid = False
-image_plotmesh = False						#### NOT IMPLIMENTED ####
-image_logplot = False
-image_rotate = True
+image_plotsymmetry = True				#Toggle radial symmetry
+image_numericaxis = False				#### NOT IMPLIMENTED ####
+image_contourplot = True				#Toggle contour Lines in images
+image_normalize = False					#Normalize image/profiles to local max
+image_plotgrid = False					#Plot major/minor gridlines on profiles
+image_plotmesh = False					#### NOT IMPLIMENTED ####
+image_logplot = False					#Plot ln(Data), against linear axis.
+image_rotate = True						#Rotate image 90 degrees to the right.
 
 
 #Write data to ASCII files.
@@ -228,12 +216,13 @@ cbaroverride = ['NotImplimented']
 
 #####TODO#####
 #clean up unused functions and ensure homogeneity
-#allow for toggle on movie production
-#update the cbar function and introduce an override.
+
 #introduce seaborn into the program en-masse.
 #introduce 'garbage collection' at the end of each diagnostic.
-#meshconvergence --> numerictrendaxis needs made for comparisons.
-#Generally rename the switchboard to increase clarity.
+
+#Impliment numerical image_rotate, allow for 000,090,180,270.
+#Impliment image_numericaxis, try float(FolderNameTrimmer) as axis.
+#allow for toggle on global movie production.
 
 #need to clean up the phase data in general and functionalise as much as possible.
 #need to clean up the IEDF/NEDF/EEDF sections and functionalise.
@@ -324,14 +313,14 @@ print '   |  |__|  | |  |__   |  |     |  |__   |   \|  |   /  ^  \        '
 print '   |   __   | |   __|  |  |     |   __|  |  . `  |  /  /_\  \       '
 print '   |  |  |  | |  |____ |  `----.|  |____ |  |\   | /  _____  \      '
 print '   |__|  |__| |_______||_______||_______||__| \__|/__/     \__\     '
-print '                                                            v0.10.6 '
+print '                                                            v0.10.7 '
 print '--------------------------------------------------------------------'
 print ''
 print 'The following diagnostics were requested:'
 print '-----------------------------------------'
 if savefig_plot2D == True:
 	print'# 2D Steady-State Image Processing'
-if savefig_itermovie == True:
+if savefig_convergence == True:
 	print'# 2D Convergence Movie Processing'
 if True in [savefig_phaseresolve2D,savefig_PROES]:
 	print'# 2D Phase Resolved Movie Processing'
@@ -442,14 +431,12 @@ for l in range(0,numfolders):
 		R_mesh.append([int(i) for i in meshdata.split()][1])
 		if Magmesh == 1: Z_mesh.append([int(i)+1 for i in meshdata.split()][3])
 		elif Magmesh == 2: Z_mesh.append([int(i)+3 for i in meshdata.split()][3])
+		elif Magmesh == 3: Z_mesh.append([int(i)+5 for i in meshdata.split()][3])
 		#endif
 
 	except:
 		#If data for current file exists, ask for manual input.
 		if l <= len(TEC2D)-1:
-
-			#Manual input of mesh sizes.
-			ierr = 1
 
 			#If the initmesh.out file cannot be found, manual input is required.
 			print '#========================================================#'
@@ -536,8 +523,6 @@ for l in range(0,numfolders):
 		dz.append(Height[-1]/(Z_mesh[-1]-1))
 
 	except:
-		ierr = 2
-
 		#If the geometry section cannot be found, manual input is required.
 		print '#=================================================#'
 		print 'icp.nam not found, please manually define variables'
@@ -1060,6 +1045,9 @@ def FolderNameTrimmer(DirString,Index=1):
 #Takes folder directory and creates a movie from .png images contained within.
 def Automovie(FolderDir,Output):
 
+	#Break if movies not requested
+	if Automovie_Off == True: return()
+
 	#Correct file extention on name.
 	HomeDir = os.getcwd()
 	Output = Output+'.mp4'
@@ -1262,7 +1250,7 @@ for l in tqdm(range(0,numfolders)):
 #===================##===================#
 #===================##===================#
 
-	if True in [savefig_itermovie,savefig_pulseprofiles]:
+	if True in [savefig_convergence,savefig_pulseprofiles]:
 
 		#Load data from movie_icp file and unpack into 1D array.
 		try:
@@ -1270,7 +1258,6 @@ for l in tqdm(range(0,numfolders)):
 			rawdata_itermovie_icp.append(open(itermovie_icp[l]).readlines())
 			nn_itermovie = len(rawdata_itermovie_icp[l])
 		except:
-			ierr = 6
 			print 'Unable to find movie_icp.pdt'
 		#endtry
 
@@ -1550,7 +1537,7 @@ del Energy,Fe,rawdata_mcs
 
 
 #Alert user that readin process has ended and continue with selected diagnostics.
-if any([savefig_plot2D, savefig_phaseresolve2D, savefig_itermovie, savefig_monoprofiles, savefig_multiprofiles, savefig_comparelineouts, savefig_pulseprofiles, savefig_phaseresolve1D, savefig_PROES, savefig_trendcomparison, print_generaltrends, print_Knudsennumber, print_totalpower, print_DCbias, print_thrust, savefig_IEDF, savefig_EEDF]) == True:
+if any([savefig_plot2D, savefig_phaseresolve2D, savefig_convergence, savefig_monoprofiles, savefig_multiprofiles, savefig_comparelineouts, savefig_pulseprofiles, savefig_phaseresolve1D, savefig_PROES, savefig_trendcomparison, print_generaltrends, print_Knudsennumber, print_totalpower, print_DCbias, print_thrust, savefig_IEDF, savefig_EEDF]) == True:
 	print '----------------------------------------'
 	print 'Data Readin Complete, Starting Analysis:'
 	print '----------------------------------------'
@@ -1977,7 +1964,7 @@ def TrendPlotter(TrendArray,Xaxis,NormFactor=0):
 	#endif
 
 	#Choose how to plot the trends.
-	if print_meshconvergence == True:
+	if image_numericaxis == True:
 		#Plot results against number of cells in each mesh for convergence studies.
 		numcells = list()
 		for l in range(0,numfolders):
@@ -2545,7 +2532,7 @@ if savefig_plot2D == True:
 #====================================================================#
 
 #Plot 2D images at different iterations towards convergence from movie_icp.
-if savefig_itermovie == True:
+if savefig_convergence == True:
 
 	#for all folders being processed.
 	for l in range(0,numfolders):
@@ -2865,7 +2852,7 @@ if savefig_comparelineouts == True:
 
 				#Write data to ASCII files if requested.
 				if write_lineouts == True and l == 0:
-					WriteFolder = 'Z='+str(round((radialineouts[j])*dz[l], 2))+'cm Data'
+					WriteFolder = 'Z='+str(round((radialineouts[j])*dz[l], 2))+'cm_Data'
 					DirWrite = CreateNewFolder(DirComparisons, WriteFolder)
 					try: os.remove(DirWrite+Variablelist[k])
 					except: a=1
@@ -3670,7 +3657,6 @@ if savefig_trendcomparison == True or print_totalpower == True:
 #====================================================================#
 
 
-
 if savefig_trendcomparison == True or print_thrust == True:
 
 	#Create Trend folder to keep output plots.
@@ -3693,12 +3679,13 @@ if savefig_trendcomparison == True or print_thrust == True:
 		#Extract radial density, velocity and pressure profiles across the discharge plane.
 		AbortDiagnostic = False
 		try:
-			Density = PlotRadialProfile(Data[l],processlist[0],Variablelist[0],AxialLine)
-			NeutralVelocity = PlotRadialProfile(Data[l],processlist[1],Variablelist[1],AxialLine)
-			IonVelocity = PlotRadialProfile(Data[l],processlist[2],Variablelist[2],AxialLine)
-			NeutralAxialFlux = PlotRadialProfile(Data[l],processlist[3],Variablelist[3],AxialLine)
-			IonAxialFlux = PlotRadialProfile(Data[l],processlist[4],Variablelist[4],AxialLine)
-			Pressure = PlotRadialProfile(Data[l],processlist[5],Variablelist[5],AxialLine)
+			Density = PlotRadialProfile(Data[l],processlist[0],Variablelist[0],ThrustCell)
+			NeutralVelocity = PlotRadialProfile(Data[l],processlist[1],Variablelist[1],ThrustCell)
+			IonVelocity = PlotRadialProfile(Data[l],processlist[2],Variablelist[2],ThrustCell)
+			NeutralAxialFlux = PlotRadialProfile(Data[l],processlist[3],Variablelist[3],ThrustCell)
+			IonAxialFlux = PlotRadialProfile(Data[l],processlist[4],Variablelist[4],ThrustCell)
+			PressureDown = PlotRadialProfile(Data[l],processlist[5],Variablelist[5],ThrustCell-1)
+			PressureUp = PlotRadialProfile(Data[l],processlist[5],Variablelist[5],ThrustCell)
 		except:
 			NeutralAxialFlux = np.zeros(R_mesh[l]*2)
 			IonAxialFlux = np.zeros(R_mesh[l]*2)
@@ -3715,63 +3702,54 @@ if savefig_trendcomparison == True or print_thrust == True:
 		Argon,Xenon = 39.948,131.29			 #amu
 		NeutralMass = Argon*1.67E-27		 #Kg
 
-		DefaultTechnique = True
-		#Both techniques assume cylindrical geometry, cartesian geometry will be overestimated.
-		if DefaultTechnique == True:
 
-			#Thrust based on integration over concentric ion/neutral momentum loss rate.
-			NeutralThrust,IonThrust = 0,0
-			for i in range(0,R_mesh[l]):
-				#Calculate radial plane area of a ring at radius [i], correcting for central r=0.
-				Circumference = 2*np.pi*(i*(dr[l]/100))		#m
-				CellArea = Circumference*(dr[l]/100)		#m^2
-				if CellArea == 0:
-					CellArea = np.pi*(dr[l]/100)**2			#m^2
-				#endif
+		#Technique assumes cylindrical geometry, cartesian geometry will be overestimated.
+		#Integrates over concentric ion/neutral momentum loss rate and differental pressure.
+		#Assumes pressure differential, ion/neutral flux equal for all angles at given radii.
+		DiffForce,NeutralThrust,IonThrust = 0,0,0
+		for i in range(0,R_mesh[l]):
+			#Calculate radial plane area of a ring at radius [i], correcting for central r=0.
+			Circumference = 2*np.pi*(i*(dr[l]/100))		#m
+			CellArea = Circumference*(dr[l]/100)		#m^2
+			if CellArea == 0:
+				CellArea = np.pi*(dr[l]/100)**2			#m^2
+			#endif
 
-				#Calculate Neutral mass flow rate and integrate thrust via F = (dm/dt)Ve.
-				NeutralMassFlowRate = NeutralAxialFlux[i]*NeutralMass*CellArea	#Kg/s
-				NeutralExitVelocity = NeutralVelocity[i]						#m/s
-				NeutralThrust += NeutralMassFlowRate * NeutralExitVelocity 		#N
-				if NeutralExitVelocity > 0:
-					NeutralIsp.append(NeutralExitVelocity)
-				#endif
+			#Calculate differential pressure between ThrustCell-(ThrustCell-1)
+			DiffPressure = (PressureDown[i]-PressureUp[i])*133.33	#N/m^2
+			DiffForce += DiffPressure*CellArea						#N
 
-				#Calculate Ion mass flow rate and integrate thrust via F = (dm/dt)Ve.
-				IonMassFlowRate = IonAxialFlux[i]*NeutralMass*CellArea	#Kg/s
-				IonExitVelocity = IonVelocity[i]*1000					#m/s
-				IonThrust += IonMassFlowRate * IonExitVelocity 			#N
-				if IonExitVelocity > 0: 
-					IonIsp.append(IonExitVelocity)
-				#endif
-			#endfor
-			if len(IonIsp) == 0: IonIsp.append(1E-30)
-			if len(NeutralIsp) == 0: NeutralIsp.append(1E-30)
+			#Calculate Neutral mass flow rate and integrate thrust via F = (dm/dt)Ve.
+			NeutralMassFlowRate = NeutralAxialFlux[i]*NeutralMass*CellArea	#Kg/s
+			NeutralExitVelocity = NeutralVelocity[i]						#m/s
+			NeutralThrust += NeutralMassFlowRate * NeutralExitVelocity 		#N
+			if NeutralExitVelocity > 0:
+				NeutralIsp.append(NeutralExitVelocity)
+			#endif
 
-			Thrust = NeutralThrust + IonThrust							#N
-			IonIsp = (sum(IonIsp)/len(IonIsp))/9.81						#s
-			NeutralIsp = (sum(NeutralIsp)/len(NeutralIsp))/9.81			#s
+			#Calculate Ion mass flow rate and integrate thrust via F = (dm/dt)Ve.
+			IonMassFlowRate = IonAxialFlux[i]*NeutralMass*CellArea	#Kg/s
+			IonExitVelocity = IonVelocity[i]*1000					#m/s
+			IonThrust += IonMassFlowRate * IonExitVelocity 			#N
+			if IonExitVelocity > 0: 
+				IonIsp.append(IonExitVelocity)
+			#endif
+		#endfor
+		if len(IonIsp) == 0: IonIsp.append(1E-30)
+		if len(NeutralIsp) == 0: NeutralIsp.append(1E-30)
 
-			NeutralThrustlist.append( round(NeutralThrust*1000,5) )		#mN
-			IonThrustlist.append( round(IonThrust*1000,5) )				#mN
-			Thrustlist.append( round(Thrust*1000,5) )					#mN
+		#Add total thrust and calculate Isp of each component
+		Thrust = DiffForce + NeutralThrust + IonThrust				#N
+		IonIsp = (sum(IonIsp)/len(IonIsp))/9.81						#s
+		NeutralIsp = (sum(NeutralIsp)/len(NeutralIsp))/9.81			#s
 
-		else:
-			#Integration over concentric neutral momentum and differential pressure.
-			Thrust = 0
-			for i in range(0,R_mesh[l]):
-				#Calculate radial plane length at radius [i] to integrate over.
-				Circumference = 2*np.pi*(i*(dr[l]/100))		#m
-				MassDensity = NeutralMass*Density[i]		#Kg/m^3
-				ExitVelocity = (NeutralVelocity[i])**2		#m^2/s^2
-				Thrust += ( MassDensity*ExitVelocity + Pressure[i]*133 )*Circumference #N
-			#endfor
-			Thrustlist.append( round(Thrust*1000,5) )
-		#endif
+		NeutralThrustlist.append( round(NeutralThrust*1000,5) )		#mN
+		IonThrustlist.append( round(IonThrust*1000,5) )				#mN
+		Thrustlist.append( round(Thrust*1000,5) )					#mN
 
 		#Display thrust to terminal if requested.
 		if print_thrust == True:
-			print Dirlist[l], '@ Z=',round(AxialLine*dz[l],2),'cm'
+			print Dirlist[l], '@ Z=',round(ThrustCell*dz[l],2),'cm'
 			print 'NeutralThrust', round(NeutralThrust*1000,2), 'mN @ ', round(NeutralIsp,2),'s'
 			print 'IonThrust:', round(IonThrust*1000,4), 'mN @ ', round(IonIsp,2),'s'
 			print 'Thrust:',round(Thrust*1000,4),'mN'
@@ -3798,7 +3776,7 @@ if savefig_trendcomparison == True or print_thrust == True:
 	#=====#=====#
 	#=====#=====#
 
-
+	#Work in progress thrust efficiency addon.
 	if True == False:
 		try:
 			ThrustEfficiency = list()
@@ -3830,6 +3808,7 @@ if savefig_trendcomparison == True or print_thrust == True:
 #====================================================================#
 
 
+#Only perform if a neutralspecies is included within the atomic set.
 if bool(set(NeutSpecies).intersection(Variables)) == True:
 	if savefig_trendcomparison == True or print_Knudsennumber == True:
 
@@ -4611,27 +4590,32 @@ if any([savefig_phaseresolve1D ,savefig_phaseresolve2D ,savefig_PROES]) == True:
 
 
 
-
-
-
-
 #====================================================================#
 							  #CODE DUMP#
 #====================================================================#
 
+#===============================#
+#     Paper Trend Locations     #
+#===============================#
+
+#SDoyle2017a: 
+#dz(5.50/118), dr(2.55/102) height=[24,43], Trend=[19]
+
+#SDoyle2018a: 
+#PROES, (Z=14.2, 21.0, 31.0) radialineouts = [29,44,64]
+#Dielectric locations: [16,29],[16,44],[16,64]
 
 
-#ERROR LIST, OUTDATED -- HOWEVER STILL IN MAIN CODE.
-
-# ierr 1  ==  Can't find mesh sizes.		Minor Error (manual input)
-# ierr 2  ==  Can't find SI sizes.			Minor Error (manual input)
-# ierr 3  ==  Can't find TECPLOT2D file.	CRITICAL ERROR (Exit)
-# ierr 4  ==  Can't find TECPLOT_KIN file.	CRITICAL ERROR (Exit)
-# ierr 5  ==  Can't find movie1 file  	    CRITICAL ERROR (Exit)
-# ierr 6  ==  Can't find movie_icp file     CRITICAL ERROR (Exit)
+#===============================#
+#             Notes             #
+#===============================#
 
 # Disabled the following warning message regarding scalar assignment of 'arr' axis.
 # /home/sjd549/.local/lib/python2.7/site-packages/numpy/ma/core.py:6385
+
+
+
+
 
 
 
@@ -4748,7 +4732,7 @@ if use_GUI == True:
 	btnlist[0].grid(row=1, column=0)
 
 	btnlist[1] = tk.Button(text=btnlist[1], width=12, fg='red')
-	btnlist[1]["command"] = lambda: toggle('savefig_itermovie',1)
+	btnlist[1]["command"] = lambda: toggle('savefig_convergence',1)
 	btnlist[1].grid(row=1, column=1)
 
 	btnlist[2] = tk.Button(text=btnlist[2], width=12, fg='red')
@@ -4766,15 +4750,6 @@ if use_GUI == True:
 
 #=====================================================================#
 #=====================================================================#
-
-
-
-# WAVEFORM OFFSET, MAY BE REQUIRED FOR STUFF?
-if True == False:
-	 Offset = m.ceil((1-(MinFreq/MaxFreq))*len(VoltageWaveform)*phasecycles)
-#endif
-
-
 
 
 
