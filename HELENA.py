@@ -135,14 +135,14 @@ DoFWidth = 41								#PROES Depth of Field Cells (0 -> 1 cell)
 #Requested TECPLOT Variables
 Variables = Ar
 MultiVar = []							#Additional variables plotted ontop of [Variables]
-radialineouts = [] 					#Radial 1D-Profiles to be plotted (fixed Z-mesh) --
+radialineouts = [] 						#Radial 1D-Profiles to be plotted (fixed Z-mesh) --
 heightlineouts = [0]					#Axial 1D-Profiles to be plotted (fixed R-mesh) |
 TrendLocation = [] 						#Cell location For Trend Analysis [R,Z], ([] = min/max)
 
 
 #Requested diagnostics and plotting routines.
 savefig_convergence = False				#Requires movie_icp.pdt
-savefig_plot2D = True					#Requires TECPLOT2D.PDT
+savefig_plot2D = False					#Requires TECPLOT2D.PDT
 
 savefig_monoprofiles = False			#Single-Variables; fixed height/radius
 savefig_multiprofiles = False			#Multi-Variables; same folder
@@ -164,7 +164,7 @@ print_Knudsennumber = False
 print_totalpower = False
 print_DCbias = False
 print_thrust = False
-ThrustLoc = 49							#Z-axis cell for thrust calculation.  
+ThrustLoc = 80							#Z-axis cell for thrust calculation.  
 
 
 #Image plotting options.
@@ -181,7 +181,7 @@ image_normalize = False					#Normalize image/profiles to local max
 image_plotgrid = False					#Plot major/minor gridlines on profiles
 image_plotmesh = False					#### NOT IMPLIMENTED ####
 image_logplot = False					#Plot ln(Data), against linear axis.
-image_rotate = True						#Rotate image 90 degrees to the right.
+image_rotate = True					#Rotate image 90 degrees to the right.
 
 
 #Write data to ASCII files.
@@ -1738,6 +1738,10 @@ def CropImage(ax=plt.gca(),Extent=[],Apply=True):
 #Minimum,Maximum = CropImageMinMax(Image)[0],CropImageMinMax(Image)[1]
 def CropImageMinMax(image):
 
+	#Ensure limits are in line with any requested mathematical constraints
+	if image_logplot == True: Image = np.log(Image)
+	if image_normalize == True: Image = normalize(Image)
+
 	#Only apply cropping if requested and avaliable.
 	if any( [len(image_radialcrop),len(image_axialcrop)] ) > 0:
 		#Convert cropped SI region to cell region, (rotation corrected)
@@ -2641,7 +2645,7 @@ if savefig_convergence == True:
 
 				#Add Colourbar (Axis, Label, Bins)
 				label,bins = VariableLabelMaker(IterVariablelist),5
-				cax = Colourbar(ax,label[i],bins)
+				cax = Colourbar(ax,label[i],bins,Lim=CropImageMinMax(Image))
 
 				#Save to seperate folders inside simulation folder.
 				num1,num2,num3 = k % 10, k/10 % 10, k/100 % 10
@@ -3923,7 +3927,7 @@ if bool(set(NeutSpecies).intersection(Variables)) == True:
 
 			#Add Colourbar (Axis, Label, Bins)
 			label,bins = 'Knudsen Number',5
-			cax = Colourbar(ax,label,bins)
+			cax = Colourbar(ax,label,bins,Lim=CropImageMinMax(Image))
 
 			#Save Figure
 			plt.savefig(Dir2Dplots+'KnudsenNumber'+ext)
@@ -4081,15 +4085,13 @@ if savefig_phaseresolve2D == True:
 			DirMovieplots = CreateNewFolder(DirPhaseResolved,Variablelist[i]+'_2DPhaseResolved/')
 
 			#Obtain maximum and minimum values of current variable over all phases.
-			MaxNormalize,MinNormalize = list(),list()
+			MinLim,MaxLim = list(),list()
 			for j in range(0,phasecycles):
-				Image = ImageExtractor2D(PhaseMovieData[l][j][Processlist[i]],Variablelist[i])
-				if image_logplot == True: Image = np.log(Image)
-				
-				MinNormalize.append(Normalize(Image)[1])
-				MaxNormalize.append(Normalize(Image)[2])
+				Image = ImageExtractor2D(PhaseMovieData[l][j][Processlist[i]],Variablelist[i])		
+				MinLim.append( CropImageMinMax(Image)[0] )
+				MaxLim.append( CropImageMinMax(Image)[1] )
 			#endfor
-			MaxNormalize,MinNormalize = max(MaxNormalize),min(MinNormalize)
+			Limits = [min(MinLim),max(MaxLim)]
 
 			#Reshape specific part of 1D Data array into 2D image for plotting.
 			for j in range(0,len(Moviephaselist[l])):
@@ -4113,7 +4115,7 @@ if savefig_phaseresolve2D == True:
 
 				#Add Colourbar (Axis, Label, Bins)
 				Ylabel = VariableLabelMaker(Variablelist)
-				cax = Colourbar(ax[0],Ylabel[i],5,Lim=[MinNormalize,MaxNormalize])
+				cax = Colourbar(ax[0],Ylabel[i],5,Lim=Limits)
 
 				#Plot waveform and apply image options.
 				ax[1].plot(Phaseaxis, ElectrodeWaveform, lw=2)
