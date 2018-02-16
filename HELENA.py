@@ -77,7 +77,7 @@ Magmesh = 1							#initmesh.exe magnification factor. (almost obsolete)
 Manualbiasaxis = ''					#'Axial' or 'Radial'. (empty '' for auto)
 
 
-#List of recognised atomic density sets, add new sets as required.
+#List of recognised neutral/metastable atomic density sets, add new sets as required.
 ArgonReduced = ['AR','AR+','AR*']
 ArgonFull = ['AR3S','AR4SM','AR4SR','AR4SPM','AR4SPR','AR4P','AR4D','AR+','AR2+','AR2*']
 Oxygen = ['O','O+','O-','O*','O2','O2+','O2*']
@@ -113,7 +113,7 @@ MSHC_Phase = ['S-E','S-AR+','S-AR4P','TE','PPOT']
 #waveformlocs 	#YPR [[16,29],[16,44],[16,64]]
 #DOFWidth		#YPR 41=2cm   						#MSHC 10=0.47cm
 #TrendLoc		#YPR H[0];R[31,46,66] 				#MSHC H[0,20];R[20]
-#ThrustCell		#YPR=80, stdESCT=76
+#ThrustLoc		#YPR=80, stdESCT=76, smlESCT=48/54,
 
 #====================================================================#
 					#SWITCHBOARD AND DIAGNOSTICS#
@@ -124,10 +124,10 @@ IEDFVariables = PR_PCMC		#Requested iprofile_2d variables (no spaces)
 NEDFVariables = []			#Requested nprofile_2d variables (no spaces)
 
 #Requested movie1/movie_icp Variables.
-IterVariables = ['E','S-E','PPOT','TE']		#Requested Movie_icp (iteration) Variables.
+IterVariables = ['E','S-E','PPOT','TE']		#Requested Movie_icp (iteration) Variables.		
 PhaseVariables = PR_Phase					#Requested Movie1 (phase) Variables.
-electrodeloc = [30,44]						#Cell location of powered electrode [R,Z].
-waveformlocs = [[16,29],[16,44],[16,64]]	#Cell locations of additional waveforms [R,Z].
+electrodeloc = [0,0]						#Cell location of powered electrode [R,Z].
+waveformlocs = []							#Cell locations of additional waveforms [R,Z].
 
 phasecycles = 2								#Number of phase cycles to be plotted.
 DoFWidth = 41								#PROES Depth of Field Cells (0 -> 1 cell)
@@ -135,14 +135,14 @@ DoFWidth = 41								#PROES Depth of Field Cells (0 -> 1 cell)
 #Requested TECPLOT Variables
 Variables = Ar
 MultiVar = []							#Additional variables plotted ontop of [Variables]
-radialineouts = [29,44,64] 				#Radial 1D-Profiles to be plotted (fixed Z-mesh) --
+radialineouts = [] 					#Radial 1D-Profiles to be plotted (fixed Z-mesh) --
 heightlineouts = [0]					#Axial 1D-Profiles to be plotted (fixed R-mesh) |
 TrendLocation = [] 						#Cell location For Trend Analysis [R,Z], ([] = min/max)
 
 
 #Requested diagnostics and plotting routines.
 savefig_convergence = False				#Requires movie_icp.pdt
-savefig_plot2D = False					#Requires TECPLOT2D.PDT
+savefig_plot2D = True					#Requires TECPLOT2D.PDT
 
 savefig_monoprofiles = False			#Single-Variables; fixed height/radius
 savefig_multiprofiles = False			#Multi-Variables; same folder
@@ -164,14 +164,14 @@ print_Knudsennumber = False
 print_totalpower = False
 print_DCbias = False
 print_thrust = False
-ThrustCell = 80							#Z-axis cell for thrust calculation.  
+ThrustLoc = 49							#Z-axis cell for thrust calculation.  
 
 
 #Image plotting options.
 image_extension = '.png'				#Extensions { '.png', '.jpg', '.eps' }
 image_aspectratio = [10,10]				#[x,y] in cm [Doesn't rotate dynamically]
-image_radialcrop = [0.6]				#[R,Z] in cm
-image_axialcrop = [1,4]					#[R,Z] in cm
+image_radialcrop = []					#[R,Z] in cm
+image_axialcrop = []					#[R,Z] in cm
 #YPR R[0.6];Z[1,4]   #MSHC R[0.0,1.0];Z[0.5,2.5]
 
 image_plotsymmetry = True				#Toggle radial symmetry
@@ -201,7 +201,7 @@ xlabeloverride = []
 ylabeloverride = []
 cbaroverride = ['NotImplimented']
 
-#Commonly Used:
+#Commonly used graph labels:
 #'0','30','60','90','120','150','180','210','240','270','300','330'
 #'100','200','300','400','500','600','700','800','900','1000'
 #'13.56MHz','27.12MHz','40.68MHz','54.24MHz','67.80MHz'
@@ -221,9 +221,10 @@ cbaroverride = ['NotImplimented']
 #introduce seaborn into the program en-masse.
 #introduce 'garbage collection' at the end of each diagnostic.
 
+#Bring Trendplotter function up to code with ax.plot etc... (1DTrendPlotter)
+#Functionalize thrust calculation with options for neutral/ion/pressure diff.
 #Impliment numerical image_rotate, allow for 000,090,180,270.
 #Impliment image_numericaxis, try float(FolderNameTrimmer) as axis.
-#allow for toggle on global movie production.
 
 #need to clean up the phase data in general and functionalise as much as possible.
 #need to clean up the IEDF/NEDF/EEDF sections and functionalise.
@@ -314,7 +315,7 @@ print '   |  |__|  | |  |__   |  |     |  |__   |   \|  |   /  ^  \        '
 print '   |   __   | |   __|  |  |     |   __|  |  . `  |  /  /_\  \       '
 print '   |  |  |  | |  |____ |  `----.|  |____ |  |\   | /  _____  \      '
 print '   |__|  |__| |_______||_______||_______||__| \__|/__/     \__\     '
-print '                                                            v0.10.7 '
+print '                                                            v0.10.8 '
 print '--------------------------------------------------------------------'
 print ''
 print 'The following diagnostics were requested:'
@@ -1669,60 +1670,134 @@ def figure(aspectratio,subplots=1,shareX=False):
 
 
 #Crops 2D image taking account of image rotation options.
-#Takes image axis and returns nothing, use figure()
-#Extent format: [ [Rmin,Rmax], [Zmin,Zmax] ] in cm.
-#CropImage(ax[0],[[Rcrop],[Zcrop]]), assumes default axis.
-def CropImage(ax=plt.gca(),Extent=[]):
+#Takes image axis (assumes default axis), use figure()
+#Input Extent format: [ [Rmin,Rmax], [Zmin,Zmax] ] in cm.
+#Returns cropping limits in format: [ [R1,R2],[Z1,Z2] ] in cm.
+#CropImage(ax[0],[[Rcrop],[Zcrop]]), 
+def CropImage(ax=plt.gca(),Extent=[],Apply=True):
 
-		#Obtain default limits and rotate if needed.
-		R1,R2 = ax.get_xlim()[0],ax.get_xlim()[1]
-		Z1,Z2 = ax.get_ylim()[0],ax.get_ylim()[1]
-		if image_rotate == True: 
-			R1,Z1, R2,Z2 = Z1,R1, Z2,R2
-		#endif
+	#Obtain default limits and rotate if needed.
+	R1,R2 = ax.get_xlim()[0],ax.get_xlim()[1]
+	Z1,Z2 = ax.get_ylim()[0],ax.get_ylim()[1]
+	if image_rotate == True: 
+		R1,Z1, R2,Z2 = Z1,R1, Z2,R2
+	#endif
 
-		#Set requested cropping limits from function-call or from global.
-		if len(Extent) == 2:
-			radialcrop,axialcrop = Extent[0],Extent[1]
-		else:
-			radialcrop = image_radialcrop
-			axialcrop = image_axialcrop
-		#endif
+	#Set requested cropping limits from function-call or from global.
+	if len(Extent) == 2:
+		radialcrop,axialcrop = Extent[0],Extent[1]
+	else:
+		radialcrop = image_radialcrop
+		axialcrop = image_axialcrop
+	#endif
 
-		#Extract cropping dimentions from image_<input>.
-		if len(radialcrop) == 1:
-			R1,R2 = -(radialcrop[0]),radialcrop[0]
-		elif len(radialcrop) == 2:
-			R1,R2 = radialcrop[0],radialcrop[1]
-		#endif
-		if len(axialcrop) == 1:
-			Z1,Z2 = 0,axialcrop[0]
-		elif len(axialcrop) == 2:
-			Z1,Z2 = axialcrop[0],axialcrop[1]
-		#endif
+	#Extract cropping dimentions from image_<input>.
+	if len(radialcrop) == 1:
+		R1,R2 = -(radialcrop[0]),radialcrop[0]
+	elif len(radialcrop) == 2:
+		R1,R2 = radialcrop[0],radialcrop[1]
+	#endif
+	if len(axialcrop) == 1:
+		Z1,Z2 = 0,axialcrop[0]
+	elif len(axialcrop) == 2:
+		Z1,Z2 = axialcrop[0],axialcrop[1]
+	#endif
 
-		#Rotate cropping dimentions to match image rotation.
-		if image_rotate == 00:
-			Z1,Z2 = Z1,Z2
-		elif image_rotate == 90 or image_rotate == True:
-			R1,Z1 = Z1,R1
-			R2,Z2 = Z2,R2
-		elif image_rotate == 180 or image_rotate == False:
-			Z1,Z2 = Z2,Z1
-		elif image_rotate == 270:
-			R1,Z2 = Z2,R1
-			R2,Z1 = Z1,R2
-		#endif
+	#Rotate cropping dimentions to match image rotation.
+	if image_rotate == 00:
+		Z1,Z2 = Z1,Z2
+	elif image_rotate == 90 or image_rotate == True:
+		R1,Z1 = Z1,R1
+		R2,Z2 = Z2,R2
+	elif image_rotate == 180 or image_rotate == False:
+		Z1,Z2 = Z2,Z1
+	elif image_rotate == 270:
+		R1,Z2 = Z2,R1
+		R2,Z1 = Z1,R2
+	#endif
 
-		#Apply cropping dimensions to image.
+	#Apply cropping dimensions to image.
+	if Apply == True:
 		ax.set_xlim(R1,R2)
 		ax.set_ylim(Z1,Z2)
 	#endif
+
+	#Return cropped dimensions in SI units (allowing for rotation).
+	return([[R1,R2],[Z1,Z2]])
 #enddef
 
 
+
 #=========================#
 #=========================#
+
+
+
+#Provides a new colourbar scale for cropped images.
+#Takes a 2D image, and returns the min/max value within the cropped region.
+#Minimum,Maximum = CropImageMinMax(Image)[0],CropImageMinMax(Image)[1]
+def CropImageMinMax(image):
+
+	#Only apply cropping if requested and avaliable.
+	if any( [len(image_radialcrop),len(image_axialcrop)] ) > 0:
+		#Convert cropped SI region to cell region, (rotation corrected)
+		#R1,R2 are radial limits of image, Z1,Z2 are axial limits.
+		R1 = int(CropImage(Apply=False)[0][0]/dz[l])
+		R2 = int(CropImage(Apply=False)[0][1]/dz[l])
+		Z1 = int(CropImage(Apply=False)[1][0]/dr[l])
+		Z2 = int(CropImage(Apply=False)[1][1]/dr[l])
+
+		#Flatten supplied image and obtain max/min values within cropped range
+		flatimage = [item for sublist in image[R1:R2,Z1:Z2] for item in sublist]
+		cropmax,cropmin = max(flatimage),min(flatimage)
+	else:
+		#If no cropping avaliable, use limits of full image.
+		flatimage = [item for sublist in image for item in sublist]
+		cropmax,cropmin = max(flatimage),min(flatimage)
+	#endif
+
+	#Return cropped values as list [min,max], as required by colourbar.
+	return([cropmin,cropmax])
+#enddef
+
+
+
+#=========================#
+#=========================#
+
+
+
+#Creates and plots a colourbar with given label and binsize.
+#Takes colourbar axis, label string, number of colour bins
+#Allows pre-defined colourbar limits in form [min,max].
+#Returns cbar axis if further changes are required.
+def Colourbar(ax,Label,Bins,Lim=[]):
+
+	#Colourbar plotting details
+	divider = make_axes_locatable(ax)
+	cax = divider.append_axes("right", size="5%", pad=0.1)
+	cbar = plt.colorbar(im, cax=cax)
+	#Set number of ticks, label location and scientific notation.
+	tick_locator = ticker.MaxNLocator(nbins=Bins)
+	cbar.locator = tick_locator
+	cbar.set_label(Label, rotation=270,labelpad=30,fontsize=24)
+	cbar.formatter.set_powerlimits((-2,3))
+	cbar.update_ticks()
+	#Size of font
+	cbar.ax.yaxis.offsetText.set(size=18)
+	yticks(fontsize=18)
+
+	#Apply colourbar limits if specified.
+	if len(Lim) == 2: im.set_clim(vmin=Lim[0], vmax=Lim[1])
+
+	return(cbar)
+#enddef
+
+
+
+#=========================#
+#=========================#
+
 
 
 #Applies plt.options to current figure based on user input.
@@ -1773,6 +1848,44 @@ def ImageOptions(ax=plt.gca(),Xlabel='',Ylabel='',Title='',Legend=[],Crop=True):
 	#endif
 
 	return()
+#enddef
+
+
+
+#=========================#
+#=========================#
+
+
+
+#Generates an SI axis for a 1D profile plot.
+#Takes orientation, symmetry and phasecycle options.
+#Returns 1D array in units of [cm] or [omega*t/2pi].
+def GenerateAxis(Orientation,Isym=Isymlist[l],phasepoints=range(0,180)):
+	
+	#Extract number of phase datapoints and create axis list.
+	phasepoints = len(phasepoints)
+	axis = list()
+
+	if Orientation == 'Radial':
+		if Isym == 1:
+			for i in range(-R_mesh[l],R_mesh[l]):
+				axis.append(i*dr[l])
+		#endfor
+		else:
+			for i in range(0,R_mesh[l]):
+				axis.append(i*dr[l])
+			#endfor
+		#endif
+	elif Orientation == 'Axial':
+		for i in range(0,Z_mesh[l]):
+			axis.append(i*dz[l])
+		#endfor
+	elif Orientation == 'Phase':
+		for i in range(0,phasecycles*phasepoints):
+			axis.append(  (np.pi*(i*2)/phasepoints)/(2*np.pi)  )
+		#endfor
+	#endif
+	return(axis)
 #enddef
 
 
@@ -1872,7 +1985,7 @@ def DataExtent(folder=l,aspectratio=image_aspectratio):
 #Create figure and plot a 1D graph with associated image plotting requirements.
 #Returns plotted axes and figure if new ones were created.
 #Else plots to existing figure and returns the image object.
-#ImagePlotter2D(Image,extent,image_aspectratio,fig,ax[0]):
+#ImagePlotter1D(Zlineout,Zaxis,image_aspectratio,fig,ax[0]):
 def ImagePlotter1D(profile,axis,aspectratio,fig=111,ax=111):
 
 	#Generate new figure if required. {kinda hacky...}
@@ -1886,7 +1999,7 @@ def ImagePlotter1D(profile,axis,aspectratio,fig=111,ax=111):
 	if image_logplot == True:
 		profile = np.log(profile)
 	if image_normalize == True:
-		profile = Normalize(profile)
+		profile = Normalize(profile)[0]
 	#endif
 
 	#Plot profile and return.
@@ -1961,7 +2074,7 @@ def TrendPlotter(TrendArray,Xaxis,NormFactor=0):
 
 	#Normalize data to provided normalization factor if required.
 	if image_normalize == True:
-		TrendArray = Normalize(TrendArray,NormFactor)
+		TrendArray = Normalize(TrendArray,NormFactor)[0]
 	#endif
 
 	#Choose how to plot the trends.
@@ -1983,76 +2096,6 @@ def TrendPlotter(TrendArray,Xaxis,NormFactor=0):
 	#endif
 
 	return()
-#enddef
-
-
-
-#=========================#
-#=========================#
-
-
-
-#Creates and plots a colourbar with given label and binsize.
-#Takes colourbar axis, label string, number of colour bins
-#Also takes normalization factors in form [min,max].
-#Returns cbar axis if further changes are required.
-def Colourbar(ax,Label,Bins,Norm=[]):
-
-	#Colourbar plotting details
-	divider = make_axes_locatable(ax)
-	cax = divider.append_axes("right", size="5%", pad=0.1)
-	cbar = plt.colorbar(im, cax=cax)
-	#Number of ticks, set scientific notation.
-	tick_locator = ticker.MaxNLocator(nbins=Bins)
-	cbar.locator = tick_locator
-	cbar.set_label(Label, rotation=270,labelpad=30,fontsize=24)
-	cbar.formatter.set_powerlimits((-2,3))
-	cbar.update_ticks()
-	#Size of font
-	cbar.ax.yaxis.offsetText.set(size=18)
-	yticks(fontsize=18)
-
-	#Apply normalized colourbar if limits specified.
-	if len(Norm) == 2: im.set_clim(vmin=Norm[0], vmax=Norm[1])
-
-	return(cbar)
-#enddef
-
-
-
-#=========================#
-#=========================#
-
-
-#Generates an SI axis for a 1D profile plot.
-#Takes orientation, symmetry and phasecycle options.
-#Returns 1D array in units of [cm] or [omega*t/2pi].
-def GenerateAxis(Orientation,Isym=Isymlist[l],phasepoints=range(0,180)):
-	
-	#Extract number of phase datapoints and create axis list.
-	phasepoints = len(phasepoints)
-	axis = list()
-
-	if Orientation == 'Radial':
-		if Isym == 1:
-			for i in range(-R_mesh[l],R_mesh[l]):
-				axis.append(i*dr[l])
-		#endfor
-		else:
-			for i in range(0,R_mesh[l]):
-				axis.append(i*dr[l])
-			#endfor
-		#endif
-	elif Orientation == 'Axial':
-		for i in range(0,Z_mesh[l]):
-			axis.append(i*dz[l])
-		#endfor
-	elif Orientation == 'Phase':
-		for i in range(0,phasecycles*phasepoints):
-			axis.append(  (np.pi*(i*2)/phasepoints)/(2*np.pi)  )
-		#endfor
-	#endif
-	return(axis)
 #enddef
 
 
@@ -2241,7 +2284,7 @@ def TrendAtGivenLocation(TrendLocation,process,variable):
 
 	#Normalize to maximum value in each profile if required.
 	if image_normalize == True:
-		Trend,Min,Max = Normalize(Image,NormFactor=0)
+		Trend,Min,Max = Normalize(Image)
 	#endif
 
 	return(Xaxis,Trend)
@@ -2306,8 +2349,8 @@ def MinMaxTrends(lineout,Orientation,process):
 
 	#Normalize to maximum value in each profile if required.
 	if image_normalize == True:
-		MaxValueTrend,MaxMin,MaxMax = Normalize(MaxValueTrend,NormFactor=0)
-		MinValueTrend,MinMin,MinMax = Normalize(MinValueTrend,NormFactor=0)
+		MaxValueTrend,MaxMin,MaxMax = Normalize(MaxValueTrend)
+		MinValueTrend,MinMin,MinMax = Normalize(MinValueTrend)
 	#endif
 
 	return(Xaxis,MaxValueTrend,MinValueTrend)
@@ -2507,7 +2550,7 @@ if savefig_plot2D == True:
 
 			#Add Colourbar (Axis, Label, Bins)
 			label,bins = VariableLabelMaker(Variablelist),5
-			cax = Colourbar(ax,label[k],bins)
+			cax = Colourbar(ax,label[k],bins,Lim=CropImageMinMax(Image))
 
 			#Write data to ASCII files if requested.
 			if write_plot2D == True:
@@ -3680,13 +3723,13 @@ if savefig_trendcomparison == True or print_thrust == True:
 		#Extract radial density, velocity and pressure profiles across the discharge plane.
 		AbortDiagnostic = False
 		try:
-			Density = PlotRadialProfile(Data[l],processlist[0],Variablelist[0],ThrustCell)
-			NeutralVelocity = PlotRadialProfile(Data[l],processlist[1],Variablelist[1],ThrustCell)
-			IonVelocity = PlotRadialProfile(Data[l],processlist[2],Variablelist[2],ThrustCell)
-			NeutralAxialFlux = PlotRadialProfile(Data[l],processlist[3],Variablelist[3],ThrustCell)
-			IonAxialFlux = PlotRadialProfile(Data[l],processlist[4],Variablelist[4],ThrustCell)
-			PressureDown = PlotRadialProfile(Data[l],processlist[5],Variablelist[5],ThrustCell-1)
-			PressureUp = PlotRadialProfile(Data[l],processlist[5],Variablelist[5],ThrustCell)
+			Density = PlotRadialProfile(Data[l],processlist[0],Variablelist[0],ThrustLoc)
+			NeutralVelocity = PlotRadialProfile(Data[l],processlist[1],Variablelist[1],ThrustLoc)
+			IonVelocity = PlotRadialProfile(Data[l],processlist[2],Variablelist[2],ThrustLoc)
+			NeutralAxialFlux = PlotRadialProfile(Data[l],processlist[3],Variablelist[3],ThrustLoc)
+			IonAxialFlux = PlotRadialProfile(Data[l],processlist[4],Variablelist[4],ThrustLoc)
+			PressureDown = PlotRadialProfile(Data[l],processlist[5],Variablelist[5],ThrustLoc-1)
+			PressureUp = PlotRadialProfile(Data[l],processlist[5],Variablelist[5],ThrustLoc)
 		except:
 			NeutralAxialFlux = np.zeros(R_mesh[l]*2)
 			IonAxialFlux = np.zeros(R_mesh[l]*2)
@@ -3716,7 +3759,7 @@ if savefig_trendcomparison == True or print_thrust == True:
 				CellArea = np.pi*(dr[l]/100)**2			#m^2
 			#endif
 
-			#Calculate differential pressure between ThrustCell-(ThrustCell-1)
+			#Calculate differential pressure between ThrustLoc-(ThrustLoc-1)
 			DiffPressure = (PressureDown[i]-PressureUp[i])*133.33	#N/m^2
 			DiffForce += DiffPressure*CellArea						#N
 
@@ -3741,8 +3784,12 @@ if savefig_trendcomparison == True or print_thrust == True:
 
 		#Add total thrust and calculate Isp of each component
 		Thrust = DiffForce + NeutralThrust + IonThrust				#N
+		NeutralFraction = NeutralThrust/(Thrust-DiffForce)			#Ignore dP/dz
+		IonFraction = IonThrust/(Thrust-DiffForce)					#Ignore dP/dz
+
 		IonIsp = (sum(IonIsp)/len(IonIsp))/9.81						#s
 		NeutralIsp = (sum(NeutralIsp)/len(NeutralIsp))/9.81			#s
+		ThrustIsp = NeutralFraction*NeutralIsp+IonFraction*IonIsp 	#s
 
 		NeutralThrustlist.append( round(NeutralThrust*1000,5) )		#mN
 		IonThrustlist.append( round(IonThrust*1000,5) )				#mN
@@ -3750,10 +3797,11 @@ if savefig_trendcomparison == True or print_thrust == True:
 
 		#Display thrust to terminal if requested.
 		if print_thrust == True:
-			print Dirlist[l], '@ Z=',round(ThrustCell*dz[l],2),'cm'
+			print Dirlist[l], '@ Z=',round(ThrustLoc*dz[l],2),'cm'
 			print 'NeutralThrust', round(NeutralThrust*1000,2), 'mN @ ', round(NeutralIsp,2),'s'
 			print 'IonThrust:', round(IonThrust*1000,4), 'mN @ ', round(IonIsp,2),'s'
-			print 'Thrust:',round(Thrust*1000,4),'mN'
+			print 'D-Pressure:', round(DiffForce*1000,4), 'mN'
+			print 'Thrust:',round(Thrust*1000,4),'mN @ ', round(ThrustIsp,2),'s'
 			print ''
 		#endif
 	#endfor
@@ -4065,7 +4113,7 @@ if savefig_phaseresolve2D == True:
 
 				#Add Colourbar (Axis, Label, Bins)
 				Ylabel = VariableLabelMaker(Variablelist)
-				cax = Colourbar(ax[0],Ylabel[i],5,Norm=[MinNormalize,MaxNormalize])
+				cax = Colourbar(ax[0],Ylabel[i],5,Lim=[MinNormalize,MaxNormalize])
 
 				#Plot waveform and apply image options.
 				ax[1].plot(Phaseaxis, ElectrodeWaveform, lw=2)
