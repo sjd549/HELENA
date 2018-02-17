@@ -135,7 +135,7 @@ DoFWidth = 41								#PROES Depth of Field Cells (0 -> 1 cell)
 #Requested TECPLOT Variables
 Variables = Ar
 MultiVar = []							#Additional variables plotted ontop of [Variables]
-radialineouts = [29,44,64] 				#Radial 1D-Profiles to be plotted (fixed Z-mesh) --
+radialineouts = [44]#[29,44,64] 				#Radial 1D-Profiles to be plotted (fixed Z-mesh) --
 heightlineouts = [0]					#Axial 1D-Profiles to be plotted (fixed R-mesh) |
 TrendLocation = [] 						#Cell location For Trend Analysis [R,Z], ([] = min/max)
 
@@ -146,13 +146,13 @@ savefig_plot2D = True					#Requires TECPLOT2D.PDT
 
 savefig_monoprofiles = False			#Single-Variables; fixed height/radius
 savefig_multiprofiles = False			#Multi-Variables; same folder
-savefig_comparelineouts = True			#Multi-Variables; all folders
-savefig_trendcomparison = True			#Single-Variables; fixed cell location (or max/min)
+savefig_comparelineouts = False			#Multi-Variables; all folders
+savefig_trendcomparison = False			#Single-Variables; fixed cell location (or max/min)
 savefig_pulseprofiles = False			#Single-Variables; plotted against real-time axis
 
 savefig_phaseresolve1D = False			#1D Phase Resolved Images
 savefig_phaseresolve2D = False			#2D Phase Resolved Images
-savefig_PROES = False					#Phase-Resolved 2D Images
+savefig_PROES = True					#Phase-Resolved 2D Images
 
 savefig_IEDF = False					#IN DEVELOPMENT, WORKS BUT UNRELIABLE.
 savefig_EEDF = False					#IN DEVELOPMENT, NO PLOTTING ROUTINE.
@@ -1736,7 +1736,7 @@ def CropImage(ax=plt.gca(),Extent=[],Apply=True):
 #Provides a new colourbar scale for cropped images.
 #Takes a 2D image, and returns the min/max value within the cropped region.
 #Minimum,Maximum = CropImageMinMax(Image)[0],CropImageMinMax(Image)[1]
-def CropImageMinMax(image):
+def CropImageMinMax(Image):
 
 	#Ensure limits are in line with any requested mathematical constraints
 	if image_logplot == True: Image = np.log(Image)
@@ -1752,11 +1752,11 @@ def CropImageMinMax(image):
 		Z2 = int(CropImage(Apply=False)[1][1]/dr[l])
 
 		#Flatten supplied image and obtain max/min values within cropped range
-		flatimage = [item for sublist in image[R1:R2,Z1:Z2] for item in sublist]
+		flatimage = [item for sublist in Image[R1:R2][Z1:Z2] for item in sublist]
 		cropmax,cropmin = max(flatimage),min(flatimage)
 	else:
 		#If no cropping avaliable, use limits of full image.
-		flatimage = [item for sublist in image for item in sublist]
+		flatimage = [item for sublist in Image for item in sublist]
 		cropmax,cropmin = max(flatimage),min(flatimage)
 	#endif
 
