@@ -124,10 +124,10 @@ IEDFVariables = PR_PCMC		#Requested iprofile_2d variables (no spaces)
 NEDFVariables = []			#Requested nprofile_2d variables (no spaces)
 
 #Requested movie1/movie_icp Variables.
-IterVariables = ['E','S-E','PPOT','TE']		#Requested Movie_icp (iteration) Variables.		
+IterVariables = ['E','S-E','PPOT','TE','AR3S','FZ-AR3S','FZ-AR+']		#Requested Movie_icp (iteration) Variables.		
 PhaseVariables = PR_Phase					#Requested Movie1 (phase) Variables.
-electrodeloc = [0,0]						#Cell location of powered electrode [R,Z].
-waveformlocs = []							#Cell locations of additional waveforms [R,Z].
+electrodeloc = [30,44]						#Cell location of powered electrode [R,Z].
+waveformlocs = [[16,29],[16,44],[16,64]]	#Cell locations of additional waveforms [R,Z].
 
 phasecycles = 2								#Number of phase cycles to be plotted.
 DoFWidth = 41								#PROES Depth of Field Cells (0 -> 1 cell)
@@ -135,19 +135,19 @@ DoFWidth = 41								#PROES Depth of Field Cells (0 -> 1 cell)
 #Requested TECPLOT Variables
 Variables = Ar
 MultiVar = []							#Additional variables plotted ontop of [Variables]
-radialineouts = [] 						#Radial 1D-Profiles to be plotted (fixed Z-mesh) --
+radialineouts = [29,44,64] 				#Radial 1D-Profiles to be plotted (fixed Z-mesh) --
 heightlineouts = [0]					#Axial 1D-Profiles to be plotted (fixed R-mesh) |
 TrendLocation = [] 						#Cell location For Trend Analysis [R,Z], ([] = min/max)
 
 
 #Requested diagnostics and plotting routines.
 savefig_convergence = False				#Requires movie_icp.pdt
-savefig_plot2D = False					#Requires TECPLOT2D.PDT
+savefig_plot2D = True					#Requires TECPLOT2D.PDT
 
 savefig_monoprofiles = False			#Single-Variables; fixed height/radius
 savefig_multiprofiles = False			#Multi-Variables; same folder
-savefig_comparelineouts = False			#Multi-Variables; all folders
-savefig_trendcomparison = False			#Single-Variables; fixed cell location (or max/min)
+savefig_comparelineouts = True			#Multi-Variables; all folders
+savefig_trendcomparison = True			#Single-Variables; fixed cell location (or max/min)
 savefig_pulseprofiles = False			#Single-Variables; plotted against real-time axis
 
 savefig_phaseresolve1D = False			#1D Phase Resolved Images
@@ -170,8 +170,8 @@ ThrustLoc = 80							#Z-axis cell for thrust calculation.
 #Image plotting options.
 image_extension = '.png'				#Extensions { '.png', '.jpg', '.eps' }
 image_aspectratio = [10,10]				#[x,y] in cm [Doesn't rotate dynamically]
-image_radialcrop = []					#[R,Z] in cm
-image_axialcrop = []					#[R,Z] in cm
+image_radialcrop = [0.6]					#[R,Z] in cm
+image_axialcrop = [1,4]					#[R,Z] in cm
 #YPR R[0.6];Z[1,4]   #MSHC R[0.0,1.0];Z[0.5,2.5]
 
 image_plotsymmetry = True				#Toggle radial symmetry
@@ -315,7 +315,7 @@ print '   |  |__|  | |  |__   |  |     |  |__   |   \|  |   /  ^  \        '
 print '   |   __   | |   __|  |  |     |   __|  |  . `  |  /  /_\  \       '
 print '   |  |  |  | |  |____ |  `----.|  |____ |  |\   | /  _____  \      '
 print '   |__|  |__| |_______||_______||_______||__| \__|/__/     \__\     '
-print '                                                            v0.10.8 '
+print '                                                            v0.10.9 '
 print '--------------------------------------------------------------------'
 print ''
 print 'The following diagnostics were requested:'
@@ -2022,7 +2022,7 @@ def ImagePlotter1D(profile,axis,aspectratio,fig=111,ax=111):
 
 #Create figure and plot a 2D image with associated image plotting requirements.
 #Returns plotted image, axes and figure after applying basic data restructuring.
-#ImagePlotter2D(Image,extent,image_aspectratio,Variablename,fig,ax[0]):
+#fig,ax,im,Image = ImagePlotter2D(Image,extent,image_aspectratio,variablelist[l],fig,ax[0]):
 def ImagePlotter2D(Image,extent,aspectratio,variable='N/A',fig=111,ax=111):
 
 	#Generate new figure if required. {kinda hacky...}
@@ -2060,7 +2060,7 @@ def ImagePlotter2D(Image,extent,aspectratio,variable='N/A',fig=111,ax=111):
 	else:
 		im = ax.imshow(Image,extent=extent,origin="lower")
 	#endif
-	return(fig,ax,im)
+	return(fig,ax,im,Image)
 #enddef
 
 
@@ -2538,7 +2538,7 @@ if savefig_plot2D == True:
 
 			#Generate and rotate figure as requested.
 			extent,aspectratio = DataExtent(l)
-			fig,ax,im = ImagePlotter2D(Image,extent,aspectratio,Variablelist[k])
+			fig,ax,im,Image = ImagePlotter2D(Image,extent,aspectratio,Variablelist[k])
 
 			#Define image beautification variables.
 			if image_rotate == True:
@@ -2629,7 +2629,7 @@ if savefig_convergence == True:
 
 				#Generate and rotate figure as requested.
 				extent,aspectratio = DataExtent(l)
-				fig,ax,im = ImagePlotter2D(Image,extent,aspectratio,Variablelist[i])
+				fig,ax,im,Image = ImagePlotter2D(Image,extent,aspectratio,Variablelist[i])
 
 				#Define image axis labels.
 				if image_rotate == True:
@@ -3917,7 +3917,7 @@ if bool(set(NeutSpecies).intersection(Variables)) == True:
 
 			#Label and save the 2D Plots.
 			extent,aspectratio = DataExtent(l)
-			fig,ax,im = ImagePlotter2D(Image,extent,aspectratio)
+			fig,ax,im,Image = ImagePlotter2D(Image,extent,aspectratio)
 
 			#Image plotting details, invert Y-axis to fit 1D profiles.
 			Title = 'Knudsen Number Image for \n'+Dirlist[l][2:-1]
@@ -4110,7 +4110,7 @@ if savefig_phaseresolve2D == True:
 				fig.suptitle(Title, y=0.97, fontsize=18)
 
 				#Plot 2D image, applying image options and cropping as required.
-				fig,ax[0],im = ImagePlotter2D(Image,extent,aspectratio,Variablelist[i],fig,ax[0])
+				fig,ax[0],im,Image = ImagePlotter2D(Image,extent,aspectratio,Variablelist[i],fig,ax[0])
 				ImageOptions(ax[0],Xlabel,Ylabel,Crop=True)
 
 				#Add Colourbar (Axis, Label, Bins)
