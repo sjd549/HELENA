@@ -109,10 +109,10 @@ MSHC_Phase = ['S-E','S-AR+','S-AR4P','TE','PPOT']
 
 
 #Commonly Used Diagnostic Settings
-#electrodeloc	#YPR [30,44],[16,44] #SPR [0,107] 	#MSHC [0,12]
+#electrodeloc	#YPR [29,44],[16,44] #SPR [0,107] 	#MSHC [0,12]
 #waveformlocs 	#YPR [[16,29],[16,44],[16,64]]
 #DOFWidth		#YPR 41=2cm   						#MSHC 10=0.47cm
-#TrendLoc		#YPR H[0];R[31,46,66] 				#MSHC H[0,20];R[20]
+#TrendLoc		#YPR H[0];R[29,44,64] 				#MSHC H[0,20];R[20]
 #ThrustLoc		#YPR=80, stdESCT=76, smlESCT=48/54,
 
 #====================================================================#
@@ -126,23 +126,23 @@ NEDFVariables = []			#Requested nprofile_2d variables (no spaces)
 #Requested movie1/movie_icp Variables.
 IterVariables = ['E','S-E','PPOT','TE','AR3S','FZ-AR3S','FZ-AR+']		#Requested Movie_icp (iteration) Variables.		
 PhaseVariables = PR_Phase					#Requested Movie1 (phase) Variables.
-electrodeloc = [30,44]						#Cell location of powered electrode [R,Z].
+electrodeloc = [29,44]						#Cell location of powered electrode [R,Z].
 waveformlocs = [[16,29],[16,44],[16,64]]	#Cell locations of additional waveforms [R,Z].
 
 phasecycles = 2								#Number of phase cycles to be plotted.
 DoFWidth = 41								#PROES Depth of Field Cells (0 -> 1 cell)
 
-#Requested TECPLOT Variables
+#Requested TECPLOT Variables and plotting locations.
 Variables = Ar
 MultiVar = []							#Additional variables plotted ontop of [Variables]
-radialineouts = [44]#[29,44,64] 				#Radial 1D-Profiles to be plotted (fixed Z-mesh) --
+radialineouts = [29,44,64] 				#Radial 1D-Profiles to be plotted (fixed Z-mesh) --
 heightlineouts = [0]					#Axial 1D-Profiles to be plotted (fixed R-mesh) |
 TrendLocation = [] 						#Cell location For Trend Analysis [R,Z], ([] = min/max)
 
 
 #Requested diagnostics and plotting routines.
 savefig_convergence = False				#Requires movie_icp.pdt
-savefig_plot2D = True					#Requires TECPLOT2D.PDT
+savefig_plot2D = False					#Requires TECPLOT2D.PDT
 
 savefig_monoprofiles = False			#Single-Variables; fixed height/radius
 savefig_multiprofiles = False			#Multi-Variables; same folder
@@ -152,9 +152,10 @@ savefig_pulseprofiles = False			#Single-Variables; plotted against real-time axi
 
 savefig_phaseresolve1D = False			#1D Phase Resolved Images
 savefig_phaseresolve2D = False			#2D Phase Resolved Images
-savefig_PROES = True					#Phase-Resolved 2D Images
+savefig_PROES = False					#Phase-Resolved 2D Images
 
-savefig_IEDF = False					#IN DEVELOPMENT, WORKS BUT UNRELIABLE.
+savefig_IEDFangular = True				#2D images of angular IEDF; single folders.
+savefig_IEDFtrends = True				#1D IEDF trends; all folders.
 savefig_EEDF = False					#IN DEVELOPMENT, NO PLOTTING ROUTINE.
 
 
@@ -170,7 +171,7 @@ ThrustLoc = 80							#Z-axis cell for thrust calculation.
 #Image plotting options.
 image_extension = '.png'				#Extensions { '.png', '.jpg', '.eps' }
 image_aspectratio = [10,10]				#[x,y] in cm [Doesn't rotate dynamically]
-image_radialcrop = [0.6]					#[R,Z] in cm
+image_radialcrop = [0.6]				#[R,Z] in cm
 image_axialcrop = [1,4]					#[R,Z] in cm
 #YPR R[0.6];Z[1,4]   #MSHC R[0.0,1.0];Z[0.5,2.5]
 
@@ -181,7 +182,15 @@ image_normalize = False					#Normalize image/profiles to local max
 image_plotgrid = False					#Plot major/minor gridlines on profiles
 image_plotmesh = False					#### NOT IMPLIMENTED ####
 image_logplot = False					#Plot ln(Data), against linear axis.
-image_rotate = True					#Rotate image 90 degrees to the right.
+image_rotate = True						#Rotate image 90 degrees to the right.
+
+#Overrides the automatic image labelling.
+titleoverride = []
+legendoverride = []
+xaxisoverride = []
+xlabeloverride = []
+ylabeloverride = []
+cbaroverride = ['NotImplimented']
 
 
 #Write data to ASCII files.
@@ -193,20 +202,9 @@ write_plot2D = True
 
 #============================#
 
-#Overrides the automatic image labelling.
-titleoverride = []
-legendoverride = []
-xaxisoverride = []
-xlabeloverride = []
-ylabeloverride = []
-cbaroverride = ['NotImplimented']
 
-#Commonly used graph labels:
-#'0','30','60','90','120','150','180','210','240','270','300','330'
-#'100','200','300','400','500','600','700','800','900','1000'
-#'13.56MHz','27.12MHz','40.68MHz','54.24MHz','67.80MHz'
-#'67.80MHz','54.24MHz','40.68MHz','27.12MHz','13.56MHz'
-#'1.0mm','1.5mm','2.0mm','2.5mm','3.0mm'
+
+
 
 
 
@@ -217,6 +215,7 @@ cbaroverride = ['NotImplimented']
 
 #####TODO#####
 #clean up unused functions and ensure homogeneity
+#ensure that all ASCII save routines work in the same format
 
 #introduce seaborn into the program en-masse.
 #introduce 'garbage collection' at the end of each diagnostic.
@@ -334,7 +333,7 @@ if True in [print_generaltrends,print_Knudsennumber,print_totalpower,print_DCbia
 	print'# 1D Specific Trend Analysis'
 if savefig_trendcomparison == True:
 	print'# 1D Steady-State Trend Processing'
-if True in [savefig_EEDF,savefig_IEDF]:
+if True in [savefig_IEDFangular,savefig_IEDFtrends,savefig_EEDF]:
 	print'# Angular Energy Distribution Processing'
 print '-----------------------------------------'
 print ''
@@ -1164,7 +1163,7 @@ for l in tqdm(range(0,numfolders)):
 #===================##===================#
 
 	#IEDF/NEDF file readin.
-	if savefig_IEDF == True:
+	if True in [savefig_IEDFangular,savefig_IEDFtrends]:
 
 		#Define arguments and autorun conv_prof.exe if possible.
 		IEDFVarArgs = ['1','1','1','1','1'] #### THIS IS HACKY, WON'T ALWAYS WORK ####
@@ -1539,7 +1538,7 @@ del Energy,Fe,rawdata_mcs
 
 
 #Alert user that readin process has ended and continue with selected diagnostics.
-if any([savefig_plot2D, savefig_phaseresolve2D, savefig_convergence, savefig_monoprofiles, savefig_multiprofiles, savefig_comparelineouts, savefig_pulseprofiles, savefig_phaseresolve1D, savefig_PROES, savefig_trendcomparison, print_generaltrends, print_Knudsennumber, print_totalpower, print_DCbias, print_thrust, savefig_IEDF, savefig_EEDF]) == True:
+if any([savefig_plot2D, savefig_phaseresolve2D, savefig_convergence, savefig_monoprofiles, savefig_multiprofiles, savefig_comparelineouts, savefig_pulseprofiles, savefig_phaseresolve1D, savefig_PROES, savefig_trendcomparison, print_generaltrends, print_Knudsennumber, print_totalpower, print_DCbias, print_thrust, savefig_IEDFangular, savefig_IEDFtrends, savefig_EEDF]) == True:
 	print '----------------------------------------'
 	print 'Data Readin Complete, Starting Analysis:'
 	print '----------------------------------------'
@@ -1652,8 +1651,8 @@ def SymmetryConverter(Image,Radial=False):
 
 #Create figure of desired size and with variable axes.
 #Returns figure and axes seperately.
-#fig,ax = figure(image_aspectratio,1)
-def figure(aspectratio,subplots=1,shareX=False):
+#fig,ax = figure(image_aspectratio,1,shareX=False)
+def figure(aspectratio=[],subplots=1,shareX=False):
 	if len(aspectratio) == 2:
 		fig, ax = plt.subplots(subplots, figsize=(aspectratio[0],aspectratio[1]),sharex=shareX)
 	else:
@@ -1676,7 +1675,8 @@ def figure(aspectratio,subplots=1,shareX=False):
 #CropImage(ax[0],[[Rcrop],[Zcrop]]), 
 def CropImage(ax=plt.gca(),Extent=[],Apply=True):
 
-	#Obtain default limits and rotate if needed.
+	#Obtain default limits and rotate if needed, doesn't crash if no crop applied.
+	#R1,R2 are radial limits of image, Z1,Z2 are axial limits. (non-rotated)
 	R1,R2 = ax.get_xlim()[0],ax.get_xlim()[1]
 	Z1,Z2 = ax.get_ylim()[0],ax.get_ylim()[1]
 	if image_rotate == True: 
@@ -1722,7 +1722,7 @@ def CropImage(ax=plt.gca(),Extent=[],Apply=True):
 		ax.set_ylim(Z1,Z2)
 	#endif
 
-	#Return cropped dimensions in SI units (allowing for rotation).
+	#Return cropped dimensions in SI units.
 	return([[R1,R2],[Z1,Z2]])
 #enddef
 
@@ -1742,23 +1742,37 @@ def CropImageMinMax(Image):
 	if image_logplot == True: Image = np.log(Image)
 	if image_normalize == True: Image = normalize(Image)
 
-	#Only apply cropping if requested and avaliable.
+	#Modify image to cropped region if a region is supplied.
 	if any( [len(image_radialcrop),len(image_axialcrop)] ) > 0:
-		#Convert cropped SI region to cell region, (rotation corrected)
-		#R1,R2 are radial limits of image, Z1,Z2 are axial limits.
-		R1 = int(CropImage(Apply=False)[0][0]/dz[l])
-		R2 = int(CropImage(Apply=False)[0][1]/dz[l])
-		Z1 = int(CropImage(Apply=False)[1][0]/dr[l])
-		Z2 = int(CropImage(Apply=False)[1][1]/dr[l])
+		#Convert cropped SI region to cell region, (correcting for rotation)
+		#R1,R2 are radial limits of image, Z1,Z2 are axial limits. (non-rotated)
+		CropExtent = CropImage(Apply=False)
+		if image_rotate == True: 
+			R1,R2 = int(CropExtent[1][0]/dr[l])+R_mesh[l],int(CropExtent[1][1]/dr[l])+R_mesh[l]
+			Z1,Z2 = int(CropExtent[0][0]/dz[l]),int(CropExtent[0][1]/dz[l])
+		else:
+			R1,R2 = int(CropExtent[0][0]/dr[l])+R_mesh[l],int(CropExtent[0][1]/dr[l])+R_mesh[l]
+			Z1,Z2 = int(CropExtent[1][0]/dz[l]),int(CropExtent[1][1]/dz[l])
+		#endif
 
-		#Flatten supplied image and obtain max/min values within cropped range
-		flatimage = [item for sublist in Image[R1:R2][Z1:Z2] for item in sublist]
-		cropmax,cropmin = max(flatimage),min(flatimage)
-	else:
-		#If no cropping avaliable, use limits of full image.
-		flatimage = [item for sublist in Image for item in sublist]
-		cropmax,cropmin = max(flatimage),min(flatimage)
+		#FIGURE OUT HOW TO SLICE THE IMAGE PROPERLY!
+		#Crop the cell region to the desired region. (correcting for rotation)
+		if image_rotate == True:
+			Image = Image[R1:R2]
+			Image = np.asarray(Image).transpose()
+			Image = Image[Z1:Z2]
+			Image = np.asarray(Image).transpose()
+		else:
+			Image = Image[Z1:Z2]
+			Image = np.asarray(Image).transpose()
+			Image = Image[R1:R2]
+			Image = np.asarray(Image).transpose()
+		#endif
 	#endif
+
+	#Flatten image and obtain min/max in region, use full image if no cropping.
+	flatimage = [item for sublist in Image for item in sublist]
+	cropmax,cropmin = max(flatimage),min(flatimage)
 
 	#Return cropped values as list [min,max], as required by colourbar.
 	return([cropmin,cropmax])
@@ -1779,7 +1793,7 @@ def Colourbar(ax,Label,Bins,Lim=[]):
 
 	#Colourbar plotting details
 	divider = make_axes_locatable(ax)
-	cax = divider.append_axes("right", size="5%", pad=0.1)
+	cax = divider.append_axes("right", size="2%", pad=0.1)
 	cbar = plt.colorbar(im, cax=cax)
 	#Set number of ticks, label location and scientific notation.
 	tick_locator = ticker.MaxNLocator(nbins=Bins)
@@ -1875,7 +1889,7 @@ def GenerateAxis(Orientation,Isym=Isymlist[l],phasepoints=range(0,180)):
 			for i in range(-R_mesh[l],R_mesh[l]):
 				axis.append(i*dr[l])
 		#endfor
-		else:
+		elif Isym != 1:
 			for i in range(0,R_mesh[l]):
 				axis.append(i*dr[l])
 			#endfor
@@ -2073,7 +2087,7 @@ def ImagePlotter2D(Image,extent,aspectratio,variable='N/A',fig=111,ax=111):
 #Creates a 1D image from an array of supplied points.
 #Image plotted onto existing axes, figure() should be used.
 #NormFactor = 0 will normalize to maximum of given profile.
-#TrendPlotter(Image,Xaxis,0)
+#TrendPlotter(TrendProfiles,Xaxis,0)
 def TrendPlotter(TrendArray,Xaxis,NormFactor=0):
 
 	#Normalize data to provided normalization factor if required.
@@ -3257,9 +3271,8 @@ if savefig_pulseprofiles == True:
 				#ION-NEUTRAL ANGULAR ENERGY DISTRIBUTIONS#
 #====================================================================#
 
-if savefig_IEDF == True:
+if savefig_IEDFangular == True:
 
-	PeakeV = list()
 	#For all simulation folders.
 	for l in range(0,numfolders):
 
@@ -3282,41 +3295,122 @@ if savefig_IEDF == True:
 			#Transpose Image for plotting and reverse both lists due to reading error.
 			Image, EDFprofile = Image[::-1].transpose(), EDFprofile[::-1]
 
-
-			if i == 0:
-				PeakeV.append( EDFprofile.index(max(EDFprofile)) )
-			#endif
-
-
 			#Plot the angular distribution and EDF of the required species.
-			fig,ax = figure([13,9],2)
+			fig,ax = figure([11,9], 2, shareX=True)
 			fig.suptitle(Dirlist[l][2::]+'\n'+variablelist[i]+' Angular Energy Distribution Function', y=0.995, fontsize=16)
 			Extent=[0,len(Image[0]), -len(Image)/2,len(Image)/2]
 
 			im = ax[0].imshow(Image,extent=Extent)
 			ImageOptions(ax[0],Ylabel='Angular Dispersion [deg]',Crop=False)				
-			#Add Colourbar (Axis, Label, Bins)
+			#Add Colourbar (Axis, Label, Bins)			
 			cax = Colourbar(ax[0],variablelist[i]+' EDF($\\theta$)',5)
 
 			ax[1].plot(EDFprofile, lw=2)
-			Xlabel,Ylabel = 'Energy [eV]',variablelist[i]+' EDF($\\theta$)'
+			Xlabel,Ylabel = 'Energy [eV]',variablelist[i]+' EDF \n [$\\theta$ Integrated]'
 			ImageOptions(ax[1],Xlabel,Ylabel,Crop=False)
-			ax[1].set_xlim(0,50)
 
 			plt.tight_layout()
 			plt.savefig(DirEDF+variablelist[i]+'_EDF'+ext)
 			plt.close('all')
+			#endif
 		#endfor
 	#endfor
-
-#	plt.plot(PeakeV)
-#	plt.show()
-
 #endif
 
-#===============================#
 
-if any([savefig_IEDF, savefig_EEDF]) == True:
+
+#====================================================================#
+				#ION-NEUTRAL ANGULAR ENERGY ANALYSIS#
+#====================================================================#
+
+
+
+if savefig_IEDFtrends == True:
+
+	#For all requested IEDF variables
+	for i in tqdm(range(0,len(IEDFVariables))):
+		#Initiate figure for current variable and any required lists.
+		Legendlist,EDFprofiles = list(),list()
+		Median_eV,Mean_eV = list(),list()
+		fig,ax = figure()
+
+		#Create new global trend folder if it doesn't exist already.
+		TrendVariable = filter(lambda x: x.isalpha(), FolderNameTrimmer(Dirlist[0]))
+		DirTrends = CreateNewFolder(os.getcwd()+'/',TrendVariable+' Trends')
+		#Create folder for IEDF trends if it doesn't exist already.
+		DirIEDFTrends = CreateNewFolder(DirTrends,'IEDF Trends')
+		
+		#For all simulation folders.
+		for l in range(0,numfolders):
+			EDFprofile = list()
+
+			#Create processlist for requested EDF species and extract images.
+			processlist,variablelist=VariableEnumerator(IEDFVariables,rawdata_IEDF[l],header_IEDFlist[l])
+			Legendlist.append(FolderNameTrimmer(Dirlist[l]))
+
+			#Extract image from required variable and flatten angular distribution profile.
+			Image = ImageExtractor2D(DataIEDF[l][processlist[i]],Rmesh=EDFangle,Zmesh=EDFbins)
+			for j in range(0,len(Image)): EDFprofile.append(sum(Image[j]))
+
+			#Transpose Image for plotting and reverse both lists due to reading error.
+			Image, EDFprofile = Image[::-1].transpose(), EDFprofile[::-1]
+
+			#Plot current variable profile to figure for each simulation folder.
+			ax.plot(EDFprofile, lw=2)
+
+			#Perform a trend analysis on current folder variable i IEDF
+			#Average energy analysis: Returns mean/median energies from IEDF.
+			mean = (max(EDFprofile)+min(EDFprofile))/2
+			meanindex = (np.abs(EDFprofile-mean)).argmin()
+			Mean_eV.append( EDFprofile.index(EDFprofile[meanindex]) )
+			Median_eV.append( EDFprofile.index(max(EDFprofile)) )
+
+			#Particle energy variance analysis: Returns FWHM of energy distribution
+			#Take mean and draw line at y = mean 
+			#Calculate where y = mean intercepts EDFprofile
+			#If only one intercept, first intercept is x = 0
+			#Integrate EDFprofile indices between intercepts 
+			#Save in 1D array, can be used to get energy spread percentage.
+		#endfor
+
+		##IEDF PROFILES##
+		#===============#
+
+		#Plot IEDF profiles on top of eachother and apply image options. 
+		Title = Dirlist[l][2::]+'\n'+variablelist[i]+' Angular Energy Distribution Function Profiles'
+		Xlabel,Ylabel = 'Energy [eV]',variablelist[i]+' EDF [$\\theta$ Integrated]'
+		ImageOptions(ax,Xlabel,Ylabel,Title,Legendlist,Crop=False)
+		ax.set_xlim(0,100)
+
+		#Perform in loop of [i] using the same colours as the EDFprofile[i]
+		#Show median as solid dot, show mean as hollow dot? ms=20~ish
+#		ax.plot((Median_eV,Median_eV),(0,0.08), 'k--')
+#		ax.plot((Mean_eV,Mean_eV),(0,0.08), 'r--')
+
+		plt.savefig(DirIEDFTrends+variablelist[i]+'_EDFprofiles'+ext)
+		plt.close('all')
+
+
+		#ENERGY ANALYSIS#
+		#===============#
+
+		#Plot average energy analysis profiles against simulation folder names.
+		fig,ax = figure()
+		TrendPlotter(Median_eV,Legendlist,0)
+		TrendPlotter(Mean_eV,Legendlist,0)
+
+		Title = Dirlist[l][2::]+'\n'+'Average '+variablelist[i]+' Energies'
+		Legend = ['Most Probable Energy','EDF Mean Energy']
+		Xlabel,Ylabel = 'Varied Property',variablelist[i]+' Energy [eV]'
+		ImageOptions(ax,Xlabel,Ylabel,Title,Legend,Crop=False)
+
+		plt.savefig(DirIEDFTrends+variablelist[i]+'_AverageEnergies'+ext)
+		plt.close('all')
+	#endfor
+#endif
+
+
+if any([savefig_IEDFangular, savefig_IEDFtrends, savefig_EEDF]) == True:
 	print'--------------------------------'
 	print'# EEDF/IEDF Processing Complete.'
 	print'--------------------------------'
