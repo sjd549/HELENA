@@ -214,24 +214,29 @@ write_plot2D = True
 
 
 #####TODO#####
-#clean up unused functions and ensure homogeneity
-#ensure that all ASCII save routines work in the same format
 
+#For V 0.11.n:
+#ensure that all ASCII save routines work in the same format
+#Functionalize thrust calculation with options for neutral/ion/pressure diff.
+#Bring Trendplotter function up to code with ax.plot etc... (1DTrendPlotter)
+#Impliment image_numericaxis, try float(FolderNameTrimmer) as axis.
+#Impliment numerical image_rotate, allow for 000,090,180,270.
+#Introduce Dirlist creating function, using os.module (remove findtools)
+
+#For V 1.0.0:
+#Introduce a sheath-width function and apply as an image option
+#Functionalise PROES images and allow for axial or radial PROES
+#Complete IEDF/NEDF section and Functionalise
+#Add EEDF section and Functionalise.
+#Clean up unused functions and ensure homogeneity.
+
+
+#For General Progress:
 #introduce seaborn into the program en-masse.
 #introduce 'garbage collection' at the end of each diagnostic.
-
-#Bring Trendplotter function up to code with ax.plot etc... (1DTrendPlotter)
-#Functionalize thrust calculation with options for neutral/ion/pressure diff.
-#Impliment numerical image_rotate, allow for 000,090,180,270.
-#Impliment image_numericaxis, try float(FolderNameTrimmer) as axis.
-
-#need to clean up the phase data in general and functionalise as much as possible.
-#need to clean up the IEDF/NEDF/EEDF sections and functionalise.
-#need to add the ability to compare IEDF/NEDF profiles between folders.
-
-
-
-
+#Update README, include all diagnostics and examples.
+#Create developer handbook describing functions.
+#Attempt to get python 3.6 compatable.
 
 
 
@@ -314,7 +319,7 @@ print '   |  |__|  | |  |__   |  |     |  |__   |   \|  |   /  ^  \        '
 print '   |   __   | |   __|  |  |     |   __|  |  . `  |  /  /_\  \       '
 print '   |  |  |  | |  |____ |  `----.|  |____ |  |\   | /  _____  \      '
 print '   |__|  |__| |_______||_______||_______||__| \__|/__/     \__\     '
-print '                                                            v0.11.1 '
+print '                                                            v0.11.0 '
 print '--------------------------------------------------------------------'
 print ''
 print 'The following diagnostics were requested:'
