@@ -130,7 +130,7 @@ electrodeloc = [29,44]						#Cell location of powered electrode [R,Z].
 waveformlocs = [[16,29],[16,44],[16,64]]	#Cell locations of additional waveforms [R,Z].
 
 phasecycles = 2								#Number of phase cycles to be plotted.
-DoFWidth = 41								#PROES Depth of Field Cells (0 -> 1 cell)
+DoFWidth = 5								#PROES Depth of Field Cells (0 -> 1 cell)
 
 #Requested TECPLOT Variables and plotting locations.
 Variables = Ar
@@ -142,7 +142,7 @@ TrendLocation = [] 						#Cell location For Trend Analysis [R,Z], ([] = min/max)
 
 #Requested diagnostics and plotting routines.
 savefig_convergence = False				#Requires movie_icp.pdt
-savefig_plot2D = False					#Requires TECPLOT2D.PDT
+savefig_plot2D = True					#Requires TECPLOT2D.PDT
 
 savefig_monoprofiles = False			#Single-Variables; fixed height/radius
 savefig_multiprofiles = False			#Multi-Variables; same folder
@@ -154,8 +154,8 @@ savefig_phaseresolve1D = False			#1D Phase Resolved Images
 savefig_phaseresolve2D = False			#2D Phase Resolved Images
 savefig_PROES = False					#Phase-Resolved 2D Images
 
-savefig_IEDFangular = True				#2D images of angular IEDF; single folders.
-savefig_IEDFtrends = True				#1D IEDF trends; all folders.
+savefig_IEDFangular = False				#2D images of angular IEDF; single folders.
+savefig_IEDFtrends = False				#1D IEDF trends; all folders.
 savefig_EEDF = False					#IN DEVELOPMENT, NO PLOTTING ROUTINE.
 
 
@@ -171,8 +171,8 @@ ThrustLoc = 80							#Z-axis cell for thrust calculation.
 #Image plotting options.
 image_extension = '.png'				#Extensions { '.png', '.jpg', '.eps' }
 image_aspectratio = [10,10]				#[x,y] in cm [Doesn't rotate dynamically]
-image_radialcrop = [0.6]				#[R,Z] in cm
-image_axialcrop = [1,4]					#[R,Z] in cm
+image_radialcrop = [0.6]				#[R1,R2] in cm
+image_axialcrop = [1,4]					#[Z1,Z2] in cm
 #YPR R[0.6];Z[1,4]   #MSHC R[0.0,1.0];Z[0.5,2.5]
 
 image_plotsymmetry = True				#Toggle radial symmetry
@@ -225,13 +225,13 @@ write_plot2D = True
 
 #For V 1.0.0:
 #Introduce a sheath-width function and apply as an image option
-#Functionalise PROES images and allow for axial or radial PROES
+#Functionalise PROES images 
 #Complete IEDF/NEDF section and Functionalise
 #Add EEDF section and Functionalise.
 #Clean up unused functions and ensure homogeneity.
 
 
-#For General Progress:
+#For Future:
 #introduce seaborn into the program en-masse.
 #introduce 'garbage collection' at the end of each diagnostic.
 #Update README, include all diagnostics and examples.
@@ -319,7 +319,7 @@ print '   |  |__|  | |  |__   |  |     |  |__   |   \|  |   /  ^  \        '
 print '   |   __   | |   __|  |  |     |   __|  |  . `  |  /  /_\  \       '
 print '   |  |  |  | |  |____ |  `----.|  |____ |  |\   | /  _____  \      '
 print '   |__|  |__| |_______||_______||_______||__| \__|/__/     \__\     '
-print '                                                            v0.11.0 '
+print '                                                            v0.11.1 '
 print '--------------------------------------------------------------------'
 print ''
 print 'The following diagnostics were requested:'
@@ -1661,7 +1661,7 @@ def figure(aspectratio=[],subplots=1,shareX=False):
 	if len(aspectratio) == 2:
 		fig, ax = plt.subplots(subplots, figsize=(aspectratio[0],aspectratio[1]),sharex=shareX)
 	else:
-		fig, ax = plt.subplots(subplots, figsize=(9,9), sharex=shareX)
+		fig, ax = plt.subplots(subplots, figsize=(10,10), sharex=shareX)
 	#endif
 	return(fig,ax)
 #enddef
@@ -2837,7 +2837,7 @@ if savefig_monoprofiles == True:
 					if write_lineouts == True:
 						SaveString = '_Z='+str(round((heightlineouts[j])*dr[l], 2))+'cm'
 						DirWrite = CreateNewFolder(DirZlineouts, 'Axial_Data')
-						WriteDataToFile([Zaxis,Zlineout], DirWrite+Variablelist[i]+SaveString)
+						WriteDataToFile([Zaxis,Zlineout[::-1]], DirWrite+Variablelist[i]+SaveString)
 					#endif
 				#endfor
 
@@ -3366,7 +3366,7 @@ if savefig_IEDFtrends == True:
 			#Perform a trend analysis on current folder variable i IEDF
 			#Average energy analysis: Returns mean/median energies from IEDF.
 			mean = (max(EDFprofile)+min(EDFprofile))/2
-			meanindex = (np.abs(EDFprofile-mean)).argmin()
+			meanindex = (np.abs(EDFprofile[1::]-mean)).argmin()
 			Mean_eV.append( EDFprofile.index(EDFprofile[meanindex]) )
 			Median_eV.append( EDFprofile.index(max(EDFprofile)) )
 
@@ -3385,7 +3385,7 @@ if savefig_IEDFtrends == True:
 		Title = Dirlist[l][2::]+'\n'+variablelist[i]+' Angular Energy Distribution Function Profiles'
 		Xlabel,Ylabel = 'Energy [eV]',variablelist[i]+' EDF [$\\theta$ Integrated]'
 		ImageOptions(ax,Xlabel,Ylabel,Title,Legendlist,Crop=False)
-		ax.set_xlim(0,100)
+#		ax.set_xlim(0,100)
 
 		#Perform in loop of [i] using the same colours as the EDFprofile[i]
 		#Show median as solid dot, show mean as hollow dot? ms=20~ish
@@ -3405,7 +3405,7 @@ if savefig_IEDFtrends == True:
 		TrendPlotter(Mean_eV,Legendlist,0)
 
 		Title = Dirlist[l][2::]+'\n'+'Average '+variablelist[i]+' Energies'
-		Legend = ['Most Probable Energy','EDF Mean Energy']
+		Legend = ['EDF Median Energy','EDF Mean Energy']
 		Xlabel,Ylabel = 'Varied Property',variablelist[i]+' Energy [eV]'
 		ImageOptions(ax,Xlabel,Ylabel,Title,Legend,Crop=False)
 
@@ -4507,7 +4507,6 @@ if savefig_PROES == True:
 
 		#for all requested variables.
 		for i in tqdm(range(0,len(Processlist))):
-
 			#Refresh lineout lists between variables.
 			Lineouts,LineoutsOrientation = list(),list()
 
@@ -4521,25 +4520,24 @@ if savefig_PROES == True:
 
 			#For all requested lineouts and orientations.
 			for k in range(0,len(Lineouts)):
-
 				#Refresh required lists.
 				VariableMax,VariableMin = list(),list()
 				PROES = list()
 
 				#for all recorded phases, plot spatially varying variable and waveform.
 				for j in range(0,len(Moviephaselist[l])):
-
 					#Refresh lists between each phasecycle.
 					IntegratedDoFArray,DoFArrays = list(),list()
 
 					#Collect each profile for stitching into a PROES image if required.
 					if DoFWidth > 0:
-
 						#Determine range of lineouts within the depth of field.
 						DOFRegion = [(Lineouts[k]-DoFWidth),(Lineouts[k]+DoFWidth)]
 						#Collect lineouts from DOF region and transpose to allow easy integration.
-						for RLineoutLoc in range(DOFRegion[0],DOFRegion[1]):
-							DoFArrays.append(PlotRadialProfile(PhaseMovieData[l][j],Processlist[i],Variablelist[i],RLineoutLoc))
+						for LineoutLoc in range(DOFRegion[0],DOFRegion[1]):
+							if LineoutsOrientation[k] == 'Radial': DoFArrays.append(PlotRadialProfile(PhaseMovieData[l][j],Processlist[i],Variablelist[i],LineoutLoc))
+							elif LineoutsOrientation[k] == 'Axial': DoFArrays.append(PlotAxialProfile(PhaseMovieData[l][j],Processlist[i],Variablelist[i],LineoutLoc))
+							#endif
 						#endfor
 						DoFArrays = np.asarray(DoFArrays).transpose().tolist()
 
@@ -4551,7 +4549,11 @@ if savefig_PROES == True:
 
 					#If no DoF then simply collect lineout from required location.
 					elif DoFWidth == 0:
-						PROES.append( PlotRadialProfile(PhaseMovieData[l][j],Processlist[i],Variablelist[i],Lineouts[k]) )
+						if LineoutsOrientation[k] == 'Radial':
+							PROES.append(PlotRadialProfile(PhaseMovieData[l][j],Processlist[i],Variablelist[i],RLineoutLoc))
+						elif LineoutsOrientation[k] == 'Axial':
+							PROES.append(PlotAxialProfile(PhaseMovieData[l][j],Processlist[i],Variablelist[i],RLineoutLoc))
+						#endif
 					#endif
 				#endfor
 
@@ -4648,7 +4650,8 @@ if savefig_PROES == True:
 
 				#Plot Temporally Collapsed PROES with required axis.
 				fig,ax = figure(image_aspectratio,2)
-				ax[0].plot(Raxis,SpatialPROES, lw=2)
+				try: ax[0].plot(Raxis,SpatialPROES, lw=2)
+				except: ax[0].plot(Zaxis,SpatialPROES, lw=2)
 				Xlabel = 'Phase [$\omega$t/2$\pi$]'
 				Ylabel = 'Temporally Integrated '+Variablelist[i]
 				ImageOptions(ax[0],Xlabel,Ylabel,Crop=False)
