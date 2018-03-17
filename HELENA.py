@@ -130,7 +130,7 @@ electrodeloc = [29,44]						#Cell location of powered electrode [R,Z].
 waveformlocs = [[16,29],[16,44],[16,64]]	#Cell locations of additional waveforms [R,Z].
 
 phasecycles = 2								#Number of phase cycles to be plotted.
-DoFWidth = 5								#PROES Depth of Field Cells (0 -> 1 cell)
+DoFWidth = 41								#PROES Depth of Field Cells (0 -> 1 cell)
 
 #Requested TECPLOT Variables and plotting locations.
 Variables = Ar
@@ -157,6 +157,9 @@ savefig_PROES = False					#Phase-Resolved 2D Images
 savefig_IEDFangular = False				#2D images of angular IEDF; single folders.
 savefig_IEDFtrends = False				#1D IEDF trends; all folders.
 savefig_EEDF = False					#IN DEVELOPMENT, NO PLOTTING ROUTINE.
+
+#Write processed data to ASCII files.
+write_ASCII = True
 
 
 #Steady-State diagnostics terminal output toggles.
@@ -193,11 +196,7 @@ ylabeloverride = []
 cbaroverride = ['NotImplimented']
 
 
-#Write data to ASCII files.
-write_trendcomparison = True
-write_phaseresolve = True
-write_lineouts = True
-write_plot2D = True
+
 
 
 #============================#
@@ -2576,8 +2575,8 @@ if savefig_plot2D == True:
 			cax = Colourbar(ax,label[k],bins,Lim=CropImageMinMax(Image))
 
 			#Write data to ASCII files if requested.
-			if write_plot2D == True:
-				DirWrite = CreateNewFolder(Dir2Dplots, '2Dplots Data')
+			if write_ASCII == True:
+				DirWrite = CreateNewFolder(Dir2Dplots, '2Dplots_Data')
 				WriteDataToFile(Image, DirWrite+Variablelist[k])
 			#endif
 
@@ -2790,7 +2789,7 @@ if savefig_monoprofiles == True:
 					ImagePlotter1D(Rlineout,Raxis,image_aspectratio,fig,ax)
 
 					#Write data to ASCII files if requested.
-					if write_lineouts == True:
+					if write_ASCII == True:
 						SaveString = '_R='+str(round((radialineouts[j])*dz[l], 2))+'cm'
 						DirWrite = CreateNewFolder(DirRlineouts, 'Radial_Data')
 						WriteDataToFile([Raxis,Rlineout], DirWrite+Variablelist[i]+SaveString)
@@ -2803,7 +2802,7 @@ if savefig_monoprofiles == True:
 				ImageOptions(ax,Xlabel,Ylabel,Title,Legendlist,Crop=False)
 
 				#Save profiles in previously created folder.
-				plt.savefig(DirRlineouts+'1D_Radial_'+Variablelist[i]+' profiles'+ext)
+				plt.savefig(DirRlineouts+'1D_Radial_'+Variablelist[i]+'_Profiles'+ext)
 				plt.close(fig)
 			#endfor
 			plt.close('all')
@@ -2834,7 +2833,7 @@ if savefig_monoprofiles == True:
 					ImagePlotter1D(Zlineout[::-1],Zaxis,image_aspectratio,fig,ax)
 
 					#Write data to ASCII files if requested.
-					if write_lineouts == True:
+					if write_ASCII == True:
 						SaveString = '_Z='+str(round((heightlineouts[j])*dr[l], 2))+'cm'
 						DirWrite = CreateNewFolder(DirZlineouts, 'Axial_Data')
 						WriteDataToFile([Zaxis,Zlineout[::-1]], DirWrite+Variablelist[i]+SaveString)
@@ -2847,7 +2846,7 @@ if savefig_monoprofiles == True:
 				ImageOptions(ax,Xlabel,Ylabel,Title,Legendlist,Crop=False)
 
 				#Save profiles in previously created folder.
-				plt.savefig(DirZlineouts+'1D_Height_'+Variablelist[i]+' profiles'+ext)
+				plt.savefig(DirZlineouts+'1D_Axial_'+Variablelist[i]+'_Profiles'+ext)
 				plt.close(fig)
 			#endfor
 			plt.close('all')
@@ -2918,12 +2917,12 @@ if savefig_comparelineouts == True:
 
 
 				#Write data to ASCII files if requested.
-				if write_lineouts == True and l == 0:
-					WriteFolder = 'Z='+str(round((radialineouts[j])*dz[l], 2))+'cm_Data'
-					DirWrite = CreateNewFolder(DirComparisons, WriteFolder)
-					try: os.remove(DirWrite+Variablelist[k])
-					except: a=1
-				if write_lineouts == True:
+				if write_ASCII == True:
+					if l == 0:
+						WriteFolder = 'Z='+str(round((radialineouts[j])*dz[l], 2))+'cm_Data'
+						DirWrite = CreateNewFolder(DirComparisons, WriteFolder)
+						WriteDataToFile(Raxis+['\n'], DirWrite+Variablelist[k], 'w')
+					#endif
 					WriteDataToFile(Rlineout+['\n'], DirWrite+Variablelist[k], 'a')
 				#endif
 
@@ -2981,13 +2980,13 @@ if savefig_comparelineouts == True:
 
 
 				#Write data to ASCII files if requested.
-				if write_lineouts == True and l == 0:
-					WriteFolder = 'R='+str(round((heightlineouts[j])*dr[l], 2))+'cm_Data'
-					DirWrite = CreateNewFolder(DirComparisons, WriteFolder)
-					try: os.remove(DirWrite+Variablelist[k])
-					except: a=1
-				if write_lineouts == True:
-					WriteDataToFile(Zlineout+['\n'], DirWrite+Variablelist[k], 'a')
+				if write_ASCII == True:
+					if l == 0:
+						WriteFolder = 'R='+str(round((heightlineouts[j])*dr[l], 2))+'cm_Data'
+						DirWrite = CreateNewFolder(DirComparisons, WriteFolder)
+						WriteDataToFile(Zaxis+['\n'], DirWrite+Variablelist[k], 'w')
+					#endif
+					WriteDataToFile(Zlineout[::-1]+['\n'], DirWrite+Variablelist[k], 'a')
 				#endif
 
 				#Apply image options and axis labels.
@@ -3199,7 +3198,7 @@ if savefig_pulseprofiles == True:
 			plt.close('all')
 
 			#Write data to ASCII files if requested.
-			if write_lineouts == True:
+			if write_ASCII == True:
 				DirWrite = CreateNewFolder(DirPulse, 'Pulse_Data')
 				WriteDataToFile(Xaxis, DirWrite+variablelist[i], 'w')
 				WriteDataToFile(['\n']+PulseProfile, DirWrite+variablelist[i], 'a')
@@ -3336,7 +3335,7 @@ if savefig_IEDFtrends == True:
 	for i in tqdm(range(0,len(IEDFVariables))):
 		#Initiate figure for current variable and any required lists.
 		Legendlist,EDFprofiles = list(),list()
-		Median_eV,Mean_eV = list(),list()
+		Median_eV,Mean_eV,Max_eV = list(),list(),list()
 		fig,ax = figure()
 
 		#Create new global trend folder if it doesn't exist already.
@@ -3363,14 +3362,22 @@ if savefig_IEDFtrends == True:
 			#Plot current variable profile to figure for each simulation folder.
 			ax.plot(EDFprofile, lw=2)
 
+
 			#Perform a trend analysis on current folder variable i IEDF
 			#Average energy analysis: Returns mean/median energies from IEDF.
 			mean = (max(EDFprofile)+min(EDFprofile))/2
 			meanindex = (np.abs(EDFprofile[1::]-mean)).argmin()
-			Mean_eV.append( EDFprofile.index(EDFprofile[meanindex]) )
+			Mean_eV.append( EDFprofile.index(EDFprofile[meanindex]) ) 
 			Median_eV.append( EDFprofile.index(max(EDFprofile)) )
 
-			#Particle energy variance analysis: Returns FWHM of energy distribution
+			#Maximum energy analysis: Returns maximum energy below a set threshold.
+			threshold = 0.01*max(EDFprofile)
+			for j in range(0,len(EDFprofile)):
+				if EDFprofile[j] >= threshold: tempMax_eV = j
+			#endfor
+			Max_eV.append(tempMax_eV)
+
+			#Particle energy variance analysis: Returns FWHM of energy distribution.
 			#Take mean and draw line at y = mean 
 			#Calculate where y = mean intercepts EDFprofile
 			#If only one intercept, first intercept is x = 0
@@ -3378,19 +3385,26 @@ if savefig_IEDFtrends == True:
 			#Save in 1D array, can be used to get energy spread percentage.
 		#endfor
 
+
+		#Write data to ASCII format datafile if requested.
+		if write_ASCII == True:
+			if i == 0:
+				DirASCII = CreateNewFolder(DirTrends,'Trend_Data')
+				DirASCIIIEDF = CreateNewFolder(DirASCII,'IEDF_Data')
+			#endif
+			WriteDataToFile(Legendlist+['\n']+Median_eV, DirASCIIIEDF+variablelist[i]+'_Median', 'w')
+			WriteDataToFile(Legendlist+['\n']+Mean_eV, DirASCIIIEDF+variablelist[i]+'_Mean', 'w')
+			WriteDataToFile(Legendlist+['\n']+Max_eV, DirASCIIIEDF+variablelist[i]+'_Max', 'w')
+		#endif
+
 		##IEDF PROFILES##
 		#===============#
 
-		#Plot IEDF profiles on top of eachother and apply image options. 
+		#Apply image options to IEDF plot generated in the above loop.
 		Title = Dirlist[l][2::]+'\n'+variablelist[i]+' Angular Energy Distribution Function Profiles'
 		Xlabel,Ylabel = 'Energy [eV]',variablelist[i]+' EDF [$\\theta$ Integrated]'
 		ImageOptions(ax,Xlabel,Ylabel,Title,Legendlist,Crop=False)
 #		ax.set_xlim(0,100)
-
-		#Perform in loop of [i] using the same colours as the EDFprofile[i]
-		#Show median as solid dot, show mean as hollow dot? ms=20~ish
-#		ax.plot((Median_eV,Median_eV),(0,0.08), 'k--')
-#		ax.plot((Mean_eV,Mean_eV),(0,0.08), 'r--')
 
 		plt.savefig(DirIEDFTrends+variablelist[i]+'_EDFprofiles'+ext)
 		plt.close('all')
@@ -3403,9 +3417,10 @@ if savefig_IEDFtrends == True:
 		fig,ax = figure()
 		TrendPlotter(Median_eV,Legendlist,0)
 		TrendPlotter(Mean_eV,Legendlist,0)
+		TrendPlotter(Max_eV,Legendlist,0)
 
 		Title = Dirlist[l][2::]+'\n'+'Average '+variablelist[i]+' Energies'
-		Legend = ['EDF Median Energy','EDF Mean Energy']
+		Legend = ['EDF Median Energy','EDF Mean Energy','EDF Max Energy']
 		Xlabel,Ylabel = 'Varied Property',variablelist[i]+' Energy [eV]'
 		ImageOptions(ax,Xlabel,Ylabel,Title,Legend,Crop=False)
 
@@ -3536,12 +3551,13 @@ if savefig_trendcomparison == True or print_generaltrends == True:
 			ImageOptions(ax,Xlabel,Ylabel,Title,Legendlist,Crop=False)
 
 			#Write data to ASCII format datafile if requested.
-			if write_trendcomparison == True and j == 0:
-				DirASCII = CreateNewFolder(DirTrends,'Trend_Data')
-				try: os.remove(DirASCII+Variablelist[k]+' Trends')
-				except: a=1
-			if write_lineouts == True:
-				WriteDataToFile(Trend+['\n'], DirASCII+Variablelist[k]+' Trends', 'a')
+			if write_ASCII == True:
+				if j == 0:
+					DirASCII = CreateNewFolder(DirTrends,'Trend_Data')
+					DirASCIIAxial = CreateNewFolder(DirASCII,'Axial_Data')
+					WriteDataToFile(Xaxis+['\n'], DirASCIIAxial+Variablelist[k]+'_Trends', 'w')
+				#endif
+				WriteDataToFile(Trend+['\n'], DirASCIIAxial+Variablelist[k]+'_Trends', 'a')
 			#endif
 
 		#Save one image per variable with data from all simulations.
@@ -3596,12 +3612,13 @@ if savefig_trendcomparison == True or print_generaltrends == True:
 			ImageOptions(ax,Xlabel,Ylabel,Title,Legendlist,Crop=False)
 
 			#Write data to ASCII format datafile if requested.
-			if write_trendcomparison == True and j == 0:
-				DirASCII = CreateNewFolder(DirTrends,'Trend_Data')
-				try: os.remove(DirASCII+Variablelist[k]+' Trends')
-				except: a=1
-			if write_lineouts == True:
-				WriteDataToFile(Trend+['\n'], DirASCII+Variablelist[k]+' Trends', 'a')
+			if write_ASCII == True:
+				if j == 0:
+					DirASCII = CreateNewFolder(DirTrends,'Trend_Data')
+					DirASCIIRadial = CreateNewFolder(DirASCII,'Radial_Data')
+					WriteDataToFile(Xaxis+['\n'], DirASCIIRadial+Variablelist[k]+'_Trends', 'w')
+				#endif
+				WriteDataToFile(Trend+['\n'], DirASCIIRadial+Variablelist[k]+'_Trends', 'a')
 			#endif
 
 		#Save one image per variable with data from all simulations.
@@ -3681,10 +3698,10 @@ if savefig_trendcomparison == True or print_DCbias == True:
 	#endfor
 
 	#Write data to ASCII format datafile if requested.
-	if write_trendcomparison == True:
+	if write_ASCII == True:
 		DirASCII = CreateNewFolder(DirTrends,'Trend_Data')
 		DCASCII = [Xaxis,DCbias]
-		WriteDataToFile(DCASCII, DirASCII+'DCbias trends')
+		WriteDataToFile(DCASCII, DirASCII+'DCbias_Trends')
 	#endif
 
 	#Plot and beautify the DCbias, applying normalization if requested.
@@ -3787,10 +3804,10 @@ if savefig_trendcomparison == True or print_totalpower == True:
 	ImageOptions(ax,Xlabel,Ylabel,Title,Legend=RequestedPowers,Crop=False)
 
 	#Write data to ASCII format datafile if requested.
-	if write_trendcomparison == True:
+	if write_ASCII == True:
 		DirASCII, TotalPowerASCII = CreateNewFolder(DirTrends,'Trend_Data'), [Xaxis]
 		for k in range(0,len(RequestedPowers)): TotalPowerASCII.append(Powers[k])
-		WriteDataToFile(TotalPowerASCII, DirASCII+'TotalPower Trends')
+		WriteDataToFile(TotalPowerASCII, DirASCII+'RFPower_Trends')
 	#endif
 
 	plt.savefig(DirTrends+'Power Deposition Comparison'+ext)
@@ -4165,7 +4182,7 @@ if savefig_phaseresolve2D == True:
 		plt.close('all')
 
 		#Write PROES data in ASCII format if required.
-		if write_phaseresolve == True:
+		if write_ASCII == True:
 			ASCIIWaveforms = [Phaseaxis,ElectrodeWaveform]
 			for j in range(0,len(waveformlocs)):
 				ASCIIWaveforms.append(VoltageWaveforms[j])
@@ -4232,7 +4249,7 @@ if savefig_phaseresolve2D == True:
 
 
 				#Write Phase data in ASCII format if required.
-				if write_phaseresolve == True:
+				if write_ASCII == True:
 					DirASCIIPhase = CreateNewFolder(DirPhaseResolved,'2DPhase_Data')
 					Cycle = str( Moviephaselist[l][j].replace(" ", "") )
 					SaveString = DirASCIIPhase+Variablelist[i]+'_'+Cycle
@@ -4312,7 +4329,7 @@ if savefig_phaseresolve1D == True:
 		plt.close('all')
 
 		#Write waveform data in ASCII format if required.
-		if write_phaseresolve == True:
+		if write_ASCII == True:
 			ASCIIWaveforms = [Phaseaxis,ElectrodeWaveform]
 			for j in range(0,len(waveformlocs)):
 				ASCIIWaveforms.append(VoltageWaveforms[j])
@@ -4410,7 +4427,7 @@ if savefig_phaseresolve1D == True:
 					plt.close('all')
 
 					#Write Phase data in ASCII format if required.
-					if write_phaseresolve == True:
+					if write_ASCII == True:
 						DirASCIIPhase = CreateNewFolder(DirPhaseResolved,'1DPhase_Data')
 						DirASCIIPhaseloc = CreateNewFolder(DirASCIIPhase,lineoutstring[3:-2])
 						Cycle = str( Moviephaselist[l][j].replace(" ", "") )
@@ -4493,7 +4510,7 @@ if savefig_PROES == True:
 		plt.close('all')
 
 		#Write PROES data in ASCII format if required.
-		if write_phaseresolve == True:
+		if write_ASCII == True:
 			ASCIIWaveforms = [Phaseaxis,ElectrodeWaveform]
 			for j in range(0,len(waveformlocs)):
 				ASCIIWaveforms.append(VoltageWaveforms[j])
@@ -4611,7 +4628,7 @@ if savefig_PROES == True:
 				plt.close('all')
 
 				#Write PROES data in ASCII format if required.
-				if write_phaseresolve == True:
+				if write_ASCII == True:
 					DirASCIIPROES = CreateNewFolder(DirPROES,'PROES_Data')
 					DirASCIIPROESloc = CreateNewFolder(DirASCIIPROES,lineoutstring[3::])
 					WriteDataToFile(PROES, DirASCIIPROESloc+Variablelist[i]+'_PROES')
