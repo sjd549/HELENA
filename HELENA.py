@@ -91,13 +91,13 @@ Ar = ['AR3S','AR4SM','AR4SR','AR4SPM','AR4SPR','AR4P','AR4D','AR','AR+','AR2+','
 O2 = ['O2','O2+','O','O+','O-','E','TE','P-POT','TG-AVE','PRESSURE','EF-TOT','POW-RF','POW-RF-E','VR-NEUTRAL','VZ-NEUTRAL','VR-ION+','VZ-ION+','EFLUX-R','EFLUX-Z','FR-O-','FZ-O-']
 ArO2 = Ar+O2
 
+Ar_Phase = ['S-E','S-AR+','S-AR4P','SEB-AR+','SEB-AR4P','SRCE-2437','TE','PPOT','FR-E','FZ-E']
+
 ESCT_PCMC = ['AR^0.3S','EB-0.3S','ION-TOT0.3S']
 MSHC_PCMC = ['AR^0.5S','EB-0.5S','ION-TOT0.5S','AR^1.1B','EB-1.1B','ION-TOT1.1B']
 PR_PCMC = ['AR^0.35','EB-0.35','ION-TOT0.35']
 
-PR_Phase = ['S-E','S-AR+','S-AR4P','SEB-AR+','SEB-AR4P','SRCE-2437','TE','PPOT','FR-E']
-ESCT_Phase = ['S-E','S-AR+','FZ-E','FZ-AR+','TE','PPOT']
-MSHC_Phase = ['S-E','S-AR+','S-AR4P','TE','PPOT']
+
 
 
 
@@ -111,9 +111,13 @@ MSHC_Phase = ['S-E','S-AR+','S-AR4P','TE','PPOT']
 #Commonly Used Diagnostic Settings
 #electrodeloc	#YPR [29,44],[16,44] #SPR [0,107] 	#MSHC [0,12]
 #waveformlocs 	#YPR [[16,29],[16,44],[16,64]]
-#DOFWidth		#YPR 41=2cm   						#MSHC 10=0.47cm
+#DOFWidth		#YPR 41=2cm   						#MSHC 5=0.24cm
 #TrendLoc		#YPR H[0];R[29,44,64] 				#MSHC H[0,20];R[20]
 #ThrustLoc		#YPR=80, stdESCT=76, smlESCT=48/54,
+
+#Commonly Used Image Settings
+#Crop YPR R[0.6];Z[1,4]   
+#Crop #MSHC R[0.0,1.0];Z[0.5,2.5]
 
 #====================================================================#
 					#SWITCHBOARD AND DIAGNOSTICS#
@@ -125,7 +129,7 @@ NEDFVariables = []			#Requested nprofile_2d variables (no spaces)
 
 #Requested movie1/movie_icp Variables.
 IterVariables = ['E','S-E','PPOT','TE','AR3S','FZ-AR3S','FZ-AR+']		#Requested Movie_icp (iteration) Variables.		
-PhaseVariables = PR_Phase					#Requested Movie1 (phase) Variables.
+PhaseVariables = Ar_Phase					#Requested Movie1 (phase) Variables.
 electrodeloc = [29,44]						#Cell location of powered electrode [R,Z].
 waveformlocs = [[16,29],[16,44],[16,64]]	#Cell locations of additional waveforms [R,Z].
 
@@ -142,7 +146,7 @@ TrendLocation = [] 						#Cell location For Trend Analysis [R,Z], ([] = min/max)
 
 #Requested diagnostics and plotting routines.
 savefig_convergence = False				#Requires movie_icp.pdt
-savefig_plot2D = True					#Requires TECPLOT2D.PDT
+savefig_plot2D = False					#Requires TECPLOT2D.PDT
 
 savefig_monoprofiles = False			#Single-Variables; fixed height/radius
 savefig_multiprofiles = False			#Multi-Variables; same folder
@@ -176,7 +180,7 @@ image_extension = '.png'				#Extensions { '.png', '.jpg', '.eps' }
 image_aspectratio = [10,10]				#[x,y] in cm [Doesn't rotate dynamically]
 image_radialcrop = [0.6]				#[R1,R2] in cm
 image_axialcrop = [1,4]					#[Z1,Z2] in cm
-#YPR R[0.6];Z[1,4]   #MSHC R[0.0,1.0];Z[0.5,2.5]
+image_cbarlimit = []					#[min,max] colourbar limits	
 
 image_plotsymmetry = True				#Toggle radial symmetry
 image_numericaxis = False				#### NOT IMPLIMENTED ####
@@ -215,7 +219,6 @@ cbaroverride = ['NotImplimented']
 #####TODO#####
 
 #For V 0.11.n:
-#ensure that all ASCII save routines work in the same format
 #Functionalize thrust calculation with options for neutral/ion/pressure diff.
 #Bring Trendplotter function up to code with ax.plot etc... (1DTrendPlotter)
 #Impliment image_numericaxis, try float(FolderNameTrimmer) as axis.
@@ -318,7 +321,7 @@ print '   |  |__|  | |  |__   |  |     |  |__   |   \|  |   /  ^  \        '
 print '   |   __   | |   __|  |  |     |   __|  |  . `  |  /  /_\  \       '
 print '   |  |  |  | |  |____ |  `----.|  |____ |  |\   | /  _____  \      '
 print '   |__|  |__| |_______||_______||_______||__| \__|/__/     \__\     '
-print '                                                            v0.11.1 '
+print '                                                            v0.11.2 '
 print '--------------------------------------------------------------------'
 print ''
 print 'The following diagnostics were requested:'
@@ -1676,8 +1679,8 @@ def figure(aspectratio=[],subplots=1,shareX=False):
 #Takes image axis (assumes default axis), use figure()
 #Input Extent format: [ [Rmin,Rmax], [Zmin,Zmax] ] in cm.
 #Returns cropping limits in format: [ [R1,R2],[Z1,Z2] ] in cm.
-#CropImage(ax[0],[[Rcrop],[Zcrop]]), 
-def CropImage(ax=plt.gca(),Extent=[],Apply=True):
+#CropImage(ax[0],Extent=[[R1,R2],[Z1,Z2]],Apply=True,Rotate=True), 
+def CropImage(ax=plt.gca(),Extent=[],Apply=True,Rotate=True):
 
 	#Obtain default limits and rotate if needed, doesn't crash if no crop applied.
 	#R1,R2 are radial limits of image, Z1,Z2 are axial limits. (non-rotated)
@@ -1739,8 +1742,16 @@ def CropImage(ax=plt.gca(),Extent=[],Apply=True):
 
 #Provides a new colourbar scale for cropped images.
 #Takes a 2D image, and returns the min/max value within the cropped region.
-#Minimum,Maximum = CropImageMinMax(Image)[0],CropImageMinMax(Image)[1]
-def CropImageMinMax(Image):
+#Works for PROES images too, requires PROES='Axial' or 'Radial'.
+#[Minimum,Maximum] = CbarMinMax(Image,PROES=False)
+def CbarMinMax(Image,PROES=False):
+
+	#Return user defined limits if specified.
+	if len(image_cbarlimit) == 2:
+		cropmin = image_cbarlimit[0]
+		cropmax = image_cbarlimit[1]
+		return([cropmin,cropmax])
+	#endif
 
 	#Ensure limits are in line with any requested mathematical constraints
 	if image_logplot == True: Image = np.log(Image)
@@ -1748,26 +1759,39 @@ def CropImageMinMax(Image):
 
 	#Modify image to cropped region if a region is supplied.
 	if any( [len(image_radialcrop),len(image_axialcrop)] ) > 0:
-		#Convert cropped SI region to cell region, (correcting for rotation)
-		#R1,R2 are radial limits of image, Z1,Z2 are axial limits. (non-rotated)
-		CropExtent = CropImage(Apply=False)
-		if image_rotate == True: 
-			R1,R2 = int(CropExtent[1][0]/dr[l])+R_mesh[l],int(CropExtent[1][1]/dr[l])+R_mesh[l]
-			Z1,Z2 = int(CropExtent[0][0]/dz[l]),int(CropExtent[0][1]/dz[l])
-		else:
-			R1,R2 = int(CropExtent[0][0]/dr[l])+R_mesh[l],int(CropExtent[0][1]/dr[l])+R_mesh[l]
-			Z1,Z2 = int(CropExtent[1][0]/dz[l]),int(CropExtent[1][1]/dz[l])
+
+		#Import global cell sizes and apply rotation for the maths stage.
+		dR,dZ = dr[l],dz[l]
+		if image_rotate == True: dR,dZ = dZ,dR
 		#endif
 
-		#FIGURE OUT HOW TO SLICE THE IMAGE PROPERLY!
-		#Crop the cell region to the desired region. (correcting for rotation)
+		#Convert cropped SI region (CropExtent) to cell region (R1,R2,Z1,Z2).
+		CropExtent = CropImage(Apply=False)		#CropExtent applies rotation internally
+		R1 = int(CropExtent[0][0]/dR)
+		R2 = int(CropExtent[0][1]/dR)
+		Z1 = int(CropExtent[1][0]/dZ)
+		Z2 = int(CropExtent[1][1]/dZ)
+		#endif
+
+		#Re-rotate back so that the image is cut in the correct order.
+		#R1,R2 are radial limits of image, Z1,Z2 are axial limits.
 		if image_rotate == True:
+			R1,Z1 = Z1,R1
+			R2,Z2 = Z2,R2
+		#Replace negative R1 with zero, Images here have no symmetry.
+		if R1 < 0: R1 = 0
+		#endif
+
+		#Crop the cell region to the desired region, axial first, then radial.
+		if PROES == False:
+			Image = Image[Z1:Z2]
+			Image = np.asarray(Image).transpose()
 			Image = Image[R1:R2]
 			Image = np.asarray(Image).transpose()
-			Image = Image[Z1:Z2]
-			Image = np.asarray(Image).transpose()
-		else:
-			Image = Image[Z1:Z2]
+		#Crop the cell region for PROES images, they only require one cropped axis.
+		elif PROES == 'Axial':
+			Image = Image[::-1][Z1:Z2]			#Reverse image, origin at top.
+		elif PROES == 'Radial':
 			Image = np.asarray(Image).transpose()
 			Image = Image[R1:R2]
 			Image = np.asarray(Image).transpose()
@@ -1780,39 +1804,6 @@ def CropImageMinMax(Image):
 
 	#Return cropped values as list [min,max], as required by colourbar.
 	return([cropmin,cropmax])
-#enddef
-
-
-
-#=========================#
-#=========================#
-
-
-
-#Creates and plots a colourbar with given label and binsize.
-#Takes colourbar axis, label string, number of colour bins
-#Allows pre-defined colourbar limits in form [min,max].
-#Returns cbar axis if further changes are required.
-def Colourbar(ax,Label,Bins,Lim=[]):
-
-	#Colourbar plotting details
-	divider = make_axes_locatable(ax)
-	cax = divider.append_axes("right", size="2%", pad=0.1)
-	cbar = plt.colorbar(im, cax=cax)
-	#Set number of ticks, label location and scientific notation.
-	tick_locator = ticker.MaxNLocator(nbins=Bins)
-	cbar.locator = tick_locator
-	cbar.set_label(Label, rotation=270,labelpad=30,fontsize=24)
-	cbar.formatter.set_powerlimits((-2,3))
-	cbar.update_ticks()
-	#Size of font
-	cbar.ax.yaxis.offsetText.set(size=18)
-	yticks(fontsize=18)
-
-	#Apply colourbar limits if specified.
-	if len(Lim) == 2: im.set_clim(vmin=Lim[0], vmax=Lim[1])
-
-	return(cbar)
 #enddef
 
 
@@ -1870,6 +1861,39 @@ def ImageOptions(ax=plt.gca(),Xlabel='',Ylabel='',Title='',Legend=[],Crop=True):
 	#endif
 
 	return()
+#enddef
+
+
+
+#=========================#
+#=========================#
+
+
+
+#Creates and plots a colourbar with given label and binsize.
+#Takes colourbar axis, label string, number of colour bins
+#Allows pre-defined colourbar limits in form [min,max].
+#Returns cbar axis if further changes are required.
+def Colourbar(ax,Label,Bins,Lim=[]):
+
+	#Colourbar plotting details
+	divider = make_axes_locatable(ax)
+	cax = divider.append_axes("right", size="2%", pad=0.1)
+	cbar = plt.colorbar(im, cax=cax)
+	#Set number of ticks, label location and scientific notation.
+	tick_locator = ticker.MaxNLocator(nbins=Bins)
+	cbar.locator = tick_locator
+	cbar.set_label(Label, rotation=270,labelpad=30,fontsize=24)
+	cbar.formatter.set_powerlimits((-2,3))
+	cbar.update_ticks()
+	#Size of font
+	cbar.ax.yaxis.offsetText.set(size=18)
+	yticks(fontsize=18)
+
+	#Apply colourbar limits if specified.  (lim=[min,max])
+	if len(Lim) == 2: im.set_clim(vmin=Lim[0], vmax=Lim[1])
+
+	return(cbar)
 #enddef
 
 
@@ -2040,8 +2064,8 @@ def ImagePlotter1D(profile,axis,aspectratio,fig=111,ax=111):
 
 #Create figure and plot a 2D image with associated image plotting requirements.
 #Returns plotted image, axes and figure after applying basic data restructuring.
-#fig,ax,im,Image = ImagePlotter2D(Image,extent,image_aspectratio,variablelist[l],fig,ax[0]):
-def ImagePlotter2D(Image,extent,aspectratio,variable='N/A',fig=111,ax=111):
+#fig,ax,im,Image = ImagePlotter2D(Image,extent,image_aspectratio,variablelist[l],fig,ax[0])
+def ImagePlotter2D(Image,extent,aspectratio=image_aspectratio,variable='N/A',fig=111,ax=111):
 
 	#Generate new figure if required. {kinda hacky...}
 	if fig == 111 and ax == 111:
@@ -2572,7 +2596,7 @@ if savefig_plot2D == True:
 
 			#Add Colourbar (Axis, Label, Bins)
 			label,bins = VariableLabelMaker(Variablelist),5
-			cax = Colourbar(ax,label[k],bins,Lim=CropImageMinMax(Image))
+			cax = Colourbar(ax,label[k],bins,Lim=CbarMinMax(Image))
 
 			#Write data to ASCII files if requested.
 			if write_ASCII == True:
@@ -2663,7 +2687,7 @@ if savefig_convergence == True:
 
 				#Add Colourbar (Axis, Label, Bins)
 				label,bins = VariableLabelMaker(IterVariablelist),5
-				cax = Colourbar(ax,label[i],bins,Lim=CropImageMinMax(Image))
+				cax = Colourbar(ax,label[i],bins,Lim=CbarMinMax(Image))
 
 				#Save to seperate folders inside simulation folder.
 				num1,num2,num3 = k % 10, k/10 % 10, k/100 % 10
@@ -3296,19 +3320,22 @@ if savefig_IEDFangular == True:
 			#Flatten angular distribution across all angles to produce energy distribution.
 			for j in range(0,len(Image)): EDFprofile.append(sum(Image[j]))
 
-			#Transpose Image for plotting and reverse both lists due to reading error.
+			#Transpose Image for plotting and reverse both lists to align with other data.
 			Image, EDFprofile = Image[::-1].transpose(), EDFprofile[::-1]
 
 			#Plot the angular distribution and EDF of the required species.
 			fig,ax = figure([11,9], 2, shareX=True)
-			fig.suptitle(Dirlist[l][2::]+'\n'+variablelist[i]+' Angular Energy Distribution Function', y=0.995, fontsize=16)
-			Extent=[0,len(Image[0]), -len(Image)/2,len(Image)/2]
 
+			Title = Dirlist[l][2::]+'\n'+variablelist[i]+' Angular Energy Distribution Function'
+			Extent=[0,len(Image[0]), -len(Image)/2,len(Image)/2]
+			fig.suptitle(Title, y=0.995, fontsize=16)
+
+			#Angular Figure
 			im = ax[0].imshow(Image,extent=Extent)
-			ImageOptions(ax[0],Ylabel='Angular Dispersion [deg]',Crop=False)				
-			#Add Colourbar (Axis, Label, Bins)			
+			ImageOptions(ax[0],Ylabel='Angular Dispersion [deg]',Crop=False)						
 			cax = Colourbar(ax[0],variablelist[i]+' EDF($\\theta$)',5)
 
+			#Integrated IEDF figure
 			ax[1].plot(EDFprofile, lw=2)
 			Xlabel,Ylabel = 'Energy [eV]',variablelist[i]+' EDF \n [$\\theta$ Integrated]'
 			ImageOptions(ax[1],Xlabel,Ylabel,Crop=False)
@@ -3316,6 +3343,14 @@ if savefig_IEDFangular == True:
 			plt.tight_layout()
 			plt.savefig(DirEDF+variablelist[i]+'_EDF'+ext)
 			plt.close('all')
+
+			#Write data to ASCII files if requested.
+			if write_ASCII == True:
+				if i == 0:
+					DirASCII = CreateNewFolder(DirEDF, 'EDF_Data')
+#					WriteDataToFile(eVaxis, DirASCII+variablelist[i],'w')
+				#endif
+				WriteDataToFile(EDFprofile, DirASCII+variablelist[i],'w')
 			#endif
 		#endfor
 	#endfor
@@ -3366,7 +3401,7 @@ if savefig_IEDFtrends == True:
 			#Perform a trend analysis on current folder variable i IEDF
 			#Average energy analysis: Returns mean/median energies from IEDF.
 			mean = (max(EDFprofile)+min(EDFprofile))/2
-			meanindex = (np.abs(EDFprofile[1::]-mean)).argmin()
+			meanindex = (np.abs(EDFprofile[2::]-mean)).argmin()
 			Mean_eV.append( EDFprofile.index(EDFprofile[meanindex]) ) 
 			Median_eV.append( EDFprofile.index(max(EDFprofile)) )
 
@@ -3417,7 +3452,7 @@ if savefig_IEDFtrends == True:
 		fig,ax = figure()
 		TrendPlotter(Median_eV,Legendlist,0)
 		TrendPlotter(Mean_eV,Legendlist,0)
-		TrendPlotter(Max_eV,Legendlist,0)
+#		TrendPlotter(Max_eV,Legendlist,0)
 
 		Title = Dirlist[l][2::]+'\n'+'Average '+variablelist[i]+' Energies'
 		Legend = ['EDF Median Energy','EDF Mean Energy','EDF Max Energy']
@@ -4043,7 +4078,7 @@ if bool(set(NeutSpecies).intersection(Variables)) == True:
 
 			#Add Colourbar (Axis, Label, Bins)
 			label,bins = 'Knudsen Number',5
-			cax = Colourbar(ax,label,bins,Lim=CropImageMinMax(Image))
+			cax = Colourbar(ax,label,bins,Lim=CbarMinMax(Image))
 
 			#Save Figure
 			plt.savefig(Dir2Dplots+'KnudsenNumber'+ext)
@@ -4204,8 +4239,8 @@ if savefig_phaseresolve2D == True:
 			MinLim,MaxLim = list(),list()
 			for j in range(0,phasecycles):
 				Image = ImageExtractor2D(PhaseMovieData[l][j][Processlist[i]],Variablelist[i])		
-				MinLim.append( CropImageMinMax(Image)[0] )
-				MaxLim.append( CropImageMinMax(Image)[1] )
+				MinLim.append( Lim=CbarMinMax(Image)[0] )
+				MaxLim.append( Lim=CbarMinMax(Image)[1] )
 			#endfor
 			Limits = [min(MinLim),max(MaxLim)]
 
@@ -4221,14 +4256,13 @@ if savefig_phaseresolve2D == True:
 				extent,aspectratio = DataExtent(l)
 
 				#Create figure and axes, plot image on top and waveform underneath.
-				fig,ax = figure(image_aspectratio,2)
+				fig,ax = figure(aspectratio,2)
 				Title = 'Phase-Resolved '+Variablelist[i]+'\n'+str(Moviephaselist[l][j])
 				fig.suptitle(Title, y=0.97, fontsize=18)
 
 				#Plot 2D image, applying image options and cropping as required.
 				fig,ax[0],im,Image = ImagePlotter2D(Image,extent,aspectratio,Variablelist[i],fig,ax[0])
 				ImageOptions(ax[0],Xlabel,Ylabel,Crop=True)
-
 				#Add Colourbar (Axis, Label, Bins)
 				Ylabel = VariableLabelMaker(Variablelist)
 				cax = Colourbar(ax[0],Ylabel[i],5,Lim=Limits)
@@ -4553,7 +4587,7 @@ if savefig_PROES == True:
 						#Collect lineouts from DOF region and transpose to allow easy integration.
 						for LineoutLoc in range(DOFRegion[0],DOFRegion[1]):
 							if LineoutsOrientation[k] == 'Radial': DoFArrays.append(PlotRadialProfile(PhaseMovieData[l][j],Processlist[i],Variablelist[i],LineoutLoc))
-							elif LineoutsOrientation[k] == 'Axial': DoFArrays.append(PlotAxialProfile(PhaseMovieData[l][j],Processlist[i],Variablelist[i],LineoutLoc))
+							elif LineoutsOrientation[k] == 'Axial': DoFArrays.append(PlotAxialProfile(PhaseMovieData[l][j],Processlist[i],Variablelist[i],LineoutLoc)[::-1])
 							#endif
 						#endfor
 						DoFArrays = np.asarray(DoFArrays).transpose().tolist()
@@ -4566,10 +4600,11 @@ if savefig_PROES == True:
 
 					#If no DoF then simply collect lineout from required location.
 					elif DoFWidth == 0:
+						LineoutLoc = Lineouts[k]
 						if LineoutsOrientation[k] == 'Radial':
-							PROES.append(PlotRadialProfile(PhaseMovieData[l][j],Processlist[i],Variablelist[i],RLineoutLoc))
+							PROES.append(PlotRadialProfile(PhaseMovieData[l][j],Processlist[i],Variablelist[i],LineoutLoc))
 						elif LineoutsOrientation[k] == 'Axial':
-							PROES.append(PlotAxialProfile(PhaseMovieData[l][j],Processlist[i],Variablelist[i],RLineoutLoc))
+							PROES.append(PlotAxialProfile(PhaseMovieData[l][j],Processlist[i],Variablelist[i],LineoutLoc)[::-1])
 						#endif
 					#endif
 				#endfor
@@ -4591,29 +4626,33 @@ if savefig_PROES == True:
 					lineoutstring = ' @ R='+str(round(Lineouts[k]*dr[l],2))+'cm'
 					NameString = Variablelist[i]+'_'+lineoutstring[2::]
 					Ylabel = 'Axial Distance Z [cm]'
-					y1,y2 = Zaxis[0],Zaxis[-1]
+					Crop = [image_axialcrop[::-1],image_radialcrop] #Reversed accounting for rotation.
+					y1,y2 = Zaxis[-1],Zaxis[0]		#Reversed accounting for top origin.
 				elif LineoutsOrientation[k] == 'Radial' and Isymlist[l] == 1:
 					lineoutstring = ' @ Z='+str(round(Lineouts[k]*dz[l],2))+'cm'
 					NameString = Variablelist[i]+lineoutstring[2::]
 					Ylabel = 'Radial Distance R [cm]'
+					Crop = [image_radialcrop,image_axialcrop]
 					y1,y2 = Raxis[-1],-Raxis[-1]
 				elif LineoutsOrientation[k] == 'Radial' and Isymlist[l] == 0:
 					lineoutstring = ' @ Z='+str(round(Lineouts[k]*dz[l],2))+'cm'
 					NameString = Variablelist[i]+lineoutstring[2::]
 					Ylabel = 'Radial Distance R [cm]'
+					Crop = [image_radialcrop,image_axialcrop]
 					y1,y2 = Raxis[-1],0
 				#endif
 				DirPROESloc = CreateNewFolder(DirPROES,lineoutstring[3::])
 
 				#Create PROES image along line of sight with phase-locked waveform.
 				fig.suptitle( 'Simulated '+Variablelist[i]+' PROES for '+VariedValuelist[l]+lineoutstring+'\n DoF = '+str(round(DoFWidth*dz[l],2))+' cm', y=0.95, fontsize=18)
+				im = ax[0].contour(PROES,extent=[x1,x2,y1,y2],origin='lower',aspect='auto')
 				im = ax[0].imshow(PROES,extent=[x1,x2,y1,y2],origin='bottom',aspect='auto')
-				ImageOptions(ax[0],Xlabel='',Ylabel=Ylabel,Crop=True)
+				ImageOptions(ax[0],Xlabel='',Ylabel=Ylabel,Crop=Crop)
 				ax[0].set_xticks([])
 				ax[0].set_xlim(x1,x2)
 				#Add Colourbar (Axis, Label, Bins)
 				label = VariableLabelMaker(Variablelist)
-				cax = Colourbar(ax[0],label[i],5)
+				cax = Colourbar(ax[0],label[i],5,Lim=CbarMinMax(PROES,LineoutsOrientation[k]))
 
 				#Plot Waveform.
 				ax[1].plot(Phaseaxis, ElectrodeWaveform, lw=2)
