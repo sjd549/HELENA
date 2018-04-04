@@ -111,7 +111,7 @@ PR_PCMC = ['AR^0.35','EB-0.35','ION-TOT0.35']
 #Commonly Used Diagnostic Settings
 #electrodeloc	#YPR [29,44],[16,44] #SPR [0,107] 	#MSHC [0,12]
 #waveformlocs 	#YPR [[16,29],[16,44],[16,64]]
-#DOFWidth		#YPR 41=2cm   						#MSHC 5=0.24cm
+#DOFWidth		#YPR R;41,Z;16   					#MSHC R;10,Z;5
 #TrendLoc		#YPR H[0];R[29,44,64] 				#MSHC H[0,20];R[20]
 #ThrustLoc		#YPR=80, stdESCT=76, smlESCT=48/54,
 
@@ -146,20 +146,20 @@ TrendLocation = [] 						#Cell location For Trend Analysis [R,Z], ([] = min/max)
 
 #Requested diagnostics and plotting routines.
 savefig_convergence = False				#Requires movie_icp.pdt
-savefig_plot2D = False					#Requires TECPLOT2D.PDT
+savefig_plot2D = True					#Requires TECPLOT2D.PDT
 
 savefig_monoprofiles = False			#Single-Variables; fixed height/radius
 savefig_multiprofiles = False			#Multi-Variables; same folder
-savefig_comparelineouts = False			#Multi-Variables; all folders
-savefig_trendcomparison = False			#Single-Variables; fixed cell location (or max/min)
+savefig_comparelineouts = True			#Multi-Variables; all folders
+savefig_trendcomparison = True			#Single-Variables; fixed cell location (or max/min)
 savefig_pulseprofiles = False			#Single-Variables; plotted against real-time axis
 
 savefig_phaseresolve1D = False			#1D Phase Resolved Images
 savefig_phaseresolve2D = False			#2D Phase Resolved Images
-savefig_PROES = False					#Phase-Resolved 2D Images
+savefig_PROES = False
 
-savefig_IEDFangular = False				#2D images of angular IEDF; single folders.
-savefig_IEDFtrends = False				#1D IEDF trends; all folders.
+savefig_IEDFangular = True				#2D images of angular IEDF; single folders.
+savefig_IEDFtrends = True				#1D IEDF trends; all folders.
 savefig_EEDF = False					#IN DEVELOPMENT, NO PLOTTING ROUTINE.
 
 #Write processed data to ASCII files.
@@ -321,7 +321,7 @@ print '   |  |__|  | |  |__   |  |     |  |__   |   \|  |   /  ^  \        '
 print '   |   __   | |   __|  |  |     |   __|  |  . `  |  /  /_\  \       '
 print '   |  |  |  | |  |____ |  `----.|  |____ |  |\   | /  _____  \      '
 print '   |__|  |__| |_______||_______||_______||__| \__|/__/     \__\     '
-print '                                                            v0.11.2 '
+print '                                                            v0.11.3 '
 print '--------------------------------------------------------------------'
 print ''
 print 'The following diagnostics were requested:'
@@ -1871,17 +1871,18 @@ def ImageOptions(ax=plt.gca(),Xlabel='',Ylabel='',Title='',Legend=[],Crop=True):
 
 
 #Creates and plots a colourbar with given label and binsize.
-#Takes colourbar axis, label string, number of colour bins
+#Takes image axis, label string, number of ticks and limits
 #Allows pre-defined colourbar limits in form [min,max].
 #Returns cbar axis if further changes are required.
-def Colourbar(ax,Label,Bins,Lim=[]):
+#cbar = Colourbar(ax[0],'Label',5,Lim=[0,1])
+def Colourbar(ax,Label,Ticks,Lim=[]):
 
 	#Colourbar plotting details
 	divider = make_axes_locatable(ax)
 	cax = divider.append_axes("right", size="2%", pad=0.1)
 	cbar = plt.colorbar(im, cax=cax)
 	#Set number of ticks, label location and scientific notation.
-	tick_locator = ticker.MaxNLocator(nbins=Bins)
+	tick_locator = ticker.MaxNLocator(nbins=Ticks)
 	cbar.locator = tick_locator
 	cbar.set_label(Label, rotation=270,labelpad=30,fontsize=24)
 	cbar.formatter.set_powerlimits((-2,3))
@@ -1894,6 +1895,32 @@ def Colourbar(ax,Label,Bins,Lim=[]):
 	if len(Lim) == 2: im.set_clim(vmin=Lim[0], vmax=Lim[1])
 
 	return(cbar)
+#enddef
+
+
+
+#=========================#
+#=========================#
+
+
+
+#Creates an invisible colourbar to align subplots without colourbars.
+#Takes image axis, returns colourbar axis if further edits are required
+#cax = InvisibleColourbar(ax[0])
+def InvisibleColourbar(ax):
+
+	#Create colourbar axis, ideally should 'find' values of existing cbar! 
+	divider = make_axes_locatable(ax)
+	cax = divider.append_axes("right", size="2%", pad=0.1)
+
+	#Set new cax to zero size and remove ticks.
+	cax.set_axis_bgcolor('none')
+	for axis in ['top','bottom','left','right']:
+		cax.spines[axis].set_linewidth(0)
+	cax.set_xticks([])
+	cax.set_yticks([])
+
+	return(cax)
 #enddef
 
 
@@ -2091,14 +2118,11 @@ def ImagePlotter2D(Image,extent,aspectratio=image_aspectratio,variable='N/A',fig
 		Image = Normalize(Image)[0]
 	#endif
 
-	#Plot image with or without contour plots, allowing for contour failures.
+	#Plot image with or without contour plots, (contour scale = 90% of cbar scale)
 	if image_contourplot == True:
-		try:
-			im = ax.contour(Image,extent=extent,origin="lower")
-			im = ax.imshow(Image,extent=extent,origin="lower")
-		except:
-			im = ax.imshow(Image,extent=extent,origin="lower")
-		#endtry
+		im = ax.contour(Image,extent=extent,origin="lower")
+		im.set_clim(CbarMinMax(Image)[0]*0.90,CbarMinMax(Image)[1]*0.90)
+		im = ax.imshow(Image,extent=extent,origin="lower")
 	else:
 		im = ax.imshow(Image,extent=extent,origin="lower")
 	#endif
