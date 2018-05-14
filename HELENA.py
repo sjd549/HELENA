@@ -87,8 +87,8 @@ AtomicSet = ['E']+ArgonReduced+ArgonFull+Oxygen
 NeutSpecies = ['AR','AR3S','O2']
 
 #Commonly used variable sets.
-Ar = ['AR3S','AR4SM','AR4SR','AR4SPM','AR4SPR','AR4P','AR4D','AR','AR+','AR2+','AR2*','E','TE','P-POT','TG-AVE','RHO','PRESSURE','EF-TOT','POW-RF','POW-RF-E','S-AR+','S-AR4P','SEB-AR+','SEB-AR4P','EB-ESORC','VR-NEUTRAL','VZ-NEUTRAL','VR-ION+','VZ-ION+','EFLUX-R','EFLUX-Z','FR-AR+','FZ-AR+']
-O2 = ['O2','O2+','O','O+','O-','E','TE','P-POT','TG-AVE','PRESSURE','EF-TOT','POW-RF','POW-RF-E','VR-NEUTRAL','VZ-NEUTRAL','VR-ION+','VZ-ION+','EFLUX-R','EFLUX-Z','FR-O-','FZ-O-']
+Ar = ['AR3S','AR4SM','AR4SR','AR4SPM','AR4SPR','AR4P','AR4D','AR','AR+','AR2+','AR2*','E','TE','P-POT','TG-AVE','RHO','PRESSURE','EF-TOT','BT','POW-RF','POW-RF-E','S-AR+','S-AR4P','SEB-AR+','SEB-AR4P','EB-ESORC','VR-NEUTRAL','VZ-NEUTRAL','VR-ION+','VZ-ION+','EFLUX-R','EFLUX-Z','FR-AR+','FZ-AR+']
+O2 = ['O2','O2+','O','O+','O-','E','TE','P-POT','TG-AVE','PRESSURE','EF-TOT','BT','POW-RF','POW-RF-E','VR-NEUTRAL','VZ-NEUTRAL','VR-ION+','VZ-ION+','EFLUX-R','EFLUX-Z','FR-O-','FZ-O-']
 ArO2 = Ar+O2
 
 Ar_Phase = ['S-E','S-AR+','S-AR4P','SEB-AR+','SEB-AR4P','SRCE-2437','TE','PPOT','FR-E','FZ-E']
@@ -96,7 +96,6 @@ Ar_Phase = ['S-E','S-AR+','S-AR4P','SEB-AR+','SEB-AR4P','SRCE-2437','TE','PPOT',
 ESCT_PCMC = ['AR^0.3S','EB-0.3S','ION-TOT0.3S']
 MSHC_PCMC = ['AR^0.5S','EB-0.5S','ION-TOT0.5S','AR^1.1B','EB-1.1B','ION-TOT1.1B']
 PR_PCMC = ['AR^0.35','EB-0.35','ION-TOT0.35']
-
 
 
 
@@ -134,7 +133,7 @@ electrodeloc = [29,44]						#Cell location of powered electrode [R,Z].
 waveformlocs = [[16,29],[16,44],[16,64]]	#Cell locations of additional waveforms [R,Z].
 
 phasecycles = 2								#Number of phase cycles to be plotted.
-DoFWidth = 41								#PROES Depth of Field Cells (0 -> 1 cell)
+DoFWidth = 0								#PROES Depth of Field Cells (0 -> 1 cell)
 
 #Requested TECPLOT Variables and plotting locations.
 Variables = Ar
@@ -150,16 +149,16 @@ savefig_plot2D = True					#Requires TECPLOT2D.PDT
 
 savefig_monoprofiles = False			#Single-Variables; fixed height/radius
 savefig_multiprofiles = False			#Multi-Variables; same folder
-savefig_comparelineouts = True			#Multi-Variables; all folders
-savefig_trendcomparison = True			#Single-Variables; fixed cell location (or max/min)
+savefig_comparelineouts = False			#Multi-Variables; all folders
+savefig_trendcomparison = False			#Single-Variables; fixed cell location (or max/min)
 savefig_pulseprofiles = False			#Single-Variables; plotted against real-time axis
 
 savefig_phaseresolve1D = False			#1D Phase Resolved Images
 savefig_phaseresolve2D = False			#2D Phase Resolved Images
 savefig_PROES = False
 
-savefig_IEDFangular = True				#2D images of angular IEDF; single folders.
-savefig_IEDFtrends = True				#1D IEDF trends; all folders.
+savefig_IEDFangular = False				#2D images of angular IEDF; single folders.
+savefig_IEDFtrends = False				#1D IEDF trends; all folders.
 savefig_EEDF = False					#IN DEVELOPMENT, NO PLOTTING ROUTINE.
 
 #Write processed data to ASCII files.
@@ -172,6 +171,7 @@ print_Knudsennumber = False
 print_totalpower = False
 print_DCbias = False
 print_thrust = False
+print_sheath = False
 ThrustLoc = 80							#Z-axis cell for thrust calculation.  
 
 
@@ -185,11 +185,14 @@ image_cbarlimit = []					#[min,max] colourbar limits
 image_plotsymmetry = True				#Toggle radial symmetry
 image_numericaxis = False				#### NOT IMPLIMENTED ####
 image_contourplot = True				#Toggle contour Lines in images
-image_normalize = False					#Normalize image/profiles to local max
 image_plotgrid = False					#Plot major/minor gridlines on profiles
 image_plotmesh = False					#### NOT IMPLIMENTED ####
-image_logplot = False					#Plot ln(Data), against linear axis.
 image_rotate = True						#Rotate image 90 degrees to the right.
+
+image_normalize = False					#Normalize image/profiles to local max
+image_logplot = False					#Plot ln(Data), against linear axis.
+image_sheath = True						#Plot sheath width onto 2D images.
+
 
 #Overrides the automatic image labelling.
 titleoverride = []
@@ -219,6 +222,8 @@ cbaroverride = ['NotImplimented']
 #####TODO#####
 
 #For V 0.11.n:
+#FIX CBARMINMAX FUNCTION!!! PROES CURRENTLY HAS NO IMAGE CROPPING FOR MIN/MAX
+#ADD if DOFWIDTH < LINEOUT LOCATION SKIP AND WARNING IN PROES
 #Functionalize thrust calculation with options for neutral/ion/pressure diff.
 #Bring Trendplotter function up to code with ax.plot etc... (1DTrendPlotter)
 #Impliment image_numericaxis, try float(FolderNameTrimmer) as axis.
@@ -938,11 +943,11 @@ def VariableUnitConversion(profile,variable):
 	#For velocities, convert from [cms-1] to [ms-1] or [kms-1]. (also reverse axial velocity)
 	if IsStringInVariable(variable,['VR-NEUTRAL','VZ-NEUTRAL']) == True:
 		for i in range(0,len(profile)):
-			profile[i] = profile[i]*(0.01)
+			profile[i] = profile[i]*(0.01)			#Neutral [ms-1]
 		#endfor
 	if IsStringInVariable(variable,['VR-ION+','VZ-ION+','VR-ION-','VZ-ION-']) == True:
 		for i in range(0,len(profile)):
-			profile[i] = profile[i]*(0.01)*(0.001)
+			profile[i] = profile[i]*(0.01)*(0.001)	#Ion [kms-1]
 		#endfor
 	if IsStringInVariable(variable,['VZ-NEUTRAL','VZ-ION+','VZ-ION-']) == True:
 		for i in range(0,len(profile)):
@@ -1594,7 +1599,6 @@ else:
 #Image = ImageExtractor2D(Data,Variable=[]):
 def ImageExtractor2D(Data,Variable=[],Rmesh=0,Zmesh=0):
 
-	#WHY Rmesh=R_mesh[l],Zmesh=Z_mesh[l] NOT WORKING????
 	#If no mesh sizes supplied, collect sizes for current global folder.
 	if Rmesh == 0 or Zmesh == 0:
 		Rmesh,Zmesh = R_mesh[l],Z_mesh[l]
@@ -1933,6 +1937,7 @@ def InvisibleColourbar(ax):
 #Generates an SI axis for a 1D profile plot.
 #Takes orientation, symmetry and phasecycle options.
 #Returns 1D array in units of [cm] or [omega*t/2pi].
+#Raxis=GenerateAxis('Radial',Isym=Isymlist[l])
 def GenerateAxis(Orientation,Isym=Isymlist[l],phasepoints=range(0,180)):
 	
 	#Extract number of phase datapoints and create axis list.
@@ -2205,6 +2210,7 @@ def PlotRadialProfile(Data,process,variable,lineout,Rmesh=0,Isym=0):
 				Rlineout.append(Data[process][Zstart:Zend][m])
 			#endfor
 		#endif
+		Rlineout = Rlineout[::-1]	#Reverse index, negative first then positive values.		
 
 	#If the data isn't symmetric, just plot as is.
 	elif Isym == 0:
@@ -2539,8 +2545,96 @@ def DCbiasMagnitude(PPOTlineout):
 
 
 
+#Calculation Methods: 'AbsDensity', 'IntDensity'
+#Axis,Sx,NegSx = SheathThickness(l,moviephaselist[k],SheathMethod='AbsDensity')
+def SheathThickness(folder=l,Ax=plt.gca(),Phase='NaN',SheathMethod='AbsDensity'):
+	#Initiate required lists.
+	Sx,NegSx = list(),list()		
+
+	#Create obtain current folder ion and electron process numbers.
+	if Phase == 'NaN':
+		IONproc = VariableEnumerator(['AR+'],rawdata_2D[folder],header_2Dlist[folder])[0][0]
+		Eproc = VariableEnumerator(['E'],rawdata_2D[folder],header_2Dlist[folder])[0][0]
+		#Extract 2D image for further processing. (symmetry not applied)
+		Ni = ImageExtractor2D(Data[folder][IONproc])
+		Ne = ImageExtractor2D(Data[folder][Eproc])
+	#Allowing for phase data, Phase supplied as moviephaselist. (function is called in loop)
+	else:
+		IONproc = VariableEnumerator(['AR+'],rawdata_phasemovie[folder],header_phasemovie[folder])[0][0]
+		Eproc = VariableEnumerator(['E'],rawdata_phasemovie[folder],header_phasemovie[folder])[0][0]
+		#Extract 2D image for further processing. (symmetry not applied)
+		Ni = ImageExtractor2D(PhaseMovieData[folder][Phase][IONproc])
+		Ne = ImageExtractor2D(PhaseMovieData[folder][Phase][Eproc])
+	#endif
+
+	#Calculate sheath width assuming Child-Langmuir conditions.
+	if SheathMethod == 'IntDensity':
+		#Sheath extension: integral_(0-R) ne dR == integral_(0-R) ni dR (Gibson 2015)
+		for j in range(0,len(Ni)):
+			#Refresh sums after every radial profile.
+			Ni_sum,Ne_sum = 0.0,0.0
+			for i in range(0,len(Ni[j])):
+				#Sum density outward radially for ions and electrons.
+				anti_i = len(Ni[j])-i-1
+				Ni_sum += Ni[j][i]
+				Ne_sum += Ne[j][i]
+
+				#If ion sum is greater than electron, sheath has begun.
+				if Ni_sum/Ne_sum >= 1.0: 
+					Sx.append(i*dr[l])
+					break
+				#If no sheath found, append 'NaN' to avoid plotting.
+				if i == (len(Ni[j])-1):
+					Sx.append('NaN')
+				#endif
+			#endfor
+		#endfor
+
+	elif SheathMethod == 'AbsDensity':
+		#Sheath extension: ni @R >= ne @R, simplified model.
+		for j in range(0,len(Ni)):
+			for i in range(0,len(Ni[j])):
+				#Sheath starts when ion density exceeds electron density.
+				if Ni[j][i]/Ne[j][i] >= 1.0:		###SUPPRESS OUTPUT?###
+					Sx.append(i*dr[l])
+					break
+				#If no sheath found, append 'NaN' to avoid plotting.
+				if i == (len(Ni[j])-1):
+					Sx.append('NaN')
+				#endif
+			#endfor
+		#endfor
+	#endif
+
+	#Create reverse sheath boundary, disallowing NaNs. ### HACKY ###
+	for i in range(0,len(Sx)): 
+		try: NegSx.append(-Sx[i])
+		except: NegSx.append(Sx[i])
+	#endfor
+
+	### CURRENTLY ONLY AXIAL METHOD IS EMPLOYED ###
+	#Generate Axis and set image extent
+	Zaxis=GenerateAxis('Axial',Isym=Isymlist[folder])
+	Raxis=GenerateAxis('Radial',Isym=Isymlist[folder])
+	Axis = Zaxis
+
+	#Plot and Print sheath characteristics if requested.
+	if image_sheath == True:
+		Ax.plot(Axis,Sx, 'w--', lw=2)
+		Ax.plot(Axis,NegSx, 'w--', lw=2)
+	if print_sheath == True:
+		print 'Simulation:', Dirlist[folder]
+		print 'Sheath Extension @ Powered Electrode', 0.21-round(Sx[44],3), 'cm'
+		print ''
+	#endif
+
+	#Return sheath expansion
+	return(Sx)
+#enddef
 
 
+#=========================#
+#=========================#
 
 
 
@@ -2605,6 +2699,8 @@ if savefig_plot2D == True:
 			#Generate and rotate figure as requested.
 			extent,aspectratio = DataExtent(l)
 			fig,ax,im,Image = ImagePlotter2D(Image,extent,aspectratio,Variablelist[k])
+			#Add sheath thickness to figure if requested.
+			Sx = SheathThickness(folder=l,Ax=ax,SheathMethod='AbsDensity')
 
 			#Define image beautification variables.
 			if image_rotate == True:
@@ -3394,7 +3490,7 @@ if savefig_IEDFtrends == True:
 	for i in tqdm(range(0,len(IEDFVariables))):
 		#Initiate figure for current variable and any required lists.
 		Legendlist,EDFprofiles = list(),list()
-		Median_eV,Mean_eV,Max_eV = list(),list(),list()
+		Mode_eV,Mean_eV,Max_eV = list(),list(),list()
 		fig,ax = figure()
 
 		#Create new global trend folder if it doesn't exist already.
@@ -3423,11 +3519,11 @@ if savefig_IEDFtrends == True:
 
 
 			#Perform a trend analysis on current folder variable i IEDF
-			#Average energy analysis: Returns mean/median energies from IEDF.
+			#Average energy analysis: Returns mean/mode energies from IEDF.
 			mean = (max(EDFprofile)+min(EDFprofile))/2
 			meanindex = (np.abs(EDFprofile[2::]-mean)).argmin()
 			Mean_eV.append( EDFprofile.index(EDFprofile[meanindex]) ) 
-			Median_eV.append( EDFprofile.index(max(EDFprofile)) )
+			Mode_eV.append( EDFprofile.index(max(EDFprofile)) )
 
 			#Maximum energy analysis: Returns maximum energy below a set threshold.
 			threshold = 0.01*max(EDFprofile)
@@ -3451,7 +3547,7 @@ if savefig_IEDFtrends == True:
 				DirASCII = CreateNewFolder(DirTrends,'Trend_Data')
 				DirASCIIIEDF = CreateNewFolder(DirASCII,'IEDF_Data')
 			#endif
-			WriteDataToFile(Legendlist+['\n']+Median_eV, DirASCIIIEDF+variablelist[i]+'_Median', 'w')
+			WriteDataToFile(Legendlist+['\n']+Mode_eV, DirASCIIIEDF+variablelist[i]+'_Mode', 'w')
 			WriteDataToFile(Legendlist+['\n']+Mean_eV, DirASCIIIEDF+variablelist[i]+'_Mean', 'w')
 			WriteDataToFile(Legendlist+['\n']+Max_eV, DirASCIIIEDF+variablelist[i]+'_Max', 'w')
 		#endif
@@ -3474,12 +3570,12 @@ if savefig_IEDFtrends == True:
 
 		#Plot average energy analysis profiles against simulation folder names.
 		fig,ax = figure()
-		TrendPlotter(Median_eV,Legendlist,0)
 		TrendPlotter(Mean_eV,Legendlist,0)
+		TrendPlotter(Mode_eV,Legendlist,0)
 #		TrendPlotter(Max_eV,Legendlist,0)
 
 		Title = Dirlist[l][2::]+'\n'+'Average '+variablelist[i]+' Energies'
-		Legend = ['EDF Median Energy','EDF Mean Energy','EDF Max Energy']
+		Legend = ['EDF Mean Energy','EDF Mode Energy','EDF Max Energy']
 		Xlabel,Ylabel = 'Varied Property',variablelist[i]+' Energy [eV]'
 		ImageOptions(ax,Xlabel,Ylabel,Title,Legend,Crop=False)
 
@@ -4160,6 +4256,53 @@ if any([savefig_trendcomparison, print_generaltrends, print_Knudsennumber, print
 
 
 
+#====================================================================#
+				  		#SHEATH DYNAMICS TRENDS#
+#====================================================================#
+
+if True == False: 
+	for l in range(0,numfolders):
+
+		Zaxis,Sx,NegSx = SheathThickness(folder=l,SheathMethod='AbsDensity')
+
+		#===============================#
+
+		#Generate and rotate figure as requested.	
+		Ni = ImageExtractor2D(Data[l][VariableEnumerator(['AR+'],rawdata_2D[l],header_2Dlist[l])[0][0]])
+		extent,aspectratio = DataExtent(l)	
+		fig,ax,im,Ni = ImagePlotter2D(Ni,extent,aspectratio)
+		ax.plot(Zaxis,Sx, 'w--', lw=2)
+		ax.plot(Zaxis,NegSx, 'w--', lw=2)
+
+		#Define image beautification variables.
+		if image_rotate == True:
+			Xlabel,Ylabel = 'Axial Distance Z [cm]','Radial Distance R [cm]'
+		elif image_rotate == False:
+			Xlabel,Ylabel = 'Radial Distance R [cm]','Axial Distance Z [cm]'
+			plt.gca().invert_yaxis()
+		#endif
+
+		#Image plotting details, invert Y-axis to fit 1D profiles.
+		Title = 'Sheath Width Calculator Test'
+		ImageOptions(ax,Xlabel,Ylabel,Title)
+
+		#Add Colourbar (Axis, Label, Bins)
+		label,bins = ['Default Label'],5
+		cax = Colourbar(ax,label[0],bins,Lim=CbarMinMax(Ni))
+
+		plt.close('all')
+	#endfor
+#endif
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -4263,8 +4406,8 @@ if savefig_phaseresolve2D == True:
 			MinLim,MaxLim = list(),list()
 			for j in range(0,phasecycles):
 				Image = ImageExtractor2D(PhaseMovieData[l][j][Processlist[i]],Variablelist[i])		
-				MinLim.append( Lim=CbarMinMax(Image)[0] )
-				MaxLim.append( Lim=CbarMinMax(Image)[1] )
+				MinLim.append( CbarMinMax(Image)[0] )
+				MaxLim.append( CbarMinMax(Image)[1] )
 			#endfor
 			Limits = [min(MinLim),max(MaxLim)]
 
@@ -4296,6 +4439,8 @@ if savefig_phaseresolve2D == True:
 				ax[1].axvline(Phaseaxis[j], color='k', linestyle='--', lw=2)
 				Xlabel,Ylabel = 'Phase [$\omega$t/2$\pi$]','Electrode Potential [V]'
 				ImageOptions(ax[1],Xlabel,Ylabel,Crop=False)
+				#Add Invisible Colourbar to sync X-axis
+				InvisibleColourbar(ax[0])
 
 				#Cleanup layout and save images.
 				fig.tight_layout()
@@ -4651,7 +4796,7 @@ if savefig_PROES == True:
 					NameString = Variablelist[i]+'_'+lineoutstring[2::]
 					Ylabel = 'Axial Distance Z [cm]'
 					Crop = [image_axialcrop[::-1],image_radialcrop] #Reversed accounting for rotation.
-					y1,y2 = Zaxis[-1],Zaxis[0]		#Reversed accounting for top origin.
+					y1,y2 = Zaxis[-1],Zaxis[0]						#Reversed accounting for top origin.
 				elif LineoutsOrientation[k] == 'Radial' and Isymlist[l] == 1:
 					lineoutstring = ' @ Z='+str(round(Lineouts[k]*dz[l],2))+'cm'
 					NameString = Variablelist[i]+lineoutstring[2::]
@@ -4676,13 +4821,15 @@ if savefig_PROES == True:
 				ax[0].set_xlim(x1,x2)
 				#Add Colourbar (Axis, Label, Bins)
 				label = VariableLabelMaker(Variablelist)
-				cax = Colourbar(ax[0],label[i],5,Lim=CbarMinMax(PROES,LineoutsOrientation[k]))
+				Colourbar(ax[0],label[i],5,Lim=CbarMinMax(PROES,LineoutsOrientation[k]))
 
 				#Plot Waveform.
 				ax[1].plot(Phaseaxis, ElectrodeWaveform, lw=2)
 				ax[1].plot(Phaseaxis, ElectrodeBias, 'k--', lw=2)
 				Xlabel,Ylabel = 'Phase [$\omega$t/2$\pi$]','Electrode Potential [V]'
 				ImageOptions(ax[1],Xlabel,Ylabel,Crop=False)
+				#Add Invisible Colourbar to sync X-axis
+				InvisibleColourbar(ax[0])
 
 				#Cleanup layout and save images.
 				fig.tight_layout()
@@ -4847,6 +4994,40 @@ if any([savefig_phaseresolve1D ,savefig_phaseresolve2D ,savefig_PROES]) == True:
 # /home/sjd549/.local/lib/python2.7/site-packages/numpy/ma/core.py:6385
 
 
+
+
+#====================================================================#
+				  	#POCKET ROCKET MATERIAL OUTLINE#
+#====================================================================#
+if True == False:
+	#Plot pocket rocket material dimensions.
+	ax[0].plot((1.35,1.35),   (-1.0,-0.21), 'w-', linewidth=2)
+	ax[0].plot((3.7,3.7),     (-1.0,-0.21), 'w-', linewidth=2)
+	ax[0].plot((1.35,1.35),   ( 1.0, 0.21), 'w-', linewidth=2)
+	ax[0].plot((3.7,3.7),     ( 1.0, 0.21), 'w-', linewidth=2)
+	ax[0].plot((1.35,3.7),    ( 0.21, 0.21), 'w-', linewidth=2)
+	ax[0].plot((1.35,3.7),    (-0.21,-0.21), 'w-', linewidth=2)
+
+	#Alumina Dielectric
+	ax[0].plot((34.2*dz[l],73.8*dz[l]),  ( 0.21,  0.21), 'c-', linewidth=2)
+	ax[0].plot((34.2*dz[l],73.8*dz[l]),  (-0.21, -0.21), 'c-', linewidth=2)
+	ax[0].plot((34.2*dz[l],73.8*dz[l]),  ( 0.31,  0.31), 'c-', linewidth=2)
+	ax[0].plot((34.2*dz[l],73.8*dz[l]),  (-0.31, -0.31), 'c-', linewidth=2)
+
+	#Powered Electrode
+	ax[0].plot((40*dz[l],50*dz[l]),  ( 0.31, 0.31), 'r-', linewidth=2)
+	ax[0].plot((40*dz[l],50*dz[l]),  (-0.31,-0.31), 'r-', linewidth=2)
+	ax[0].plot((40*dz[l],40*dz[l]),  ( 0.31, 0.60), 'r-', linewidth=2)
+	ax[0].plot((40*dz[l],40*dz[l]),  (-0.31,-0.60), 'r-', linewidth=2)
+	ax[0].plot((50*dz[l],50*dz[l]),  ( 0.31, 0.60), 'r-', linewidth=2)
+	ax[0].plot((50*dz[l],50*dz[l]),  (-0.31,-0.60), 'r-', linewidth=2)
+
+	#Grounded electrodes
+	ax[0].plot((34*dz[l],34*dz[l]),  (-1.0,-0.21), 'w-', linewidth=2)
+	ax[0].plot((34*dz[l],34*dz[l]),  ( 1.0, 0.21), 'w-', linewidth=2)
+	ax[0].plot((74*dz[l],74*dz[l]),  (-1.0,-0.21), 'w-', linewidth=2)
+	ax[0].plot((74*dz[l],74*dz[l]),  ( 1.0, 0.21), 'w-', linewidth=2)
+#endif
 
 
 
