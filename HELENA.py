@@ -69,13 +69,16 @@ from pylab import *
 Switchboard = {}
 
 #Various debug and streamlining options.
-DisableMovie = False
-DebugMode = False
+DisableMovie = True				#Suppresses ffmpeg routines, saves RAM.
+DebugMode = False				#Produces debug output for relevent diagnostics.
 
 #Tweaks and fixes for 'volitile' diagnostics.
-Magmesh = 1							#initmesh.exe magnification factor. (almost obsolete)
-Manualbiasaxis = ''					#'Axial' or 'Radial'. (empty '' for auto)
+Magmesh = 1						#initmesh.exe magnification factor. (almost obsolete)
+Manualbiasaxis = ''				#'Axial' or 'Radial'. (empty '' for auto)
+
+#Calculation Methods
 GlobSheathMethod = 'AbsDensity'		#Set Global Sheath Calculation Method. ('Abs','Int')
+GlobThrustMethod = 'DiffPres'		#Set Global Thrust Calculation Method. ('Mom','Pres')
 
 
 #List of recognised neutral/metastable atomic density sets, add new sets as required.
@@ -113,7 +116,9 @@ PR_PCMC = ['AR^0.35','EB-0.35','ION-TOT0.35']
 #waveformlocs 	#YPR [[16,29],[16,44],[16,64]]
 #DOFWidth		#YPR R;41,Z;16   					#MSHC R;10,Z;5
 #TrendLoc		#YPR H[0];R[29,44,64] 				#MSHC H[0,20];R[20]
-#ThrustLoc		#YPR=80, stdESCT=76, smlESCT=48/54,
+#ThrustLoc		#YPR=80, stdESCT=76, smlESCT=48/54
+#SheathROI		#YPR=[34,72]
+#SourceWidth	#YPR=R[0.21]						#MSHC R[]
 
 #Commonly Used Image Settings
 #Crop YPR R[0.6];Z[1,4]   
@@ -128,13 +133,17 @@ IEDFVariables = PR_PCMC		#Requested iprofile_2d variables (no spaces)
 NEDFVariables = []			#Requested nprofile_2d variables (no spaces)
 
 #Requested movie1/movie_icp Variables.
-IterVariables = ['E','S-E','PPOT','TE','AR3S','FZ-AR3S','FZ-AR+']		#Requested Movie_icp (iteration) Variables.		
+IterVariables = ['E','S-E','PPOT','TE']		#Requested Movie_icp (iteration) Variables.		
 PhaseVariables = Ar_Phase					#Requested Movie1 (phase) Variables.
 electrodeloc = [29,44]						#Cell location of powered electrode [R,Z].
 waveformlocs = [[16,29],[16,44],[16,64]]	#Cell locations of additional waveforms [R,Z].
 
-phasecycles = 1								#Number of phase cycles to be plotted.
-DoFWidth = 0								#PROES Depth of Field Cells (0 -> 1 cell)
+#Various Diagnostic Inputs
+phasecycles = 1							#Number of waveform phase cycles to be plotted. [number]
+DoFWidth = 0							#PROES Depth of Field (symmetric on image plane) [cells]
+ThrustLoc = 80							#Z-axis cell for thrust calculation  [cells]
+SheathROI = [34,72]						#Sheath Region of Interest, (Start,End) [cells]
+SourceWidth = [16]						#Source Dimension at ROI, leave empty for auto. [cells]
 
 #Requested TECPLOT Variables and plotting locations.
 Variables = Ar
@@ -145,7 +154,7 @@ TrendLocation = [] 						#Cell location For Trend Analysis [R,Z], ([] = min/max)
 
 
 #Requested diagnostics and plotting routines.
-savefig_convergence = False				#Requires movie_icp.pdt
+savefig_convergence = True				#Requires movie_icp.pdt
 savefig_plot2D = False					#Requires TECPLOT2D.PDT
 
 savefig_monoprofiles = False			#Single-Variables; fixed height/radius
@@ -155,25 +164,25 @@ savefig_trendcomparison = False			#Single-Variables; fixed cell location (or max
 savefig_pulseprofiles = False			#Single-Variables; plotted against real-time axis
 
 savefig_phaseresolve1D = False			#1D Phase Resolved Images
-savefig_phaseresolve2D = True			#2D Phase Resolved Images
+savefig_phaseresolve2D = False			#2D Phase Resolved Images
+savefig_phasetrends = False				#Phase-resolved trends. 	#IN DEVELOPMENT#
 savefig_PROES = False					#Simulated PROES Diagnostic
 
 savefig_IEDFangular = False				#2D images of angular IEDF; single folders.
 savefig_IEDFtrends = False				#1D IEDF trends; all folders.
-savefig_EEDF = False					#IN DEVELOPMENT, NO PLOTTING ROUTINE.
+savefig_EEDF = False					#NO PLOTTING ROUTINE		#IN DEVELOPMENT#
 
 #Write processed data to ASCII files.
-write_ASCII = True
+write_ASCII = True						#All diagnostic output written to ASCII.
 
 
 #Steady-State diagnostics terminal output toggles.
 print_generaltrends = False				#Verbose Min/Max Trend Outputs.
-print_Knudsennumber = False
-print_totalpower = False
-print_DCbias = False
-print_thrust = False
-print_sheath = False
-ThrustLoc = 80							#Z-axis cell for thrust calculation.  
+print_Knudsennumber = False				#Print cell averaged Knudsen Number
+print_totalpower = False				#Print all requested total powers
+print_DCbias = False					#Print DC bias at electrodeloc
+print_thrust = False					#Print neutral, ion and total thrust
+print_sheath = False					#Print sheath width at electrodeloc
 
 
 #Image plotting options.
@@ -223,11 +232,9 @@ cbaroverride = ['NotImplimented']
 #####TODO#####
 
 #For V 0.11.n:
-#SheathWidth function needs to be able to work axially and radially
-#SheathWidth function requires automatic ROI calculation (add ROI to switchboard too)
-#Add Sheathwidth function to 2D image plotter?
 #FIX CBARMINMAX FUNCTION!!! PROES CURRENTLY HAS NO IMAGE CROPPING FOR MIN/MAX
 #ADD if DOFWIDTH < LINEOUT LOCATION SKIP AND WARNING IN PROES
+
 #Functionalize thrust calculation with options for neutral/ion/pressure diff.
 #Bring Trendplotter function up to code with ax.plot etc... (1DTrendPlotter)
 #Impliment image_numericaxis, try float(FolderNameTrimmer) as axis.
@@ -235,6 +242,8 @@ cbaroverride = ['NotImplimented']
 #Introduce Dirlist creating function, using os.module (remove findtools)
 
 #For V 1.0.0:
+#SheathWidth function needs to be able to work axially and radially
+#SheathWidth function requires automatic ROI calculation (add ROI to switchboard too)
 #Sheath Phase-Resolved trends diagnostic: Sheath velocity with phase, phase of peak velocity etc...
 #Functionalise PROES images 
 #Complete IEDF/NEDF section and Functionalise
@@ -260,15 +269,8 @@ cbaroverride = ['NotImplimented']
 #Create lists for basic processing
 Dir = list()
 Dirlist = list()
-Variablelist = list()
-Variablelists = list()
 IEDFVariablelist = list()
-MovieVariablelist = list()
-MovieVariablelists = list()
-MovieITERlist = list()
-Moviephaselist = list()
 Geometrylist = list()
-Legendlist = list()
 
 Globalvarlist = list()
 Globalnumvars = list()
@@ -291,7 +293,7 @@ Isymlist = list()
 rawdata_2D = list()
 rawdata_kin = list()
 rawdata_phasemovie = list()
-rawdata_itermovie_icp = list()
+rawdata_itermovie = list()
 rawdata_IEDF = list()
 rawdata_mcs = list()
 
@@ -302,7 +304,7 @@ IterMovieData = list()			#ITERMovieData[folder][timestep][variable][datapoints]
 PhaseMovieData = list()			#PhaseMovieData[folder][timestep][variable][datapoints]
 
 Moviephaselist = list()			#'CYCL = n'
-Movieiterlist = list()			#'ITER = n'
+MovieIterlist = list()			#'ITER = n'
 EEDF_TDlist = list()			#'???'
 
 header_itermovie = list()
@@ -349,6 +351,8 @@ if True in [print_generaltrends,print_Knudsennumber,print_totalpower,print_DCbia
 	print'# 1D Specific Trend Analysis'
 if savefig_trendcomparison == True:
 	print'# 1D Steady-State Trend Processing'
+if savefig_phasetrends == True:
+	print'# 1D PhaseResolved Trend Processing'
 if True in [savefig_IEDFangular,savefig_IEDFtrends,savefig_EEDF]:
 	print'# Angular Energy Distribution Processing'
 print '-----------------------------------------'
@@ -682,10 +686,9 @@ def SDFileFormatConvertorHPEM(Rawdata,header,numvariables,offset=0,Zmesh=0,Rmesh
 
 	#Seperate total 1D array into 2D array with data for each variable.
 	#Offset data by a certain number of variable 'chunks' if requested.
-	offset = (Rmesh*Zmesh)*offset	   #Convert from variables to rows.
-	for i in range(0,numvariables):
-		numstart = (Zmesh*Rmesh)*(i)+offset
-		numend = (Zmesh*Rmesh)*(i+1)+offset
+	for i in range(offset,numvariables):
+		numstart = (Zmesh*Rmesh)*(i)
+		numend = (Zmesh*Rmesh)*(i+1)
 		CurrentFolderData.append(list(DataArray1D[numstart:numend]))
 	#endfor
 
@@ -1178,6 +1181,18 @@ for l in tqdm(range(0,numfolders)):
 #===================##===================#
 #===================##===================#
 
+	#Kinetics data readin - NOT CURRENTLY USED
+	if True == False:
+
+		#Load data from TECPLOT_KIN file and unpack into 1D array.
+		rawdata, nn_kin = ExtractRawData(Dir,'TECPLOT_KIN.PDT',l)
+		rawdata_kin.append(rawdata)
+	#endif
+
+
+#===================##===================#
+#===================##===================#
+
 	#IEDF/NEDF file readin.
 	if True in [savefig_IEDFangular,savefig_IEDFtrends]:
 
@@ -1255,103 +1270,53 @@ for l in tqdm(range(0,numfolders)):
 #===================##===================#
 #===================##===================#
 
-	#Kinetics data readin - NOT CURRENTLY USED
-	if True == False:
-
-		#Load data from TECPLOT_KIN file and unpack into 1D array.
-		rawdata, nn_kin = ExtractRawData(Dir,'TECPLOT_KIN.PDT',l)
-		rawdata_kin.append(rawdata)
-	#endif
-
-
-#===================##===================#
-#===================##===================#
-
 	if True in [savefig_convergence,savefig_pulseprofiles]:
 
 		#Load data from movie_icp file and unpack into 1D array.
-		try:
-			itermovie_icp = filter(lambda x: 'movie_icp.pdt' in x, Dir)
-			rawdata_itermovie_icp.append(open(itermovie_icp[l]).readlines())
-			nn_itermovie = len(rawdata_itermovie_icp[l])
-		except:
-			print 'Unable to find movie_icp.pdt'
-		#endtry
+		rawdata,nn_itermovie = ExtractRawData(Dir,'movie_icp.pdt',l)
+		rawdata_itermovie.append(rawdata)
 
-		#Identify length of variable section and save variables.
+		#Read through all variables for each file and stop when list ends. 
+		#movie_icp has geometry at top, therefore len(header) != len(variables).
+		#Only the first encountered geometry is used to define variable zone.
+		VariableEndMarker,HeaderEndMarker = 'GEOMETRY','ITER'
+		variablelist,numvar = list(),0
 		for i in range(2,nn_itermovie):
-			MovieVariablelist.append(str(rawdata_itermovie_icp[l][i][:-2].strip(' \t\n\r\"')))
-
-			#Locate when variable section has stopped.
-			if str(rawdata_itermovie_icp[l][i]).find('GEOMETRY') != -1:
-				#Remove trailing value in variable list.
-				MovieVariablelist = MovieVariablelist[:len(MovieVariablelist)-2]
-				numvariables_movie = len(MovieVariablelist)
+			if HeaderEndMarker in str(rawdata[i]): 
+				header_iter = i+1		# +1 to skip to data row.
 				break
+			if VariableEndMarker in str(rawdata[i]) and numvar == 0:
+				numvar = (i-3)	# -3 to not include R,Z and remove overflow.
+			if len(rawdata[i]) > 1 and numvar == 0: 
+				variablelist.append(str(rawdata_itermovie[l][i][:-2].strip(' \t\n\r\"')))
+			#endif
+		#endfor
+		header_itermovie.append(header_iter)
+
+		#Rough method of obtaining the movie1.pdt cycle locations for data extraction.
+		Iterloc = list()
+		MovieIterlist.append(list())
+		for i in range(0,len(rawdata)):
+			if "ITER=" in rawdata[i]:
+				Iterloc.append(i+1)
+
+				IterStart=rawdata[i].find('ITER')
+				MovieIterlist[l].append(rawdata[i][IterStart:IterStart+9])
 			#endif
 		#endfor
 
-		#Identify length of header.
-		for i in range(2,nn_itermovie):
-
-			#Calculate headersize and identify beginning of data.
-			if str(rawdata_itermovie_icp[l][i]).find('ITER') != -1:
-				header_movie = i+1
-				break
+		#Cycle through all phases for current datafile, appending per cycle.
+		CurrentFolderData,CurrentFolderIterlist = list(),list()
+		for i in range(0,len(Iterloc)):
+			if i == 0:
+				CurrentIterData = SDFileFormatConvertorHPEM(rawdata,Iterloc[i],numvar+2,offset=2)
+				CurrentFolderData.append(CurrentIterData[0:numvar])
+			else:
+				CurrentIterData = SDFileFormatConvertorHPEM(rawdata,Iterloc[i],numvar)
+				CurrentFolderData.append(CurrentIterData)
 			#endif
 		#endfor
-		header_itermovie.append(header_movie)
-
-		#Create Variablelists for each folder of data and refresh Variablelist
-		MovieVariablelists.append(MovieVariablelist)
-		MovieVariablelist = list()
-		MovieITERlist_temp = list()
-		data_array = list()
-
-		#Unpack each row of 7 data points into single array of floats.
-		#Removing 'spacing' between the floats and ignoring variables above data.
-		for i in range(header_movie,nn_itermovie):
-			numstart = 1
-			for j in range(0,7):
-				try:
-					#Collect Iteration Details, then extract data as normal.
-					if str(rawdata_itermovie_icp[l][i]).find('ITER') != -1:
-						ITERstart = rawdata_itermovie_icp[l][i].find('ITER')
-						MovieITERlist_temp.append(rawdata_itermovie_icp[l][i][ITERstart:ITERstart+9])
-						break
-					#endif
-					data_array.append(float(rawdata_itermovie_icp[l][i][numstart:(numstart+10)]))
-
-				except:
-					This_means_there_was_a_space = 1
-				#endtry
-				numstart+= 11
-			#endfor
-		#endfor
-
-		#Seperate total 1D array into sets of data for each variable.
-		#Data is a 4D array of form (folder,timestep,variable,datapoints)
-		tempdata,tempdata2 = list(),list()
-		for j in range(1,len(MovieITERlist_temp)+1):
-
-			#Collect data for each variable in turn, then reset per iteration.
-			IterationStart = numvariables_movie*(j-1)
-			IterationEnd = numvariables_movie*j
-			for i in range(IterationStart,IterationEnd):
-				#Offset of (Z_mesh[l]*R_mesh[l])*2 to avoid initial R and Z output.
-				numstart = (Z_mesh[l]*R_mesh[l])*(i) + (Z_mesh[l]*R_mesh[l])*2
-				numend = (Z_mesh[l]*R_mesh[l])*(i+1) + (Z_mesh[l]*R_mesh[l])*2
-				tempdata.append(list(data_array[numstart:numend]))
-			#endfor
-			tempdata2.append(tempdata)
-			tempdata = list()
-		#endfor
-
-		#Save all variables for folder[l] to Data and refresh lists.
-		IterMovieData.append(tempdata2)
-		MovieITERlist.append(MovieITERlist_temp)
-		tempdata,tempdata2 = list(),list()
-		data_array = list()
+		IterMovieData.append(CurrentFolderData)
 	#endif
 
 
@@ -1367,156 +1332,44 @@ for l in tqdm(range(0,numfolders)):
 		#Read through all variables for each file and stop when list ends. 
 		#Movie1 has geometry at top, therefore len(header) != len(variables).
 		#Only the first encountered geometry is used to define variable zone.
-		VariableEndMarker,HeaderEndMarker,NumVariables = 'GEOMETRY','ZONE',0
-#		Variablelist = ['Radius','Height']		#NewMethod
-		Variablelist = list()					#OldMethod
+		VariableEndMarker,HeaderEndMarker = 'GEOMETRY','ZONE'
+		variablelist,numvar = list(),0
 		for i in range(2,nn_phasemovie):
 			if HeaderEndMarker in str(rawdata_phasemovie[l][i]): 
-				header_phase = i+2
+				header_phase = i+2		# +2 to skip to data row.
 				break
-			if VariableEndMarker in str(rawdata_phasemovie[l][i]) and NumVariables==0:
-#				NumVariables = (i-1)	#Including R,Z		#NewMethod
-				NumVariables = (i-3)	#Not Including R,Z	#OldMethod
-			if len(rawdata_phasemovie[l][i]) > 1: 
-				Variablelist.append(str(rawdata_phasemovie[l][i][:-2].strip(' \t\n\r\"')))
+			if VariableEndMarker in str(rawdata_phasemovie[l][i]) and numvar == 0:
+				numvar = (i-3)	# -3 to not include R,Z and remove overflow.
+			if len(rawdata_phasemovie[l][i]) > 1 and numvar == 0: 
+				variablelist.append(str(rawdata_phasemovie[l][i][:-2].strip(' \t\n\r\"')))
 			#endif
 		#endfor
-		Variablelist = Variablelist[0:NumVariables]	#Keep Variables up till 'GEOMETRY'
-		numvariables_phase = len(Variablelist)
 		header_phasemovie.append(header_phase)
 
-
-
-
-
-
-
-
-
-		#New functionalized method for extracting data, needs fixing.
-		#The issue appears to be with incorrect saving of R/Z 'data'.
-		#Old method skipped this, difficult to replicate in new method.
-		#Would be nice to be able to extract it without the 'hacky' old method.
-		OldMethod = True
-		if OldMethod == False:
-
-			#Fudged numbers until the icp.nam dictionary is fixed.
-			NUMPHASE = 180
-
-			#Rough method of obtaining the movie1.pdt cycle locations for data extraction.
-			Cyclelocations = list()
-			for j in range(0,len(rawdata_phasemovie[l])):
-				if "CYCL=" in rawdata_phasemovie[l][j]:
-					Cyclelocations.append(j+1)
-				#endif
-			#endfor
-
-			#Cycle through all phases for current datafile, appending per cycle.
-			CurrentFolderData,CurrentFolderPhaselist = list(),list()
-			for i in range(0,NUMPHASE):
-				CurrentPhaseData = SDFileFormatConvertorHPEM(rawdata_phasemovie[l],Cyclelocations[i],numvariables_phase,offset=2)
-
-				CurrentFolderPhaselist.append('CYCL = '+str(i+1))
-				CurrentFolderData.append(CurrentPhaseData)
-			#endfor
-			Moviephaselist.append(CurrentFolderPhaselist)
-			PhaseMovieData.append(CurrentFolderData)
-		#endif
-
-			#========== NOTES ==========#
-			#Inclusion of the optional 'offset' allows for saving of R,Z but offseting of data.
-			#Maybe not offset the data and figure out how to change the diagnostics to reflect 
-			#this change and allow the phasedata to work in the same way as the 2D data.
-
-			Test = True
-			if Test == True:
-				#[Folder][Phase][Variable][Data]
-				print len(PhaseMovieData), numfolders
-				print len(PhaseMovieData[0]), NUMPHASE
-				print len(PhaseMovieData[0][0]), len(Variablelist)
-				print len(PhaseMovieData[0][0][0]), R_mesh[l]*Z_mesh[l]
-	
-				#Create empty 2D image of required size.
-				for k in range(0,3):
-					Data = PhaseMovieData[0][k][9-2]
-					numrows = len(Data)/R_mesh[l]
-					Image = np.zeros([numrows,R_mesh[l]])
-	
-					#Reshape data into 2D array for further processing.
-					for j in range(0,numrows):
-						for i in range(0,R_mesh[l]):
-							Start = R_mesh[l]*j
-							Row = Z_mesh[l]-1-j
-							Image[Row,i] = Data[Start+i]
-						#endfor
-					#endfor
-	
-					plt.imshow(Image)
-					plt.show()
-					plt.close('all')
-				#endfor
+		#Rough method of obtaining the movie1.pdt cycle locations for data extraction.
+		cycleloc = list()
+		for i in range(0,len(rawdata_phasemovie[l])):
+			if "CYCL=" in rawdata_phasemovie[l][i]:
+				cycleloc.append(i+1)
 			#endif
-		#endif
+		#endfor
 
-
-
-
-
-
-
-
-
-
-		if OldMethod == True:
-			#Create Variablelists for each folder of data and refresh Variablelist
-			MovieVariablelist,Moviephaselist_temp = list(),list()
-			data_array = list()
-
-			#Unpack each row of 7 data points into single array of floats.
-			#Removing 'spacing' between the floats and ignoring variables above data.
-			for i in range(header_phasemovie[l],nn_phasemovie):
-				numstart = 1
-				for j in range(0,7):
-					try:
-						#Collect Phase Details, then extract data as normal.
-						if str(rawdata_phasemovie[l][i]).find('CYCL') != -1:
-							phasestart = rawdata_phasemovie[l][i].find('CYCL')
-							Moviephaselist_temp.append(rawdata_phasemovie[l][i][phasestart:phasestart+9])
-							break
-						#endif
-						data_array.append(float(rawdata_phasemovie[l][i][numstart:(numstart+10)]))
-
-					except:
-						This_means_there_was_a_space = 1
-					#endtry
-					numstart+= 11
-				#endfor
-			#endfor
-
-			#Seperate total 1D array into sets of data for each variable.
-			#Data is a 4D array of form (folder,timestep,variable,datapoints)
-			tempdata,tempdata2 = list(),list()
-			for j in range(1,len(Moviephaselist_temp)+1):
-
-				#Collect data for each variable in turn, then reset per iteration.
-				IterationStart = numvariables_phase*(j-1)
-				IterationEnd = numvariables_phase*j
-				for i in range(IterationStart,IterationEnd):
-					#Offset of (Z_mesh[l]*R_mesh[l])*2 to avoid initial R and Z output.
-					numstart = (Z_mesh[l]*R_mesh[l])*(i) + (Z_mesh[l]*R_mesh[l])*2
-					numend = (Z_mesh[l]*R_mesh[l])*(i+1) + (Z_mesh[l]*R_mesh[l])*2
-					tempdata.append(list(data_array[numstart:numend]))
-				#endfor
-				tempdata2.append(tempdata)
-				tempdata = list()
-			#endfor
-
-			#Save all variables for folder[l] to Data and refresh lists.
-			PhaseMovieData.append(tempdata2)
-			Moviephaselist.append(Moviephaselist_temp)
-			tempdata,tempdata2 = list(),list()
-			data_array = list()
-		#endif
+		#Cycle through all phases for current datafile, appending per cycle.
+		CurrentFolderData,CurrentFolderPhaselist = list(),list()
+		for i in range(0,len(cycleloc)):
+			if i == 0:
+				CurrentPhaseData = SDFileFormatConvertorHPEM(rawdata,cycleloc[i],numvar+2,offset=2)
+				CurrentFolderData.append(CurrentPhaseData[0:numvar])
+			else:
+				CurrentPhaseData = SDFileFormatConvertorHPEM(rawdata,cycleloc[i],numvar)
+				CurrentFolderData.append(CurrentPhaseData)
+			#endif
+			CurrentFolderPhaselist.append('CYCL = '+str(i+1))
+		#endfor
+		Moviephaselist.append(CurrentFolderPhaselist)
+		PhaseMovieData.append(CurrentFolderData)
+	#endif
+#endfor
 
 
 #===================##===================#
@@ -1548,13 +1401,15 @@ Comparisonlist = Globalvarlist[idx]
 tempdata,tempdata2 = list(),list()
 data_array,templineout = list(),list()
 Energy,Fe,rawdata_mcs = list(),list(),list()
+Variablelist,variablelist = list(),list()
 del RADIUS,RADIUST,HEIGHT,HEIGHTT,DEPTH,SYM
 del data_array,tempdata,tempdata2,templineout
+del Variablelist,variablelist
 del Energy,Fe,rawdata_mcs
 
 
 #Alert user that readin process has ended and continue with selected diagnostics.
-if any([savefig_plot2D, savefig_phaseresolve2D, savefig_convergence, savefig_monoprofiles, savefig_multiprofiles, savefig_comparelineouts, savefig_pulseprofiles, savefig_phaseresolve1D, savefig_PROES, savefig_trendcomparison, print_generaltrends, print_Knudsennumber, print_totalpower, print_DCbias, print_thrust, savefig_IEDFangular, savefig_IEDFtrends, savefig_EEDF]) == True:
+if any([savefig_plot2D, savefig_phaseresolve2D, savefig_convergence, savefig_monoprofiles, savefig_multiprofiles, savefig_comparelineouts, savefig_pulseprofiles, savefig_phasetrends, savefig_phaseresolve1D, savefig_PROES, savefig_trendcomparison, print_generaltrends, print_Knudsennumber, print_totalpower, print_DCbias, print_thrust, savefig_IEDFangular, savefig_IEDFtrends, savefig_EEDF]) == True:
 	print '----------------------------------------'
 	print 'Data Readin Complete, Starting Analysis:'
 	print '----------------------------------------'
@@ -2558,6 +2413,22 @@ def SheathThickness(folder=l,Ax=plt.gca(),Phase='NaN',SheathMethod=GlobSheathMet
 	#Initiate required lists.
 	Sx,NegSx = list(),list()		
 
+
+	#IMPLIMENT THIS, STREAMLINE PROCESS.
+	datatype = '2D'
+	if datatype == '2D':
+		rawdata = rawdata_2D[folder]
+		header = header_2Dlist[folder]
+	elif datatype == 'Phase':
+		rawdata = rawdata_phasemovie[folder]
+		header = header_phasemovie[folder]
+	elif datatype == 'iter':
+		rawdata = rawdata_itermovie[folder]
+		header = header_itermovie[folder]
+	#endif
+	#IMPLIMENT THIS, STREAMLINE PROCESS.
+
+
 	#Create obtain current folder ion and electron process numbers.
 	if Phase == 'NaN':
 		IONproc = VariableEnumerator(['AR+'],rawdata_2D[folder],header_2Dlist[folder])[0][0]
@@ -2619,21 +2490,24 @@ def SheathThickness(folder=l,Ax=plt.gca(),Phase='NaN',SheathMethod=GlobSheathMet
 		except: NegSx.append(Sx[i])
 	#endfor
 
+	Orientation = 'Axial'
 	### CURRENTLY ONLY AXIAL METHOD IS EMPLOYED ###
 	#Generate Axis and set image extent
-	Zaxis=GenerateAxis('Axial',Isym=Isymlist[folder])
-	Raxis=GenerateAxis('Radial',Isym=Isymlist[folder])
-	Axis = Zaxis
+	if Orientation == 'Radial': loc = electrodeloc[0]
+	elif Orientation == 'Axial': loc = electrodeloc[1]
+	Axis=GenerateAxis(Orientation,Isym=Isymlist[folder])
 
 	#Plot and Print sheath characteristics if requested.
 	if image_sheath == True:
-		Ax.plot(Axis,Sx, 'w--', lw=2)
-		Ax.plot(Axis,NegSx, 'w--', lw=2)
+		Ax.plot(Axis,Sx, 'w--', lw=1)
+		Ax.plot(Axis,NegSx, 'w--', lw=1)
 	if print_sheath == True:
+		#Obtain SheathWidth at electrodeloc
+		try: SheathWidth = round(Sx[loc],3)
+		except: SheathWidth = 0.0
 		print 'Simulation:', Dirlist[folder]
-		print 'Sheath Location:', round(Sx[44],3), 'cm'
-		print 'Sheath Extent:', 0.21-round(Sx[44],3), 'cm'
-		print ''
+		print 'Sheath Location:',SheathWidth*10, 'mm'
+		print 'Sheath Extent:',((SourceWidth[0]*dr[l])-SheathWidth)*10, 'mm'
 	#endif
 
 	#Return sheath expansion
@@ -2691,7 +2565,7 @@ if savefig_plot2D == True:
 		Dir2Dplots = CreateNewFolder(Dirlist[l],'2Dplots')
 
 		#Create processlist for each folder as required.
-		processlist,Variablelist = VariableEnumerator(Variables,rawdata_2D[l],header_2Dlist[l])
+		processlist,variablelist = VariableEnumerator(Variables,rawdata_2D[l],header_2Dlist[l])
 
 		#Setting the radial ticks for beauty purposes ~HACKY~
 		R = Radius[l]
@@ -2702,11 +2576,11 @@ if savefig_plot2D == True:
 		for k in tqdm(range(0,len(processlist))):
 
 			#Extract full 2D image for further processing.
-			Image = ImageExtractor2D(Data[l][processlist[k]],Variablelist[k])
+			Image = ImageExtractor2D(Data[l][processlist[k]],variablelist[k])
 
 			#Generate and rotate figure as requested.
 			extent,aspectratio = DataExtent(l)
-			fig,ax,im,Image = ImagePlotter2D(Image,extent,aspectratio,Variablelist[k])
+			fig,ax,im,Image = ImagePlotter2D(Image,extent,aspectratio,variablelist[k])
 			#Add sheath thickness to figure if requested.
 			Sx = SheathThickness(folder=l,Ax=ax)
 
@@ -2719,21 +2593,21 @@ if savefig_plot2D == True:
 			#endif
 
 			#Image plotting details, invert Y-axis to fit 1D profiles.
-			Title = '2D Steady State Plot of '+Variablelist[k]+' for \n'+Dirlist[l][2:-1]
+			Title = '2D Steady State Plot of '+variablelist[k]+' for \n'+Dirlist[l][2:-1]
 			ImageOptions(ax,Xlabel,Ylabel,Title)
 
 			#Add Colourbar (Axis, Label, Bins)
-			label,bins = VariableLabelMaker(Variablelist),5
+			label,bins = VariableLabelMaker(variablelist),5
 			cax = Colourbar(ax,label[k],bins,Lim=CbarMinMax(Image))
 
 			#Write data to ASCII files if requested.
 			if write_ASCII == True:
 				DirWrite = CreateNewFolder(Dir2Dplots, '2Dplots_Data')
-				WriteDataToFile(Image, DirWrite+Variablelist[k])
+				WriteDataToFile(Image, DirWrite+variablelist[k])
 			#endif
 
 			#Save Figure
-			plt.savefig(Dir2Dplots+'2DPlot '+Variablelist[k]+ext)
+			plt.savefig(Dir2Dplots+'2DPlot '+variablelist[k]+ext)
 			plt.close('all')
 		#endfor
 	#endfor
@@ -2759,23 +2633,25 @@ if savefig_convergence == True:
 		DirConvergence = CreateNewFolder(Dirlist[l],'Convergence/')
 
 		#Create processlist for each folder as required.
-		iterprocesslist,IterVariablelist = VariableEnumerator(IterVariables,rawdata_itermovie_icp[l],header_itermovie[l])
+		processlist,variablelist = VariableEnumerator(IterVariables,rawdata_itermovie[l],header_itermovie[l])
 		#Skip over the R and Z processes as they are not saved properly in iterdata.
-		for i in range(0,len(iterprocesslist)):
-			iterprocesslist[i] = iterprocesslist[i]-2
+		for i in range(0,len(processlist)):
+			processlist[i] = processlist[i]-2
 		#endfor
 
 		#Create list and x-axis for convergence trend plotting.
 		ConvergenceTrends,Xaxis = list(),list()
-		for i in range(0,len(MovieITERlist[l])):
-			Xaxis.append(filter(lambda x: x.isdigit(), MovieITERlist[l][i]))
+		for i in range(0,len(MovieIterlist[l])):
+			Xaxis.append(filter(lambda x: x.isdigit(), MovieIterlist[l][i]))
 		#endfor
 
 		#for all variables requested by the user.
-		for i in tqdm(range(0,len(iterprocesslist))):
+		for i in tqdm(range(0,len(processlist))):
 
 			#Create new folder to keep output plots.
-			DirMovieplots = CreateNewFolder(DirConvergence,IterVariablelist[i]+'_2DConvergence/')
+			DirMovieplots = CreateNewFolder(DirConvergence,variablelist[i]+'_2DConvergence/')
+			#Append new list to convergenceTrends for each variable.
+			ConvergenceTrends.append(list())
 
 			#Create empty image array based on mesh size and symmetry options.
 			try: 
@@ -2786,20 +2662,17 @@ if savefig_convergence == True:
 				break
 			#endtry
 			
-			#Append new list to convergenceTrends for each variable.
-			ConvergenceTrends.append(list())
-
 			#Reshape specific part of 1D Data array into 2D image for plotting.
-			for k in range(0,len(MovieITERlist[l])):
+			for k in range(0,len(MovieIterlist[l])):
 
 				#Extract full 2D image for further processing.
-				Image = ImageExtractor2D(IterMovieData[l][k][iterprocesslist[i]],IterVariablelist[i])
+				Image = ImageExtractor2D(IterMovieData[l][k][processlist[i]],variablelist[i])
 				#Take Max value of image for general convergence trend.
 				ConvergenceTrends[-1].append( sum(Image.flatten())/len(Image.flatten()) )
 
 				#Generate and rotate figure as requested.
 				extent,aspectratio = DataExtent(l)
-				fig,ax,im,Image = ImagePlotter2D(Image,extent,aspectratio,Variablelist[i])
+				fig,ax,im,Image = ImagePlotter2D(Image,extent,aspectratio,variablelist[i])
 				#Add sheath thickness to figure if requested.
 				Sx = SheathThickness(folder=l,Ax=ax)
 
@@ -2812,23 +2685,23 @@ if savefig_convergence == True:
 				#endif
 
 				#Image plotting details.
-				Title = str(MovieITERlist[l][k])
+				Title = str(MovieIterlist[l][k])
 				ImageOptions(ax,Xlabel,Ylabel,Title)
 
 				#Add Colourbar (Axis, Label, Bins)
-				label,bins = VariableLabelMaker(IterVariablelist),5
+				label,bins = VariableLabelMaker(variablelist),5
 				cax = Colourbar(ax,label[i],bins,Lim=CbarMinMax(Image))
 
 				#Save to seperate folders inside simulation folder.
 				num1,num2,num3 = k % 10, k/10 % 10, k/100 % 10
 				Number = str(num3)+str(num2)+str(num1)
-				savefig(DirMovieplots+IterVariablelist[i]+'_'+Number+ext)
+				savefig(DirMovieplots+variablelist[i]+'_'+Number+ext)
 				plt.close('all')
 			#endfor
 
 			#Create .mp4 movie from completed images.
 			Prefix = FolderNameTrimmer(Dirlist[l])
-			Automovie(DirMovieplots,Prefix+'_'+IterVariablelist[i])
+			Automovie(DirMovieplots,Prefix+'_'+variablelist[i])
 		#endfor
 
 
@@ -2836,7 +2709,7 @@ if savefig_convergence == True:
 
 
 		#Plot a convergence check for all variables in each folder.
-		Legend = VariableLabelMaker(IterVariablelist)
+		Legend = VariableLabelMaker(variablelist)
 		fig, ax = plt.subplots(1, figsize=(10,10))
 
 		#Normalize and plot each variable in ConvergenceTrends to single figure.
@@ -2846,7 +2719,7 @@ if savefig_convergence == True:
 		#endfor
 
 		#Image plotting details.
-		Title = 'Convergence of '+str(IterVariablelist)+' for \n'+Dirlist[l][2:-1]
+		Title = 'Convergence of '+str(variablelist)+' for \n'+Dirlist[l][2:-1]
 		Xlabel,Ylabel = 'Simulation Iteration','Normalized Mesh-Average Value'
 		ImageOptions(ax,Xlabel,Ylabel,Title,Legend,Crop=False)
 		ax.set_ylim(0,1.01+(len(Legend)*0.05))
@@ -3314,7 +3187,7 @@ if savefig_pulseprofiles == True:
 		DirPulse = CreateNewFolder(Dirlist[l],'Pulse_Profiles/')
 
 		#Create processlist for each folder as required.
-		processlist,variablelist = VariableEnumerator(Variables,rawdata_itermovie_icp[l],header_itermovie[l])
+		processlist,variablelist = VariableEnumerator(Variables,rawdata_itermovie[l],header_itermovie[l])
 		#Skip over the R and Z processes as they are not saved properly in iterdata.
 		for i in range(0,len(processlist)):
 			processlist[i] = processlist[i]-2
@@ -3322,8 +3195,8 @@ if savefig_pulseprofiles == True:
 
 		#Create list and x-axis for convergence trend plotting.
 		DtActual = 8.00E-6		#S
-		for i in range(0,len(MovieITERlist[l])):
-			Xaxis.append( float(filter(lambda x: x.isdigit(), MovieITERlist[l][i]))*DtActual )
+		for i in range(0,len(MovieIterlist[l])):
+			Xaxis.append( float(filter(lambda x: x.isdigit(), MovieIterlist[l][i]))*DtActual )
 		#endfor
 
 		#for all variables requested by the user.
@@ -3331,7 +3204,7 @@ if savefig_pulseprofiles == True:
 
 			#Extract 2D image and take mesh averaged value for iteration trend.
 			PulseProfile = list()
-			for k in range(0,len(MovieITERlist[l])):
+			for k in range(0,len(MovieIterlist[l])):
 				#for further processing.
 				Image = ImageExtractor2D(IterMovieData[l][k][processlist[i]],variablelist[i])
 				PulseProfile.append( sum(Image.flatten())/len(Image.flatten()) )
@@ -4142,14 +4015,31 @@ if savefig_trendcomparison == True or print_thrust == True:
 
 
 if savefig_trendcomparison == True or print_sheath == True:
-	SourceWidth = 0.21		#PocketRocket
 
 	#Create Trend folder to keep output plots.
 	TrendVariable = filter(lambda x: x.isalpha(), FolderNameTrimmer(Dirlist[0]))
 	DirTrends = CreateNewFolder(os.getcwd()+'/',TrendVariable+' Trends')
 
 	#Initialize any required lists.
-	Xaxis,SxMaxExtent = list(),list()
+	Xaxis,SxLocExtent,SxMaxExtent = list(),list(),list()	
+
+	#Obtain SheathROI and SourceWidth automatically if none are supplied.
+	if len(SheathROI) != 2:
+		#image_radialcrop Convert to Cells 
+		#image_axialcrop Convert to Cells
+		#Use axialcrop or radialcrop to set automatic ROI!
+		Start,End = 34,72			#AUTOMATIC ROUTINE REQUIRED#
+		SheathROI = [Start,End]		#AUTOMATIC ROUTINE REQUIRED#
+	#endif
+	if len(SourceWidth) == 0:
+		#Take Variable that is zero in metals (Density?)
+		#Take Axial/Radial slice depending on sheath direction.
+		#Find Cell distance from zero to 'wall' at electrodeloc.
+		#Convert to SI [cm], set to automatic width.
+		SourceWidth = [0.21]			#AUTOMATIC ROUTINE REQUIRED#
+	#endif
+	#loc = electrodeloc[0]		#Radial
+	loc = electrodeloc[1] 		#Axial
 
 	#For all selected simulations, obtain Xaxis, sheath value and save to array.
 	for l in range(0,numfolders):
@@ -4158,23 +4048,22 @@ if savefig_trendcomparison == True or print_sheath == True:
 		#Obtain sheath thickness array for current folder 
 		Sx = SheathThickness(folder=l)
 
-		#Use selected ROI or obtain automatically.
-		### NEEDS AN AUTOMATIC OPTION!!! ###
-		ROI = [35,55]
-
-		#Extract maximum sheath thickness from region of interest.
-		SxMaxExtent.append(SourceWidth-max(Sx[ROI[0]:ROI[1]]))
+		#Extract maximum sheath thickness from region of interest and width at electrodeloc.
+		SxMaxExtent.append( ((SourceWidth[0]*dr[l])-max(Sx[SheathROI[0]:SheathROI[1]]))*10 )
+		SxLocExtent.append( ((SourceWidth[0]*dr[l])-Sx[loc])*10 )
 	#endfor
 
 	#===============================#
 
+	print (SourceWidth[0]*dr[l])
+
 	#Generate figure and plot trends.	
 	fig,ax = figure(image_aspectratio,1)
-	TrendPlotter(SxMaxExtent,Xaxis,NormFactor=0)
+	TrendPlotter(SxLocExtent,Xaxis,NormFactor=0)
 
 	#Apply image options and axis labels.
 	Title = 'Maximum Sheath Extension With Varying '+TrendVariable+' \n'+Dirlist[l][2:-1]
-	Xlabel,Ylabel = 'Varied Property','Sheath Extension [cm]'
+	Xlabel,Ylabel = 'Varied Property','Sheath Extension [mm]'
 	ImageOptions(ax,Xlabel,Ylabel,Title,Legend=[],Crop=False)
 
 	plt.savefig(DirTrends+'Sheath Extension Trends'+ext)
@@ -4342,160 +4231,9 @@ if any([savefig_trendcomparison, print_generaltrends, print_Knudsennumber, print
 
 
 
-
 #====================================================================#
 				#PHASE RESOLVED DIAGNOSTICS (REQ MOVIE1)#
 #====================================================================#
-
-#====================================================================#
-					#2D PHASE RESOLVED MOVIES#
-#====================================================================#
-
-#Plot 2D images over all saved phase cycles with included wavevform guide.
-if savefig_phaseresolve2D == True:
-
-	#Initialize required lists.
-	VoltageWaveforms,WaveformBiases,VariedValuelist = list(),list(),list()
-
-	#for all folders being processed.
-	for l in range(0,numfolders):
-
-		#Create global folder to keep output plots and collect graph title.
-		DirPhaseResolved = CreateNewFolder(Dirlist[l],'2DPhase/')
-		VariedValuelist.append( FolderNameTrimmer(Dirlist[l]) )
-
-		#Create processlist for each folder as required. (Always get PPOT)
-		Processlist,Variablelist = VariableEnumerator(PhaseVariables,rawdata_phasemovie[l],header_phasemovie[l])
-		PPOT = VariableEnumerator(['PPOT'],rawdata_phasemovie[l],header_phasemovie[l])[0][0]
-
-		#Subtract 2 from process as variables R&Z are not saved properly in phasedata.
-		for i in range(0,len(Processlist)): Processlist[i] -= 2
-		PPOT -= 2
-
-		#Generate SI scale axes for lineout plots. ([omega*t/2pi] and [cm] respectively)
-		Phaseaxis = GenerateAxis('Phase',Isymlist[l],Moviephaselist[l])
-		Raxis = GenerateAxis('Radial',Isymlist[l])
-		Zaxis = GenerateAxis('Axial',Isymlist[l])
-
-
-		#=============#
-
-		#Extract waveforms from desired electrode locations.
-		for j in range(0,len(waveformlocs)):
-			VoltageWaveforms.append(WaveformExtractor(PhaseMovieData[l],PPOT,waveformlocs[j])[0])
-			WaveformBiases.append(WaveformExtractor(PhaseMovieData[l],PPOT,waveformlocs[j])[1])
-		#endfor
-		ElectrodeWaveform,ElectrodeBias = WaveformExtractor(PhaseMovieData[l],PPOT)
-
-		#Plot the phase-resolved waveform.
-		fig,ax = figure(image_aspectratio,1)
-
-		ax.plot(Phaseaxis,ElectrodeWaveform, lw=2)
-		for j in range(0,len(waveformlocs)): 
-			ax.plot(Phaseaxis,VoltageWaveforms[j], lw=2)
-			#ax.plot(Phaseaxis,WaveformBiases[j], 'k--', lw=2)
-		#endfor
-		#ax.plot(Phaseaxis,ElectrodeBias, 'k--', lw=2)
-
-		Title = 'Phase-Resolved Voltage Waveforms for '+FolderNameTrimmer(Dirlist[l])
-		Legend = ['rf self-bias: '+str(round(ElectrodeBias[0],2))+'V']
-		Xlabel,Ylabel = 'Phase [$\omega$t/2$\pi$]','Electrode Potential [V]'
-		ImageOptions(ax,Xlabel,Ylabel,Title,Legend,Crop=False)
-
-		plt.savefig(DirPhaseResolved+VariedValuelist[l]+' Waveform'+ext)
-		plt.close('all')
-
-		#Write PROES data in ASCII format if required.
-		if write_ASCII == True:
-			ASCIIWaveforms = [Phaseaxis,ElectrodeWaveform]
-			for j in range(0,len(waveformlocs)):
-				ASCIIWaveforms.append(VoltageWaveforms[j])
-			#endfor
-			DirASCIIPhase = CreateNewFolder(DirPhaseResolved,'2DPhase_Data')
-			WriteDataToFile(ASCIIWaveforms, DirASCIIPhase+'VoltageWaveforms')
-		#endif
-
-		#===============#
-
-
-		#for all variables requested by the user.
-		for i in tqdm(range(0,len(Processlist))):
-
-			#Create new folder to keep specific plots.
-			DirMovieplots = CreateNewFolder(DirPhaseResolved,Variablelist[i]+'_2DPhaseResolved/')
-
-			#Obtain maximum and minimum values of current variable over all phases.
-			MinLim,MaxLim = list(),list()
-			for j in range(0,phasecycles):
-				Image = ImageExtractor2D(PhaseMovieData[l][j][Processlist[i]],Variablelist[i])		
-				MinLim.append( CbarMinMax(Image)[0] )
-				MaxLim.append( CbarMinMax(Image)[1] )
-			#endfor
-			Limits = [min(MinLim),max(MaxLim)]
-
-			#Reshape specific part of 1D Data array into 2D image for plotting.
-			for j in range(0,len(Moviephaselist[l])):
-
-				#Extract full 2D image for further processing.
-				Image = ImageExtractor2D(PhaseMovieData[l][j][Processlist[i]],Variablelist[i])
-
-				#Obtain image extent and axis labels based on image symmetry and rotation.
-				Xlabel,Ylabel = 'Radial Distance R [cm]','Axial Distance Z [cm]'
-				if image_rotate == True: Xlabel,Ylabel = Ylabel,Xlabel
-				extent,aspectratio = DataExtent(l)
-
-				#Create figure and axes, plot image on top and waveform underneath.
-				fig,ax = figure(aspectratio,2)
-				Title = 'Phase-Resolved '+Variablelist[i]+'\n'+str(Moviephaselist[l][j])
-				fig.suptitle(Title, y=0.97, fontsize=18)
-
-				#Plot 2D image, applying image options and cropping as required.
-				fig,ax[0],im,Image = ImagePlotter2D(Image,extent,aspectratio,Variablelist[i],fig,ax[0])
-				SheathThickness(folder=l,Ax=ax[0],Phase=j)
-				ImageOptions(ax[0],Xlabel,Ylabel,Crop=True)
-				#Add Colourbar (Axis, Label, Bins)
-				Ylabel = VariableLabelMaker(Variablelist)
-				cax = Colourbar(ax[0],Ylabel[i],5,Lim=Limits)
-
-				#Plot waveform and apply image options.
-				ax[1].plot(Phaseaxis, ElectrodeWaveform, lw=2)
-				ax[1].axvline(Phaseaxis[j], color='k', linestyle='--', lw=2)
-				Xlabel,Ylabel = 'Phase [$\omega$t/2$\pi$]','Electrode Potential [V]'
-				ImageOptions(ax[1],Xlabel,Ylabel,Crop=False)
-				#Add Invisible Colourbar to sync X-axis
-				InvisibleColourbar(ax[0])
-
-				#Cleanup layout and save images.
-				fig.tight_layout()
-				plt.subplots_adjust(top=0.90)
-				num1,num2,num3 = j % 10, j/10 % 10, j/100 % 10
-				Number = str(num3)+str(num2)+str(num1)
-				savefig(DirMovieplots+Variablelist[i]+'_'+Number+ext)
-				plt.close('all')
-
-
-				#Write Phase data in ASCII format if required.
-				if write_ASCII == True:
-					DirASCIIPhase = CreateNewFolder(DirPhaseResolved,'2DPhase_Data')
-					Cycle = str( Moviephaselist[l][j].replace(" ", "") )
-					SaveString = DirASCIIPhase+Variablelist[i]+'_'+Cycle
-					WriteDataToFile(Image, SaveString)
-				#endif
-			#endfor
-
-			#Create .mp4 movie from completed images.
-			Prefix = FolderNameTrimmer(Dirlist[l])
-			Automovie(DirMovieplots,Prefix+'_'+Variablelist[i])
-		#endfor
-	#endfor
-
-	print'---------------------------------------'
-	print'# 2D Phase-Resolved Processing Complete'
-	print'---------------------------------------'
-#endif
-
-
-
 
 #====================================================================#
 						#1D PHASE RESOLVED MOVIES#
@@ -4672,6 +4410,259 @@ if savefig_phaseresolve1D == True:
 	print'---------------------------------------'
 	print'# 1D Phase-Resolved Processing Complete'
 	print'---------------------------------------'
+#endif
+
+
+
+
+#====================================================================#
+					#2D PHASE RESOLVED MOVIES#
+#====================================================================#
+
+#Plot 2D images over all saved phase cycles with included wavevform guide.
+if savefig_phaseresolve2D == True:
+
+	#Initialize required lists.
+	VoltageWaveforms,WaveformBiases,VariedValuelist = list(),list(),list()
+
+	#for all folders being processed.
+	for l in range(0,numfolders):
+
+		#Create global folder to keep output plots and collect graph title.
+		DirPhaseResolved = CreateNewFolder(Dirlist[l],'2DPhase/')
+		VariedValuelist.append( FolderNameTrimmer(Dirlist[l]) )
+
+		#Create processlist for each folder as required. (Always get PPOT)
+		Processlist,Variablelist = VariableEnumerator(PhaseVariables,rawdata_phasemovie[l],header_phasemovie[l])
+		PPOT = VariableEnumerator(['PPOT'],rawdata_phasemovie[l],header_phasemovie[l])[0][0]
+
+		#Subtract 2 from process as variables R&Z are not saved properly in phasedata.
+		for i in range(0,len(Processlist)): Processlist[i] -= 2
+		PPOT -= 2
+
+		#Generate SI scale axes for lineout plots. ([omega*t/2pi] and [cm] respectively)
+		Phaseaxis = GenerateAxis('Phase',Isymlist[l],Moviephaselist[l])
+		Raxis = GenerateAxis('Radial',Isymlist[l])
+		Zaxis = GenerateAxis('Axial',Isymlist[l])
+
+
+		#=============#
+
+		#Extract waveforms from desired electrode locations.
+		for j in range(0,len(waveformlocs)):
+			VoltageWaveforms.append(WaveformExtractor(PhaseMovieData[l],PPOT,waveformlocs[j])[0])
+			WaveformBiases.append(WaveformExtractor(PhaseMovieData[l],PPOT,waveformlocs[j])[1])
+		#endfor
+		ElectrodeWaveform,ElectrodeBias = WaveformExtractor(PhaseMovieData[l],PPOT)
+
+		#Plot the phase-resolved waveform.
+		fig,ax = figure(image_aspectratio,1)
+
+		ax.plot(Phaseaxis,ElectrodeWaveform, lw=2)
+		for j in range(0,len(waveformlocs)): 
+			ax.plot(Phaseaxis,VoltageWaveforms[j], lw=2)
+			#ax.plot(Phaseaxis,WaveformBiases[j], 'k--', lw=2)
+		#endfor
+		#ax.plot(Phaseaxis,ElectrodeBias, 'k--', lw=2)
+
+		Title = 'Phase-Resolved Voltage Waveforms for '+FolderNameTrimmer(Dirlist[l])
+		Legend = ['rf self-bias: '+str(round(ElectrodeBias[0],2))+'V']
+		Xlabel,Ylabel = 'Phase [$\omega$t/2$\pi$]','Electrode Potential [V]'
+		ImageOptions(ax,Xlabel,Ylabel,Title,Legend,Crop=False)
+
+		plt.savefig(DirPhaseResolved+VariedValuelist[l]+' Waveform'+ext)
+		plt.close('all')
+
+		#Write PROES data in ASCII format if required.
+		if write_ASCII == True:
+			ASCIIWaveforms = [Phaseaxis,ElectrodeWaveform]
+			for j in range(0,len(waveformlocs)):
+				ASCIIWaveforms.append(VoltageWaveforms[j])
+			#endfor
+			DirASCIIPhase = CreateNewFolder(DirPhaseResolved,'2DPhase_Data')
+			WriteDataToFile(ASCIIWaveforms, DirASCIIPhase+'VoltageWaveforms')
+		#endif
+
+		#===============#
+
+
+		#for all variables requested by the user.
+		for i in tqdm(range(0,len(Processlist))):
+
+			#Create new folder to keep specific plots.
+			DirMovieplots = CreateNewFolder(DirPhaseResolved,Variablelist[i]+'_2DPhaseResolved/')
+
+			#Obtain maximum and minimum values of current variable over all phases.
+			MinLim,MaxLim = list(),list()
+			for j in range(0,phasecycles):
+				Image = ImageExtractor2D(PhaseMovieData[l][j][Processlist[i]],Variablelist[i])		
+				MinLim.append( CbarMinMax(Image)[0] )
+				MaxLim.append( CbarMinMax(Image)[1] )
+			#endfor
+			Limits = [min(MinLim),max(MaxLim)]
+
+			#Reshape specific part of 1D Data array into 2D image for plotting.
+			for j in range(0,len(Moviephaselist[l])):
+
+				#Extract full 2D image for further processing.
+				Image = ImageExtractor2D(PhaseMovieData[l][j][Processlist[i]],Variablelist[i])
+
+				#Obtain image extent and axis labels based on image symmetry and rotation.
+				Xlabel,Ylabel = 'Radial Distance R [cm]','Axial Distance Z [cm]'
+				if image_rotate == True: Xlabel,Ylabel = Ylabel,Xlabel
+				extent,aspectratio = DataExtent(l)
+
+				#Create figure and axes, plot image on top and waveform underneath.
+				fig,ax = figure(aspectratio,2)
+				Title = 'Phase-Resolved '+Variablelist[i]+'\n'+str(Moviephaselist[l][j])
+				fig.suptitle(Title, y=0.97, fontsize=18)
+
+				#Plot 2D image, applying image options and cropping as required.
+				fig,ax[0],im,Image = ImagePlotter2D(Image,extent,aspectratio,Variablelist[i],fig,ax[0])
+				SheathThickness(folder=l,Ax=ax[0],Phase=j)
+				ImageOptions(ax[0],Xlabel,Ylabel,Crop=True)
+				#Add Colourbar (Axis, Label, Bins)
+				Ylabel = VariableLabelMaker(Variablelist)
+				cax = Colourbar(ax[0],Ylabel[i],5,Lim=Limits)
+
+				#Plot waveform and apply image options.
+				ax[1].plot(Phaseaxis, ElectrodeWaveform, lw=2)
+				ax[1].axvline(Phaseaxis[j], color='k', linestyle='--', lw=2)
+				Xlabel,Ylabel = 'Phase [$\omega$t/2$\pi$]','Electrode Potential [V]'
+				ImageOptions(ax[1],Xlabel,Ylabel,Crop=False)
+				#Add Invisible Colourbar to sync X-axis
+				InvisibleColourbar(ax[0])
+
+				#Cleanup layout and save images.
+				fig.tight_layout()
+				plt.subplots_adjust(top=0.90)
+				num1,num2,num3 = j % 10, j/10 % 10, j/100 % 10
+				Number = str(num3)+str(num2)+str(num1)
+				savefig(DirMovieplots+Variablelist[i]+'_'+Number+ext)
+				plt.close('all')
+
+
+				#Write Phase data in ASCII format if required.
+				if write_ASCII == True:
+					DirASCIIPhase = CreateNewFolder(DirPhaseResolved,'2DPhase_Data')
+					Cycle = str( Moviephaselist[l][j].replace(" ", "") )
+					SaveString = DirASCIIPhase+Variablelist[i]+'_'+Cycle
+					WriteDataToFile(Image, SaveString)
+				#endif
+			#endfor
+
+			#Create .mp4 movie from completed images.
+			Prefix = FolderNameTrimmer(Dirlist[l])
+			Automovie(DirMovieplots,Prefix+'_'+Variablelist[i])
+		#endfor
+	#endfor
+
+	print'---------------------------------------'
+	print'# 2D Phase-Resolved Processing Complete'
+	print'---------------------------------------'
+#endif
+
+
+
+
+#====================================================================#
+					#SIMULATED PROES DIAGNOSTIC#
+#====================================================================#
+
+#Process phase resolved data from multiple folders to extract trends.
+if savefig_phasetrends == True:
+
+	#Read in and process data one folder at a time to save on RAM.
+	for l in range(0,numfolders):
+
+		#Load data from movie_icp file and unpack into 1D array.
+		rawdata,filelength = ExtractRawData(Dir,'movie1.pdt',l)
+
+		#Read through all variables for each file and stop when list ends. 
+		#Movie1 has geometry at top, therefore len(header) != len(variables).
+		#Only the first encountered geometry is used to define variable zone.
+		VariableEndMarker,HeaderEndMarker, = 'GEOMETRY','ZONE'
+		variablelist,numvar = list(),0
+		for i in range(2,filelength):
+			if HeaderEndMarker in str(rawdata[i]):
+				header = i+2	#plus 2 to skip to first data line.
+				break
+			if VariableEndMarker in str(rawdata[i]) and numvar==0:
+				numvar = (i-1-2)	#minus 1 for overshoot, minus 2 for starting at 2.
+				break
+			if len(rawdata[i]) > 1 and numvar == 0: 
+				variablelist.append(str(rawdata[i][:-2].strip(' \t\n\r\"')))
+			#endif
+		#endfor
+
+		#Rough method of obtaining the movie1.pdt cycle locations for data extraction.
+		cycleloc = list()
+		for i in range(0,len(rawdata)):
+			if "CYCL=" in rawdata[i]:
+				cycleloc.append(i+1)
+			#endif
+		#endfor
+
+		#Cycle through all phases for current datafile, appending per cycle.
+		#Variables R and Z only saved for first iteration, they are skipped if i == 0.
+		CurrentFolderData,CurrentFolderPhaselist = list(),list()
+		for i in range(0,len(cycleloc)):
+			if i == 0:
+				CurrentPhaseData = SDFileFormatConvertorHPEM(rawdata,cycleloc[i],numvar+2,offset=2)
+				CurrentFolderData.append(CurrentPhaseData[0:numvar])
+			else:
+				CurrentPhaseData = SDFileFormatConvertorHPEM(rawdata,cycleloc[i],numvar)
+				CurrentFolderData.append(CurrentPhaseData)
+			#endif
+			CurrentFolderPhaselist.append('CYCL = '+str(i+1))
+		#endfor
+
+		if True == True:
+			#PhaseMovieData[Phase][Variable][Data]
+			print len(CurrentFolderData), len(cycleloc)
+			print len(CurrentFolderData[0]), len(variablelist)
+			print len(CurrentFolderData[0][0]), R_mesh[l]*Z_mesh[l]
+
+			#Create empty 2D image of required size.
+			for Phase in range(0,3):
+				Data = CurrentFolderData[Phase][0]
+				numrows = len(Data)/R_mesh[l]
+				Image = np.zeros([numrows,R_mesh[l]])
+
+				#Reshape data into 2D array for further processing.
+				for j in range(0,numrows):
+					for i in range(0,R_mesh[l]):
+						Start = R_mesh[l]*j
+						Row = Z_mesh[l]-1-j
+						Image[Row,i] = Data[Start+i]
+					#endfor
+				#endfor
+
+				plt.imshow(Image)
+				plt.show()
+				plt.close('all')
+			#endfor
+		#endif
+
+
+		#############################
+		#PROCESS DATA AFTER READING!#
+		#############################
+
+	#endfor
+
+
+
+	#Read data in one folder at a time.
+	#Perform diagnostic and save output.
+	#Remove old data and read in next folder.
+	#Repeat.
+
+	print 'Phasetrends not currently in use'
+
+	print'----------------------------------------'
+	print'# Phase-Resolved Trend Analysis Complete'
+	print'----------------------------------------'
 #endif
 
 
@@ -4929,7 +4920,7 @@ if savefig_PROES == True:
 
 #===============================#
 
-if any([savefig_phaseresolve1D ,savefig_phaseresolve2D ,savefig_PROES]) == True:
+if any([savefig_phasetrends, savefig_phaseresolve1D ,savefig_phaseresolve2D ,savefig_PROES]) == True:
 	print'----------------------------------'
 	print'# Phase Resolved Profiles Complete'
 	print'----------------------------------'
@@ -5022,7 +5013,7 @@ if any([savefig_phaseresolve1D ,savefig_phaseresolve2D ,savefig_PROES]) == True:
 #====================================================================#
 				  	#POCKET ROCKET MATERIAL OUTLINE#
 #====================================================================#
-if True == False
+if True == False:
 	#Plot pocket rocket material dimensions.
 	ax[0].plot((1.35,1.35),   (-1.0,-0.21), 'w-', linewidth=2)
 	ax[0].plot((3.7,3.7),     (-1.0,-0.21), 'w-', linewidth=2)
