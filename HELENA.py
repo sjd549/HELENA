@@ -234,7 +234,6 @@ cbaroverride = ['NotImplimented']
 #For V 0.11.n:
 #FIX CBARMINMAX FUNCTION!!! PROES CURRENTLY HAS NO IMAGE CROPPING FOR MIN/MAX
 #ADD if DOFWIDTH < LINEOUT LOCATION SKIP AND WARNING IN PROES
-
 #Functionalize thrust calculation with options for neutral/ion/pressure diff.
 #Bring Trendplotter function up to code with ax.plot etc... (1DTrendPlotter)
 #Impliment image_numericaxis, try float(FolderNameTrimmer) as axis.
@@ -332,7 +331,7 @@ print '   |  |__|  | |  |__   |  |     |  |__   |   \|  |   /  ^  \        '
 print '   |   __   | |   __|  |  |     |   __|  |  . `  |  /  /_\  \       '
 print '   |  |  |  | |  |____ |  `----.|  |____ |  |\   | /  _____  \      '
 print '   |__|  |__| |_______||_______||_______||__| \__|/__/     \__\     '
-print '                                                            v0.11.4 '
+print '                                                            v0.12.0 '
 print '--------------------------------------------------------------------'
 print ''
 print 'The following diagnostics were requested:'
@@ -1293,7 +1292,7 @@ for l in tqdm(range(0,numfolders)):
 		#endfor
 		header_itermovie.append(header_iter)
 
-		#Rough method of obtaining the movie1.pdt cycle locations for data extraction.
+		#Rough method of obtaining the movie_icp iter locations for data extraction.
 		Iterloc = list()
 		MovieIterlist.append(list())
 		for i in range(0,len(rawdata)):
