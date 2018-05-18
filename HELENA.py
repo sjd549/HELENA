@@ -154,8 +154,8 @@ TrendLocation = [] 						#Cell location For Trend Analysis [R,Z], ([] = min/max)
 
 
 #Requested diagnostics and plotting routines.
-savefig_convergence = True				#Requires movie_icp.pdt
-savefig_plot2D = False					#Requires TECPLOT2D.PDT
+savefig_convergence = False				#Requires movie_icp.pdt
+savefig_plot2D = True					#Requires TECPLOT2D.PDT
 
 savefig_monoprofiles = False			#Single-Variables; fixed height/radius
 savefig_multiprofiles = False			#Multi-Variables; same folder
@@ -249,6 +249,12 @@ cbaroverride = ['NotImplimented']
 #Add EEDF section and Functionalise.
 #Clean up unused functions and ensure homogeneity.
 
+# 	Use Headerlists to store the actual headers
+#	Convert EnumerateVariable Function to use header, not full rawdata.
+#	Convert code to read data at source, rather than in total (for phase?)
+#	header_2Dlist.append(rawdata[0:header_2D])
+
+
 
 #For Future:
 #introduce seaborn into the program en-masse.
@@ -275,6 +281,7 @@ Globalvarlist = list()
 Globalnumvars = list()
 
 #Create mesh_size lists and SI conversion
+Isymlist = list()
 R_mesh = list()
 Z_mesh = list()
 Raxis = list()
@@ -286,7 +293,10 @@ Height = list()
 dr = list()
 dz = list()
 
-Isymlist = list()
+VRFM,VRFM2 = list(),list()
+FREQM,FREQM2 = list(),list()
+FREQICP,IRFPOW = list(),list()
+IETRODEM = list()
 
 #Create lists to store data
 rawdata_2D = list()
@@ -341,9 +351,9 @@ if savefig_plot2D == True:
 if savefig_convergence == True:
 	print'# 2D Convergence Movie Processing'
 if True in [savefig_phaseresolve2D,savefig_PROES]:
-	print'# 2D Phase Resolved Movie Processing'
+	print'# 2D Phase-Resolved Movie Processing'
 if True in [savefig_phaseresolve1D]:
-	print'# 1D Phase Resolved Profile Processing'
+	print'# 1D Phase-Resolved Profile Processing'
 if True in [savefig_monoprofiles,savefig_multiprofiles,savefig_comparelineouts,savefig_pulseprofiles]:
 	print'# 1D Steady-State Profile Processing'
 if True in [print_generaltrends,print_Knudsennumber,print_totalpower,print_DCbias,print_thrust]:
@@ -351,7 +361,7 @@ if True in [print_generaltrends,print_Knudsennumber,print_totalpower,print_DCbia
 if savefig_trendcomparison == True:
 	print'# 1D Steady-State Trend Processing'
 if savefig_phasetrends == True:
-	print'# 1D PhaseResolved Trend Processing'
+	print'# 1D Phase-Resolved Trend Processing'
 if True in [savefig_IEDFangular,savefig_IEDFtrends,savefig_EEDF]:
 	print'# Angular Energy Distribution Processing'
 print '-----------------------------------------'
@@ -472,8 +482,6 @@ for l in range(0,numfolders):
 	#endtry
 
 
-
-
 				#MESH PLOTTING NOT WORKING#
 #################################################################
 	#Retrieve entire mesh for plotting if requested.
@@ -493,25 +501,40 @@ for l in range(0,numfolders):
 #################################################################
 
 
-
 	#Attempt automated retrieval of SI conversion units.
+	SImeshdata = open(icpnam[l]).readlines()
+
+	#Retrieve useful input variables from icp.nam.
 	try:
-		SImeshdata = open(icpnam[l]).readlines()
+		NUMPHASE = int(filter(lambda x: x.isdigit(),filter(lambda x:'IMOVIE_FRAMES' in x,SImeshdata)[0]))
+		NUMMETALS = int(filter(lambda x: x.isdigit(),filter(lambda x:'IMETALS' in x,SImeshdata)[0]))+1
+		MATERIALS = filter(lambda x: 'CMETAL=' in x, SImeshdata)[0].split()[1:NUMMETALS]
+	except:
+		print 'ICP.NAM READIN ERROR, IGNORING MESH MATERIAL TYPES'
+	#endtry
 
-		#Retrieve useful input variables from icp.nam.
-#		NUMPHASE = int(filter(lambda x: x.isdigit(),filter(lambda x:'IMOVIE_FRAMES' in x,SImeshdata)[0]))
-#		NUMMETALS = int(filter(lambda x: x.isdigit(),filter(lambda x:'IMETALS' in x,SImeshdata)[0]))+1
-#		MATERIALS = filter(lambda x: 'CMETAL=' in x, SImeshdata)[0].split()[1:NUMMETALS]
+	#Input frequencies/voltages/powers
+	try:
+		VRFM.append(filter(lambda x: 'VRFM=' in x, SImeshdata)[0].split()[1:NUMMETALS])
+		VRFM2.append(filter(lambda x: 'VRFM_2=' in x, SImeshdata)[0].split()[1:NUMMETALS])
+		FREQM.append(filter(lambda x: 'FREQM=' in x, SImeshdata)[0].split()[1:NUMMETALS])
+		FREQM2.append(filter(lambda x: 'FREQM_2=' in x, SImeshdata)[0].split()[1:NUMMETALS])
+		FREQICP.append(filter(lambda x:'FREQ=' in x, SImeshdata)[0].strip(' \t\n\r,=FREQ'))
+		IRFPOW.append(filter(lambda x:'IRFPOW=' in x, SImeshdata)[0].strip(' \t\n\r,=IRFPOW'))
+		IETRODEM.append(filter(lambda x:'IETRODEM=' in x, SImeshdata)[0].split()[1:NUMMETALS])
+		for i in range(0,len(IETRODEM[l])): IETRODEM[l][i] = int(IETRODEM[l][i].strip(','))
+	except:
+		print 'ICP.NAM READIN ERROR, USING DEFAULT MATERIAL PROPERTIES'
+		FREQM.append(13.56E6)
+		FREQM2.append(13.56E6)
+		FREQICP.append(13.56E6)
+		VRFM.append(240.0)
+		VRFM2.appedn(240.0)
+		IRFPOW.append(100.0)
+	#endtry
 
-		#Input frequencies/voltages/powers
-#		VRFM = filter(lambda x: 'VRFM=' in x, SImeshdata)[0].split()[1:NUMMETALS]
-#		VRFM2 = filter(lambda x: 'VRFM_2=' in x, SImeshdata)[0].split()[1:NUMMETALS]
-#		FREQM = filter(lambda x: 'FREQM=' in x, SImeshdata)[0].split()[1:NUMMETALS]
-#		FREQM2 = filter(lambda x: 'FREQM_2=' in x, SImeshdata)[0].split()[1:NUMMETALS]
-#		FREQICP = float(filter(lambda x:'FREQ=' in x, SImeshdata)[0].strip(' \t\n\r,=FREQ'))
-#		IRFPOW = float(filter(lambda x:'IRFPOW=' in x, SImeshdata)[0].strip(' \t\n\r,=IRFPOW'))
-
-		#SI Conversion unit extraction.
+	#SI Conversion unit extraction.
+	try:
 		RADIUS = float(filter(lambda x:'RADIUS=' in x, SImeshdata)[0].strip(' \t\n\r,=RADIUS'))
 		RADIUST = float(filter(lambda x:'RADIUST=' in x, SImeshdata)[0].strip(' \t\n\r,=RADIUST'))
 		HEIGHT = float(filter(lambda x:'HEIGHT=' in x, SImeshdata)[0].strip(' \t\n\r,=HEIGHT'))
@@ -526,22 +549,8 @@ for l in range(0,numfolders):
 		elif HEIGHTT > 0.0: Height.append(HEIGHTT)
 		Depth.append(DEPTH)
 		#endif
-
-		#clean up variables and assign required types.
-#		for i in range(0,NUMMETALS-1):
-#			MATERIALS[i] = MATERIALS[i].strip(',\'')
-#			VRFM[i] = float(VRFM[i].strip(','))
-#			VRFM2[i] = float(VRFM2[i].strip(','))
-#			FREQM[i] = float(FREQM[i].strip(','))
-#			FREQM2[i] = float(FREQM2[i].strip(','))
-		#endfor
-
-		#Obtain useful parameters for diagnostics
-#		MinFreq = min(filter(lambda a: a != 0, FREQM+FREQM2+[FREQICP]))
-#		MaxFreq = max(filter(lambda x: x != 0, FREQM+FREQM2+[FREQICP]))
 		dr.append(Radius[-1]/(R_mesh[-1]-1))
 		dz.append(Height[-1]/(Z_mesh[-1]-1))
-
 	except:
 		#If the geometry section cannot be found, manual input is required.
 		print '#=================================================#'
@@ -558,8 +567,21 @@ for l in range(0,numfolders):
 		dr.append(Radius[-1]/(R_mesh[-1]-1))
 		dz.append(Height[-1]/(Z_mesh[-1]-1))
 	#endtry
-#endfor
 
+	#clean up variables and assign required types.
+	try:
+#		for i in range(0,len(MATERIALS[l])): MATERIALS[l][i] = MATERIALS[i].strip(',\'') <-Broken
+		VRFM[l] = float( VRFM[l][IETRODEM[l].index(1)].strip(',') )
+		VRFM2[l] = float( VRFM2[l][IETRODEM[l].index(1)].strip(',') )
+		FREQM[l] = float( FREQM[l][IETRODEM[l].index(1)].strip(',') )
+		FREQM2[l] = float( FREQM2[l][IETRODEM[l].index(1)].strip(',') )
+
+		MinFreq = min(FREQM+FREQM2+FREQICP)
+		MaxFreq = max(FREQM+FREQM2+FREQICP)
+	except:
+		Material_Property_Conversion_Error=1
+	#endtry
+#endfor
 
 
 
@@ -598,6 +620,7 @@ def VariableEnumerator(Variables,Rawdata,Header):
 #Allows for the comparison of datasets with different icp.dat files.
 #Takes processlist, variablelist, globalcomparisonlist
 #Returns processlist and variablelist with largest commonly shared variables.
+#proclist,varlist = VariableInterpolator(processlist,Variablelist,Comparisonlist):
 def VariableInterpolator(processlist,Variablelist,Comparisonlist):
 
 	#Return default if atomic physics is the same in all datasets.
@@ -692,6 +715,61 @@ def SDFileFormatConvertorHPEM(Rawdata,header,numvariables,offset=0,Zmesh=0,Rmesh
 	#endfor
 
 	return(CurrentFolderData)
+#enddef
+
+
+#Extracts all phase and variable data for the provided folder ID.
+#Initial R and Z for CYCL=1 are skipped over and not saved.
+#Takes current folder, returns Data[phase][variable][datapoints,R/Z]
+#Data,Phaselist = ExtractPhaseData(folder=l,Variables=PhaseVariables)
+def ExtractPhaseData(folder=l,Variables=PhaseVariables):
+	#Load data from movie_icp file and unpack into 1D array.
+	rawdata,filelength = ExtractRawData(Dir,'movie1.pdt',folder)
+
+	#Read through all variables for each file and stop when list ends. 
+	#Movie1 has geometry at top, therefore len(header) != len(variables).
+	#Only the first encountered geometry is used to define variable zone.
+	VariableEndMarker,HeaderEndMarker, = 'GEOMETRY','ZONE'
+	variablelist,numvar = list(),0
+	for i in range(2,filelength):
+		if HeaderEndMarker in str(rawdata[i]):
+			header = i+2	#plus 2 to skip to first data line.
+			break
+		if VariableEndMarker in str(rawdata[i]) and numvar == 0:
+			numvar = (i-1-2)	#minus 1 for overshoot, minus 2 for starting at 2.
+		if len(rawdata[i]) > 1 and numvar == 0: 
+			variablelist.append(str(rawdata[i][:-2].strip(' \t\n\r\"')))
+		#endif
+	#endfor
+
+	#Enumerate processlist and variablelist, interpolate variables against globalvarlist.
+	proclist,varlist = VariableEnumerator(Variables,rawdata,header)
+	for i in range(0,len(proclist)): proclist[i] -= 2	#R&Z not included, shift back by two.
+	proclist,varlist = VariableInterpolator(proclist,varlist,Comparisonlist)
+
+	#Rough method of obtaining the movie1.pdt cycle locations for data extraction.
+	cycleloc = list()
+	for i in range(0,len(rawdata)):
+		if "CYCL=" in rawdata[i]:
+			cycleloc.append(i+1)
+		#endif
+	#endfor
+
+	#Cycle through all phases for current datafile, appending per cycle.
+	#Variables R and Z only saved for first iteration, they are skipped if i == 0.
+	FolderData,Phaselist = list(),list()
+	for i in range(0,len(cycleloc)-1):	#### -1 IS A HACK TO ALIGN WITH OLD DATA ####
+		if i == 0:
+			PhaseData = SDFileFormatConvertorHPEM(rawdata,cycleloc[i],numvar+2,offset=2)
+			FolderData.append(PhaseData[0:numvar])
+		else:
+			PhaseData = SDFileFormatConvertorHPEM(rawdata,cycleloc[i],numvar)
+			FolderData.append(PhaseData)
+		#endif
+		Phaselist.append('CYCL = '+str(i+1))
+	#endfor
+
+	return(FolderData,Phaselist,proclist,varlist)
 #enddef
 
 
@@ -2407,44 +2485,31 @@ def DCbiasMagnitude(PPOTlineout):
 #Calculation Methods: 'AbsDensity', 'IntDensity'
 #Takes current folder, current axis, movie1 Phase and sheath calc method.
 #Returns array of sheath distances from origin and can plot this if requested.
-#Axis,Sx,NegSx = SheathThickness(l,moviephaselist[k],SheathMethod='AbsDensity')
-def SheathThickness(folder=l,Ax=plt.gca(),Phase='NaN',SheathMethod=GlobSheathMethod):
-	#Initiate required lists.
-	Sx,NegSx = list(),list()		
+#Sx = SheathThickness(folder=l,Phase=moviephaselist[k])
+def SheathThickness(folder=l,Ax=plt.gca(),Phase='NaN',Ne=list(),Ni=list()):
+	#Initiate required lists and set sheath method.
+	SheathMethod=GlobSheathMethod
+	Sx,NegSx = list(),list()	
 
-
-	#IMPLIMENT THIS, STREAMLINE PROCESS.
-	datatype = '2D'
-	if datatype == '2D':
-		rawdata = rawdata_2D[folder]
-		header = header_2Dlist[folder]
-	elif datatype == 'Phase':
-		rawdata = rawdata_phasemovie[folder]
-		header = header_phasemovie[folder]
-	elif datatype == 'iter':
-		rawdata = rawdata_itermovie[folder]
-		header = header_itermovie[folder]
-	#endif
-	#IMPLIMENT THIS, STREAMLINE PROCESS.
-
-
-	#Create obtain current folder ion and electron process numbers.
-	if Phase == 'NaN':
+	#Obtain current folder ion and electron densities if not already supplied.
+	#Default to 2D data format.
+	if Phase == 'NaN' and len(Ne) == 0:
 		IONproc = VariableEnumerator(['AR+'],rawdata_2D[folder],header_2Dlist[folder])[0][0]
 		Eproc = VariableEnumerator(['E'],rawdata_2D[folder],header_2Dlist[folder])[0][0]
-		#Extract 2D image for further processing. (symmetry not applied)
-		Ni = ImageExtractor2D(Data[folder][IONproc])
-		Ne = ImageExtractor2D(Data[folder][Eproc])
-	#Allowing for phase data, Phase supplied as moviephaselist. (function is called in loop)
-	else:
+		Ne,Ni = Data[folder][Eproc], Data[folder][IONproc]
+	#If phase is supplied, use phase data format.
+	elif Phase != 'NaN' and len(Ne) == 0:
 		IONproc = VariableEnumerator(['AR+'],rawdata_phasemovie[folder],header_phasemovie[folder])[0][0]
 		Eproc = VariableEnumerator(['E'],rawdata_phasemovie[folder],header_phasemovie[folder])[0][0]
 		IONproc,Eproc = IONproc-2, Eproc-2		#Adjust for incorrect ordering in phase data.
-		#Extract 2D image for further processing. (symmetry not applied)
-		Ni = ImageExtractor2D(PhaseMovieData[folder][Phase][IONproc])
-		Ne = ImageExtractor2D(PhaseMovieData[folder][Phase][Eproc])
+		Ne,Ni = PhaseMovieData[folder][Phase][Eproc], PhaseMovieData[folder][Phase][IONproc]
 	#endif
+	#Extract 2D image for further processing.
+	Ne,Ni = ImageExtractor2D(Ne),ImageExtractor2D(Ni)
 
+
+	Orientation = 'Axial'
+	### CURRENTLY ONLY AXIAL METHOD IS EMPLOYED ###
 	if SheathMethod == 'IntDensity':
 		#Sheath extension: integral_(0-R) ne dR == integral_(0-R) ni dR (Gibson 2015)
 		for j in range(0,len(Ni)):
@@ -2489,8 +2554,6 @@ def SheathThickness(folder=l,Ax=plt.gca(),Phase='NaN',SheathMethod=GlobSheathMet
 		except: NegSx.append(Sx[i])
 	#endfor
 
-	Orientation = 'Axial'
-	### CURRENTLY ONLY AXIAL METHOD IS EMPLOYED ###
 	#Generate Axis and set image extent
 	if Orientation == 'Radial': loc = electrodeloc[0]
 	elif Orientation == 'Axial': loc = electrodeloc[1]
@@ -4054,8 +4117,6 @@ if savefig_trendcomparison == True or print_sheath == True:
 
 	#===============================#
 
-	print (SourceWidth[0]*dr[l])
-
 	#Generate figure and plot trends.	
 	fig,ax = figure(image_aspectratio,1)
 	TrendPlotter(SxLocExtent,Xaxis,NormFactor=0)
@@ -4176,13 +4237,6 @@ if any([savefig_trendcomparison, print_generaltrends, print_Knudsennumber, print
 
 #=====================================================================#
 #=====================================================================#
-
-
-
-
-
-
-
 
 
 
@@ -4565,99 +4619,111 @@ if savefig_phaseresolve2D == True:
 
 
 #====================================================================#
-					#SIMULATED PROES DIAGNOSTIC#
+				#PHASE TRENDS & SHEATH DYNAMICS#
 #====================================================================#
 
 #Process phase resolved data from multiple folders to extract trends.
 if savefig_phasetrends == True:
+	SxVelTrend,SxExtTrend = list(),list()
+	VariedValuelist = list()
 
-	#Read in and process data one folder at a time to save on RAM.
+	#Read data from each simulation folder individually, saves on RAM.
 	for l in range(0,numfolders):
 
-		#Load data from movie_icp file and unpack into 1D array.
-		rawdata,filelength = ExtractRawData(Dir,'movie1.pdt',l)
+		#Create global folders to keep output plots.
+		TrendVariable = filter(lambda x: x.isalpha(), FolderNameTrimmer(Dirlist[0]))
+		DirPhaseResolved = CreateNewFolder(Dirlist[l],'2DPhase/')
+		DirTrends = CreateNewFolder(os.getcwd()+'/',TrendVariable+' Trends')
+		DirSheath = CreateNewFolder(DirTrends,'Sheath Trends')
 
-		#Read through all variables for each file and stop when list ends. 
-		#Movie1 has geometry at top, therefore len(header) != len(variables).
-		#Only the first encountered geometry is used to define variable zone.
-		VariableEndMarker,HeaderEndMarker, = 'GEOMETRY','ZONE'
-		variablelist,numvar = list(),0
-		for i in range(2,filelength):
-			if HeaderEndMarker in str(rawdata[i]):
-				header = i+2	#plus 2 to skip to first data line.
-				break
-			if VariableEndMarker in str(rawdata[i]) and numvar==0:
-				numvar = (i-1-2)	#minus 1 for overshoot, minus 2 for starting at 2.
-				break
-			if len(rawdata[i]) > 1 and numvar == 0: 
-				variablelist.append(str(rawdata[i][:-2].strip(' \t\n\r\"')))
-			#endif
-		#endfor
+		#Extract Data[Phase][Variable][R,Z] and update trend axis.
+		Data,Phaselist,proclist,varlist = ExtractPhaseData(folder=l,Variables=PhaseVariables+['E','AR+'])
+		VariedValuelist.append( FolderNameTrimmer(Dirlist[l]) )
 
-		#Rough method of obtaining the movie1.pdt cycle locations for data extraction.
-		cycleloc = list()
-		for i in range(0,len(rawdata)):
-			if "CYCL=" in rawdata[i]:
-				cycleloc.append(i+1)
-			#endif
-		#endfor
+		#Select axial or radial electrode location and create axis.
+		Orientation = 'Axial'		#### SET TO AXIAL BY DEFAULT ###
+		if Orientation == 'Radial': loc = electrodeloc[0]
+		elif Orientation == 'Axial': loc = electrodeloc[1]
+		Phaseaxis = GenerateAxis('Phase',Isym=Isymlist[l])
 
-		#Cycle through all phases for current datafile, appending per cycle.
-		#Variables R and Z only saved for first iteration, they are skipped if i == 0.
-		CurrentFolderData,CurrentFolderPhaselist = list(),list()
-		for i in range(0,len(cycleloc)):
-			if i == 0:
-				CurrentPhaseData = SDFileFormatConvertorHPEM(rawdata,cycleloc[i],numvar+2,offset=2)
-				CurrentFolderData.append(CurrentPhaseData[0:numvar])
-			else:
-				CurrentPhaseData = SDFileFormatConvertorHPEM(rawdata,cycleloc[i],numvar)
-				CurrentFolderData.append(CurrentPhaseData)
-			#endif
-			CurrentFolderPhaselist.append('CYCL = '+str(i+1))
-		#endfor
+		#=============#
 
-		if True == True:
-			#PhaseMovieData[Phase][Variable][Data]
-			print len(CurrentFolderData), len(cycleloc)
-			print len(CurrentFolderData[0]), len(variablelist)
-			print len(CurrentFolderData[0][0]), R_mesh[l]*Z_mesh[l]
+		SxLoc = list()
+		#For all phases, process data and record for plotting.
+		for k in range(0,len(Phaselist)):
+			#Extract Ni and Ne variables for sheath processing.
+			Ne = Data[k][proclist[varlist.index('E')]]
+			Ni = Data[k][proclist[varlist.index('AR+')]]
 
-			#Create empty 2D image of required size.
-			for Phase in range(0,3):
-				Data = CurrentFolderData[Phase][0]
-				numrows = len(Data)/R_mesh[l]
-				Image = np.zeros([numrows,R_mesh[l]])
-
-				#Reshape data into 2D array for further processing.
-				for j in range(0,numrows):
-					for i in range(0,R_mesh[l]):
-						Start = R_mesh[l]*j
-						Row = Z_mesh[l]-1-j
-						Image[Row,i] = Data[Start+i]
-					#endfor
-				#endfor
-
-				plt.imshow(Image)
-				plt.show()
-				plt.close('all')
+			#Extract sheath width and record sheath width at electrodeloc
+			Sx = SheathThickness(folder=l,Phase=Phaselist[k],Ne=Ne,Ni=Ni)
+			for j in range(0,len(Sx)): 
+				try: Sx[j] = ((SourceWidth[0]*dr[l])-Sx[j])*10	#Convert to mm
+				except: Sx[j] = 0.0								#'NaN' = 0.0
 			#endfor
+			SxLoc.append(Sx[loc])
+		#endfor
+		SxExtTrend.append(max(SxLoc))
+
+		#Calculate phase-averaged sheath velocity.
+		Collapsed,CollapsedPhase = min(SxLoc),SxLoc.index(min(SxLoc))
+		Extended,ExtendedPhase = max(SxLoc),SxLoc.index(max(SxLoc))
+
+		SheathExtension = (Extended-Collapsed)/1000.0  					#[m]
+		PhaseResolution = 1.0/(FREQM[l]*len(Phaseaxis))					#[s]
+		SheathTime = (ExtendedPhase-CollapsedPhase)*PhaseResolution		#[s]
+		SheathVelocity = SheathExtension/SheathTime						#[m/s]
+		SxVelTrend.append(SheathVelocity/1000.0)						#[km/s]
+
+		#Print results to terminal if requested.
+		if print_sheath == True:
+			print Dirlist[l][2:-1]
+			print 'Sheath Extension:',round(SheathExtension*1E3,2),'[mm]'
+			print 'Sheath Collapse Time:',round(SheathTime*1E9,2),'[ns]'
+			print 'Average Sheath Velocity:',round(SheathVelocity/1E3,2),'[km/s]'
+			print ''
 		#endif
 
+		#=============#
 
-		#############################
-		#PROCESS DATA AFTER READING!#
-		#############################
+		#Plot phase-resolved sheath extension for current folder
+		fig,ax = figure(image_aspectratio,2)
+		ax[0].plot(Phaseaxis,SxLoc, lw=2)
+		Ylabel = 'Sheath Extension [mm]'
+		ImageOptions(ax[0],Ylabel=Ylabel,Crop=False)
 
+		#Plot Waveform onto Temporally collapsed PROES.
+#		ax[1].plot(Phaseaxis, ElectrodeWaveform, lw=2)
+#		ax[1].plot(Phaseaxis, ElectrodeBias, 'k--', lw=2)
+		Xlabel,Ylabel = 'Phase [$\omega$t/2$\pi$]','Electrode Potential [V]'
+		ImageOptions(ax[1],Xlabel,Ylabel,Crop=False)
+
+		plt.savefig(DirPhaseResolved+VariedValuelist[l]+' SheathDynamics'+ext)
+		plt.close('all')
 	#endfor
 
 
+	#Plot maximum sheath extension trend for all folders
+	fig,ax = figure(image_aspectratio)
+	TrendPlotter(SxExtTrend,VariedValuelist,NormFactor=0)
+	Title='Maximum Sheath Extension W.R.T '+TrendVariable+' \n'+Dirlist[l][2:-1]
+	Xlabel,Ylabel = 'Varied Property','Max Sheath Extension [mm]'
+	ImageOptions(ax,Xlabel,Ylabel,Title,Crop=False)
 
-	#Read data in one folder at a time.
-	#Perform diagnostic and save output.
-	#Remove old data and read in next folder.
-	#Repeat.
+	plt.savefig(DirSheath+'SheathExtension Trends'+ext)
+	plt.close('all')
 
-	print 'Phasetrends not currently in use'
+	#Plot sheath velocity trend for all folders
+	fig,ax = figure(image_aspectratio)
+	TrendPlotter(SxVelTrend,VariedValuelist,NormFactor=0)
+	Title='Phase-Averaged Sheath Velocity W.R.T '+TrendVariable+' \n'+Dirlist[l][2:-1]
+	Xlabel,Ylabel = 'Varied Property','Sheath Velocity [km/s]'
+	ImageOptions(ax,Xlabel,Ylabel,Title,Crop=False)
+
+	plt.savefig(DirSheath+'SheathVelocity Trends'+ext)
+	plt.close('all')
+
+
 
 	print'----------------------------------------'
 	print'# Phase-Resolved Trend Analysis Complete'
@@ -4890,8 +4956,8 @@ if savefig_PROES == True:
 
 				#Plot Temporally Collapsed PROES with required axis.
 				fig,ax = figure(image_aspectratio,2)
-				try: ax[0].plot(Raxis,SpatialPROES, lw=2)
-				except: ax[0].plot(Zaxis,SpatialPROES, lw=2)
+				try: ax[0].plot(Raxis,SpatialPROES, lw=2)		### HACKY ###
+				except: ax[0].plot(Zaxis,SpatialPROES, lw=2)	### HACKY ###
 				Xlabel = 'Phase [$\omega$t/2$\pi$]'
 				Ylabel = 'Temporally Integrated '+Variablelist[i]
 				ImageOptions(ax[0],Xlabel,Ylabel,Crop=False)
