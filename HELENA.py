@@ -78,7 +78,7 @@ Manualbiasaxis = ''				#'Axial' or 'Radial'. (empty '' for auto)
 
 #Calculation Methods
 GlobSheathMethod = 'AbsDensity'		#Set Global Sheath Calculation Method. ('Abs','Int')
-GlobThrustMethod = 'DiffPres'		#Set Global Thrust Calculation Method. ('Mom','Pres')
+GlobThrustMethod = 'AxialMomentum'	#Set Global Thrust Calculation Method. ('Therm','Mom')
 
 
 #List of recognised neutral/metastable atomic density sets, add new sets as required.
@@ -91,7 +91,7 @@ AtomicSet = ['E']+ArgonReduced+ArgonFull+Oxygen
 NeutSpecies = ['AR','AR3S','O2']
 
 #Commonly used variable sets.
-Ar = ['AR3S','AR4SM','AR4SR','AR4SPM','AR4SPR','AR4P','AR4D','AR','AR+','AR2+','AR2*','E','TE','P-POT','TG-AVE','RHO','PRESSURE','EF-TOT','BT','POW-RF','POW-RF-E','S-AR+','S-AR4P','SEB-AR+','SEB-AR4P','EB-ESORC','VR-NEUTRAL','VZ-NEUTRAL','VR-ION+','VZ-ION+','EFLUX-R','EFLUX-Z','FR-AR+','FZ-AR+']
+Ar = ['AR3S','AR4SM','AR4SR','AR4SPM','AR4SPR','AR4P','AR4D','AR','AR+','AR2+','AR2*','E','TE','P-POT','TG-AVE','RHO','PRESSURE','EF-TOT','BT','POW-RF','POW-RF-E','S-AR+','S-AR4P','SEB-AR+','SEB-AR4P','EB-ESORC','VR-NEUTRAL','VZ-NEUTRAL','VR-ION+','VZ-ION+','EFLUX-R','EFLUX-Z','FR-AR+','FZ-AR+','FZ-AR3S','FR-AR3S']
 O2 = ['O2','O2+','O','O+','O-','E','TE','P-POT','TG-AVE','PRESSURE','EF-TOT','BT','POW-RF','POW-RF-E','VR-NEUTRAL','VZ-NEUTRAL','VR-ION+','VZ-ION+','EFLUX-R','EFLUX-Z','FR-O-','FZ-O-']
 ArO2 = Ar+O2
 
@@ -116,7 +116,7 @@ PR_PCMC = ['AR^0.35','EB-0.35','ION-TOT0.35']
 #waveformlocs 	#YPR [[16,29],[16,44],[16,64]]
 #DOFWidth		#YPR R;41,Z;16   					#MSHC R;10,Z;5
 #TrendLoc		#YPR H[0];R[29,44,64] 				#MSHC H[0,20];R[20]
-#ThrustLoc		#YPR=80, stdESCT=76, smlESCT=48/54
+#ThrustLoc		#YPR=74, stdESCT=76, smlESCT=48/54
 #SheathROI		#YPR=[34,72]
 #SourceWidth	#YPR=R[0.21]						#MSHC R[]
 
@@ -141,7 +141,7 @@ waveformlocs = [[16,29],[16,44],[16,64]]	#Cell locations of additional waveforms
 #Various Diagnostic Inputs
 phasecycles = 1							#Number of waveform phase cycles to be plotted. [number]
 DoFWidth = 0							#PROES Depth of Field (symmetric on image plane) [cells]
-ThrustLoc = 80							#Z-axis cell for thrust calculation  [cells]
+ThrustLoc = 74							#Z-axis cell for thrust calculation  [cells]
 SheathROI = [34,72]						#Sheath Region of Interest, (Start,End) [cells]
 SourceWidth = [16]						#Source Dimension at ROI, leave empty for auto. [cells]
 
@@ -155,17 +155,17 @@ TrendLocation = [] 						#Cell location For Trend Analysis [R,Z], ([] = min/max)
 
 #Requested diagnostics and plotting routines.
 savefig_convergence = False				#Requires movie_icp.pdt
-savefig_plot2D = True					#Requires TECPLOT2D.PDT
+savefig_plot2D = False					#Requires TECPLOT2D.PDT
 
 savefig_monoprofiles = False			#Single-Variables; fixed height/radius
 savefig_multiprofiles = False			#Multi-Variables; same folder
 savefig_comparelineouts = False			#Multi-Variables; all folders
-savefig_trendcomparison = False			#Single-Variables; fixed cell location (or max/min)
+savefig_trendphaseaveraged = False		#Single-Variables; fixed cell location (or max/min)
+savefig_trendphaseresolved = True		#Single-Variables; Phase-resolved data.
 savefig_pulseprofiles = False			#Single-Variables; plotted against real-time axis
 
 savefig_phaseresolve1D = False			#1D Phase Resolved Images
 savefig_phaseresolve2D = False			#2D Phase Resolved Images
-savefig_phasetrends = False				#Phase-resolved trends. 	#IN DEVELOPMENT#
 savefig_PROES = False					#Simulated PROES Diagnostic
 
 savefig_IEDFangular = False				#2D images of angular IEDF; single folders.
@@ -196,7 +196,7 @@ image_plotsymmetry = True				#Toggle radial symmetry
 image_numericaxis = False				#### NOT IMPLIMENTED ####
 image_contourplot = True				#Toggle contour Lines in images
 image_plotgrid = False					#Plot major/minor gridlines on profiles
-image_plotmesh = False					#### NOT IMPLIMENTED ####
+image_plotmesh = 'PR'					#True=Auto #NOT IMPLIMENTED#, 'PR'
 image_rotate = True						#Rotate image 90 degrees to the right.
 
 image_normalize = False					#Normalize image/profiles to local max
@@ -232,18 +232,16 @@ cbaroverride = ['NotImplimented']
 #####TODO#####
 
 #For V 0.11.n:
-#FIX CBARMINMAX FUNCTION!!! PROES CURRENTLY HAS NO IMAGE CROPPING FOR MIN/MAX
+#FIX CBARMINMAX FUNCTION!!! PROES NEEDS CROPPING AND RADIAL MINMAX IS WRONG.
 #ADD if DOFWIDTH < LINEOUT LOCATION SKIP AND WARNING IN PROES
 #Functionalize thrust calculation with options for neutral/ion/pressure diff.
-#Bring Trendplotter function up to code with ax.plot etc... (1DTrendPlotter)
 #Impliment image_numericaxis, try float(FolderNameTrimmer) as axis.
 #Impliment numerical image_rotate, allow for 000,090,180,270.
 #Introduce Dirlist creating function, using os.module (remove findtools)
 
 #For V 1.0.0:
 #SheathWidth function needs to be able to work axially and radially
-#SheathWidth function requires automatic ROI calculation (add ROI to switchboard too)
-#Sheath Phase-Resolved trends diagnostic: Sheath velocity with phase, phase of peak velocity etc...
+#SheathWidth function requires automatic ROI calculation 
 #Functionalise PROES images 
 #Complete IEDF/NEDF section and Functionalise
 #Add EEDF section and Functionalise.
@@ -296,6 +294,7 @@ dz = list()
 VRFM,VRFM2 = list(),list()
 FREQM,FREQM2 = list(),list()
 FREQICP,IRFPOW = list(),list()
+MAXFREQ,MINFREQ = list(),list()
 IETRODEM = list()
 
 #Create lists to store data
@@ -341,7 +340,7 @@ print '   |  |__|  | |  |__   |  |     |  |__   |   \|  |   /  ^  \        '
 print '   |   __   | |   __|  |  |     |   __|  |  . `  |  /  /_\  \       '
 print '   |  |  |  | |  |____ |  `----.|  |____ |  |\   | /  _____  \      '
 print '   |__|  |__| |_______||_______||_______||__| \__|/__/     \__\     '
-print '                                                            v0.12.0 '
+print '                                                            v0.12.2 '
 print '--------------------------------------------------------------------'
 print ''
 print 'The following diagnostics were requested:'
@@ -358,9 +357,9 @@ if True in [savefig_monoprofiles,savefig_multiprofiles,savefig_comparelineouts,s
 	print'# 1D Steady-State Profile Processing'
 if True in [print_generaltrends,print_Knudsennumber,print_totalpower,print_DCbias,print_thrust]:
 	print'# 1D Specific Trend Analysis'
-if savefig_trendcomparison == True:
+if savefig_trendphaseaveraged == True:
 	print'# 1D Steady-State Trend Processing'
-if savefig_phasetrends == True:
+if savefig_trendphaseresolved == True:
 	print'# 1D Phase-Resolved Trend Processing'
 if True in [savefig_IEDFangular,savefig_IEDFtrends,savefig_EEDF]:
 	print'# Angular Energy Distribution Processing'
@@ -513,14 +512,14 @@ for l in range(0,numfolders):
 		print 'ICP.NAM READIN ERROR, IGNORING MESH MATERIAL TYPES'
 	#endtry
 
-	#Input frequencies/voltages/powers
+	#Input frequencies/voltages/powers   [FREQICP ONLY READS 10 CHARACTERS]
 	try:
 		VRFM.append(filter(lambda x: 'VRFM=' in x, SImeshdata)[0].split()[1:NUMMETALS])
 		VRFM2.append(filter(lambda x: 'VRFM_2=' in x, SImeshdata)[0].split()[1:NUMMETALS])
 		FREQM.append(filter(lambda x: 'FREQM=' in x, SImeshdata)[0].split()[1:NUMMETALS])
 		FREQM2.append(filter(lambda x: 'FREQM_2=' in x, SImeshdata)[0].split()[1:NUMMETALS])
-		FREQICP.append(filter(lambda x:'FREQ=' in x, SImeshdata)[0].strip(' \t\n\r,=FREQ'))
-		IRFPOW.append(filter(lambda x:'IRFPOW=' in x, SImeshdata)[0].strip(' \t\n\r,=IRFPOW'))
+		FREQICP.append(float(filter(lambda x:'FREQ=' in x, SImeshdata)[0].strip(' \t\n\r,=FREQ')[0:10]))
+		IRFPOW.append(float(filter(lambda x:'IRFPOW=' in x, SImeshdata)[0].strip(' \t\n\r,=IRFPOW')))
 		IETRODEM.append(filter(lambda x:'IETRODEM=' in x, SImeshdata)[0].split()[1:NUMMETALS])
 		for i in range(0,len(IETRODEM[l])): IETRODEM[l][i] = int(IETRODEM[l][i].strip(','))
 	except:
@@ -529,7 +528,7 @@ for l in range(0,numfolders):
 		FREQM2.append(13.56E6)
 		FREQICP.append(13.56E6)
 		VRFM.append(240.0)
-		VRFM2.appedn(240.0)
+		VRFM2.append(240.0)
 		IRFPOW.append(100.0)
 	#endtry
 
@@ -576,13 +575,12 @@ for l in range(0,numfolders):
 		FREQM[l] = float( FREQM[l][IETRODEM[l].index(1)].strip(',') )
 		FREQM2[l] = float( FREQM2[l][IETRODEM[l].index(1)].strip(',') )
 
-		MinFreq = min(FREQM+FREQM2+FREQICP)
-		MaxFreq = max(FREQM+FREQM2+FREQICP)
+		MINFREQ.append( min([FREQM[l],FREQM2[l],FREQICP[l]]) )
+		MAXFREQ.append( max([FREQM[l],FREQM2[l],FREQICP[l]]) )
 	except:
 		Material_Property_Conversion_Error=1
 	#endtry
 #endfor
-
 
 
 
@@ -838,6 +836,117 @@ def ReadDataFromFile(Filename,Dimension='1D'):
 #enddef
 
 
+#Creates a new folder if one does not already exist.
+#Takes destination dir and namestring, returns new directory.
+def CreateNewFolder(Dir,DirString):
+	try:
+		NewFolderDir = Dir+DirString+'/'
+		os.mkdir(NewFolderDir, 0755);
+	except:
+		a = 1
+	#endtry
+	return(NewFolderDir)
+#enddef
+
+
+#Takes folder names and returns item after requested underscore index.
+#Note, index > 1 will return between two underscores, not the entire string.
+def FolderNameTrimmer(DirString,Index=1):
+	try:
+		for i in range(0,Index):
+			underscoreloc = str(DirString[::-1]).index('_')
+			cutoff = (len(DirString)-underscoreloc)
+			NameString = DirString[cutoff:-1]
+			DirString = DirString[:cutoff-1]
+		#endfor
+	except:
+		NameString = str(DirString[2:-1])
+	#endtry
+
+	return(NameString)
+#enddef
+
+
+#Takes folder directory and creates a movie from .png images contained within.
+def Automovie(FolderDir,Output):
+
+	#Break if movies not requested
+	if DisableMovie == True: return()
+
+	#Correct file extention on name.
+	HomeDir = os.getcwd()
+	Output = Output+'.mp4'
+	Morph, FPS = 1, 24
+
+	#Use ffmpeg to create the movies and save in relevent files.
+	os.chdir(FolderDir)
+	os.system("convert *.png -delay 1 -morph "+str(Morph)+" %05d.morph.jpg > /dev/null")
+	os.system("ffmpeg -nostats -loglevel 0 -r "+str(FPS)+" -i %05d.morph.jpg "+Output)
+	os.system("rm *.jpg")
+	os.chdir(HomeDir)
+	return()
+#enddef
+
+
+#Runs requested dataconversion script with pre-defined arguments.
+#Takes name of convert script, any predefined arguments and newly created files.
+#Returns nothing, runs script in each folder, expects to run over all folders.
+def AutoConvProfData(Convertexe,args=[],DirAdditions=[]):
+	HomeDir = os.getcwd()
+	os.chdir(Dirlist[l])
+
+	#Remove old files to avoid any overwrite errors.
+	for i in range(0,len(DirAdditions)): os.system('rm -f '+DirAdditions[i])
+
+	#Use predefined arguments if supplied, suppresses output to devnull.
+	if len(args) > 0:
+		with open(os.devnull, 'w') as fp:
+			subprocess = Popen(Convertexe, stdin=PIPE, stdout=fp) #noshell=True
+			subprocess.communicate(os.linesep.join(args))
+		#endwith
+
+	#If no arguments supplied, run script and allow user inputs.
+	elif len(args) == 0:
+		os.system(Convertexe)
+	#endif
+
+	#Update Dir with new filenames, must be supplied manually for now.
+	for i in range(0,len(DirAdditions)): Dir.append(Dirlist[l]+DirAdditions[i])
+
+	os.chdir(HomeDir)
+	return()
+#enddef
+
+
+#Takes variablenames and checks if variable is radial.
+#Returns boolian if variable is radial, used for symmetry options.
+#ReverseRadial = IsRadialVariable(Variablelist[l]) 
+def IsRadialVariable(variable):
+
+	Radial = False
+	if IsStringInVariable(variable,['VR-','JR-','FR-','FLUX-R']) == True:
+		Radial = True
+	#endif
+
+	return(Radial)
+#enddef
+
+
+#Takes array of strings and compares to variable string.
+#Returns true if any element of stringarray is in variable.
+def IsStringInVariable(variable,stringarray):
+
+	boolian = False
+	#Check if each element of string is inside variable.
+	for i in range(0,len(stringarray)):
+		if stringarray[i] in variable:
+			boolian = True
+		#endif
+	#endfor
+	return(boolian)
+#enddef
+
+
 #Makeshift way of creating units for each legend entry.
 def VariableLabelMaker(variablelist):
 
@@ -1079,118 +1188,40 @@ def VariableUnitConversion(profile,variable):
 #enddef
 
 
-#Takes variablenames and checks if variable is radial.
-#Returns boolian if variable is radial, used for symmetry options.
-#ReverseRadial = IsRadialVariable(Variablelist[l]) 
-def IsRadialVariable(variable):
+def ManualPRMesh(Ax=plt.gca()):
+	#Plot pocket rocket material dimensions.
+	Ax.plot((1.32,1.32),   (-1.0,-0.21), 'w-', linewidth=2)
+	Ax.plot((3.7,3.7),     (-1.0,-0.21), 'w-', linewidth=2)
+	Ax.plot((1.32,1.32),   ( 1.0, 0.21), 'w-', linewidth=2)
+	Ax.plot((3.7,3.7),     ( 1.0, 0.21), 'w-', linewidth=2)
+	Ax.plot((1.32,3.7),    ( 0.21, 0.21), 'w-', linewidth=2)
+	Ax.plot((1.32,3.7),    (-0.21,-0.21), 'w-', linewidth=2)
 
-	Radial = False
-	if IsStringInVariable(variable,['VR-','JR-','FR-','FLUX-R']) == True:
-		Radial = True
-	#endif
+	#Alumina Dielectric
+	Ax.plot((34.2*dz[l],73.8*dz[l]),  ( 0.21,  0.21), 'c-', linewidth=2)
+	Ax.plot((34.2*dz[l],73.8*dz[l]),  (-0.21, -0.21), 'c-', linewidth=2)
+	Ax.plot((34.2*dz[l],73.8*dz[l]),  ( 0.31,  0.31), 'c-', linewidth=2)
+	Ax.plot((34.2*dz[l],73.8*dz[l]),  (-0.31, -0.31), 'c-', linewidth=2)
 
-	return(Radial)
-#enddef
+	#Powered Electrode
+	Ax.plot((40*dz[l],50*dz[l]),  ( 0.31, 0.31), 'r-', linewidth=2)
+	Ax.plot((40*dz[l],50*dz[l]),  (-0.31,-0.31), 'r-', linewidth=2)
+	Ax.plot((40*dz[l],40*dz[l]),  ( 0.31, 0.60), 'r-', linewidth=2)
+	Ax.plot((40*dz[l],40*dz[l]),  (-0.31,-0.60), 'r-', linewidth=2)
+	Ax.plot((50*dz[l],50*dz[l]),  ( 0.31, 0.60), 'r-', linewidth=2)
+	Ax.plot((50*dz[l],50*dz[l]),  (-0.31,-0.60), 'r-', linewidth=2)
 
-
-#Takes array of strings and compares to variable string.
-#Returns true if any element of stringarray is in variable.
-def IsStringInVariable(variable,stringarray):
-
-	boolian = False
-	#Check if each element of string is inside variable.
-	for i in range(0,len(stringarray)):
-		if stringarray[i] in variable:
-			boolian = True
-		#endif
-	#endfor
-	return(boolian)
-#enddef
-
-
-#Creates a new folder if one does not already exist.
-#Takes destination dir and namestring, returns new directory.
-def CreateNewFolder(Dir,DirString):
-	try:
-		NewFolderDir = Dir+DirString+'/'
-		os.mkdir(NewFolderDir, 0755);
-	except:
-		a = 1
-	#endtry
-	return(NewFolderDir)
-#enddef
-
-
-#Takes folder names and returns item after requested underscore index.
-#Note, index > 1 will return between two underscores, not the entire string.
-def FolderNameTrimmer(DirString,Index=1):
-	try:
-		for i in range(0,Index):
-			underscoreloc = str(DirString[::-1]).index('_')
-			cutoff = (len(DirString)-underscoreloc)
-			NameString = DirString[cutoff:-1]
-			DirString = DirString[:cutoff-1]
-		#endfor
-	except:
-		NameString = str(DirString[2:-1])
-	#endtry
-
-	return(NameString)
-#enddef
-
-
-#Takes folder directory and creates a movie from .png images contained within.
-def Automovie(FolderDir,Output):
-
-	#Break if movies not requested
-	if DisableMovie == True: return()
-
-	#Correct file extention on name.
-	HomeDir = os.getcwd()
-	Output = Output+'.mp4'
-	Morph, FPS = 1, 24
-
-	#Use ffmpeg to create the movies and save in relevent files.
-	os.chdir(FolderDir)
-	os.system("convert *.png -delay 1 -morph "+str(Morph)+" %05d.morph.jpg > /dev/null")
-	os.system("ffmpeg -nostats -loglevel 0 -r "+str(FPS)+" -i %05d.morph.jpg "+Output)
-	os.system("rm *.jpg")
-	os.chdir(HomeDir)
-	return()
-#enddef
-
-
-#Runs requested dataconversion script with pre-defined arguments.
-#Takes name of convert script, any predefined arguments and newly created files.
-#Returns nothing, runs script in each folder, expects to run over all folders.
-def AutoConvProfData(Convertexe,args=[],DirAdditions=[]):
-	HomeDir = os.getcwd()
-	os.chdir(Dirlist[l])
-
-	#Remove old files to avoid any overwrite errors.
-	for i in range(0,len(DirAdditions)): os.system('rm -f '+DirAdditions[i])
-
-	#Use predefined arguments if supplied, suppresses output to devnull.
-	if len(args) > 0:
-		with open(os.devnull, 'w') as fp:
-			subprocess = Popen(Convertexe, stdin=PIPE, stdout=fp) #noshell=True
-			subprocess.communicate(os.linesep.join(args))
-		#endwith
-
-	#If no arguments supplied, run script and allow user inputs.
-	elif len(args) == 0:
-		os.system(Convertexe)
-	#endif
-
-	#Update Dir with new filenames, must be supplied manually for now.
-	for i in range(0,len(DirAdditions)): Dir.append(Dirlist[l]+DirAdditions[i])
-
-	os.chdir(HomeDir)
-	return()
+	#Grounded electrodes
+	Ax.plot((34*dz[l],34*dz[l]),  (-1.0,-0.21), 'w-', linewidth=2)
+	Ax.plot((34*dz[l],34*dz[l]),  ( 1.0, 0.21), 'w-', linewidth=2)
+	Ax.plot((74*dz[l],74*dz[l]),  (-1.0,-0.21), 'w-', linewidth=2)
+	Ax.plot((74*dz[l],74*dz[l]),  ( 1.0, 0.21), 'w-', linewidth=2)
 #enddef
 
 #===================##===================#
 #===================##===================#
+
+
 
 
 
@@ -1486,7 +1517,7 @@ del Energy,Fe,rawdata_mcs
 
 
 #Alert user that readin process has ended and continue with selected diagnostics.
-if any([savefig_plot2D, savefig_phaseresolve2D, savefig_convergence, savefig_monoprofiles, savefig_multiprofiles, savefig_comparelineouts, savefig_pulseprofiles, savefig_phasetrends, savefig_phaseresolve1D, savefig_PROES, savefig_trendcomparison, print_generaltrends, print_Knudsennumber, print_totalpower, print_DCbias, print_thrust, savefig_IEDFangular, savefig_IEDFtrends, savefig_EEDF]) == True:
+if any([savefig_plot2D, savefig_phaseresolve2D, savefig_convergence, savefig_monoprofiles, savefig_multiprofiles, savefig_comparelineouts, savefig_pulseprofiles, savefig_trendphaseresolved, savefig_phaseresolve1D, savefig_PROES, savefig_trendphaseaveraged, print_generaltrends, print_Knudsennumber, print_totalpower, print_DCbias, print_thrust, savefig_IEDFangular, savefig_IEDFtrends, savefig_EEDF]) == True:
 	print '----------------------------------------'
 	print 'Data Readin Complete, Starting Analysis:'
 	print '----------------------------------------'
@@ -1740,7 +1771,7 @@ def CbarMinMax(Image,PROES=False):
 
 	#Flatten image and obtain min/max in region, use full image if no cropping.
 	flatimage = [item for sublist in Image for item in sublist]
-	cropmax,cropmin = max(flatimage),min(flatimage)
+	cropmin,cropmax = min(flatimage),max(flatimage)
 
 	#Return cropped values as list [min,max], as required by colourbar.
 	return([cropmin,cropmax])
@@ -1791,6 +1822,14 @@ def ImageOptions(ax=plt.gca(),Xlabel='',Ylabel='',Title='',Legend=[],Crop=True):
 	if image_plotgrid == True: ax.grid(True)
 	#endif
 
+	#Plot mesh outline if requested.	### HACKY ###
+	if image_plotmesh == True:
+		mesh_auto_plot = 1 #AUTO PLOT MESH#
+		#NOT IMPLIMENTED!! REQUIRES initmesh.out READER#
+	elif image_plotmesh == 'PR' and Crop == True:	
+		ManualPRMesh(ax)
+	#endif
+
 	#Crop image dimensions, use provided dimensions or default if not provided.
 	if isinstance(Crop, (list, np.ndarray) ) == True:
 		CropImage(ax,Crop)
@@ -1815,7 +1854,7 @@ def ImageOptions(ax=plt.gca(),Xlabel='',Ylabel='',Title='',Legend=[],Crop=True):
 #Allows pre-defined colourbar limits in form [min,max].
 #Returns cbar axis if further changes are required.
 #cbar = Colourbar(ax[0],'Label',5,Lim=[0,1])
-def Colourbar(ax,Label,Ticks,Lim=[]):
+def Colourbar(ax=plt.gca(),Label='',Ticks=5,Lim=[]):
 
 	#Colourbar plotting details
 	divider = make_axes_locatable(ax)
@@ -1847,7 +1886,7 @@ def Colourbar(ax,Label,Ticks,Lim=[]):
 #Creates an invisible colourbar to align subplots without colourbars.
 #Takes image axis, returns colourbar axis if further edits are required
 #cax = InvisibleColourbar(ax[0])
-def InvisibleColourbar(ax):
+def InvisibleColourbar(ax=plt.gca()):
 
 	#Create colourbar axis, ideally should 'find' values of existing cbar! 
 	divider = make_axes_locatable(ax)
@@ -2080,8 +2119,8 @@ def ImagePlotter2D(Image,extent,aspectratio=image_aspectratio,variable='N/A',fig
 #Creates a 1D image from an array of supplied points.
 #Image plotted onto existing axes, figure() should be used.
 #NormFactor = 0 will normalize to maximum of given profile.
-#TrendPlotter(TrendProfiles,Xaxis,0)
-def TrendPlotter(TrendArray,Xaxis,NormFactor=0):
+#TrendPlotter(ax[0],TrendProfiles,Xaxis,0)
+def TrendPlotter(ax=plt.gca(),TrendArray=[],Xaxis=[],NormFactor=0):
 
 	#Normalize data to provided normalization factor if required.
 	if image_normalize == True:
@@ -2095,14 +2134,16 @@ def TrendPlotter(TrendArray,Xaxis,NormFactor=0):
 		for l in range(0,numfolders):
 			numcells.append(Z_mesh[l]*R_mesh[l])
 		#endfor
-		plt.plot(numcells[::-1],TrendArray[::-1], 'o-', lw=2)
+		ax.plot(numcells[::-1],TrendArray[::-1], 'o-', lw=2)
 	else:
 		#Plot results against strings pulled from folder names for batch studies.
-		plt.plot(range(0,numfolders),TrendArray, 'o-', lw=2)
+		ax.plot(range(0,numfolders),TrendArray, 'o-', lw=2)
 		if len(xaxisoverride) > 0:
-			plt.xticks(np.arange(0,numfolders), xaxisoverride)
+			ax.set_xticks(np.arange(0,numfolders))
+			ax.set_xticklabels(xaxisoverride)
 		else:
-			plt.xticks(np.arange(0,numfolders), Xaxis)
+			ax.set_xticks(np.arange(0,numfolders))
+			ax.set_xticklabels(Xaxis)
 		#endif
 	#endif
 
@@ -3515,9 +3556,9 @@ if savefig_IEDFtrends == True:
 
 		#Plot average energy analysis profiles against simulation folder names.
 		fig,ax = figure()
-		TrendPlotter(Mean_eV,Legendlist,0)
-		TrendPlotter(Mode_eV,Legendlist,0)
-#		TrendPlotter(Max_eV,Legendlist,0)
+		TrendPlotter(ax,Mean_eV,Legendlist,0)
+		TrendPlotter(ax,Mode_eV,Legendlist,0)
+#		TrendPlotter(ax,Max_eV,Legendlist,0)
 
 		Title = Dirlist[l][2::]+'\n'+'Average '+variablelist[i]+' Energies'
 		Legend = ['EDF Mean Energy','EDF Mode Energy','EDF Max Energy']
@@ -3584,7 +3625,7 @@ if any([savefig_IEDFangular, savefig_IEDFtrends, savefig_EEDF]) == True:
 				#COMPARATIVE TRENDS -- MULTI-FOLDER#
 #====================================================================#
 
-if savefig_trendcomparison == True or print_generaltrends == True:
+if savefig_trendphaseaveraged == True or print_generaltrends == True:
 
 	#Create Trend folder to keep output plots.
 	TrendVariable = filter(lambda x: x.isalpha(), FolderNameTrimmer(Dirlist[0]))
@@ -3645,7 +3686,7 @@ if savefig_trendcomparison == True or print_generaltrends == True:
 			#endif
 
 			#Plot trends for each variable over all folders, applying image options.
-			TrendPlotter(Trend,Xaxis,NormFactor=0)
+			TrendPlotter(ax,Trend,Xaxis,NormFactor=0)
 			Title='Trend in max '+Variablelist[k]+' with changing '+TrendVariable+' \n'+Dirlist[l][2:-1]
 			Xlabel,Ylabel = 'Varied Property','Max '+YaxisLegend[k]
 			ImageOptions(ax,Xlabel,Ylabel,Title,Legendlist,Crop=False)
@@ -3706,7 +3747,7 @@ if savefig_trendcomparison == True or print_generaltrends == True:
 			#endif
 
 			#Plot trends for each variable over all folders, applying image options.
-			TrendPlotter(Trend,Xaxis,NormFactor=0)
+			TrendPlotter(ax,Trend,Xaxis,NormFactor=0)
 			Title='Trend in max '+Variablelist[k]+' with changing '+TrendVariable+' \n'+Dirlist[l][2:-1]
 			Xlabel,Ylabel = 'Varied Property','Max '+YaxisLegend[k]
 			ImageOptions(ax,Xlabel,Ylabel,Title,Legendlist,Crop=False)
@@ -3737,7 +3778,7 @@ if savefig_trendcomparison == True or print_generaltrends == True:
 
 
 
-if savefig_trendcomparison == True or print_DCbias == True:
+if savefig_trendphaseaveraged == True or print_DCbias == True:
 
 	#Create Trend folder to keep output plots.
 	TrendVariable = filter(lambda x: x.isalpha(), FolderNameTrimmer(Dirlist[0]))
@@ -3806,7 +3847,7 @@ if savefig_trendcomparison == True or print_DCbias == True:
 
 	#Plot and beautify the DCbias, applying normalization if requested.
 	fig,ax = figure(image_aspectratio,1)
-	TrendPlotter(DCbias,Xaxis,NormFactor=0)
+	TrendPlotter(ax,DCbias,Xaxis,NormFactor=0)
 
 	#Apply image options and axis labels.
 	Title = 'Trend in DCbias with changing '+TrendVariable+' \n'+Dirlist[l][2:-1]
@@ -3825,7 +3866,7 @@ if savefig_trendcomparison == True or print_DCbias == True:
 
 
 
-if savefig_trendcomparison == True or print_totalpower == True:
+if savefig_trendphaseaveraged == True or print_totalpower == True:
 
 	#Create Trend folder to keep output plots.
 	TrendVariable = filter(lambda x: x.isalpha(), FolderNameTrimmer(Dirlist[0]))
@@ -3883,7 +3924,7 @@ if savefig_trendcomparison == True or print_totalpower == True:
 		#Plot and beautify each requested power deposition seperately.
 		fig,ax = figure(image_aspectratio,1)
 		Powers.append( DepositedPowerList[k*numfolders:(k+1)*numfolders] )
-		TrendPlotter(Powers[k],Xaxis,NormFactor=0)
+		TrendPlotter(ax,Powers[k],Xaxis,NormFactor=0)
 
 		#Apply image options and axis labels.
 		Title = 'Power Deposition with changing '+TrendVariable+' \n'+Dirlist[l][2:-1]
@@ -3896,7 +3937,7 @@ if savefig_trendcomparison == True or print_totalpower == True:
 
 	#Plot a comparison of all power depositions requested.
 	fig,ax = figure(image_aspectratio,1)
-	for k in range(0,len(RequestedPowers)):TrendPlotter(Powers[k],Xaxis,NormFactor=0)
+	for k in range(0,len(RequestedPowers)):TrendPlotter(ax,Powers[k],Xaxis,NormFactor=0)
 
 	#Apply image options and axis labels.
 	Title = 'Power Deposition with changing '+TrendVariable+' \n'+Dirlist[l][2:-1]
@@ -3921,7 +3962,7 @@ if savefig_trendcomparison == True or print_totalpower == True:
 #====================================================================#
 
 
-if savefig_trendcomparison == True or print_thrust == True:
+if savefig_trendphaseaveraged == True or print_thrust == True:
 
 	#Create Trend folder to keep output plots.
 	TrendVariable = filter(lambda x: x.isalpha(), FolderNameTrimmer(Dirlist[0]))
@@ -3935,7 +3976,7 @@ if savefig_trendcomparison == True or print_thrust == True:
 	for l in range(0,numfolders):
 
 		#Create extract data for the neutral flux and neutral velocity.
-		processlist,Variablelist = VariableEnumerator(['AR3S','VZ-NEUTRAL','VZ-ION+','FZ-AR3S','FZ-AR+','PRESSURE'],rawdata_2D[l],header_2Dlist[l])
+		processlist,Variablelist = VariableEnumerator(['AR3S','VZ-NEUTRAL','VZ-ION+','FZ-AR3S','FZ-AR+','PRESSURE','TG-AVE'],rawdata_2D[l],header_2Dlist[l])
 
 		#Update X-axis with folder information.
 		Xaxis.append( FolderNameTrimmer(Dirlist[l]) )
@@ -3948,8 +3989,9 @@ if savefig_trendcomparison == True or print_thrust == True:
 			IonVelocity = PlotRadialProfile(Data[l],processlist[2],Variablelist[2],ThrustLoc)
 			NeutralAxialFlux = PlotRadialProfile(Data[l],processlist[3],Variablelist[3],ThrustLoc)
 			IonAxialFlux = PlotRadialProfile(Data[l],processlist[4],Variablelist[4],ThrustLoc)
-			PressureDown = PlotRadialProfile(Data[l],processlist[5],Variablelist[5],ThrustLoc-1)
-			PressureUp = PlotRadialProfile(Data[l],processlist[5],Variablelist[5],ThrustLoc)
+			PressureDown = PlotRadialProfile(Data[l],processlist[5],Variablelist[5],ThrustLoc+1)
+			Pressure = PlotRadialProfile(Data[l],processlist[5],Variablelist[5],ThrustLoc)
+			NeutGasTemp = PlotRadialProfile(Data[l],processlist[6],Variablelist[6],ThrustLoc)
 		except:
 			NeutralAxialFlux = np.zeros(R_mesh[l]*2)
 			IonAxialFlux = np.zeros(R_mesh[l]*2)
@@ -3967,53 +4009,101 @@ if savefig_trendcomparison == True or print_thrust == True:
 		NeutralMass = Argon*1.67E-27		 #Kg
 
 
-		#Technique assumes cylindrical geometry, cartesian geometry will be overestimated.
-		#Integrates over concentric ion/neutral momentum loss rate and differental pressure.
-		#Assumes pressure differential, ion/neutral flux equal for all angles at given radii.
-		DiffForce,NeutralThrust,IonThrust = 0,0,0
-		for i in range(0,R_mesh[l]):
-			#Calculate radial plane area of a ring at radius [i], correcting for central r=0.
-			Circumference = 2*np.pi*(i*(dr[l]/100))		#m
-			CellArea = Circumference*(dr[l]/100)		#m^2
-			if CellArea == 0:
-				CellArea = np.pi*(dr[l]/100)**2			#m^2
-			#endif
 
-			#Calculate differential pressure between ThrustLoc-(ThrustLoc-1)
-			DiffPressure = (PressureDown[i]-PressureUp[i])*133.33	#N/m^2
-			DiffForce += DiffPressure*CellArea						#N
+		#Choose which method to solve for thrust: 'ThermalVelocity','AxialMomentum'
+		if GlobThrustMethod == 'ThermalVelocity':
+			#Technique assumes cylindrical geometry, cartesian geometry will be overestimated.
+			#Integrates neutral momentum loss rate based on neutral gas temperature.
+			#Assumes angularly symmetric temperature and Maxwellian velocity distribution.
+			NeutralThrust = 0
+			for i in range(0,R_mesh[l]):
+				#Calculate radial plane area of a ring at radius [i], correcting for central r=0.
+				Circumference = 2*np.pi*(i*(dr[l]/100))		#m
+				CellArea = Circumference*(dr[l]/100)		#m^2
+				if CellArea == 0:
+					CellArea = np.pi*(dr[l]/100)**2			#m^2
+				#endif  
 
-			#Calculate Neutral mass flow rate and integrate thrust via F = (dm/dt)Ve.
-			NeutralMassFlowRate = NeutralAxialFlux[i]*NeutralMass*CellArea	#Kg/s
-			NeutralExitVelocity = NeutralVelocity[i]						#m/s
-			NeutralThrust += NeutralMassFlowRate * NeutralExitVelocity 		#N
-			if NeutralExitVelocity > 0:
-				NeutralIsp.append(NeutralExitVelocity)
-			#endif
+				#Calculate most probable neutral velocity based on temperature
+				MeanVelocity = np.sqrt( (2*1.38E-23*NeutGasTemp[i])/(NeutralMass) )  	#m/s
 
-			#Calculate Ion mass flow rate and integrate thrust via F = (dm/dt)Ve.
-			IonMassFlowRate = IonAxialFlux[i]*NeutralMass*CellArea	#Kg/s
-			IonExitVelocity = IonVelocity[i]*1000					#m/s
-			IonThrust += IonMassFlowRate * IonExitVelocity 			#N
-			if IonExitVelocity > 0: 
-				IonIsp.append(IonExitVelocity)
-			#endif
-		#endfor
-		if len(IonIsp) == 0: IonIsp.append(1E-30)
-		if len(NeutralIsp) == 0: NeutralIsp.append(1E-30)
+				#If current cell is gas phase (Pressure > 0.0), calculate thrust
+				if Pressure[i] > 0.0:
+					#Calculate Neutral mass flow rate and integrate thrust via F = (dm/dt)Ve.
+					NeutralMassFlowRate = NeutralAxialFlux[i]*NeutralMass*CellArea	#Kg/s
+					NeutralExitVelocity = NeutralVelocity[i]						#m/s
+					NeutralThrust += NeutralMassFlowRate * NeutralExitVelocity 		#N
+					if NeutralExitVelocity > 0:
+						NeutralIsp.append(NeutralExitVelocity)
+					#endif
+				#endif
+			#endfor
 
-		#Add total thrust and calculate Isp of each component
-		Thrust = DiffForce + NeutralThrust + IonThrust				#N
-		NeutralFraction = NeutralThrust/(Thrust-DiffForce)			#Ignore dP/dz
-		IonFraction = IonThrust/(Thrust-DiffForce)					#Ignore dP/dz
+			#Add neutral thrust and Isp to arrays (save dummy variables not calculated)
+			Thrustlist.append( round( NeutralThrust*1000,5) )	#mN
+			NeutralIsp = (sum(NeutralIsp)/len(NeutralIsp))/9.81	#s
+			Thrust,ThrustIsp = NeutralThrust,NeutralIsp			#N,s
+			IonThrust,IonIsp = 1E-30,1E-30	#'Not Calculated'
+			DiffForce = 1E-30				#'Not Calculated'
+		#endif
 
-		IonIsp = (sum(IonIsp)/len(IonIsp))/9.81						#s
-		NeutralIsp = (sum(NeutralIsp)/len(NeutralIsp))/9.81			#s
-		ThrustIsp = NeutralFraction*NeutralIsp+IonFraction*IonIsp 	#s
+		#====================#
 
-		NeutralThrustlist.append( round(NeutralThrust*1000,5) )		#mN
-		IonThrustlist.append( round(IonThrust*1000,5) )				#mN
-		Thrustlist.append( round(Thrust*1000,5) )					#mN
+		elif GlobThrustMethod == 'AxialMomentum':
+			#Technique assumes cylindrical geometry, cartesian geometry will be overestimated.
+			#Integrates ion/neutral momentum loss rate and differental pressure for concentric rings.
+			#Assumes pressure differential, ion/neutral flux equal for all angles at given radii.
+			DiffForce,NeutralThrust,IonThrust = 0,0,0
+			for i in range(0,R_mesh[l]):
+				#Calculate radial plane area of a ring at radius [i], correcting for central r=0.
+				Circumference = 2*np.pi*(i*(dr[l]/100))		#m
+				CellArea = Circumference*(dr[l]/100)		#m^2
+				if CellArea == 0:
+					CellArea = np.pi*(dr[l]/100)**2			#m^2
+				#endif
+
+				#Calculate differential pressure between ThrustLoc-(ThrustLoc+1)
+				if Pressure[i] > 0.0:
+					DiffPressure = (Pressure[i]-PressureDown[i])*133.33		#N/m^2
+					DiffForce += DiffPressure*CellArea						#N
+				else:
+					DiffForce += 0.0
+				#endif
+
+				#Calculate Neutral mass flow rate and integrate thrust via F = (dm/dt)Ve.
+				NeutralMassFlowRate = NeutralAxialFlux[i]*NeutralMass*CellArea	#Kg/s
+				NeutralExitVelocity = NeutralVelocity[i]						#m/s
+				NeutralThrust += NeutralMassFlowRate * NeutralExitVelocity 		#N
+				if NeutralExitVelocity > 0:
+					NeutralIsp.append(NeutralExitVelocity)
+				#endif
+
+				#Calculate Ion mass flow rate and integrate thrust via F = (dm/dt)Ve.
+				IonMassFlowRate = IonAxialFlux[i]*NeutralMass*CellArea	#Kg/s
+				IonExitVelocity = IonVelocity[i]*1000					#m/s
+				IonThrust += IonMassFlowRate * IonExitVelocity 			#N
+				if IonExitVelocity > 0: 
+					IonIsp.append(IonExitVelocity)
+				#endif
+			#endfor
+			if len(IonIsp) == 0: IonIsp.append(1E-30)
+			if len(NeutralIsp) == 0: NeutralIsp.append(1E-30)
+
+			#Add total thrust and calculate Isp of each component
+			Thrust = DiffForce + NeutralThrust + IonThrust				#N
+			NeutralFraction = NeutralThrust/(Thrust-DiffForce)			#Ignore dP/dz
+			IonFraction = IonThrust/(Thrust-DiffForce)					#Ignore dP/dz
+
+			IonIsp = (sum(IonIsp)/len(IonIsp))/9.81						#s
+			NeutralIsp = (sum(NeutralIsp)/len(NeutralIsp))/9.81			#s
+			ThrustIsp = NeutralFraction*NeutralIsp+IonFraction*IonIsp 	#s
+
+			NeutralThrustlist.append( round(NeutralThrust*1000,5) )		#mN
+			IonThrustlist.append( round(IonThrust*1000,5) )				#mN
+			Thrustlist.append( round(Thrust*1000,5) )					#mN
+		#endif
+
+		#====================#
 
 		#Display thrust to terminal if requested.
 		if print_thrust == True:
@@ -4028,15 +4118,15 @@ if savefig_trendcomparison == True or print_thrust == True:
 
 	#Plot requested thrusts to 1st or 2nd Yaxis as required.
 	fig,ax1 = figure(image_aspectratio,1)
-#	ax2 = ax1.twiny()
-	TrendPlotter(Thrustlist,Xaxis,NormFactor=0)
-#	TrendPlotter(IonThrustlist,Xaxis,NormFactor=0)
+#	ax2 = ax1.twinx()
+	TrendPlotter(ax1,Thrustlist,Xaxis,NormFactor=0)
+#	TrendPlotter(ax2,IonThrustlist,Xaxis,NormFactor=0)
 
 	#Apply image options and save figure.
-	Title = 'Thrust with changing '+TrendVariable+' \n'+Dirlist[l][2:-1]
+	Title = 'Thrust with varying '+TrendVariable+' \n'+Dirlist[l][2:-1]
 	Xlabel,Ylabel = 'Varied Property','Total Thrust [mN]'
 	Legend = ['Total Thrust','Ion Thrust']
-	ImageOptions(ax1,Xlabel,Ylabel,Title,Legend,Crop=False)
+	ImageOptions(ax1,Xlabel,Ylabel,Legend=Legend,Crop=False)
 
 	plt.savefig(DirTrends+'Thrust Trends'+ext)
 	plt.close('all')
@@ -4072,11 +4162,11 @@ if savefig_trendcomparison == True or print_thrust == True:
 
 
 #====================================================================#
-				  	#SHEATH DYNAMICS & TRENDS#
+			 		#PHASE-AVERAGED SHEATH TRENDS#
 #====================================================================#
 
 
-if savefig_trendcomparison == True or print_sheath == True:
+if savefig_trendphaseaveraged == True or print_sheath == True:
 
 	#Create Trend folder to keep output plots.
 	TrendVariable = filter(lambda x: x.isalpha(), FolderNameTrimmer(Dirlist[0]))
@@ -4119,14 +4209,14 @@ if savefig_trendcomparison == True or print_sheath == True:
 
 	#Generate figure and plot trends.	
 	fig,ax = figure(image_aspectratio,1)
-	TrendPlotter(SxLocExtent,Xaxis,NormFactor=0)
+	TrendPlotter(ax,SxLocExtent,Xaxis,NormFactor=0)
 
 	#Apply image options and axis labels.
 	Title = 'Maximum Sheath Extension With Varying '+TrendVariable+' \n'+Dirlist[l][2:-1]
 	Xlabel,Ylabel = 'Varied Property','Sheath Extension [mm]'
 	ImageOptions(ax,Xlabel,Ylabel,Title,Legend=[],Crop=False)
 
-	plt.savefig(DirTrends+'Sheath Extension Trends'+ext)
+	plt.savefig(DirTrends+'Sheath Extension (Phase-Averaged)'+ext)
 	plt.close('all')
 #endif
 
@@ -4139,7 +4229,7 @@ if savefig_trendcomparison == True or print_sheath == True:
 
 #Only perform if a neutralspecies is included within the atomic set.
 if bool(set(NeutSpecies).intersection(Variables)) == True:
-	if savefig_trendcomparison == True or print_Knudsennumber == True:
+	if savefig_trendphaseaveraged == True or print_Knudsennumber == True:
 
 		#Create Trend folder to keep output plots.
 		TrendVariable = filter(lambda x: x.isalpha(), FolderNameTrimmer(Dirlist[0]))
@@ -4214,7 +4304,7 @@ if bool(set(NeutSpecies).intersection(Variables)) == True:
 
 		#Plot a comparison of all average Knudsen numbers.
 		fig,ax = figure(image_aspectratio,1)
-		TrendPlotter(KnudsenAverage,Xaxis,NormFactor=0)
+		TrendPlotter(ax,KnudsenAverage,Xaxis,NormFactor=0)
 
 		#Image plotting details.
 		Title = 'Average Knudsen Number with Changing '+TrendVariable+' \n'+Dirlist[l][2:-1]
@@ -4229,7 +4319,7 @@ if bool(set(NeutSpecies).intersection(Variables)) == True:
 
 #===============================#
 
-if any([savefig_trendcomparison, print_generaltrends, print_Knudsennumber, print_totalpower, print_DCbias, print_thrust, print_sheath]) == True:
+if any([savefig_trendphaseaveraged, print_generaltrends, print_Knudsennumber, print_totalpower, print_DCbias, print_thrust, print_sheath]) == True:
 	print'---------------------------'
 	print'# Trend Processing Complete'
 	print'---------------------------'
@@ -4547,8 +4637,8 @@ if savefig_phaseresolve2D == True:
 
 			#Obtain maximum and minimum values of current variable over all phases.
 			MinLim,MaxLim = list(),list()
-			for j in range(0,phasecycles):
-				Image = ImageExtractor2D(PhaseMovieData[l][j][Processlist[i]],Variablelist[i])		
+			for j in range(0,len(Moviephaselist[l])):
+				Image = ImageExtractor2D(PhaseMovieData[l][j][Processlist[i]],Variablelist[i])
 				MinLim.append( CbarMinMax(Image)[0] )
 				MaxLim.append( CbarMinMax(Image)[1] )
 			#endfor
@@ -4623,12 +4713,16 @@ if savefig_phaseresolve2D == True:
 #====================================================================#
 
 #Process phase resolved data from multiple folders to extract trends.
-if savefig_phasetrends == True:
-	SxVelTrend,SxExtTrend = list(),list()
+if savefig_trendphaseresolved == True:
+
+	#Initiate arrays between folders
+	VoltageWaveforms,WaveformBiases = list(),list()
+	SxMaxExtTrend,SxMeanExtTrend= list(),list()
+	SxDynRangeTrend,SxVelTrend = list(),list()
 	VariedValuelist = list()
 
 	#Read data from each simulation folder individually, saves on RAM.
-	for l in range(0,numfolders):
+	for l in tqdm(range(0,numfolders)):
 
 		#Create global folders to keep output plots.
 		TrendVariable = filter(lambda x: x.isalpha(), FolderNameTrimmer(Dirlist[0]))
@@ -4639,6 +4733,14 @@ if savefig_phasetrends == True:
 		#Extract Data[Phase][Variable][R,Z] and update trend axis.
 		Data,Phaselist,proclist,varlist = ExtractPhaseData(folder=l,Variables=PhaseVariables+['E','AR+'])
 		VariedValuelist.append( FolderNameTrimmer(Dirlist[l]) )
+
+		#Extract waveforms from desired electrode locations.
+		PPOT = proclist[varlist.index('PPOT')]
+		for j in range(0,len(waveformlocs)):
+			VoltageWaveforms.append(WaveformExtractor(Data,PPOT,waveformlocs[j])[0])
+			WaveformBiases.append(WaveformExtractor(Data,PPOT,waveformlocs[j])[1])
+		#endfor
+		ElectrodeWaveform,ElectrodeBias = WaveformExtractor(Data,PPOT)
 
 		#Select axial or radial electrode location and create axis.
 		Orientation = 'Axial'		#### SET TO AXIAL BY DEFAULT ###
@@ -4663,7 +4765,9 @@ if savefig_phasetrends == True:
 			#endfor
 			SxLoc.append(Sx[loc])
 		#endfor
-		SxExtTrend.append(max(SxLoc))
+		SxDynRangeTrend.append(max(SxLoc)-min(SxLoc))		#Dynamic Range
+		SxMeanExtTrend.append(sum(SxLoc)/len(SxLoc))		#Mean Extension
+		SxMaxExtTrend.append(max(SxLoc))					#Max Extension
 
 		#Calculate phase-averaged sheath velocity.
 		Collapsed,CollapsedPhase = min(SxLoc),SxLoc.index(min(SxLoc))
@@ -4672,8 +4776,12 @@ if savefig_phasetrends == True:
 		SheathExtension = (Extended-Collapsed)/1000.0  					#[m]
 		PhaseResolution = 1.0/(FREQM[l]*len(Phaseaxis))					#[s]
 		SheathTime = (ExtendedPhase-CollapsedPhase)*PhaseResolution		#[s]
-		SheathVelocity = SheathExtension/SheathTime						#[m/s]
-		SxVelTrend.append(SheathVelocity/1000.0)						#[km/s]
+		try:
+			SheathVelocity = SheathExtension/SheathTime					#[m/s]
+			SxVelTrend.append(SheathVelocity/1000.0)					#[km/s]
+		except:
+			SxVelTrend.append(0.0)										#[km/s]
+		#endtry
 
 		#Print results to terminal if requested.
 		if print_sheath == True:
@@ -4693,36 +4801,72 @@ if savefig_phasetrends == True:
 		ImageOptions(ax[0],Ylabel=Ylabel,Crop=False)
 
 		#Plot Waveform onto Temporally collapsed PROES.
-#		ax[1].plot(Phaseaxis, ElectrodeWaveform, lw=2)
-#		ax[1].plot(Phaseaxis, ElectrodeBias, 'k--', lw=2)
+		ax[1].plot(Phaseaxis, ElectrodeWaveform, lw=2)
+		ax[1].plot(Phaseaxis, ElectrodeBias, 'k--', lw=2)
 		Xlabel,Ylabel = 'Phase [$\omega$t/2$\pi$]','Electrode Potential [V]'
 		ImageOptions(ax[1],Xlabel,Ylabel,Crop=False)
 
 		plt.savefig(DirPhaseResolved+VariedValuelist[l]+' SheathDynamics'+ext)
 		plt.close('all')
+
+		#Write phase-resolved sheath dynamics to ASCII format datafile if requested.
+		if write_ASCII == True:
+			DirASCII = CreateNewFolder(DirPhaseResolved,'2DPhase_Data')
+			DirASCIISheath = CreateNewFolder(DirASCII,'SheathDynamics')
+			WriteDataToFile(Phaseaxis+['\n']+SxLoc, DirASCIISheath+VariedValuelist[l]+'SheathDynamics')
+		#endif
 	#endfor
+
+	#Write sheath trends to ASCII format datafile if requested.
+	if write_ASCII == True:
+		DirASCII = CreateNewFolder(DirTrends,'Trend_Data')
+		DirASCIISheath = CreateNewFolder(DirASCII,'Sheath_Data')
+		WriteDataToFile(VariedValuelist+['\n']+SxMaxExtTrend, DirASCIISheath+'MaxExtent_Trends')
+		WriteDataToFile(VariedValuelist+['\n']+SxMeanExtTrend, DirASCIISheath+'MeanExtent_Trends')
+		WriteDataToFile(VariedValuelist+['\n']+SxDynRangeTrend, DirASCIISheath+'DynamicRange_Trends')
+		WriteDataToFile(VariedValuelist+['\n']+SxVelTrend, DirASCIISheath+'Velocity_Trends')
+	#endif
 
 
 	#Plot maximum sheath extension trend for all folders
 	fig,ax = figure(image_aspectratio)
-	TrendPlotter(SxExtTrend,VariedValuelist,NormFactor=0)
+	TrendPlotter(ax,SxMaxExtTrend,VariedValuelist,NormFactor=0)
 	Title='Maximum Sheath Extension W.R.T '+TrendVariable+' \n'+Dirlist[l][2:-1]
 	Xlabel,Ylabel = 'Varied Property','Max Sheath Extension [mm]'
 	ImageOptions(ax,Xlabel,Ylabel,Title,Crop=False)
 
-	plt.savefig(DirSheath+'SheathExtension Trends'+ext)
+	plt.savefig(DirSheath+'Max Sheath Extension Trends'+ext)
+	plt.close('all')
+
+	#Plot mean sheath extension trend for all folders
+	fig,ax = figure(image_aspectratio)
+	TrendPlotter(ax,SxMeanExtTrend,VariedValuelist,NormFactor=0)
+	Title='Mean Sheath Extension W.R.T '+TrendVariable+' \n'+Dirlist[l][2:-1]
+	Xlabel,Ylabel = 'Varied Property','Mean Sheath Extension [mm]'
+	ImageOptions(ax,Xlabel,Ylabel,Title,Crop=False)
+
+	plt.savefig(DirSheath+'Mean Sheath Extension Trends'+ext)
+	plt.close('all')
+
+	#Plot sheath dynamic range (max-min extension) trend for all folders
+	fig,ax = figure(image_aspectratio)
+	TrendPlotter(ax,SxDynRangeTrend,VariedValuelist,NormFactor=0)
+	Title='Sheath Dynamic Range W.R.T '+TrendVariable+' \n'+Dirlist[l][2:-1]
+	Xlabel,Ylabel = 'Varied Property','Sheath Dynamic Range [mm]'
+	ImageOptions(ax,Xlabel,Ylabel,Title,Crop=False)
+
+	plt.savefig(DirSheath+'Sheath Dynamic Range Trends'+ext)
 	plt.close('all')
 
 	#Plot sheath velocity trend for all folders
 	fig,ax = figure(image_aspectratio)
-	TrendPlotter(SxVelTrend,VariedValuelist,NormFactor=0)
+	TrendPlotter(ax,SxVelTrend,VariedValuelist,NormFactor=0)
 	Title='Phase-Averaged Sheath Velocity W.R.T '+TrendVariable+' \n'+Dirlist[l][2:-1]
 	Xlabel,Ylabel = 'Varied Property','Sheath Velocity [km/s]'
 	ImageOptions(ax,Xlabel,Ylabel,Title,Crop=False)
 
-	plt.savefig(DirSheath+'SheathVelocity Trends'+ext)
+	plt.savefig(DirSheath+'Sheath Velocity Trends'+ext)
 	plt.close('all')
-
 
 
 	print'----------------------------------------'
@@ -4985,7 +5129,7 @@ if savefig_PROES == True:
 
 #===============================#
 
-if any([savefig_phasetrends, savefig_phaseresolve1D ,savefig_phaseresolve2D ,savefig_PROES]) == True:
+if any([savefig_trendphaseresolved, savefig_phaseresolve1D ,savefig_phaseresolve2D ,savefig_PROES]) == True:
 	print'----------------------------------'
 	print'# Phase Resolved Profiles Complete'
 	print'----------------------------------'
@@ -5071,42 +5215,6 @@ if any([savefig_phasetrends, savefig_phaseresolve1D ,savefig_phaseresolve2D ,sav
 
 # Disabled the following warning message regarding scalar assignment of 'arr' axis.
 # /home/sjd549/.local/lib/python2.7/site-packages/numpy/ma/core.py:6385
-
-
-
-
-#====================================================================#
-				  	#POCKET ROCKET MATERIAL OUTLINE#
-#====================================================================#
-if True == False:
-	#Plot pocket rocket material dimensions.
-	ax[0].plot((1.35,1.35),   (-1.0,-0.21), 'w-', linewidth=2)
-	ax[0].plot((3.7,3.7),     (-1.0,-0.21), 'w-', linewidth=2)
-	ax[0].plot((1.35,1.35),   ( 1.0, 0.21), 'w-', linewidth=2)
-	ax[0].plot((3.7,3.7),     ( 1.0, 0.21), 'w-', linewidth=2)
-	ax[0].plot((1.35,3.7),    ( 0.21, 0.21), 'w-', linewidth=2)
-	ax[0].plot((1.35,3.7),    (-0.21,-0.21), 'w-', linewidth=2)
-
-	#Alumina Dielectric
-	ax[0].plot((34.2*dz[l],73.8*dz[l]),  ( 0.21,  0.21), 'c-', linewidth=2)
-	ax[0].plot((34.2*dz[l],73.8*dz[l]),  (-0.21, -0.21), 'c-', linewidth=2)
-	ax[0].plot((34.2*dz[l],73.8*dz[l]),  ( 0.31,  0.31), 'c-', linewidth=2)
-	ax[0].plot((34.2*dz[l],73.8*dz[l]),  (-0.31, -0.31), 'c-', linewidth=2)
-
-	#Powered Electrode
-	ax[0].plot((40*dz[l],50*dz[l]),  ( 0.31, 0.31), 'r-', linewidth=2)
-	ax[0].plot((40*dz[l],50*dz[l]),  (-0.31,-0.31), 'r-', linewidth=2)
-	ax[0].plot((40*dz[l],40*dz[l]),  ( 0.31, 0.60), 'r-', linewidth=2)
-	ax[0].plot((40*dz[l],40*dz[l]),  (-0.31,-0.60), 'r-', linewidth=2)
-	ax[0].plot((50*dz[l],50*dz[l]),  ( 0.31, 0.60), 'r-', linewidth=2)
-	ax[0].plot((50*dz[l],50*dz[l]),  (-0.31,-0.60), 'r-', linewidth=2)
-
-	#Grounded electrodes
-	ax[0].plot((34*dz[l],34*dz[l]),  (-1.0,-0.21), 'w-', linewidth=2)
-	ax[0].plot((34*dz[l],34*dz[l]),  ( 1.0, 0.21), 'w-', linewidth=2)
-	ax[0].plot((74*dz[l],74*dz[l]),  (-1.0,-0.21), 'w-', linewidth=2)
-	ax[0].plot((74*dz[l],74*dz[l]),  ( 1.0, 0.21), 'w-', linewidth=2)
-#endif
 
 
 
