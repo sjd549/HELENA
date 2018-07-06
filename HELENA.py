@@ -33,13 +33,20 @@ if 'True' in str(options):
 	print 'First time use requires installation of additional python modules'
 	print 'Please type your password when prompted to allow installation:'
 	print ''
-	os.system('sudo apt-get install python-pip')
-	os.system('sudo apt-get install python-matplotlib')
-	os.system('sudo apt-get install python-numpy')
-	os.system('sudo apt-get install python-scipy')
-	os.system('sudo apt-get install ffmpeg')
-	os.system('pip install findtools')
-	os.system('pip install tqdm')
+	try:
+		os.system('sudo apt-get install python-pip')
+		os.system('sudo apt-get install python-matplotlib')
+		os.system('sudo apt-get install python-numpy')
+		os.system('sudo apt-get install python-scipy')
+		os.system('sudo apt-get install ffmpeg')
+		os.system('pip install findtools')
+		os.system('pip install tqdm')
+	except:
+		print ''
+		print 'Error installing required packages'
+		print 'Please attempt manual installation'
+		print ''
+	#endtry
 	print ''
 	print ''
 #endif
@@ -99,6 +106,7 @@ Ar_Phase = ['S-E','S-AR+','S-AR4P','SEB-AR+','SEB-AR4P','SRCE-2437','TE','PPOT',
 
 ESCT_PCMC = ['AR^0.3S','EB-0.3S','ION-TOT0.3S']
 MSHC_PCMC = ['AR^0.5S','EB-0.5S','ION-TOT0.5S','AR^1.1B','EB-1.1B','ION-TOT1.1B']
+SCCP_PCMC = ['AR^7.7J','ION-TOT7.7J','AR^5.1B','ION-TOT5.1B']
 PR_PCMC = ['AR^0.35','EB-0.35','ION-TOT0.35']
 
 
@@ -138,9 +146,9 @@ PhaseVariables = Ar_Phase					#Requested Movie1 (phase) Variables.
 electrodeloc = [29,44]						#Cell location of powered electrode [R,Z].
 waveformlocs = [[16,29],[16,44],[16,64]]	#Cell locations of additional waveforms [R,Z].
 
-#Various Diagnostic Inputs
-phasecycles = 1							#Number of waveform phase cycles to be plotted. [number]
-DoFWidth = 0							#PROES Depth of Field (symmetric on image plane) [cells]
+#Various Diagnostic Settings.
+phasecycles = 2							#Number of waveform phase cycles to be plotted. [number]
+DoFWidth = 16							#PROES Depth of Field (symmetric on image plane) [cells]
 ThrustLoc = 74							#Z-axis cell for thrust calculation  [cells]
 SheathROI = [34,72]						#Sheath Region of Interest, (Start,End) [cells]
 SourceWidth = [16]						#Source Dimension at ROI, leave empty for auto. [cells]
@@ -148,20 +156,20 @@ SourceWidth = [16]						#Source Dimension at ROI, leave empty for auto. [cells]
 #Requested TECPLOT Variables and plotting locations.
 Variables = Ar
 MultiVar = []							#Additional variables plotted ontop of [Variables]
-radialineouts = [29,44,64] 				#Radial 1D-Profiles to be plotted (fixed Z-mesh) --
-heightlineouts = [0]					#Axial 1D-Profiles to be plotted (fixed R-mesh) |
+radialineouts = [] 						#Radial 1D-Profiles to be plotted (fixed Z-mesh) --
+heightlineouts = [0]						#Axial 1D-Profiles to be plotted (fixed R-mesh) |
 TrendLocation = [] 						#Cell location For Trend Analysis [R,Z], ([] = min/max)
 
 
 #Requested diagnostics and plotting routines.
 savefig_convergence = False				#Requires movie_icp.pdt
-savefig_plot2D = False					#Requires TECPLOT2D.PDT
+savefig_plot2D = True					#Requires TECPLOT2D.PDT
 
 savefig_monoprofiles = False			#Single-Variables; fixed height/radius
 savefig_multiprofiles = False			#Multi-Variables; same folder
 savefig_comparelineouts = False			#Multi-Variables; all folders
 savefig_trendphaseaveraged = False		#Single-Variables; fixed cell location (or max/min)
-savefig_trendphaseresolved = True		#Single-Variables; Phase-resolved data.
+savefig_trendphaseresolved = False		#Single-Variables; Phase-resolved data.
 savefig_pulseprofiles = False			#Single-Variables; plotted against real-time axis
 
 savefig_phaseresolve1D = False			#1D Phase Resolved Images
@@ -238,9 +246,11 @@ cbaroverride = ['NotImplimented']
 #Impliment image_numericaxis, try float(FolderNameTrimmer) as axis.
 #Impliment numerical image_rotate, allow for 000,090,180,270.
 #Introduce Dirlist creating function, using os.module (remove findtools)
+#IEDF ASCII routine needs to save the IEDF energy axis.
 
 #For V 1.0.0:
 #SheathWidth function needs to be able to work axially and radially
+#SheathWidth function needs to be able to deal with image rotations
 #SheathWidth function requires automatic ROI calculation 
 #Functionalise PROES images 
 #Complete IEDF/NEDF section and Functionalise
@@ -1307,7 +1317,7 @@ for l in tqdm(range(0,numfolders)):
 		#Define arguments and autorun conv_prof.exe if possible.
 		IEDFVarArgs = ['1','1','1','1','1'] #### THIS IS HACKY, WON'T ALWAYS WORK ####
 		args = ['pcmc.prof','title','1','1','1'] + IEDFVarArgs + ['0','0']
-		DirAdditions = ['iprofile_tec2d.pdt','nprofile_tec2d.pdt','iprofile_tec1d.pdt', 'nprofile_tec1d.pdt']
+		DirAdditions = ['iprofile_tec2d.pdt','nprofile_tec2d.pdt','iprofile_tec1d.pdt', 'nprofile_tec1d.pdt','iprofile_zones_tec1d.pdt','nprofile_zones_tec1d.pdt']
 		try: AutoConvProfData('./conv_prof.exe',args,DirAdditions)
 		except: print Dirlist[l]
 
@@ -2707,6 +2717,7 @@ if savefig_plot2D == True:
 			if write_ASCII == True:
 				DirWrite = CreateNewFolder(Dir2Dplots, '2Dplots_Data')
 				WriteDataToFile(Image, DirWrite+variablelist[k])
+				if k == len(processlist)-1: WriteDataToFile(Sx, DirWrite+'Sx-EXT')
 			#endif
 
 			#Save Figure
@@ -3120,7 +3131,7 @@ if savefig_comparelineouts == True:
 				#endif
 
 				#Apply image options and axis labels.
-				Title = 'Comparison of '+Variablelist[k]+' Profiles at Z='+str(round((heightlineouts[j])*dr[l], 2))+'cm for \n'+Dirlist[l][2:-1]
+				Title = 'Comparison of '+Variablelist[k]+' Profiles at R='+str(round((heightlineouts[j])*dr[l], 2))+'cm for \n'+Dirlist[l][2:-1]
 				Xlabel,Ylabel,Legend = 'Axial Distance Z [cm]',Ylabels[k],Legendlist
 				ImageOptions(ax,Xlabel,Ylabel,Title,Legendlist,Crop=False)
 			#endfor
@@ -3438,7 +3449,7 @@ if savefig_IEDFangular == True:
 
 			#Angular Figure
 			im = ax[0].imshow(Image,extent=Extent)
-			ImageOptions(ax[0],Ylabel='Angular Dispersion [deg]',Crop=False)						
+			ImageOptions(ax[0],Ylabel='Angular Dispersion [$\\theta^{\circ}$]', Crop=False)						
 			cax = Colourbar(ax[0],variablelist[i]+' EDF($\\theta$)',5)
 
 			#Integrated IEDF figure
@@ -3456,7 +3467,8 @@ if savefig_IEDFangular == True:
 					DirASCII = CreateNewFolder(DirEDF, 'EDF_Data')
 #					WriteDataToFile(eVaxis, DirASCII+variablelist[i],'w')
 				#endif
-				WriteDataToFile(EDFprofile, DirASCII+variablelist[i],'w')
+				WriteDataToFile(Image, DirASCII+variablelist[i]+'_IEDFAngular','w')
+				WriteDataToFile(EDFprofile, DirASCII+variablelist[i]+'_IEDFProfile','w')
 			#endif
 		#endfor
 	#endfor
@@ -5052,7 +5064,7 @@ if savefig_PROES == True:
 				Xlabel,Ylabel = 'Phase [$\omega$t/2$\pi$]','Electrode Potential [V]'
 				ImageOptions(ax[1],Xlabel,Ylabel,Crop=False)
 				#Add Invisible Colourbar to sync X-axis
-				InvisibleColourbar(ax[0])
+				InvisibleColourbar(ax[1])
 
 				#Cleanup layout and save images.
 				fig.tight_layout()
