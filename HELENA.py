@@ -163,7 +163,7 @@ TrendLocation = [] 						#Cell location For Trend Analysis [R,Z], ([] = min/max)
 
 #Requested diagnostics and plotting routines.
 savefig_convergence = False				#Requires movie_icp.pdt
-savefig_plot2D = True					#Requires TECPLOT2D.PDT
+savefig_plot2D = False					#Requires TECPLOT2D.PDT
 
 savefig_monoprofiles = False			#Single-Variables; fixed height/radius
 savefig_multiprofiles = False			#Multi-Variables; same folder
@@ -3947,6 +3947,13 @@ if savefig_trendphaseaveraged == True or print_totalpower == True:
 		plt.close('all')
 	#endfor
 
+	#Write data to ASCII format datafile if requested.
+	if write_ASCII == True:
+		DirASCII, TotalPowerASCII = CreateNewFolder(DirTrends,'Trend_Data'), [Xaxis]
+		for k in range(0,len(RequestedPowers)): TotalPowerASCII.append(Powers[k])
+		WriteDataToFile(TotalPowerASCII, DirASCII+'RFPower_Trends')
+	#endif
+
 	#Plot a comparison of all power depositions requested.
 	fig,ax = figure(image_aspectratio,1)
 	for k in range(0,len(RequestedPowers)):TrendPlotter(ax,Powers[k],Xaxis,NormFactor=0)
@@ -3955,13 +3962,6 @@ if savefig_trendphaseaveraged == True or print_totalpower == True:
 	Title = 'Power Deposition with changing '+TrendVariable+' \n'+Dirlist[l][2:-1]
 	Xlabel,Ylabel = 'Varied Property','Power Deposited [W]'
 	ImageOptions(ax,Xlabel,Ylabel,Title,Legend=RequestedPowers,Crop=False)
-
-	#Write data to ASCII format datafile if requested.
-	if write_ASCII == True:
-		DirASCII, TotalPowerASCII = CreateNewFolder(DirTrends,'Trend_Data'), [Xaxis]
-		for k in range(0,len(RequestedPowers)): TotalPowerASCII.append(Powers[k])
-		WriteDataToFile(TotalPowerASCII, DirASCII+'RFPower_Trends')
-	#endif
 
 	plt.savefig(DirTrends+'Power Deposition Comparison'+ext)
 	plt.close('all')
@@ -4055,8 +4055,8 @@ if savefig_trendphaseaveraged == True or print_thrust == True:
 			Thrustlist.append( round( NeutralThrust*1000,5) )	#mN
 			NeutralIsp = (sum(NeutralIsp)/len(NeutralIsp))/9.81	#s
 			Thrust,ThrustIsp = NeutralThrust,NeutralIsp			#N,s
-			IonThrust,IonIsp = 1E-30,1E-30	#'Not Calculated'
-			DiffForce = 1E-30				#'Not Calculated'
+			IonThrust,IonIsp = 1E-30,1E-30						#'Not Calculated'
+			DiffForce = 1E-30									#'Not Calculated'
 		#endif
 
 		#====================#
@@ -4065,17 +4065,22 @@ if savefig_trendphaseaveraged == True or print_thrust == True:
 			#Technique assumes cylindrical geometry, cartesian geometry will be overestimated.
 			#Integrates ion/neutral momentum loss rate and differental pressure for concentric rings.
 			#Assumes pressure differential, ion/neutral flux equal for all angles at given radii.
+
+			#CellArea increases from central R=0, while pressure has been reversed to agree.
+			Pressure,PressureDown = Pressure[0:64][::-1],PressureDown[0:64][::-1]
 			DiffForce,NeutralThrust,IonThrust = 0,0,0
 			for i in range(0,R_mesh[l]):
 				#Calculate radial plane area of a ring at radius [i], correcting for central r=0.
 				Circumference = 2*np.pi*(i*(dr[l]/100))		#m
 				CellArea = Circumference*(dr[l]/100)		#m^2
 				if CellArea == 0:
-					CellArea = np.pi*(dr[l]/100)**2			#m^2
+					CellArea = np.pi*((dr[l]/100)**2)		#m^2
 				#endif
 
 				#Calculate differential pressure between ThrustLoc-(ThrustLoc+1)
+				#Ensure pressure index aligns with radial index for correct cell area.
 				if Pressure[i] > 0.0:
+				#	DiffPressure = (Pressure[i]-0.85)*133.33				#N/m^2
 					DiffPressure = (Pressure[i]-PressureDown[i])*133.33		#N/m^2
 					DiffForce += DiffPressure*CellArea						#N
 				else:
@@ -4128,6 +4133,13 @@ if savefig_trendphaseaveraged == True or print_thrust == True:
 		#endif
 	#endfor
 
+	#Write data to ASCII format datafile if requested.
+	if write_ASCII == True:
+		DirASCII = CreateNewFolder(DirTrends,'Trend_Data')
+		WriteDataToFile(Xaxis+['\n'], DirASCII+'Thrust_Trends','w')
+		WriteDataToFile(Thrustlist, DirASCII+'Thrust_Trends','a')
+	#endif
+
 	#Plot requested thrusts to 1st or 2nd Yaxis as required.
 	fig,ax1 = figure(image_aspectratio,1)
 #	ax2 = ax1.twinx()
@@ -4142,33 +4154,6 @@ if savefig_trendphaseaveraged == True or print_thrust == True:
 
 	plt.savefig(DirTrends+'Thrust Trends'+ext)
 	plt.close('all')
-
-
-	#=====#=====#
-	#=====#=====#
-
-	#Work in progress thrust efficiency addon.
-	if True == False:
-		try:
-			ThrustEfficiency = list()
-			for i in range(0,len(Thrustlist)):
-				ThrustEfficiency.append(Thrustlist[i]/DepositedPowerList[i])
-			#endfor
-
-			fig,ax = figure(image_aspectratio,1)
-			TrendPlottingOptions1D(ThrustEfficiency,Xaxis,NormFactor=0)
-
-			plt.xlabel('Varied Property', fontsize=24)
-			plt.ylabel('Thrust Efficiency [N/kW]', fontsize=24)
-			ax.tick_params(axis='x', labelsize=18)
-			ax.tick_params(axis='y', labelsize=18)
-			plt.xticks(np.arange(0,numfolders), Xaxis)
-			plt.show()
-		except:
-			a = 1
-		#endtry
-		plt.close('all')
-	#endif
 #endif
 
 
