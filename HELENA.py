@@ -98,7 +98,7 @@ AtomicSet = ['E']+ArgonReduced+ArgonFull+Oxygen
 NeutSpecies = ['AR','AR3S','O2']
 
 #Commonly used variable sets.
-Ar = ['AR3S','AR4SM','AR4SR','AR4SPM','AR4SPR','AR4P','AR4D','AR','AR+','AR2+','AR2*','E','TE','P-POT','TG-AVE','RHO','PRESSURE','EF-TOT','BT','POW-RF','POW-RF-E','S-AR+','S-AR4P','SEB-AR+','SEB-AR4P','EB-ESORC','VR-NEUTRAL','VZ-NEUTRAL','VR-ION+','VZ-ION+','EFLUX-R','EFLUX-Z','FR-AR+','FZ-AR+','FZ-AR3S','FR-AR3S']
+Ar = ['AR3S','AR4SM','AR4SR','AR4SPM','AR4SPR','AR4P','AR4D','AR','AR+','AR2+','AR2*','E','TE','P-POT','TG-AVE','RHO','PRESSURE','EF-TOT','BT','POW-RF','POW-RF-E','S-AR+','S-AR4P','SEB-AR+','SEB-AR4P','EB-ESORC','FZ-AR3S','FR-AR3S','VR-NEUTRAL','VZ-NEUTRAL','VR-ION+','VZ-ION+','EFLUX-R','EFLUX-Z','FR-AR+','FZ-AR+','FZ-AR3S','FR-AR3S']
 O2 = ['O2','O2+','O','O+','O-','E','TE','P-POT','TG-AVE','PRESSURE','EF-TOT','BT','POW-RF','POW-RF-E','VR-NEUTRAL','VZ-NEUTRAL','VR-ION+','VZ-ION+','EFLUX-R','EFLUX-Z','FR-O-','FZ-O-']
 ArO2 = Ar+O2
 
@@ -147,7 +147,7 @@ electrodeloc = [29,44]						#Cell location of powered electrode [R,Z].
 waveformlocs = [[16,29],[16,44],[16,64]]	#Cell locations of additional waveforms [R,Z].
 
 #Various Diagnostic Settings.
-phasecycles = 2							#Number of waveform phase cycles to be plotted. [number]
+phasecycles = 1							#Number of waveform phase cycles to be plotted. [number]
 DoFWidth = 16							#PROES Depth of Field (symmetric on image plane) [cells]
 ThrustLoc = 74							#Z-axis cell for thrust calculation  [cells]
 SheathROI = [34,72]						#Sheath Region of Interest, (Start,End) [cells]
@@ -246,22 +246,25 @@ cbaroverride = ['NotImplimented']
 #Impliment image_numericaxis, try float(FolderNameTrimmer) as axis.
 #Impliment numerical image_rotate, allow for 000,090,180,270.
 #Introduce Dirlist creating function, using os.module (remove findtools)
-#IEDF ASCII routine needs to save the IEDF energy axis.
+#IEDF ASCII routine needs to save the IEDF energy axis. (current assumes 1ev - 250ev)
+
+#IMPORTANT STUFF
+#rotate data at read-in and remove confusing [::-1] from diagnostics.
+#Use Headerlists to store the actual headers
+#Convert EnumerateVariable Function to use header, not full rawdata.
+#Convert code to read data at source, rather than in total (for phase?)
+#header_2Dlist.append(rawdata[0:header_2D])
+
 
 #For V 1.0.0:
 #SheathWidth function needs to be able to work axially and radially
 #SheathWidth function needs to be able to deal with image rotations
-#SheathWidth function requires automatic ROI calculation 
-#Functionalise PROES images 
+#SheathWidth function requires automatic ROI calculation.
+#Remove/simplify the phase-averaged sheath diagnostic. 
+#Functionalise PROES images, Radial/Axial PROES profile collectors?
 #Complete IEDF/NEDF section and Functionalise
 #Add EEDF section and Functionalise.
 #Clean up unused functions and ensure homogeneity.
-
-# 	Use Headerlists to store the actual headers
-#	Convert EnumerateVariable Function to use header, not full rawdata.
-#	Convert code to read data at source, rather than in total (for phase?)
-#	header_2Dlist.append(rawdata[0:header_2D])
-
 
 
 #For Future:
@@ -269,7 +272,7 @@ cbaroverride = ['NotImplimented']
 #introduce 'garbage collection' at the end of each diagnostic.
 #Update README, include all diagnostics and examples.
 #Create developer handbook describing functions.
-#Attempt to get python 3.6 compatable.
+#Python 3.x compatable.
 
 
 
@@ -703,7 +706,7 @@ def SDFileFormatConvertorHPEM(Rawdata,header,numvariables,offset=0,Zmesh=0,Rmesh
 	for i in range(header,len(Rawdata)):
 
 		#If end of phasecycle reached, break. (Applicable to 3D Datafiles only)
-		if "CYCL=" in Rawdata[i]: 
+		if 'CYCL=' in Rawdata[i] or 'ITER=' in Rawdata[i]: 
 			break
 		else: CurrentRow = Rawdata[i].split()
 
@@ -1423,7 +1426,7 @@ for l in tqdm(range(0,numfolders)):
 			#endif
 		#endfor
 
-		#Cycle through all phases for current datafile, appending per cycle.
+		#Cycle through all iterations for current datafile, appending per cycle.
 		CurrentFolderData,CurrentFolderIterlist = list(),list()
 		for i in range(0,len(Iterloc)):
 			if i == 0:
@@ -2130,7 +2133,7 @@ def ImagePlotter2D(Image,extent,aspectratio=image_aspectratio,variable='N/A',fig
 #Image plotted onto existing axes, figure() should be used.
 #NormFactor = 0 will normalize to maximum of given profile.
 #TrendPlotter(ax[0],TrendProfiles,Xaxis,0)
-def TrendPlotter(ax=plt.gca(),TrendArray=[],Xaxis=[],NormFactor=0):
+def TrendPlotter(ax=plt.gca(),TrendArray=[],Xaxis=[],Marker='o-',NormFactor=0):
 
 	#Normalize data to provided normalization factor if required.
 	if image_normalize == True:
@@ -2144,10 +2147,10 @@ def TrendPlotter(ax=plt.gca(),TrendArray=[],Xaxis=[],NormFactor=0):
 		for l in range(0,numfolders):
 			numcells.append(Z_mesh[l]*R_mesh[l])
 		#endfor
-		ax.plot(numcells[::-1],TrendArray[::-1], 'o-', lw=2)
+		Plot = ax.plot(numcells[::-1],TrendArray[::-1], Marker, lw=2)
 	else:
 		#Plot results against strings pulled from folder names for batch studies.
-		ax.plot(range(0,numfolders),TrendArray, 'o-', lw=2)
+		Plot = ax.plot(range(0,numfolders),TrendArray, Marker, lw=2)
 		if len(xaxisoverride) > 0:
 			ax.set_xticks(np.arange(0,numfolders))
 			ax.set_xticklabels(xaxisoverride)
@@ -2157,7 +2160,7 @@ def TrendPlotter(ax=plt.gca(),TrendArray=[],Xaxis=[],NormFactor=0):
 		#endif
 	#endif
 
-	return()
+	return(Plot)
 #enddef
 
 
@@ -3987,40 +3990,33 @@ if savefig_trendphaseaveraged == True or print_thrust == True:
 	#For all folders.
 	for l in range(0,numfolders):
 
-		#Create extract data for the neutral flux and neutral velocity.
-		processlist,Variablelist = VariableEnumerator(['AR3S','VZ-NEUTRAL','VZ-ION+','FZ-AR3S','FZ-AR+','PRESSURE','TG-AVE'],rawdata_2D[l],header_2Dlist[l])
-
 		#Update X-axis with folder information.
 		Xaxis.append( FolderNameTrimmer(Dirlist[l]) )
 
-		#Extract radial density, velocity and pressure profiles across the discharge plane.
-		AbortDiagnostic = False
-		try:
-			Density = PlotRadialProfile(Data[l],processlist[0],Variablelist[0],ThrustLoc)
-			NeutralVelocity = PlotRadialProfile(Data[l],processlist[1],Variablelist[1],ThrustLoc)
-			IonVelocity = PlotRadialProfile(Data[l],processlist[2],Variablelist[2],ThrustLoc)
-			NeutralAxialFlux = PlotRadialProfile(Data[l],processlist[3],Variablelist[3],ThrustLoc)
-			IonAxialFlux = PlotRadialProfile(Data[l],processlist[4],Variablelist[4],ThrustLoc)
-			PressureDown = PlotRadialProfile(Data[l],processlist[5],Variablelist[5],ThrustLoc+1)
-			Pressure = PlotRadialProfile(Data[l],processlist[5],Variablelist[5],ThrustLoc)
-			NeutGasTemp = PlotRadialProfile(Data[l],processlist[6],Variablelist[6],ThrustLoc)
-		except:
-			NeutralAxialFlux = np.zeros(R_mesh[l]*2)
-			IonAxialFlux = np.zeros(R_mesh[l]*2)
+		#Extract data required for Thrust calculations, discharge plane (Z) = ThrustLoc.
+		processlist,variablelist = VariableEnumerator(['VZ-NEUTRAL'],rawdata_2D[l],header_2Dlist[l])
+		NeutralVelocity = PlotRadialProfile(Data[l],processlist[0],variablelist[0],ThrustLoc)
+		processlist,variablelist = VariableEnumerator(['VZ-ION+'],rawdata_2D[l],header_2Dlist[l])
+		IonVelocity = PlotRadialProfile(Data[l],processlist[0],variablelist[0],ThrustLoc)
+		processlist,variablelist = VariableEnumerator(['FZ-AR3S'],rawdata_2D[l],header_2Dlist[l])
+		NeutralAxialFlux = PlotRadialProfile(Data[l],processlist[0],variablelist[0],ThrustLoc)
+		processlist,variablelist = VariableEnumerator(['FZ-AR+'],rawdata_2D[l],header_2Dlist[l])
+		IonAxialFlux = PlotRadialProfile(Data[l],processlist[0],variablelist[0],ThrustLoc)
+		processlist,variablelist = VariableEnumerator(['TG-AVE'],rawdata_2D[l],header_2Dlist[l])
+		NeutGasTemp = PlotRadialProfile(Data[l],processlist[0],variablelist[0],ThrustLoc)
+		processlist,variablelist = VariableEnumerator(['PRESSURE'],rawdata_2D[l],header_2Dlist[l])
+		try: 
+			Pressure = PlotRadialProfile(Data[l],processlist[0],variablelist[0],ThrustLoc)
+			PressureDown = PlotRadialProfile(Data[l],processlist[0],variablelist[0],ThrustLoc+1)
+		except: 
 			Pressure = np.zeros(R_mesh[l]*2)
-			AbortDiagnostic = True
+			PressureDown = np.zeros(R_mesh[l]*2)
 		#endtry
-		if len(NeutralAxialFlux) == 0 or AbortDiagnostic == True:
-			Thrustlist = np.zeros([numfolders])
-			break
-		#endif
 
 		#Define which gas is used and calculate neutral mass per atom.
 		NeutralIsp,IonIsp = list(),list()
 		Argon,Xenon = 39.948,131.29			 #amu
 		NeutralMass = Argon*1.67E-27		 #Kg
-
-
 
 		#Choose which method to solve for thrust: 'ThermalVelocity','AxialMomentum'
 		if GlobThrustMethod == 'ThermalVelocity':
@@ -4140,17 +4136,20 @@ if savefig_trendphaseaveraged == True or print_thrust == True:
 		WriteDataToFile(Thrustlist, DirASCII+'Thrust_Trends','a')
 	#endif
 
-	#Plot requested thrusts to 1st or 2nd Yaxis as required.
+	#Plot requested thrusts, neutral and ion, to 1st and 2nd y-axes.
 	fig,ax1 = figure(image_aspectratio,1)
 #	ax2 = ax1.twinx()
-	TrendPlotter(ax1,Thrustlist,Xaxis,NormFactor=0)
-#	TrendPlotter(ax2,IonThrustlist,Xaxis,NormFactor=0)
+	P1 = TrendPlotter(ax1,Thrustlist,Xaxis,Marker='ko-',NormFactor=0)
+	P2 = TrendPlotter(ax1,NeutralThrustlist,Xaxis,Marker='r^-',NormFactor=0)
+#	P3 = TrendPlotter(ax2,IonThrustlist,Xaxis,Marker='bs-',NormFactor=0)
+	Pn = P1+P2#+P3
 
 	#Apply image options and save figure.
 	Title = 'Thrust with varying '+TrendVariable+' \n'+Dirlist[l][2:-1]
-	Xlabel,Ylabel = 'Varied Property','Total Thrust [mN]'
-	Legend = ['Total Thrust','Ion Thrust']
-	ImageOptions(ax1,Xlabel,Ylabel,Legend=Legend,Crop=False)
+	Xlabel,Ylabel = 'Varied Property','Net Thrust [mN]'
+	ImageOptions(ax1,Xlabel,Ylabel,Crop=False)
+#	ImageOptions(ax2,Ylabel='Ion Thrust [mN]',Crop=False)
+	ax1.legend(Pn, ['Total Thrust','Neutral Component','Ion Component'], fontsize=18, frameon=False)
 
 	plt.savefig(DirTrends+'Thrust Trends'+ext)
 	plt.close('all')
@@ -4780,6 +4779,13 @@ if savefig_trendphaseresolved == True:
 			SxVelTrend.append(0.0)										#[km/s]
 		#endtry
 
+		#Increase sheath extension by required number of phasecycles.
+		for m in range(1,phasecycles):
+			for n in range(0,len(SxLoc)):
+				SxLoc.append(SxLoc[n])
+			#endfor
+		#endfor
+
 		#Print results to terminal if requested.
 		if print_sheath == True:
 			print Dirlist[l][2:-1]
@@ -4793,6 +4799,7 @@ if savefig_trendphaseresolved == True:
 
 		#Plot phase-resolved sheath extension for current folder
 		fig,ax = figure(image_aspectratio,2)
+		print len(Phaseaxis), len(SxLoc)
 		ax[0].plot(Phaseaxis,SxLoc, lw=2)
 		Ylabel = 'Sheath Extension [mm]'
 		ImageOptions(ax[0],Ylabel=Ylabel,Crop=False)
