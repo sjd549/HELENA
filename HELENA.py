@@ -358,7 +358,7 @@ print '   |  |__|  | |  |__   |  |     |  |__   |   \|  |   /  ^  \        '
 print '   |   __   | |   __|  |  |     |   __|  |  . `  |  /  /_\  \       '
 print '   |  |  |  | |  |____ |  `----.|  |____ |  |\   | /  _____  \      '
 print '   |__|  |__| |_______||_______||_______||__| \__|/__/     \__\     '
-print '                                                            v0.12.2 '
+print '                                                            v0.12.3 '
 print '--------------------------------------------------------------------'
 print ''
 print 'The following diagnostics were requested:'
@@ -3317,7 +3317,8 @@ if savefig_pulseprofiles == True:
 		#endfor
 
 		#Create list and x-axis for convergence trend plotting.
-		DtActual = 8.00E-6		#S
+		#DtActual is approximate, exact dt per 'iteration' is not known.
+		DtActual = (1/FREQM[l])*100					#S	(~8 microseconds @ 13.56MHz)
 		for i in range(0,len(MovieIterlist[l])):
 			Xaxis.append( float(filter(lambda x: x.isdigit(), MovieIterlist[l][i]))*DtActual )
 		#endfor
@@ -4747,7 +4748,7 @@ if savefig_trendphaseresolved == True:
 		#endfor
 		ElectrodeWaveform,ElectrodeBias = WaveformExtractor(PhaseData,PPOT)
 
-		#Select axial or radial electrode location and create axis.
+		#Select axial or radial electrode location (loc) and create axis.
 		Orientation = 'Axial'		#### SET TO AXIAL BY DEFAULT ###
 		if Orientation == 'Radial': loc = electrodeloc[0]
 		elif Orientation == 'Axial': loc = electrodeloc[1]
@@ -4776,8 +4777,8 @@ if savefig_trendphaseresolved == True:
 
 		#Calculate phase-averaged (mean) sheath velocity.
 		#Assumes one sheath collapse and one sheath expansion per rf-cycle.
-		RFPeriod = 1.0/FREQM[l])										#[s]
-		SheathExtent = (sum(SxLoc)/len(SxLoc))/1000						#[km]
+		RFPeriod = 1.0/FREQM[l]											#[s]
+		SheathExtent = (sum(SxLoc)/len(SxLoc))/1E6						#[km]
 		MeanSheathVelocity = (2*SheathExtent)/RFPeriod					#[km/s]
 		SxMeanVelTrend.append( MeanSheathVelocity )						#[km/s]		
 
