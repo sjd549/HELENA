@@ -8,7 +8,7 @@
 #	   York Plasma Institute	#
 #	   1&2 Genesis Building		#
 #	   North Yorkshire, UK		#
-#	   sjd549@york.ac.uk		#
+#	  Scott.Doyle@Physics.org	#
 #								#
 #################################
 #           'HELENA'            #
@@ -101,11 +101,11 @@ AtomicSet = ['E']+ArgonReduced+ArgonFull+Oxygen
 NeutSpecies = ['AR','AR3S','O2']
 
 #Commonly used variable sets.
-Ar = ['AR3S','AR4SM','AR4SR','AR4SPM','AR4SPR','AR4P','AR4D','AR','AR+','AR2+','AR2*','E','TE','P-POT','TG-AVE','RHO','PRESSURE','EF-TOT','BT','POW-RF','POW-RF-E','S-AR+','S-AR4P','SEB-AR+','SEB-AR4P','EB-ESORC','FZ-AR3S','FR-AR3S','VR-NEUTRAL','VZ-NEUTRAL','VR-ION+','VZ-ION+','EFLUX-R','EFLUX-Z','FR-AR+','FZ-AR+','FZ-AR3S','FR-AR3S']
-O2 = ['O2','O2+','O','O+','O-','E','TE','P-POT','TG-AVE','PRESSURE','EF-TOT','BT','POW-RF','POW-RF-E','VR-NEUTRAL','VZ-NEUTRAL','VR-ION+','VZ-ION+','EFLUX-R','EFLUX-Z','FR-O-','FZ-O-']
-ArO2 = Ar+O2
+Phys = ['P-POT','TE','EF-TOT','EAMB-Z','EAMB-R','RHO','BT','VR-NEUTRAL','VZ-NEUTRAL','VR-ION+','VZ-ION+','EFLUX-R','EFLUX-Z','TG-AVE','PRESSURE','POW-RF','POW-RF-E','EB-ESORC']
+Ar = ['AR3S','AR4SM','AR4SR','AR4SPM','AR4SPR','AR4P','AR4D','AR','AR+','AR2+','AR2*','E','S-AR+','S-AR4P','SEB-AR+','SEB-AR4P','FZ-AR3S','FR-AR3S','FR-AR+','FZ-AR+','FZ-AR3S','FR-AR3S']+Phys
+O2 = ['O2','O2+','O','O+','O-','E','FR-O-','FZ-O-']+Phys
 
-Ar_Phase = ['S-E','S-AR+','S-AR4P','SEB-AR+','SEB-AR4P','SRCE-2437','TE','PPOT','FR-E','FZ-E']
+Ar_Phase = ['S-E','S-AR+','S-AR4P','SEB-AR+','SEB-AR4P','SRCE-2437','TE','PPOT','FR-E','FZ-E','SEB-AR4P','SEB-AR+']
 
 ESCT_PCMC = ['AR^0.3S','EB-0.3S','ION-TOT0.3S']
 MSHC_PCMC = ['AR^0.5S','EB-0.5S','ION-TOT0.5S','AR^1.1B','EB-1.1B','ION-TOT1.1B']
@@ -145,12 +145,12 @@ NEDFVariables = []			#Requested nprofile_2d variables (no spaces)
 
 #Requested movie1/movie_icp Variables.
 IterVariables = ['E','S-E','PPOT','TE']		#Requested Movie_icp (iteration) Variables.		
-PhaseVariables = Ar_Phase					#Requested Movie1 (phase) Variables. +['E','AR+']
+PhaseVariables = Ar_Phase				#Requested Movie1 (phase) Variables. +['E','AR+']
 electrodeloc = [29,44]						#Cell location of powered electrode [R,Z].
 waveformlocs = [[16,29],[16,44],[16,64]]	#Cell locations of additional waveforms [R,Z].
 
 #Various Diagnostic Settings.
-phasecycles = 1							#Number of waveform phase cycles to be plotted. [number]
+phasecycles = 2							#Number of waveform phase cycles to be plotted. [number]
 DoFWidth = 41							#PROES Depth of Field (symmetric on image plane) [cells]
 ThrustLoc = 74							#Z-axis cell for thrust calculation  [cells]
 SheathROI = [34,72]						#Sheath Region of Interest, (Start,End) [cells]
@@ -159,8 +159,8 @@ SourceWidth = [16]						#Source Dimension at ROI, leave empty for auto. [cells]
 #Requested TECPLOT Variables and plotting locations.
 Variables = Ar
 MultiVar = []							#Additional variables plotted ontop of [Variables]
-radialineouts = [29,44,64,74] 						#Radial 1D-Profiles to be plotted (fixed Z-mesh) --
-heightlineouts = [0]						#Axial 1D-Profiles to be plotted (fixed R-mesh) |
+radialineouts = [44]#[29,44,64,74] 						#Radial 1D-Profiles to be plotted (fixed Z-mesh) --
+heightlineouts = []#[0]						#Axial 1D-Profiles to be plotted (fixed R-mesh) |
 TrendLocation = [] 						#Cell location For Trend Analysis [R,Z], ([] = min/max)
 
 
@@ -177,7 +177,7 @@ savefig_pulseprofiles = False			#Single-Variables; plotted against real-time axi
 
 savefig_phaseresolve1D = False			#1D Phase Resolved Images
 savefig_phaseresolve2D = False			#2D Phase Resolved Images
-savefig_PROES = False					#Simulated PROES Diagnostic
+savefig_PROES = True					#Simulated PROES Diagnostic
 
 savefig_IEDFangular = False				#2D images of angular IEDF; single folders.
 savefig_IEDFtrends = False				#1D IEDF trends; all folders.
@@ -254,11 +254,12 @@ cbaroverride = ['NotImplimented']
 #Variable Interpolator needs to work with phasedata - Take variables from batch?
 
 #IMPORTANT STUFF
+#FIGURE OUT WHY THRUST DIAGNOSTIC CHANGES WITH SYMMETRY OPTION!!!
 #rotate data at read-in and remove confusing [::-1] from diagnostics.
 #Use Headerlists to store the actual headers
-#Convert EnumerateVariable Function to use header, not full rawdata.
-#Convert code to read data at source, rather than in total (for phase?)
 #header_2Dlist.append(rawdata[0:header_2D])
+#Convert EnumerateVariable Function to use header, not full rawdata.
+
 
 
 #For V 1.0.0:
@@ -1074,6 +1075,9 @@ def VariableLabelMaker(variablelist):
 		elif variablelist[i] in ['EZ','EAMB-Z']:
 			Variable = 'Axial E-Field Strength'
 			VariableUnit = '[Vcm$^{-1}$]'
+		elif variablelist[i] == 'BT':
+			Variable = 'B-field Strength'
+			VariableUnit = '[G]'
 		elif variablelist[i] == 'JZ-NET':
 			Variable = 'Axial Current Density'
 			VariableUnit = '[mA cm$^{-2}$]'
@@ -4070,8 +4074,13 @@ if savefig_trendphaseaveraged == True or print_thrust == True:
 			#Integrates ion/neutral momentum loss rate and differental pressure for concentric rings.
 			#Assumes pressure differential, ion/neutral flux equal for all angles at given radii.
 
-			#CellArea increases from central R=0, while pressure has been reversed to agree.
+			#CellArea increases from central R=0.
+			#Correct extracted profiles to agree with this direction.
 			Pressure,PressureDown = Pressure[0:64][::-1],PressureDown[0:64][::-1]
+			NeutralVelocity,NeutralAxialFlux = NeutralVelocity[0:64][::-1],NeutralAxialFlux[0:64][::-1]
+			IonVelocity,IonAxialFlux = IonVelocity[0:64][::-1],IonAxialFlux[0:64][::-1]
+			#ONLY WORKS WHEN SYMMETRY OPTION IS ON, NEED A MORE ROBUST METHOD!
+
 			DiffForce,NeutralThrust,IonThrust = 0,0,0
 			for i in range(0,R_mesh[l]):
 				#Calculate radial plane area of a ring at radius [i], correcting for central r=0.
@@ -4084,7 +4093,7 @@ if savefig_trendphaseaveraged == True or print_thrust == True:
 				#Calculate differential pressure between ThrustLoc-(ThrustLoc+1)
 				#Ensure pressure index aligns with radial index for correct cell area.
 				if Pressure[i] > 0.0:
-				#	DiffPressure = (Pressure[i]-0.85)*133.33				#N/m^2
+#					DiffPressure = (Pressure[i]-0.85)*133.33				#N/m^2
 					DiffPressure = (Pressure[i]-PressureDown[i])*133.33		#N/m^2
 					DiffForce += DiffPressure*CellArea						#N
 				else:
