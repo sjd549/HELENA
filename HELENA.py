@@ -51,6 +51,7 @@ if 'True' in str(options):
 	print ''
 #endif
 
+#Import core modules
 import matplotlib.cm as cm
 import numpy as np
 import scipy as sp
@@ -58,6 +59,7 @@ import math as m
 import os, sys
 import os.path
 
+#Import additional modules
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from findtools.find_files import (find_files, Match)
 from subprocess import Popen, PIPE
@@ -68,26 +70,28 @@ from tqdm import tqdm
 from pylab import *
 
 
+
 #====================================================================#
 				  		#DEFAULT PARAMETERS#
 #====================================================================#
 
-#Create switchboard directory for GUI.
-Switchboard = {}
-
 #Various debug and streamlining options.
-DisableMovie = False			#Suppresses ffmpeg routines, saves RAM.
-DebugMode = False				#Produces debug output for relevent diagnostics.
+Magmesh = 1							#initmesh.exe magnification factor. (almost obsolete)
+DisableMovie = False				#Suppresses ffmpeg routines, saves RAM.
+DebugMode = False					#Produces debug outputs for relevent diagnostics.
 
-#Tweaks and fixes for 'volitile' diagnostics.
-Magmesh = 1						#initmesh.exe magnification factor. (almost obsolete)
-Manualbiasaxis = ''				#'Axial' or 'Radial'. (empty '' for auto)
+#Warning suppression
+np.seterr(divide='ignore', invalid='ignore')		#Suppresses divide by zero errors
+#Fix "can't invoke "event" command: application has been destroyed" error with PROES images
 
-#Calculation Methods
+
+#Calculation Methods:
 GlobSheathMethod = 'AbsDensity'		#Set Global Sheath Calculation Method.
 #Choices: ('AbsDensity','IntDensity')
 GlobThrustMethod = 'AxialMomentum'	#Set Global Thrust Calculation Method. 
 #Choices:('ThermalVelocity','AxialMomentum')
+DCbiasaxis = 'Auto'					#Direction to calculate dc bias over.
+#Choices:('Axial','Radial','Auto')
 
 
 
@@ -159,8 +163,8 @@ SourceWidth = [16]						#Source Dimension at ROI, leave empty for auto. [cells]
 #Requested TECPLOT Variables and plotting locations.
 Variables = Ar
 MultiVar = []							#Additional variables plotted ontop of [Variables]
-radialineouts = [44]#[29,44,64,74] 						#Radial 1D-Profiles to be plotted (fixed Z-mesh) --
-heightlineouts = []#[0]						#Axial 1D-Profiles to be plotted (fixed R-mesh) |
+radialineouts = [29,44,64,74] 						#Radial 1D-Profiles to be plotted (fixed Z-mesh) --
+heightlineouts = [0]						#Axial 1D-Profiles to be plotted (fixed R-mesh) |
 TrendLocation = [] 						#Cell location For Trend Analysis [R,Z], ([] = min/max)
 
 
@@ -177,7 +181,7 @@ savefig_pulseprofiles = False			#Single-Variables; plotted against real-time axi
 
 savefig_phaseresolve1D = False			#1D Phase Resolved Images
 savefig_phaseresolve2D = False			#2D Phase Resolved Images
-savefig_PROES = True					#Simulated PROES Diagnostic
+savefig_PROES = False					#Simulated PROES Diagnostic
 
 savefig_IEDFangular = False				#2D images of angular IEDF; single folders.
 savefig_IEDFtrends = False				#1D IEDF trends; all folders.
@@ -197,7 +201,7 @@ print_sheath = False					#Print sheath width at electrodeloc
 
 
 #Image plotting options.
-image_extension = '.png'				#Extensions { '.png', '.jpg', '.eps' }
+image_extension = '.png'				#Extensions ('.png', '.jpg', '.eps')
 image_aspectratio = [10,10]				#[x,y] in cm [Doesn't rotate dynamically]
 image_radialcrop = [0.6]				#[R1,R2] in cm
 image_axialcrop = [1,4]					#[Z1,Z2] in cm
@@ -207,7 +211,7 @@ image_plotsymmetry = True				#Toggle radial symmetry
 image_numericaxis = False				#### NOT IMPLIMENTED ####
 image_contourplot = True				#Toggle contour Lines in images
 image_plotgrid = False					#Plot major/minor gridlines on profiles
-image_plotmesh = 'PR'					#True=Auto #NOT IMPLIMENTED#, 'PR'
+image_plotmesh = 'PR'					#### NOT IMPLIMENTED ####	('Auto','PR')
 image_rotate = True						#Rotate image 90 degrees to the right.
 
 image_normalize = False					#Normalize image/profiles to local max
@@ -254,7 +258,7 @@ cbaroverride = ['NotImplimented']
 #Variable Interpolator needs to work with phasedata - Take variables from batch?
 
 #IMPORTANT STUFF
-#FIGURE OUT WHY THRUST DIAGNOSTIC CHANGES WITH SYMMETRY OPTION!!!
+#Thrust diagnostic uses Rlineout function which employs symmetry <-- need to force symmetry!
 #rotate data at read-in and remove confusing [::-1] from diagnostics.
 #Use Headerlists to store the actual headers
 #header_2Dlist.append(rawdata[0:header_2D])
@@ -1584,6 +1588,52 @@ else:
 				  #COMMONLY USED PLOTTING FUNCTIONS#
 #====================================================================#
 
+#Takes global inputs from switchboard, returns nothing
+#Alters global image options, run before any diagnostics
+#Attempts to revert matplotlib changes made in 2.0 onwards.
+#See: https://matplotlib.org/users/dflt_style_changes.html
+def Matplotlib_GlobalOptions():
+
+#	mpl.style.use('classic')								#Resets to classic 1.x.x format
+	
+	#Image options			
+	mpl.rcParams['figure.figsize'] = [10.0,10.0]			#Sets default figure size
+	mpl.rcParams['figure.dpi'] = 100						#Sets viewing dpi
+	mpl.rcParams['savefig.dpi'] = 100						#Sets saved dpi
+	mpl.rcParams['image.interpolation'] = 'bilinear'		#Applies bilinear image 'smoothing'
+	mpl.rcParams['image.resample'] = True					#Resamples data before colourmapping
+	mpl.rcParams['image.cmap'] = 'jet'						#Select global colourmap 
+	#'jet','plasma','gnuplot'
+
+	#Axis options
+	mpl.rcParams['axes.autolimit_mode'] = 'round_numbers'	#View limits coencide with axis ticks
+	mpl.rcParams['axes.xmargin'] = 0						#Set default x-axis padding
+	mpl.rcParams['axes.ymargin'] = 0						#Set default y-axis padding
+	mpl.rcParams['errorbar.capsize'] = 3					#Set error bar end cap width
+	mpl.rcParams['font.size'] = 12							#Set global fontsize
+	mpl.rcParams['legend.fontsize'] = 'large'				#Set legend fontsize
+	mpl.rcParams['figure.titlesize'] = 'medium'				#Set title fontsize
+
+	#Line and Colour options
+#	from cycler import cycler								#See below
+#	mpl.rcParams['axes.prop_cycle']=cycler(color='bgrcmyk')	#Set default colour names
+	mpl.rcParams['lines.linewidth'] = 2.0					#Set Default linewidth
+
+	#Maths and Font options
+	mpl.rcParams['mathtext.fontset'] = 'cm'					#Sets 'Latex-like' maths font
+	mpl.rcParams['mathtext.rm'] = 'serif'					#Sets default string font
+
+	return()
+#enddef
+Matplotlib_GlobalOptions()	#MUST BE RUN BEFORE ANY DIAGNOSTICS!!!!
+
+
+
+#=========================#
+#=========================#
+
+
+
 #Returns a 2D array of inputted data with size [R_mesh] x [Z_mesh]
 #Can optionally perform variable unit conversion if required.
 #Image = ImageExtractor2D(Data,Variable=[]):
@@ -1827,7 +1877,7 @@ def ImageOptions(ax=plt.gca(),Xlabel='',Ylabel='',Title='',Legend=[],Crop=True):
 	if len(Title) > 0:
 		ax.set_title(Title, fontsize=14, y=1.03)
 	if len(Legend) > 0:
-		ax.legend(Legend, loc=1, frameon=False)
+		ax.legend(Legend, loc=1, fontsize=16, frameon=False)
 	#endif
 
 	#Set labels and ticksize.
@@ -1837,8 +1887,10 @@ def ImageOptions(ax=plt.gca(),Xlabel='',Ylabel='',Title='',Legend=[],Crop=True):
 	ax.tick_params(axis='y', labelsize=18)
 
 	#Force scientific notation for all axes, accounting for non-scalar x-axes.
-	try: ax.ticklabel_format(style='sci',scilimits=(-2,3),axis='both')
-	except: ax.ticklabel_format(style='sci',scilimits=(-2,3),axis='y')
+	try: ax.xaxis.get_major_locator().set_params(style='sci',scilimits=(-2,3),axis='both')
+	except: Axes_Contain_Strings = True
+#	try: ax.ticklabel_format(style='sci',scilimits=(-2,3),axis='both')	#Old tickformat.
+#	except: ax.ticklabel_format(style='sci',scilimits=(-2,3),axis='y')	#Old tickformat.
 	#endtry
 
 	#Set grid, default is off.
@@ -1916,7 +1968,8 @@ def InvisibleColourbar(ax=plt.gca()):
 	cax = divider.append_axes("right", size="2%", pad=0.1)
 
 	#Set new cax to zero size and remove ticks.
-	cax.set_axis_bgcolor('none')
+	try: cax.set_facecolor('none')				#matplotlib v2.x.x method
+	except: cax.set_axis_bgcolor('none')		#matplotlib v1.x.x method
 	for axis in ['top','bottom','left','right']:
 		cax.spines[axis].set_linewidth(0)
 	cax.set_xticks([])
@@ -3840,11 +3893,11 @@ if savefig_trendphaseaveraged == True or print_DCbias == True:
 		RadialDCbias = DCbiasMagnitude(Rlineout)
 
 		#Choose axial or radial DCbias based on user input, else autoselect most probable.
-		if Manualbiasaxis == 'Radial':
+		if DCbiasaxis == 'Radial':
 			DCbias.append(RadialDCbias)
-		elif Manualbiasaxis == 'Axial':
+		elif DCbiasaxis == 'Axial':
 			DCbias.append(AxialDCbias)
-		else:
+		elif DCbiasaxis == 'Auto':
 			#Compare Axial and Radial DCbias, if same pick Axial, if not pick the largest.
 			if AxialDCbias != RadialDCbias:
 				if abs(AxialDCbias) > abs(RadialDCbias):
@@ -5325,6 +5378,7 @@ if True == False:
 				  	#GRAPHICAL USER INTERFACE#
 #====================================================================#
 
+
 use_GUI = False
 if use_GUI == True:
 	try:
@@ -5335,6 +5389,10 @@ if use_GUI == True:
 		# Python3
 		import tkinter as tk
 		from ttk import *
+	#endtry
+
+	#Create switchboard directory for GUI.
+	Switchboard = {}
 
 #=============#
 
