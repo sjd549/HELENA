@@ -170,7 +170,7 @@ TrendLocation = [] 						#Cell location For Trend Analysis [R,Z], ([] = min/max)
 
 #Requested diagnostics and plotting routines.
 savefig_convergence = False				#Requires movie_icp.pdt
-savefig_plot2D = False					#Requires TECPLOT2D.PDT
+savefig_plot2D = True					#Requires TECPLOT2D.PDT
 
 savefig_monoprofiles = False			#Single-Variables; fixed height/radius
 savefig_multiprofiles = False			#Multi-Variables; same folder
@@ -203,15 +203,15 @@ print_sheath = False					#Print sheath width at electrodeloc
 #Image plotting options.
 image_extension = '.png'				#Extensions ('.png', '.jpg', '.eps')
 image_aspectratio = [10,10]				#[x,y] in cm [Doesn't rotate dynamically]
-image_radialcrop = [0.6]				#[R1,R2] in cm
-image_axialcrop = [1,4]					#[Z1,Z2] in cm
+image_radialcrop = []#[0.6]				#[R1,R2] in cm
+image_axialcrop = []#[1,4]					#[Z1,Z2] in cm
 image_cbarlimit = []					#[min,max] colourbar limits	
 
-image_plotsymmetry = True				#Toggle radial symmetry
+image_plotsymmetry = False				#Toggle radial symmetry
 image_numericaxis = False				#### NOT IMPLIMENTED ####
 image_contourplot = True				#Toggle contour Lines in images
 image_plotgrid = False					#Plot major/minor gridlines on profiles
-image_plotmesh = 'PR'					#### NOT IMPLIMENTED ####	('Auto','PR')
+image_plotmesh = False#'PR'					#### NOT IMPLIMENTED ####	('Auto','PR')
 image_rotate = True						#Rotate image 90 degrees to the right.
 
 image_normalize = False					#Normalize image/profiles to local max
@@ -263,7 +263,6 @@ cbaroverride = ['NotImplimented']
 #Use Headerlists to store the actual headers
 #header_2Dlist.append(rawdata[0:header_2D])
 #Convert EnumerateVariable Function to use header, not full rawdata.
-
 
 
 #For V 1.0.0:
@@ -402,60 +401,34 @@ mem_bytes = os.sysconf('SC_PAGE_SIZE') * os.sysconf('SC_PHYS_PAGES')
 mem_gib = mem_bytes/(1024.**3)
 ext = image_extension
 
-#Find all files ending in dir recursively from current directory.
-sh_files_pattern = Match(filetype='f', name='*.PDT')
-found_files1 = find_files(path='./', match=sh_files_pattern)
-sh_files_pattern = Match(filetype='f', name='*.pdt')
-found_files2 = find_files(path='./', match=sh_files_pattern)
-sh_files_pattern = Match(filetype='f', name='initmesh.out')
-found_files3 = find_files(path='./', match=sh_files_pattern)
-sh_files_pattern = Match(filetype='f', name='icp.nam')
-found_files4 = find_files(path='./', match=sh_files_pattern)
-sh_files_pattern = Match(filetype='f', name='icp.out')
-found_files5 = find_files(path='./', match=sh_files_pattern)
 
-#Organize the files into an array and sort them alphabetically.
-for found_file in found_files1:
-	Dir.append(found_file)
-#endfor
-for found_file in found_files2:
-	Dir.append(found_file)
-#endfor
-for found_file in found_files3:
-	Dir.append(found_file)
-#endfor
-for found_file in found_files4:
-	Dir.append(found_file)
-#endfor
-for found_file in found_files5:
-	Dir.append(found_file)
-Dir.sort()
+#Create directory lists
+Dirlist = list() 		#List of all folders
+Dir = list() 			#Directory of files within folders
 
-#Calculate the number of seperate simulations involved for plotting.
-#Create preamble Dir list for saving plots back into relevant folders.
-#Identifies the first '/' reading filename in reverse saving as 'n','m'
-#These indices are then used to cut off file names and save the preamble.
-try:
-	Dirlist.append(Dir[0][:len(Dir[0])-Dir[0][::-1].index('/')])
-except:
-	print '#===============================#'
-	print 'No data found, aborting analysis.'
-	print '#===============================#'
-	print ''
-	exit()
-#endtry
-numfolders = 1
-for i in range(0, len(Dir)-1):
-	n = Dir[i][::-1].index('/')
-	m = Dir[i+1][::-1].index('/')
+#Obtain home directory and contents (ignoring .git repo)
+HomeDir = os.path.abspath(".")
+HomeDirContents = os.listdir(HomeDir)[1::]		###HACKY###
 
-	currentdir = Dir[i][:len(Dir[i])-n]
-	nextdir = Dir[i+1][:len(Dir[i+1])-m]
-	if currentdir != nextdir:
-		Dirlist.append(nextdir)
+#Determine folders within home directory
+numfolders = 0
+for i in range(0,len(HomeDirContents)):
+	if os.path.isdir(HomeDirContents[i]) == True:
+		Dirlist.append('./'+HomeDirContents[i]+'/')
 		numfolders += 1
 	#endif
 #endfor
+
+#Extract directories of each sub-folder within home directory
+for i in range(0,len(Dirlist)):
+	Dir.append(os.listdir(Dirlist[i]))
+	#Attach folder name to each file to create directory listing
+	for j in range(0,len(Dir[i])):
+		Dir[i][j] = Dirlist[i]+Dir[i][j]
+	#endfor
+#endfor
+#Flatten final array into 1D array.
+Dir = [item for sublist in Dir for item in sublist]
 
 #Begin the retrieval of geometry from mesh and input files.
 icpnam = filter(lambda x: 'icp.nam' in x, Dir)
@@ -1961,7 +1934,8 @@ def Colourbar(ax=plt.gca(),Label='',Ticks=5,Lim=[]):
 #Creates an invisible colourbar to align subplots without colourbars.
 #Takes image axis, returns colourbar axis if further edits are required
 #cax = InvisibleColourbar(ax[0])
-def InvisibleColourbar(ax=plt.gca()):
+def InvisibleColourbar(ax='NaN'):
+	if ax == 'NaN': ax = plt.gca()
 
 	#Create colourbar axis, ideally should 'find' values of existing cbar! 
 	divider = make_axes_locatable(ax)
@@ -5456,9 +5430,70 @@ if use_GUI == True:
 
 
 
+#===================================================================#
+#	OLD 'OBTAINING FILE DIRECTORIES' CODE USING FINDFILES MODULE	#
+#===================================================================#
 
+if True == False:
+	#Find all files ending in dir recursively from current directory.
+	sh_files_pattern = Match(filetype='f', name='*.PDT')
+	found_files1 = find_files(path='./', match=sh_files_pattern)
+	sh_files_pattern = Match(filetype='f', name='*.pdt')
+	found_files2 = find_files(path='./', match=sh_files_pattern)
+	sh_files_pattern = Match(filetype='f', name='initmesh.out')
+	found_files3 = find_files(path='./', match=sh_files_pattern)
+	sh_files_pattern = Match(filetype='f', name='icp.nam')
+	found_files4 = find_files(path='./', match=sh_files_pattern)
+	sh_files_pattern = Match(filetype='f', name='icp.out')
+	found_files5 = find_files(path='./', match=sh_files_pattern)
 
+	#Organize the files into an array and sort them alphabetically.
+	for found_file in found_files1:
+		Dir.append(found_file)
+	#endfor
+	for found_file in found_files2:
+		Dir.append(found_file)
+	#endfor
+	for found_file in found_files3:
+		Dir.append(found_file)
+	#endfor
+	for found_file in found_files4:
+		Dir.append(found_file)
+	#endfor
+	for found_file in found_files5:
+		Dir.append(found_file)
+	Dir.sort()
 
+	#Calculate the number of seperate simulations involved for plotting.
+	#Create preamble Dir list for saving plots back into relevant folders.
+	#Identifies the first '/' reading filename in reverse saving as 'n','m'
+	#These indices are then used to cut off file names and save the preamble.
+	try:
+		Dirlist.append(Dir[0][:len(Dir[0])-Dir[0][::-1].index('/')])
+	except:
+		print '#===============================#'
+		print 'No data found, aborting analysis.'
+		print '#===============================#'
+		print ''
+		exit()
+	#endtry
+
+	numfolders = 1
+	for i in range(0, len(Dir)-1):
+		n = Dir[i][::-1].index('/')
+		m = Dir[i+1][::-1].index('/')
+
+		currentdir = Dir[i][:len(Dir[i])-n]
+		nextdir = Dir[i+1][:len(Dir[i+1])-m]
+		if currentdir != nextdir:
+			Dirlist.append(nextdir)
+			numfolders += 1
+		#endif
+	#endfor
+#endif
+
+#=====================================================================#
+#=====================================================================#
 
 
 
