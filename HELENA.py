@@ -170,7 +170,7 @@ TrendLocation = [] 						#Cell location For Trend Analysis [R,Z], ([] = min/max)
 
 #Requested diagnostics and plotting routines.
 savefig_convergence = False				#Requires movie_icp.pdt
-savefig_plot2D = True					#Requires TECPLOT2D.PDT
+savefig_plot2D = False					#Requires TECPLOT2D.PDT
 
 savefig_monoprofiles = False			#Single-Variables; fixed height/radius
 savefig_multiprofiles = False			#Multi-Variables; same folder
@@ -203,15 +203,15 @@ print_sheath = False					#Print sheath width at electrodeloc
 #Image plotting options.
 image_extension = '.png'				#Extensions ('.png', '.jpg', '.eps')
 image_aspectratio = [10,10]				#[x,y] in cm [Doesn't rotate dynamically]
-image_radialcrop = []#[0.6]				#[R1,R2] in cm
-image_axialcrop = []#[1,4]					#[Z1,Z2] in cm
+image_radialcrop = [0.6]				#[R1,R2] in cm
+image_axialcrop = [1,4]					#[Z1,Z2] in cm
 image_cbarlimit = []					#[min,max] colourbar limits	
 
-image_plotsymmetry = False				#Toggle radial symmetry
+image_plotsymmetry = True				#Toggle radial symmetry
 image_numericaxis = False				#### NOT IMPLIMENTED ####
 image_contourplot = True				#Toggle contour Lines in images
 image_plotgrid = False					#Plot major/minor gridlines on profiles
-image_plotmesh = False#'PR'					#### NOT IMPLIMENTED ####	('Auto','PR')
+image_plotmesh = 'PR'					#### NOT IMPLIMENTED ####	('Auto','PR')
 image_rotate = True						#Rotate image 90 degrees to the right.
 
 image_normalize = False					#Normalize image/profiles to local max
@@ -249,6 +249,8 @@ cbaroverride = ['NotImplimented']
 #For V 0.11.n:
 #FIX CBARMINMAX FUNCTION!!! PROES NEEDS CROPPING AND RADIAL MINMAX IS WRONG.
 #ADD if DOFWIDTH < LINEOUT LOCATION SKIP AND WARNING IN PROES
+#rotate data at read-in and remove confusing [::-1] from diagnostics.
+#Thrust diagnostic uses Rlineout function which employs symmetry <-- need to force symmetry!
 #Functionalize thrust calculation with options for neutral/ion/pressure diff.
 #Impliment image_numericaxis, try float(FolderNameTrimmer) as axis.
 #Impliment numerical image_rotate, allow for 000,090,180,270.
@@ -256,13 +258,9 @@ cbaroverride = ['NotImplimented']
 #IEDF ASCII routine needs to save the IEDF energy axis. (current assumes 1ev - 250ev)
 #Remove the need for ['E','AR+'] as default in phasevariables - use SheathData list?
 #Variable Interpolator needs to work with phasedata - Take variables from batch?
-
-#IMPORTANT STUFF
-#Thrust diagnostic uses Rlineout function which employs symmetry <-- need to force symmetry!
-#rotate data at read-in and remove confusing [::-1] from diagnostics.
+#Convert EnumerateVariable Function to use header, not full rawdata.
 #Use Headerlists to store the actual headers
 #header_2Dlist.append(rawdata[0:header_2D])
-#Convert EnumerateVariable Function to use header, not full rawdata.
 
 
 #For V 1.0.0:
@@ -362,7 +360,7 @@ print '   |  |__|  | |  |__   |  |     |  |__   |   \|  |   /  ^  \        '
 print '   |   __   | |   __|  |  |     |   __|  |  . `  |  /  /_\  \       '
 print '   |  |  |  | |  |____ |  `----.|  |____ |  |\   | /  _____  \      '
 print '   |__|  |__| |_______||_______||_______||__| \__|/__/     \__\     '
-print '                                                            v0.12.3 '
+print '                                                            v0.12.4 '
 print '--------------------------------------------------------------------'
 print ''
 print 'The following diagnostics were requested:'
@@ -1590,7 +1588,7 @@ def Matplotlib_GlobalOptions():
 	#Line and Colour options
 #	from cycler import cycler								#See below
 #	mpl.rcParams['axes.prop_cycle']=cycler(color='bgrcmyk')	#Set default colour names
-	mpl.rcParams['lines.linewidth'] = 2.0					#Set Default linewidth
+	mpl.rcParams['lines.linewidth'] = 1.0					#Set Default linewidth
 
 	#Maths and Font options
 	mpl.rcParams['mathtext.fontset'] = 'cm'					#Sets 'Latex-like' maths font
@@ -2577,10 +2575,10 @@ def DCbiasMagnitude(PPOTlineout):
 #Takes current folder, current axis, movie1 Phase and sheath calc method.
 #Returns array of sheath distances from origin and can plot this if requested.
 #Sx = SheathThickness(folder=l,Phase=moviephaselist[k])
-def SheathThickness(folder=l,Ax=plt.gca(),Phase='NaN',Ne=list(),Ni=list()):
+def SheathThickness(folder=l,ax=plt.gca(),Phase='NaN',Ne=list(),Ni=list()):
 	#Initiate required lists and set sheath method.
 	SheathMethod=GlobSheathMethod
-	Sx,NegSx = list(),list()	
+	Sx,SymSx = list(),list()	
 
 	#Obtain current folder ion and electron densities if not already supplied.
 	#Default to 2D data format.
@@ -2598,9 +2596,16 @@ def SheathThickness(folder=l,Ax=plt.gca(),Phase='NaN',Ne=list(),Ni=list()):
 	#Extract 2D image for further processing.
 	Ne,Ni = ImageExtractor2D(Ne),ImageExtractor2D(Ni)
 
+	#=======#
 
-	Orientation = 'Axial'
 	### CURRENTLY ONLY AXIAL METHOD IS EMPLOYED ###
+	Orientation = 'Axial'
+	#Determine electrode location.
+	if Orientation == 'Radial': loc = electrodeloc[0]
+	elif Orientation == 'Axial': loc = electrodeloc[1]
+	### CURRENTLY ONLY AXIAL METHOD IS EMPLOYED ###
+
+	#Determine sheath edge through integration of charge.
 	if SheathMethod == 'IntDensity':
 		#Sheath extension: integral_(0-R) ne dR == integral_(0-R) ni dR (Gibson 2015)
 		for j in range(0,len(Ni)):
@@ -2623,6 +2628,7 @@ def SheathThickness(folder=l,Ax=plt.gca(),Phase='NaN',Ne=list(),Ni=list()):
 			#endfor
 		#endfor
 
+	#Determine sheath edge by 'instantaneous' charge
 	elif SheathMethod == 'AbsDensity':
 		#Sheath extension: ni @R >= ne @R, simplified model.
 		for j in range(0,len(Ni)):
@@ -2639,21 +2645,9 @@ def SheathThickness(folder=l,Ax=plt.gca(),Phase='NaN',Ne=list(),Ni=list()):
 		#endfor
 	#endif
 
-	#Create reverse sheath boundary, disallowing NaNs. ### HACKY ###
-	for i in range(0,len(Sx)): 
-		try: NegSx.append(-Sx[i])
-		except: NegSx.append(Sx[i])
-	#endfor
+	#=======#
 
-	#Generate Axis and set image extent
-	if Orientation == 'Radial': loc = electrodeloc[0]
-	elif Orientation == 'Axial': loc = electrodeloc[1]
-	Axis=GenerateAxis(Orientation,Isym=Isymlist[folder])
-
-	#Plot and Print sheath characteristics if requested.
-	if image_sheath == True:
-		Ax.plot(Axis,Sx, 'w--', lw=1)
-		Ax.plot(Axis,NegSx, 'w--', lw=1)
+	#Print sheath characteristics if requested.
 	if print_sheath == True:
 		#Obtain SheathWidth at electrodeloc
 		try: SheathWidth = round(Sx[loc],3)
@@ -2661,6 +2655,28 @@ def SheathThickness(folder=l,Ax=plt.gca(),Phase='NaN',Ne=list(),Ni=list()):
 		print 'Simulation:', Dirlist[folder]
 		print 'Sheath Location:',SheathWidth*10, 'mm'
 		print 'Sheath Extent:',((SourceWidth[0]*dr[l])-SheathWidth)*10, 'mm'
+	#endif
+
+	#=======#
+
+	#THIS SHOULD PROBABLY BE A SEPERATE FUNCTION
+	#THAT USES SHEATHTHICKNESS AS AN INPUT
+
+	#Generate Axis and Remove NaN's from data, 
+	Axis=GenerateAxis(Orientation,Isym=Isymlist[folder])
+	for i in range(0,len(Sx)): 
+		if Sx[i] == 'NaN': Sx[i],Axis[i] = np.nan,np.nan
+		#endif
+	#endfor
+
+	#Create symmetric sheath boundary
+	for i in range(0,len(Sx)): SymSx.append(-Sx[i])
+	#endfor
+
+	#Plot sheath characteristics if requested.
+	if image_sheath == True:
+		ax.plot(Axis,Sx, 'w--', lw=2)
+		ax.plot(Axis,SymSx, 'w--', lw=2)
 	#endif
 
 	#Return sheath expansion
@@ -2735,7 +2751,7 @@ if savefig_plot2D == True:
 			extent,aspectratio = DataExtent(l)
 			fig,ax,im,Image = ImagePlotter2D(Image,extent,aspectratio,variablelist[k])
 			#Add sheath thickness to figure if requested.
-			Sx = SheathThickness(folder=l,Ax=ax)
+			Sx = SheathThickness(folder=l,ax=ax)
 
 			#Define image beautification variables.
 			if image_rotate == True:
@@ -5425,75 +5441,6 @@ if use_GUI == True:
 #=====================================================================#
 
 
-
-
-
-
-
-#===================================================================#
-#	OLD 'OBTAINING FILE DIRECTORIES' CODE USING FINDFILES MODULE	#
-#===================================================================#
-
-if True == False:
-	#Find all files ending in dir recursively from current directory.
-	sh_files_pattern = Match(filetype='f', name='*.PDT')
-	found_files1 = find_files(path='./', match=sh_files_pattern)
-	sh_files_pattern = Match(filetype='f', name='*.pdt')
-	found_files2 = find_files(path='./', match=sh_files_pattern)
-	sh_files_pattern = Match(filetype='f', name='initmesh.out')
-	found_files3 = find_files(path='./', match=sh_files_pattern)
-	sh_files_pattern = Match(filetype='f', name='icp.nam')
-	found_files4 = find_files(path='./', match=sh_files_pattern)
-	sh_files_pattern = Match(filetype='f', name='icp.out')
-	found_files5 = find_files(path='./', match=sh_files_pattern)
-
-	#Organize the files into an array and sort them alphabetically.
-	for found_file in found_files1:
-		Dir.append(found_file)
-	#endfor
-	for found_file in found_files2:
-		Dir.append(found_file)
-	#endfor
-	for found_file in found_files3:
-		Dir.append(found_file)
-	#endfor
-	for found_file in found_files4:
-		Dir.append(found_file)
-	#endfor
-	for found_file in found_files5:
-		Dir.append(found_file)
-	Dir.sort()
-
-	#Calculate the number of seperate simulations involved for plotting.
-	#Create preamble Dir list for saving plots back into relevant folders.
-	#Identifies the first '/' reading filename in reverse saving as 'n','m'
-	#These indices are then used to cut off file names and save the preamble.
-	try:
-		Dirlist.append(Dir[0][:len(Dir[0])-Dir[0][::-1].index('/')])
-	except:
-		print '#===============================#'
-		print 'No data found, aborting analysis.'
-		print '#===============================#'
-		print ''
-		exit()
-	#endtry
-
-	numfolders = 1
-	for i in range(0, len(Dir)-1):
-		n = Dir[i][::-1].index('/')
-		m = Dir[i+1][::-1].index('/')
-
-		currentdir = Dir[i][:len(Dir[i])-n]
-		nextdir = Dir[i+1][:len(Dir[i+1])-m]
-		if currentdir != nextdir:
-			Dirlist.append(nextdir)
-			numfolders += 1
-		#endif
-	#endfor
-#endif
-
-#=====================================================================#
-#=====================================================================#
 
 
 
