@@ -39,7 +39,6 @@ if 'True' in str(options):
 		os.system('sudo apt-get install python-numpy')
 		os.system('sudo apt-get install python-scipy')
 		os.system('sudo apt-get install ffmpeg')
-		os.system('pip install findtools')
 		os.system('pip install tqdm')
 	except:
 		print ''
@@ -61,7 +60,6 @@ import os.path
 
 #Import additional modules
 from mpl_toolkits.axes_grid1 import make_axes_locatable
-from findtools.find_files import (find_files, Match)
 from subprocess import Popen, PIPE
 from matplotlib import pyplot as plt
 from matplotlib import ticker
