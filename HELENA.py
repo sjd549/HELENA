@@ -78,9 +78,12 @@ Magmesh = 1							#initmesh.exe magnification factor. (almost obsolete)
 DisableMovie = False				#Suppresses ffmpeg routines, saves RAM.
 DebugMode = False					#Produces debug outputs for relevent diagnostics.
 
-#Warning suppression
+#Warning suppressions
 np.seterr(divide='ignore', invalid='ignore')		#Suppresses divide by zero errors
 #Fix "can't invoke "event" command: application has been destroyed" error with PROES images
+
+#List of recognized data extensions for file readin
+FileExtensions = ['.PDT','.pdt','.nam']
 
 
 #Calculation Methods:
@@ -398,33 +401,45 @@ mem_gib = mem_bytes/(1024.**3)
 ext = image_extension
 
 
-#Create directory lists
+#Create Directory lists and initialise numfolders to zero.
 Dirlist = list() 		#List of all folders
 Dir = list() 			#Directory of files within folders
-
-#Obtain home directory and contents (ignoring .git repo)
-HomeDir = os.path.abspath(".")
-HomeDirContents = os.listdir(HomeDir)[1::]		###HACKY###
-
-#Determine folders within home directory
 numfolders = 0
+
+#Obtain home directory and contents
+HomeDir = list() 		#List of all folders in home.
+HomeDirContents = os.listdir( os.path.abspath(".") )
+#Determine folders within home directory and add correct 'grammar'.
 for i in range(0,len(HomeDirContents)):
 	if os.path.isdir(HomeDirContents[i]) == True:
-		Dirlist.append('./'+HomeDirContents[i]+'/')
-		numfolders += 1
+		HomeDir.append('./'+HomeDirContents[i]+'/')
 	#endif
 #endfor
 
+#Determine number of folders containing accepted file extensions (i.e. data folders)
 #Extract directories of each sub-folder within home directory
-for i in range(0,len(Dirlist)):
-	Dir.append(os.listdir(Dirlist[i]))
-	#Attach folder name to each file to create directory listing
-	for j in range(0,len(Dir[i])):
-		Dir[i][j] = Dirlist[i]+Dir[i][j]
+for i in range(0,len(HomeDir)):
+	previousnumfolders = numfolders
+	CurrentDir = HomeDir[i]
+	DirContents = os.listdir(CurrentDir)
+
+	#For each file contained within the subfolders, determine which are datafiles.
+	for j in range(0,len(DirContents)):
+		Filename = DirContents[j]
+
+		#Save datafiles (with root) to working directory (Dir) and number of datafolders.
+		if any([x in Filename for x in FileExtensions]):
+			Dir.append(CurrentDir+Filename)
+			if (numfolders - previousnumfolders) == 0:
+				Dirlist.append(CurrentDir)
+				numfolders += 1
+			#endif
+		else:
+			File_Format_Is_Not_Requested = 1
+		#endif
 	#endfor
 #endfor
-#Flatten final array into 1D array.
-Dir = [item for sublist in Dir for item in sublist]
+
 
 #Begin the retrieval of geometry from mesh and input files.
 icpnam = filter(lambda x: 'icp.nam' in x, Dir)
@@ -1506,10 +1521,12 @@ tempdata,tempdata2 = list(),list()
 data_array,templineout = list(),list()
 Energy,Fe,rawdata_mcs = list(),list(),list()
 Variablelist,variablelist = list(),list()
+HomeDir,DirContents = list(),list()
 del RADIUS,RADIUST,HEIGHT,HEIGHTT,DEPTH,SYM
 del data_array,tempdata,tempdata2,templineout
 del Variablelist,variablelist
 del Energy,Fe,rawdata_mcs
+del HomeDir,DirContents
 
 
 #Alert user that readin process has ended and continue with selected diagnostics.
@@ -4345,7 +4362,7 @@ if bool(set(NeutSpecies).intersection(Variables)) == True:
 			extent,aspectratio = DataExtent(l)
 			fig,ax,im,Image = ImagePlotter2D(Image,extent,aspectratio)
 			#Add sheath thickness to figure if requested.
-			Sx = SheathThickness(folder=l,Ax=ax)
+			Sx = SheathThickness(folder=l,ax=ax)
 
 			#Image plotting details, invert Y-axis to fit 1D profiles.
 			Title = 'Knudsen Number Image for \n'+Dirlist[l][2:-1]
