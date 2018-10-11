@@ -81,10 +81,10 @@ DebugMode = False					#Produces debug outputs for relevent diagnostics.
 #Warning suppressions
 np.seterr(divide='ignore', invalid='ignore')		#Suppresses divide by zero errors
 #Fix "can't invoke "event" command: application has been destroyed" error with PROES images
+#Fix "Exception KeyError: KeyError(<weakref at 0x7fc8723ca940; to 'tqdm' at 0x7fc85cd23910>,)" error
 
 #List of recognized data extensions for file readin
 FileExtensions = ['.PDT','.pdt','.nam']
-
 
 #Calculation Methods:
 GlobSheathMethod = 'AbsDensity'		#Set Global Sheath Calculation Method.
@@ -384,6 +384,8 @@ if savefig_trendphaseresolved == True:
 	print'# 1D Phase-Resolved Trend Processing'
 if True in [savefig_IEDFangular,savefig_IEDFtrends,savefig_EEDF]:
 	print'# Angular Energy Distribution Processing'
+else:
+	print'# No Diagnostics Requested'
 print '-----------------------------------------'
 print ''
 
@@ -439,6 +441,14 @@ for i in range(0,len(HomeDir)):
 		#endif
 	#endfor
 #endfor
+#If no folders detected, end analysis script.
+if numfolders == 0:
+	print '-------------------------------------------'
+	print 'No Ouput Files Detected, Aborting Analysis.'
+	print '-------------------------------------------'
+	print ''
+	exit()
+#endif
 
 
 #Begin the retrieval of geometry from mesh and input files.
@@ -588,6 +598,8 @@ for l in range(0,numfolders):
 		Material_Property_Conversion_Error=1
 	#endtry
 #endfor
+
+
 
 
 
@@ -1588,7 +1600,7 @@ def Matplotlib_GlobalOptions():
 	mpl.rcParams['savefig.dpi'] = 100						#Sets saved dpi
 	mpl.rcParams['image.interpolation'] = 'bilinear'		#Applies bilinear image 'smoothing'
 	mpl.rcParams['image.resample'] = True					#Resamples data before colourmapping
-	mpl.rcParams['image.cmap'] = 'jet'						#Select global colourmap 
+	mpl.rcParams['image.cmap'] = 'plasma'					#Select global colourmap 
 	#'jet','plasma','gnuplot'
 
 	#Axis options
