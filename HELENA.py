@@ -77,6 +77,7 @@ from pylab import *
 Magmesh = 1							#initmesh.exe magnification factor. (almost obsolete)
 DisableMovie = False				#Suppresses ffmpeg routines, saves RAM.
 DebugMode = False					#Produces debug outputs for relevent diagnostics.
+QuickConverge = True				#Supresses 2D Convergence images in savefig_convergence
 
 #Warning suppressions
 np.seterr(divide='ignore', invalid='ignore')		#Suppresses divide by zero errors
@@ -128,13 +129,13 @@ PR_PCMC = ['AR^0.35','EB-0.35','ION-TOT0.35']
 
 
 #Commonly Used Diagnostic Settings
-#electrodeloc	#YPR [29,44],[16,44] #SPR [0,107] 	#MSHC [0,12]
+#electrodeloc	#YPR [29,44],[16,44] #SPR [0,107] 	#TSHC [0,12]
 #waveformlocs 	#YPR [[16,29],[16,44],[16,64]]
-#DOFWidth		#YPR R;16,Z;41   					#MSHC R;5,Z;10
-#TrendLoc		#YPR H[0];R[29,44,64] 				#MSHC H[0,20];R[20]
+#DOFWidth		#YPR R;16,Z;41   					#TSHC R;5,Z;10
+#TrendLoc		#YPR H[0];R[29,44,64] 				#TSHC H[0,20];R[20]
 #ThrustLoc		#YPR=74, stdESCT=76, smlESCT=48/54
 #SheathROI		#YPR=[34,72]
-#SourceWidth	#YPR=R[0.21]						#MSHC R[]
+#SourceWidth	#YPR=R[0.21]						#TSHC R[]
 
 #Commonly Used Image Settings
 #Crop YPR R[0.6];Z[1,4.5]   
@@ -164,16 +165,16 @@ SourceWidth = [16]						#Source Dimension at ROI, leave empty for auto. [cells]
 #Requested TECPLOT Variables and plotting locations.
 Variables = Ar
 MultiVar = []							#Additional variables plotted ontop of [Variables]
-radialineouts = [44]#[29,44,64,74] 						#Radial 1D-Profiles to be plotted (fixed Z-mesh) --
-heightlineouts = []#[0]						#Axial 1D-Profiles to be plotted (fixed R-mesh) |
+radialineouts = [50]#[29,44,64,74] 						#Radial 1D-Profiles to be plotted (fixed Z-mesh) --
+heightlineouts = [0]						#Axial 1D-Profiles to be plotted (fixed R-mesh) |
 TrendLocation = [] 						#Cell location For Trend Analysis [R,Z], ([] = min/max)
 
 
 #Requested diagnostics and plotting routines.
-savefig_convergence = False				#Requires movie_icp.pdt
+savefig_convergence = True				#Requires movie_icp.pdt
 savefig_plot2D = False					#Requires TECPLOT2D.PDT
 
-savefig_monoprofiles = False			#Single-Variables; fixed height/radius
+savefig_monoprofiles = False				#Single-Variables; fixed height/radius
 savefig_multiprofiles = False			#Multi-Variables; same folder
 savefig_comparelineouts = False			#Multi-Variables; all folders
 savefig_trendphaseaveraged = False		#Single-Variables; fixed cell location (or max/min)
@@ -181,7 +182,7 @@ savefig_trendphaseresolved = False		#Single-Variables; Phase-resolved data.
 savefig_pulseprofiles = False			#Single-Variables; plotted against real-time axis
 
 savefig_phaseresolve1D = False			#1D Phase Resolved Images
-savefig_phaseresolve2D = True			#2D Phase Resolved Images
+savefig_phaseresolve2D = False			#2D Phase Resolved Images
 savefig_PROES = False					#Simulated PROES Diagnostic
 
 savefig_IEDFangular = False				#2D images of angular IEDF; single folders.
@@ -204,15 +205,15 @@ print_sheath = False					#Print sheath width at electrodeloc
 #Image plotting options.
 image_extension = '.png'				#Extensions ('.png', '.jpg', '.eps')
 image_aspectratio = [10,10]				#[x,y] in cm [Doesn't rotate dynamically]
-image_radialcrop = [0.5]				#[R1,R2] in cm
-image_axialcrop = [1,4]					#[Z1,Z2] in cm
+image_radialcrop = [1.0]#[0.6]				#[R1,R2] in cm
+image_axialcrop = [1.5,10]#[1,4]					#[Z1,Z2] in cm
 image_cbarlimit = []					#[min,max] colourbar limits	
 
 image_plotsymmetry = True				#Toggle radial symmetry
 image_numericaxis = False				#### NOT IMPLIMENTED ####
 image_contourplot = True				#Toggle contour Lines in images
 image_plotgrid = False					#Plot major/minor gridlines on profiles
-image_plotmesh = 'PR'					#### NOT IMPLIMENTED ####	('Auto','PR')
+image_plotmesh = False					#### NOT IMPLIMENTED ####	('Auto','PRCCP','PRuICP')
 image_rotate = True						#Rotate image 90 degrees to the right.
 
 image_normalize = False					#Normalize image/profiles to local max
@@ -237,21 +238,29 @@ cbaroverride = ['NotImplimented']
 
 
 
-#V1.0.0 Official Release Version
-#Fixed colourbar min-max calculator such that area of interest is the same as cropped area in all cases.
-#Added sheath plotter to PROES and enforced PROES image phase-axis sharing with waveform
-#IEDF energy axis set automatically.
+#V1.0.0 Official Release Version:
+#Clarified SheathWidth function Axial/Radial definition, also corrected this in the phase-resolved sheath trends diagnostic.
+
+#Corrected 1DPhaseMovie, 2DPhaseMovie and PROES, however the radial direction is not consistent. 
+#1DPhaseMovie needs no reversal using plotradialprofile
+#2PhaseMovie needs no reversal using ImageExtractor2D
+#PROES requires a reversal using plotradialprofile 
+
+#Sheathwidth function integrates axially or radially depending on mesh geometry.
+#Sheathwidth function has 1D (Scott) and 2D (Greg) capabilities
+#SheathWidth function can deal with image rotations.
+
+#Thrust diagnostic split into functions performing the same task as before.
+#Thrust diagnostic enforces image symmetry, correcting the half-thrust error.
 
 #Headerlists now contain entire header for datafiles, use 'len(headerlist)' for old function.
 #Convert EnumerateVariable Function to use header, not full rawdata. #header_2Dlist.append(rawdata[0:header_2D])
+
 #Variable Interpolator needs to work with phasedata - Take variables from batch?
-#Thrust diagnostic split into functions performing the same task as before.
-#Thrust diagnostic enforces image symmetry, correcting the half-thrust error.
-#Sheathwidth function integrates axially or radially depending on mesh geometry.
-#SheathWidth function can deal with image rotations.
+
 #Readicpnam function added replacing old icp.nam reader code.
 
-
+#Fix issue with ffmpeg "convert-im6.q16: DistributedPixelCache..."
 
 
 
@@ -274,6 +283,7 @@ cbaroverride = ['NotImplimented']
 #include 'garbage ./collection' at the end of each diagnostic.
 #Correct data 'direction' in readin functions, not diagnostics.
 #Include Andor, OO and LeCroy readin functions.
+#Namelist read-in functions to simplify error analysis. (deal with !!! in .nam)
 
 #Impliment image_numericaxis, try float(FolderNameTrimmer) as axis.
 #Impliment numerical image_rotate, allow for 000,090,180,270.
@@ -365,7 +375,7 @@ print '   |  |__|  | |  |__   |  |     |  |__   |   \|  |   /  ^  \        '
 print '   |   __   | |   __|  |  |     |   __|  |  . `  |  /  /_\  \       '
 print '   |  |  |  | |  |____ |  `----.|  |____ |  |\   | /  _____  \      '
 print '   |__|  |__| |_______||_______||_______||__| \__|/__/     \__\     '
-print '                                                             v0.12.5'
+print '                                                                v1.0'
 print '--------------------------------------------------------------------'
 print ''
 print 'The following diagnostics were requested:'
@@ -1225,7 +1235,7 @@ def VariableUnitConversion(profile,variable):
 #enddef
 
 
-def ManualPRMesh(Ax=plt.gca()):
+def ManualPRCCPMesh(Ax=plt.gca()):
 	#Plot pocket rocket material dimensions.
 	Ax.plot((1.32,1.32),   (-1.0,-0.21), 'w-', linewidth=2)
 	Ax.plot((3.7,3.7),     (-1.0,-0.21), 'w-', linewidth=2)
@@ -1920,8 +1930,8 @@ def ImageOptions(ax=plt.gca(),Xlabel='',Ylabel='',Title='',Legend=[],Crop=True):
 	if image_plotmesh == True:
 		mesh_auto_plot = 1 #AUTO PLOT MESH#
 		#NOT IMPLIMENTED!! REQUIRES initmesh.out READER#
-	elif image_plotmesh == 'PR' and Crop == True:	
-		ManualPRMesh(ax)
+	elif image_plotmesh == 'PRCCP' and Crop == True:	
+		ManualPRCCPMesh(ax)
 	#endif
 
 	#Crop image dimensions, use provided dimensions or default if not provided.
@@ -2622,7 +2632,7 @@ def DCbiasMagnitude(PPOTlineout):
 #Takes current folder, current axis, movie1 Phase and sheath calc method.
 #Returns array of sheath distances from origin and can plot this if requested.
 #Sx = SheathThickness(folder=l,Phase=moviephaselist[k])
-def SheathThickness(folder=l,ax=plt.gca(),Phase='NaN',Ne=list(),Ni=list(),PlotSx=True):
+def SheathThickness(folder=l,ax='NaN',Orientation='Axial',Phase='NaN',Ne=list(),Ni=list()):
 	#Initiate required lists and set sheath method.
 	SheathMethod=GlobSheathMethod
 	Sx,SymSx = list(),list()	
@@ -2646,13 +2656,13 @@ def SheathThickness(folder=l,ax=plt.gca(),Phase='NaN',Ne=list(),Ni=list(),PlotSx
 	#=======#
 
 	### CURRENTLY ONLY AXIAL METHOD IS EMPLOYED ###
-	Orientation = 'Axial'
-	#Determine electrode location.
-	if Orientation == 'Radial': loc = electrodeloc[0]
-	elif Orientation == 'Axial': loc = electrodeloc[1]
+	#Axial sheath array (Sx) is calculated using radial integrations.
+	#Radial sheath array (Sx) is calculated using axial integrations.
+	if Orientation == 'Axial': loc = electrodeloc[0]		#Radial point of interest
+	elif Orientation == 'Radial': loc = electrodeloc[1]		#Axial point of interest
 	### CURRENTLY ONLY AXIAL METHOD IS EMPLOYED ###
 
-	#Determine sheath edge through integration of charge.
+	#Determine sheath edge through integration of charge density:
 	if SheathMethod == 'IntDensity':
 		#Sheath extension: integral_(0-R) ne dR == integral_(0-R) ni dR (Gibson 2015)
 		for j in range(0,len(Ni)):
@@ -2670,12 +2680,12 @@ def SheathThickness(folder=l,ax=plt.gca(),Phase='NaN',Ne=list(),Ni=list(),PlotSx
 					break
 				#If no sheath found, append 'NaN' to avoid plotting.
 				if i == (len(Ni[j])-1):
-					Sx.append('NaN')
+					Sx.append(np.nan)
 				#endif
 			#endfor
 		#endfor
 
-	#Determine sheath edge by 'instantaneous' charge
+	#Determine sheath edge by 'instantaneous' charge density:
 	elif SheathMethod == 'AbsDensity':
 		#Sheath extension: ni @R >= ne @R, simplified model.
 		for j in range(0,len(Ni)):
@@ -2686,11 +2696,24 @@ def SheathThickness(folder=l,ax=plt.gca(),Phase='NaN',Ne=list(),Ni=list(),PlotSx
 					break
 				#If no sheath found, append 'NaN' to avoid plotting.
 				if i == (len(Ni[j])-1):
-					Sx.append('NaN')
+					Sx.append(np.nan)
 				#endif
 			#endfor
 		#endfor
 	#endif
+
+	#NEED TO APPLY RADIAL METHOD!!! FOR NOW THIS IS SET TO ZERO EVERYWHERE#
+	if Orientation == 'Radial':
+		for i in range(Sx):
+			Sx[i] = np.nan
+		#endfor
+	#endif
+
+	#Create symmetric sheath boundary
+	for i in range(0,len(Sx)): 
+		try: SymSx.append(-Sx[i])
+		except: SymSx.append(np.nan)
+	#endfor
 
 	#=======#
 
@@ -2706,21 +2729,11 @@ def SheathThickness(folder=l,ax=plt.gca(),Phase='NaN',Ne=list(),Ni=list(),PlotSx
 
 	#=======#
 
+
 	#THIS SHOULD PROBABLY BE A SEPERATE FUNCTION
-	#THAT USES SHEATHTHICKNESS AS AN INPUT
-	if PlotSx == True:
-		#Generate Axis and Remove NaN's from data, 
+	if ax != 'NaN':
+		#Generate axis and plot sheath characteristics if requested.
 		Axis=GenerateAxis(Orientation,Isym=Isymlist[folder])
-		for i in range(0,len(Sx)): 
-			if Sx[i] == 'NaN': Sx[i],Axis[i] = np.nan,np.nan
-			#endif
-		#endfor
-
-		#Create symmetric sheath boundary
-		for i in range(0,len(Sx)): SymSx.append(-Sx[i])
-		#endfor
-
-		#Plot sheath characteristics if requested.
 		if image_sheath == True:
 			ax.plot(Axis,Sx, 'w--', lw=2)
 			ax.plot(Axis,SymSx, 'w--', lw=2)
@@ -2728,7 +2741,7 @@ def SheathThickness(folder=l,ax=plt.gca(),Phase='NaN',Ne=list(),Ni=list(),PlotSx
 	#endif
 
 	#Return sheath expansion
-	return(Sx)
+	return(Sx,SymSx)
 #enddef
 
 
@@ -2799,7 +2812,7 @@ if savefig_plot2D == True:
 			extent,aspectratio = DataExtent(l)
 			fig,ax,im,Image = ImagePlotter2D(Image,extent,aspectratio,variablelist[k])
 			#Add sheath thickness to figure if requested.
-			Sx = SheathThickness(folder=l,ax=ax)
+			Sx = SheathThickness(folder=l,ax=ax)[0]
 
 			#Define image beautification variables.
 			if image_rotate == True:
@@ -2860,7 +2873,8 @@ if savefig_convergence == True:
 		#Create list and x-axis for convergence trend plotting.
 		ConvergenceTrends,Xaxis = list(),list()
 		for i in range(0,len(MovieIterlist[l])):
-			Xaxis.append(filter(lambda x: x.isdigit(), MovieIterlist[l][i]))
+			Iter = filter(lambda x: x.isdigit(), MovieIterlist[l][i])
+			Xaxis.append(float(Iter))
 		#endfor
 
 		#for all variables requested by the user.
@@ -2888,38 +2902,40 @@ if savefig_convergence == True:
 				#Take Max value of image for general convergence trend.
 				ConvergenceTrends[-1].append( sum(Image.flatten())/len(Image.flatten()) )
 
-				#Generate and rotate figure as requested.
-				extent,aspectratio = DataExtent(l)
-				fig,ax,im,Image = ImagePlotter2D(Image,extent,aspectratio,variablelist[i])
-				#Add sheath thickness to figure if requested.
-				Sx = SheathThickness(folder=l,Ax=ax)
+				if QuickConverge == False:
+					#Generate and rotate figure as requested.
+					extent,aspectratio = DataExtent(l)
+					fig,ax,im,Image = ImagePlotter2D(Image,extent,aspectratio,variablelist[i])
+					#Add sheath thickness to figure if requested. (CURRENTLY USES TECPLOT2D DATA)
+					Sx = SheathThickness(folder=l,ax=ax)[0]
 
-				#Define image axis labels.
-				if image_rotate == True:
-					Xlabel,Ylabel = 'Axial Distance Z [cm]','Radial Distance R [cm]'
-				elif image_rotate == False:
-					Xlabel,Ylabel = 'Radial Distance R [cm]','Axial Distance Z [cm]'
-					plt.gca().invert_yaxis()
+					#Define image axis labels.
+					if image_rotate == True:
+						Xlabel,Ylabel = 'Axial Distance Z [cm]','Radial Distance R [cm]'
+					elif image_rotate == False:
+						Xlabel,Ylabel = 'Radial Distance R [cm]','Axial Distance Z [cm]'
+						plt.gca().invert_yaxis()
+					#endif
+
+					#Image plotting details.
+					Title = str(MovieIterlist[l][k])
+					ImageOptions(ax,Xlabel,Ylabel,Title)
+
+					#Add Colourbar (Axis, Label, Bins)
+					label,bins = VariableLabelMaker(variablelist),5
+					cax = Colourbar(ax,label[i],bins,Lim=CbarMinMax(Image))
+
+					#Save to seperate folders inside simulation folder.
+					num1,num2,num3 = k % 10, k/10 % 10, k/100 % 10
+					Number = str(num3)+str(num2)+str(num1)
+					savefig(DirMovieplots+variablelist[i]+'_'+Number+ext)
+					plt.close('all')
 				#endif
-
-				#Image plotting details.
-				Title = str(MovieIterlist[l][k])
-				ImageOptions(ax,Xlabel,Ylabel,Title)
-
-				#Add Colourbar (Axis, Label, Bins)
-				label,bins = VariableLabelMaker(variablelist),5
-				cax = Colourbar(ax,label[i],bins,Lim=CbarMinMax(Image))
-
-				#Save to seperate folders inside simulation folder.
-				num1,num2,num3 = k % 10, k/10 % 10, k/100 % 10
-				Number = str(num3)+str(num2)+str(num1)
-				savefig(DirMovieplots+variablelist[i]+'_'+Number+ext)
-				plt.close('all')
 			#endfor
 
 			#Create .mp4 movie from completed images.
 			Prefix = FolderNameTrimmer(Dirlist[l])
-			Automovie(DirMovieplots,Prefix+'_'+variablelist[i])
+#			Automovie(DirMovieplots,Prefix+'_'+variablelist[i])
 		#endfor
 
 
@@ -4167,9 +4183,12 @@ if savefig_trendphaseaveraged == True or print_thrust == True:
 
 			#CellArea increases from central R=0.
 			#Correct extracted profiles to agree with this direction.
-			Pressure,PressureDown = Pressure[0:64][::-1],PressureDown[0:64][::-1]
-			NeutralVelocity,NeutralAxialFlux = NeutralVelocity[0:64][::-1],NeutralAxialFlux[0:64][::-1]
-			IonVelocity,IonAxialFlux = IonVelocity[0:64][::-1],IonAxialFlux[0:64][::-1]
+			print 
+			Pressure,PressureDown = Pressure[0:R_mesh[l]][::-1],PressureDown[0:R_mesh[l]][::-1]
+			NeutralVelocity = NeutralVelocity[0:R_mesh[l]][::-1]
+			NeutralAxialFlux = NeutralAxialFlux[0:R_mesh[l]][::-1]
+			IonVelocity = IonVelocity[0:R_mesh[l]][::-1]
+			IonAxialFlux = IonAxialFlux[0:R_mesh[l]][::-1]
 			#ONLY WORKS WHEN SYMMETRY OPTION IS ON, NEED A MORE ROBUST METHOD!
 
 			DiffForce,NeutralThrust,IonThrust = 0,0,0
@@ -4302,7 +4321,7 @@ if savefig_trendphaseaveraged == True or print_sheath == True:
 		Xaxis.append( FolderNameTrimmer(Dirlist[l]) )
 
 		#Obtain sheath thickness array for current folder 
-		Sx = SheathThickness(folder=l)
+		Sx = SheathThickness(folder=l)[0]
 
 		#Extract maximum sheath thickness from region of interest and width at electrodeloc [Loc].
 		#If this fails, provide null point for sheath thickness.
@@ -4400,7 +4419,7 @@ if bool(set(NeutSpecies).intersection(Variables)) == True:
 			extent,aspectratio = DataExtent(l)
 			fig,ax,im,Image = ImagePlotter2D(Image,extent,aspectratio)
 			#Add sheath thickness to figure if requested.
-			Sx = SheathThickness(folder=l,ax=ax)
+			Sx = SheathThickness(folder=l,ax=ax)[0]
 
 			#Image plotting details, invert Y-axis to fit 1D profiles.
 			Title = 'Knudsen Number Image for \n'+Dirlist[l][2:-1]
@@ -4512,11 +4531,12 @@ if savefig_phaseresolve1D == True:
 	for l in range(0,numfolders):
 
 		#Create global folders to keep output plots and collect graph title.
-		DirPhaseResolved = CreateNewFolder(Dirlist[l],'1DPhase/')
+		DirPhaseResolved = CreateNewFolder(Dirlist[l],'1DPhase')
 		VariedValuelist.append( FolderNameTrimmer(Dirlist[l]) )
 
-		#Create processlist for each folder as required. (Always get PPOT)
-		PhaseData,Phaselist,proclist,varlist = ExtractPhaseData(folder=l,Variables=PhaseVariables+['E','AR+'])
+		#Create processlist for each folder as required. (Always get 'E','AR+','PPOT')
+		PhaseData,Phaselist,proclist,varlist = ExtractPhaseData(folder=l,Variables=PhaseVariables)
+		SxData,SxPhase,Sxproc,Sxvar = ExtractPhaseData(folder=l,Variables=['E','AR+'])
 		PPOT = ExtractPhaseData(folder=l,Variables=['PPOT'])[2][0]
 
 		#Generate SI scale axes for lineout plots. ([omega*t/2pi] and [cm] respectively)
@@ -4632,7 +4652,7 @@ if savefig_phaseresolve1D == True:
 					fig.suptitle('Phase-Resolved '+varlist[i]+' for '+VariedValuelist[l]+lineoutstring+str(Phaselist[j]), y=0.97, fontsize=16)
 
 					#Plot profile and apply image options.
-					ax[0].plot(axis, PhaseResolvedlineout[::-1], lw=2)
+					ax[0].plot(axis, PhaseResolvedlineout, lw=2)
 					ImageOptions(ax[0],Xlabel,Ylabel[i],Crop=False)
 					ax[0].set_ylim(VariableMin,VariableMax*1.02)
 
@@ -4780,7 +4800,7 @@ if savefig_phaseresolve2D == True:
 
 				#Plot 2D image, applying image options and cropping as required.
 				fig,ax[0],im,Image = ImagePlotter2D(Image,extent,aspectratio,varlist[i],fig,ax[0])
-				SheathThickness(folder=l,ax=ax[0],Phase=j,Ne=Ne,Ni=Ni)
+				Sx = SheathThickness(folder=l,ax=ax[0],Phase=j,Ne=Ne,Ni=Ni)[0]
 				ImageOptions(ax[0],Xlabel,Ylabel,Crop=True)
 				#Add Colourbar (Axis, Label, Bins)
 				Ylabel = VariableLabelMaker(varlist)
@@ -4863,10 +4883,12 @@ if savefig_trendphaseresolved == True:
 		#endfor
 		ElectrodeWaveform,ElectrodeBias = WaveformExtractor(PhaseData,PPOT)
 
-		#Select axial or radial electrode location (loc) and create axis.
-		Orientation = 'Axial'		#### SET TO AXIAL BY DEFAULT ###
-		if Orientation == 'Radial': loc = electrodeloc[0]
-		elif Orientation == 'Axial': loc = electrodeloc[1]
+		### CURRENTLY ONLY AXIAL METHOD IS EMPLOYED ###
+		#Axial sheath array (Sx) is calculated using radial integrations.
+		#Radial sheath array (Sx) is calculated using axial integrations.
+		Orientation = 'Axial'
+		if Orientation == 'Axial': loc = electrodeloc[0]		#Radial point of interest
+		elif Orientation == 'Radial': loc = electrodeloc[1]		#Axial point of interest
 		Phaseaxis = GenerateAxis('Phase',Isym=Isymlist[l])
 
 		#=============#
@@ -4879,7 +4901,7 @@ if savefig_trendphaseresolved == True:
 			Ni = PhaseData[k][proclist[varlist.index('AR+')]]
 
 			#Extract sheath width and record sheath width at electrodeloc
-			Sx = SheathThickness(folder=l,Phase=Phaselist[k],Ne=Ne,Ni=Ni)
+			Sx = SheathThickness(folder=l,Phase=j,Ne=Ne,Ni=Ni)[0]
 			for j in range(0,len(Sx)): 
 				try: Sx[j] = ((SourceWidth[0]*dr[l])-Sx[j])*10	#Convert to mm
 				except: Sx[j] = 0.0								#'NaN' = 0.0
@@ -5115,7 +5137,7 @@ if savefig_PROES == True:
 			for k in range(0,len(Lineouts)):
 				#Refresh required lists.
 				VariableMax,VariableMin = list(),list()
-				PhaseSx,NegPhaseSx = list(),list()
+				PhaseSx,SymPhaseSx = list(),list()
 				PROES = list()
 
 				#for all recorded phases, plot spatially varying variable and waveform.
@@ -5137,7 +5159,7 @@ if savefig_PROES == True:
 
 						#Collect lineouts from DOF region and transpose to allow easy integration.
 						for LineoutLoc in range(DOFRegion[0],DOFRegion[1]):
-							if LineoutsOrientation[k] == 'Radial': DoFArrays.append(PlotRadialProfile(PhaseData[j],proclist[i],varlist[i],LineoutLoc))
+							if LineoutsOrientation[k] == 'Radial': DoFArrays.append(PlotRadialProfile(PhaseData[j],proclist[i],varlist[i],LineoutLoc)[::-1])
 							elif LineoutsOrientation[k] == 'Axial': DoFArrays.append(PlotAxialProfile(PhaseData[j],proclist[i],varlist[i],LineoutLoc)[::-1])
 							#endif
 						#endfor
@@ -5163,9 +5185,9 @@ if savefig_PROES == True:
 					Ne = SxData[j][Sxproc[Sxvar.index('E')]]
 					Ni = SxData[j][Sxproc[Sxvar.index('AR+')]]
 					#Extract the full spatial sheath extent for phase 'j', save location for PROES.
-					SpatialSx = SheathThickness(folder=l,Phase=j,Ne=Ne,Ni=Ni,PlotSx=False)
-					PhaseSx.append(SpatialSx[Lineouts[k]])
-					NegPhaseSx.append(-SpatialSx[Lineouts[k]])
+					Sx = SheathThickness(folder=l,Orientation=LineoutsOrientation[k],Phase=j,Ne=Ne,Ni=Ni)
+					PhaseSx.append(Sx[0][Lineouts[k]])
+					SymPhaseSx.append(Sx[1][Lineouts[k]])
 				#endfor
 
 				#Increase PROES image by required number of phasecycles.
@@ -5173,7 +5195,7 @@ if savefig_PROES == True:
 					for n in range(0,len(PROES)):
 						PROES.append(PROES[n])
 						PhaseSx.append(PhaseSx[n])
-						NegPhaseSx.append(NegPhaseSx[n])
+						SymPhaseSx.append(SymPhaseSx[n])
 					#endfor
 				#endfor
 
@@ -5210,7 +5232,7 @@ if savefig_PROES == True:
 				im = ax[0].imshow(PROES,extent=[x1,x2,y1,y2],origin='bottom',aspect='auto')
 				if image_sheath == True:
 					ax[0].plot(Phaseaxis,PhaseSx,'w--',lw=1.0)
-					ax[0].plot(Phaseaxis,NegPhaseSx,'w--',lw=1.0)
+					ax[0].plot(Phaseaxis,SymPhaseSx,'w--',lw=1.0)
 				#endif
 				ImageOptions(ax[0],Xlabel='',Ylabel=Ylabel,Crop=Crop)
 				ax[0].set_xticks([])
