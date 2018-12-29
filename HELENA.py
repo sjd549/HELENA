@@ -202,8 +202,8 @@ savefig_phaseresolve1D = False			#1D Phase Resolved Images
 savefig_phaseresolve2D = False			#2D Phase Resolved Images
 savefig_PROES = False					#Simulated PROES Diagnostic
 
-savefig_IEDFangular = False				#2D images of angular IEDF; single folders.
-savefig_IEDFtrends = True				#1D IEDF trends; all folders.
+savefig_IEDFangular = True				#2D images of angular IEDF; single folders.
+savefig_IEDFtrends = False				#1D IEDF trends; all folders.
 savefig_EEDF = False					#NO PLOTTING ROUTINE		#IN DEVELOPMENT#
 
 #Write processed data to ASCII files.
@@ -3572,30 +3572,35 @@ if savefig_IEDFangular == True:
 			EDFprofile = list()
 
 			#Extract image from required variable and create required profile lists.
-			Image = ImageExtractor2D(DataIEDF[l][processlist[i]],Rmesh=EDFangle,Zmesh=EDFbins)
-
 			#Flatten angular distribution across all angles to produce energy distribution.
+			Image = ImageExtractor2D(DataIEDF[l][processlist[i]],Rmesh=EDFangle,Zmesh=EDFbins)
 			for j in range(0,len(Image)): EDFprofile.append(sum(Image[j]))
+
+			#Obtain conversion from energy-bin axis to eV axis and construct energy axis
+			deV, eVaxis = (EMAXIPCMC/IEBINSPCMC), list()
+			for j in range (0,int(IEBINSPCMC)): eVaxis.append(j*deV)
 
 			#Transpose Image for plotting and reverse both lists to align with other data.
 			Image, EDFprofile = Image[::-1].transpose(), EDFprofile[::-1]
+
 
 			#Plot the angular distribution and EDF of the required species.
 			fig,ax = figure([11,9], 2, shareX=True)
 
 			Title = Dirlist[l][2::]+'\n'+variablelist[i]+' Angular Energy Distribution Function'
-			Extent=[0,len(Image[0]), -len(Image)/2,len(Image)/2]
+			Extent=[0,EMAXIPCMC, -len(Image)/2,len(Image)/2]
 			fig.suptitle(Title, y=0.995, fontsize=16)
 
 			#Angular Figure
-			im = ax[0].imshow(Image,extent=Extent)
-			ImageOptions(ax[0],Ylabel='Angular Dispersion [$\\theta^{\circ}$]', Crop=False)						
+			im = ax[0].imshow(Image, extent=Extent, aspect='auto')
+			ImageOptions(ax[0],Ylabel='Angular Dispersion [$\\theta^{\circ}$]', Crop=False)
 			cax = Colourbar(ax[0],variablelist[i]+' EDF($\\theta$)',5)
 
 			#Integrated IEDF figure
-			ax[1].plot(EDFprofile, lw=2)
+			ax[1].plot(eVaxis,EDFprofile, lw=2)
 			Xlabel,Ylabel = 'Energy [eV]',variablelist[i]+' EDF \n [$\\theta$ Integrated]'
 			ImageOptions(ax[1],Xlabel,Ylabel,Crop=False)
+			InvisibleColourbar(ax[1])
 
 			plt.tight_layout()
 			plt.savefig(DirEDF+variablelist[i]+'_EDF'+ext)
@@ -3655,20 +3660,25 @@ if savefig_IEDFtrends == True:
 			#Plot current variable profile to figure for each simulation folder.
 			ax.plot(EDFprofile, lw=2)
 
+			#==========#
+			#==========#
 
+			#Obtain conversion from energy-bin axis to eV axis.
+			deV = EMAXIPCMC/IEBINSPCMC
+	
 			#Perform a trend analysis on current folder variable i IEDF
 			#Average energy analysis: Returns mean/mode energies from IEDF.
 			mean = (max(EDFprofile)+min(EDFprofile))/2
 			meanindex = (np.abs(EDFprofile[2::]-mean)).argmin()
-			Mean_eV.append( EDFprofile.index(EDFprofile[meanindex]) ) 
-			Mode_eV.append( EDFprofile.index(max(EDFprofile)) )
+			Mean_eV.append( EDFprofile.index(EDFprofile[meanindex])*deV ) 
+			Mode_eV.append( EDFprofile.index(max(EDFprofile))*deV )
 
 			#Maximum energy analysis: Returns maximum energy below a set threshold.
 			threshold = 0.01*max(EDFprofile)
 			for j in range(0,len(EDFprofile)):
 				if EDFprofile[j] >= threshold: tempMax_eV = j
 			#endfor
-			Max_eV.append(tempMax_eV)
+			Max_eV.append(tempMax_eV*deV)
 
 			#Particle energy variance analysis: Returns FWHM of energy distribution.
 			#Take mean and draw line at y = mean 
