@@ -70,14 +70,14 @@ from pylab import *
 
 
 #====================================================================#
-				  		#DEFAULT PARAMETERS#
+				  		 #LOW LEVEL INPUTS#
 #====================================================================#
 
 #Various debug and streamlining options.
 Magmesh = 1							#initmesh.exe magnification factor. (almost obsolete)
 DisableMovie = False				#Suppresses ffmpeg routines, saves RAM.
 DebugMode = False					#Produces debug outputs for relevent diagnostics.
-QuickConverge = True				#Supresses 2D Convergence images in savefig_convergence
+QuickConverge = False				#Supresses 2D Convergence images in savefig_convergence
 
 #Warning suppressions
 np.seterr(divide='ignore', invalid='ignore')		#Suppresses divide by zero errors
@@ -87,7 +87,7 @@ np.seterr(divide='ignore', invalid='ignore')		#Suppresses divide by zero errors
 #List of recognized data extensions for file readin
 FileExtensions = ['.PDT','.pdt','.nam']
 
-#Calculation Methods:
+#Numerical Calculation Methods:
 GlobSheathMethod = 'AbsDensity'		#Set Global Sheath Calculation Method.
 #Choices: ('AbsDensity','IntDensity')
 GlobThrustMethod = 'AxialMomentum'	#Set Global Thrust Calculation Method. 
@@ -96,6 +96,7 @@ DCbiasaxis = 'Auto'					#Direction to calculate dc bias over.
 #Choices:('Axial','Radial','Auto')
 
 
+####################
 
 #List of recognised neutral/metastable atomic density sets, add new sets as required.
 ArgonReduced = ['AR','AR+','AR*']
@@ -120,26 +121,42 @@ PR_PCMC = ['AR^0.35','EB-0.35','ION-TOT0.35']
 
 
 
+####################
+
+#Commonly Used Diagnostic Settings:
+#### PRCCP ####
+#electrodeloc =		[29,44],[16,44] 			#SPR [0,107]
+#waveformlocs =		[[16,29],[16,44],[16,64]]
+#DOFWidth =			R;16,Z;41
+#TrendLoc =			H[0];R[29,44,64]
+#ThrustLoc =		74, 						#stdESCT=76, smlESCT=48/54
+#SheathROI =		[34,72]
+#SourceWidth =		[0.21]						
+#Crop =				R[0.6];Z[1,4.5] 
+
+#### TSHC ####
+#electrodeloc = 	[0,12]
+#waveformlocs = 	[]
+#DOFWidth = 		R;5,Z;10
+#TrendLoc =  		H[0,20];R[20]
+#ThrustLoc = 		[]
+#SheathROI = 		[]
+#SourceWidth = 		[]
+#Crop = 			R[0.0,1.0];Z[0.5,2.5]
+
+#### PRuICP ####	
+#electrodeloc = 	[33,33]			#Coil V
+#waveformlocs = 	[]
+#DOFWidth = 		[]
+#TrendLoc = 		H[0];R[36,50]
+#ThrustLoc = 		[79]
+#SheathROI = 		[]
+#SourceWidth = 		[]
+#Crop = 			R[0.0,1.0];Z[1.5,10]
+
+####################
 
 
-        
-        
-        
-
-
-
-#Commonly Used Diagnostic Settings
-#electrodeloc	#YPR [29,44],[16,44] #SPR [0,107] 	#TSHC [0,12]
-#waveformlocs 	#YPR [[16,29],[16,44],[16,64]]
-#DOFWidth		#YPR R;16,Z;41   					#TSHC R;5,Z;10
-#TrendLoc		#YPR H[0];R[29,44,64] 				#TSHC H[0,20];R[20]
-#ThrustLoc		#YPR=74, stdESCT=76, smlESCT=48/54
-#SheathROI		#YPR=[34,72]
-#SourceWidth	#YPR=R[0.21]						#TSHC R[]
-
-#Commonly Used Image Settings
-#Crop YPR R[0.6];Z[1,4.5]   
-#Crop #MSHC R[0.0,1.0];Z[0.5,2.5]
 
 #====================================================================#
 					#SWITCHBOARD AND DIAGNOSTICS#
@@ -158,23 +175,23 @@ waveformlocs = [[16,29],[16,44],[16,64]]	#Cell locations of additional waveforms
 #Various Diagnostic Settings.
 phasecycles = 2							#Number of waveform phase cycles to be plotted. [number]
 DoFWidth = 41							#PROES Depth of Field (symmetric on image plane) [cells]
-ThrustLoc = 74							#Z-axis cell for thrust calculation  [cells]
+ThrustLoc = 79#74							#Z-axis cell for thrust calculation  [cells]
 SheathROI = [34,72]						#Sheath Region of Interest, (Start,End) [cells]
 SourceWidth = [16]						#Source Dimension at ROI, leave empty for auto. [cells]
 
 #Requested TECPLOT Variables and plotting locations.
 Variables = Ar
 MultiVar = []							#Additional variables plotted ontop of [Variables]
-radialineouts = [50]#[29,44,64,74] 						#Radial 1D-Profiles to be plotted (fixed Z-mesh) --
+radialineouts = [36,50]#[29,44,64,74] 						#Radial 1D-Profiles to be plotted (fixed Z-mesh) --
 heightlineouts = [0]						#Axial 1D-Profiles to be plotted (fixed R-mesh) |
 TrendLocation = [] 						#Cell location For Trend Analysis [R,Z], ([] = min/max)
 
 
 #Requested diagnostics and plotting routines.
-savefig_convergence = True				#Requires movie_icp.pdt
+savefig_convergence = False				#Requires movie_icp.pdt
 savefig_plot2D = False					#Requires TECPLOT2D.PDT
 
-savefig_monoprofiles = False				#Single-Variables; fixed height/radius
+savefig_monoprofiles = False			#Single-Variables; fixed height/radius
 savefig_multiprofiles = False			#Multi-Variables; same folder
 savefig_comparelineouts = False			#Multi-Variables; all folders
 savefig_trendphaseaveraged = False		#Single-Variables; fixed cell location (or max/min)
@@ -186,7 +203,7 @@ savefig_phaseresolve2D = False			#2D Phase Resolved Images
 savefig_PROES = False					#Simulated PROES Diagnostic
 
 savefig_IEDFangular = False				#2D images of angular IEDF; single folders.
-savefig_IEDFtrends = False				#1D IEDF trends; all folders.
+savefig_IEDFtrends = True				#1D IEDF trends; all folders.
 savefig_EEDF = False					#NO PLOTTING ROUTINE		#IN DEVELOPMENT#
 
 #Write processed data to ASCII files.
@@ -563,10 +580,12 @@ for l in range(0,numfolders):
 
 	#PCMC Namelist Input
 	try:
-		IEBINSPCMC = filter(lambda x: 'IEBINSPCMC=' in x, SImeshdata)[0].split()[0]
+		IEBINSPCMC = float(filter(lambda x: 'IEBINSPCMC=' in x, SImeshdata)[0].split()[0].strip(' \t\n\r,=IEBINSPCMC'))
+		EMAXIPCMC = float(filter(lambda x: 'EMAXIPCMC=' in x, SImeshdata)[0].split()[0].strip(' \t\n\r,=EMAXIPCMC '))
 	except:
 		print 'ICP.NAM READIN ERROR, USING DEFAULT PCMC PROPERTIES'
 		IEBINSPCMC = 250
+		EMAXIPCMC = 160
 	#endtry
 
 	#SI Conversion unit extraction.
@@ -3678,7 +3697,7 @@ if savefig_IEDFtrends == True:
 		Title = Dirlist[l][2::]+'\n'+variablelist[i]+' Angular Energy Distribution Function Profiles'
 		Xlabel,Ylabel = 'Energy [eV]',variablelist[i]+' EDF [$\\theta$ Integrated]'
 		ImageOptions(ax,Xlabel,Ylabel,Title,Legendlist,Crop=False)
-		ax.set_xlim(0,IEBINSPCMC)
+		ax.set_xlim(0,EMAXIPCMC)
 
 		plt.savefig(DirIEDFTrends+variablelist[i]+'_EDFprofiles'+ext)
 		plt.close('all')
