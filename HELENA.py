@@ -125,7 +125,7 @@ PR_PCMC = ['AR^0.35','EB-0.35','ION-TOT0.35']
 
 #Commonly Used Diagnostic Settings:
 #### PRCCP ####
-#electrodeloc =		[29,44],[16,44] 			#SPR [0,107]
+#electrodeloc =		[29,44] 					#SPR [0,107]
 #waveformlocs =		[[16,29],[16,44],[16,64]]
 #DOFWidth =			R;16,Z;41
 #TrendLoc =			H[0];R[29,44,64]
@@ -168,22 +168,22 @@ NEDFVariables = []			#Requested nprofile_2d variables (no spaces)
 
 #Requested movie1/movie_icp Variables.
 IterVariables = ['E','S-E','PPOT','TE']		#Requested Movie_icp (iteration) Variables.		
-PhaseVariables = Ar_Phase				#Requested Movie1 (phase) Variables. +['E','AR+']
+PhaseVariables = Ar_Phase					#Requested Movie1 (phase) Variables. +['E','AR+']
 electrodeloc = [29,44]						#Cell location of powered electrode [R,Z].
 waveformlocs = [[16,29],[16,44],[16,64]]	#Cell locations of additional waveforms [R,Z].
 
 #Various Diagnostic Settings.
-phasecycles = 2							#Number of waveform phase cycles to be plotted. [number]
+phasecycles = 1							#Number of waveform phase cycles to be plotted. [number]
 DoFWidth = 41							#PROES Depth of Field (symmetric on image plane) [cells]
-ThrustLoc = 79#74							#Z-axis cell for thrust calculation  [cells]
+ThrustLoc = 74							#Z-axis cell for thrust calculation  [cells]
 SheathROI = [34,72]						#Sheath Region of Interest, (Start,End) [cells]
 SourceWidth = [16]						#Source Dimension at ROI, leave empty for auto. [cells]
 
 #Requested TECPLOT Variables and plotting locations.
 Variables = Ar
 MultiVar = []							#Additional variables plotted ontop of [Variables]
-radialineouts = [36,50]#[29,44,64,74] 						#Radial 1D-Profiles to be plotted (fixed Z-mesh) --
-heightlineouts = [0]						#Axial 1D-Profiles to be plotted (fixed R-mesh) |
+radialineouts = [29,44,64]#[29,44,64,74] 						#Radial 1D-Profiles to be plotted (fixed Z-mesh) --
+heightlineouts = []						#Axial 1D-Profiles to be plotted (fixed R-mesh) |
 TrendLocation = [] 						#Cell location For Trend Analysis [R,Z], ([] = min/max)
 
 
@@ -202,7 +202,7 @@ savefig_phaseresolve1D = False			#1D Phase Resolved Images
 savefig_phaseresolve2D = False			#2D Phase Resolved Images
 savefig_PROES = False					#Simulated PROES Diagnostic
 
-savefig_IEDFangular = True				#2D images of angular IEDF; single folders.
+savefig_IEDFangular = False				#2D images of angular IEDF; single folders.
 savefig_IEDFtrends = False				#1D IEDF trends; all folders.
 savefig_EEDF = False					#NO PLOTTING ROUTINE		#IN DEVELOPMENT#
 
@@ -222,15 +222,15 @@ print_sheath = False					#Print sheath width at electrodeloc
 #Image plotting options.
 image_extension = '.png'				#Extensions ('.png', '.jpg', '.eps')
 image_aspectratio = [10,10]				#[x,y] in cm [Doesn't rotate dynamically]
-image_radialcrop = [1.0]#[0.6]				#[R1,R2] in cm
-image_axialcrop = [1.5,10]#[1,4]					#[Z1,Z2] in cm
+image_radialcrop = [0.6]				#[R1,R2] in cm
+image_axialcrop = [1,4]					#[Z1,Z2] in cm
 image_cbarlimit = []					#[min,max] colourbar limits	
 
 image_plotsymmetry = True				#Toggle radial symmetry
 image_numericaxis = False				#### NOT IMPLIMENTED ####
 image_contourplot = True				#Toggle contour Lines in images
 image_plotgrid = False					#Plot major/minor gridlines on profiles
-image_plotmesh = False					#### NOT IMPLIMENTED ####	('Auto','PRCCP','PRuICP')
+image_plotmesh = 'PRCCP'				#### NOT IMPLIMENTED ####	('Auto','PRCCP','PRuICP')
 image_rotate = True						#Rotate image 90 degrees to the right.
 
 image_normalize = False					#Normalize image/profiles to local max
@@ -2683,19 +2683,33 @@ def SheathThickness(folder=l,ax='NaN',Orientation='Axial',Phase='NaN',Ne=list(),
 
 	#Determine sheath edge through integration of charge density:
 	if SheathMethod == 'IntDensity':
-		#Sheath extension: integral_(0-R) ne dR == integral_(0-R) ni dR (Gibson 2015)
+		#Sheath extension: integral_(R0->Rwall) ne dR == integral_(Rwall->R0) ni dR (Gibson 2015)
 		for j in range(0,len(Ni)):
+
+			#Define wall radius to integrate electrons into bulk from.
+			for i in range(0,len(Ni[j])):
+				#if ion density drops to zero, we've hit a material surface.
+				if Ni[j][i] == 0.0 and i == 0:
+					RadialWallLoc = 0
+					break
+				elif Ni[j][i] == 0.0 and i > 0:
+					RadialWallLoc = i-1
+					break
+				#endif
+			#endfor
+			RadialWallLoc = len(Ni[j])				####FUDGED####
+			
 			#Refresh sums after every radial profile.
 			Ni_sum,Ne_sum = 0.0,0.0
-			for i in range(0,len(Ni[j])):
+			for i in range(0,RadialWallLoc):
 				#Sum density outward radially for ions and electrons.
-				anti_i = len(Ni[j])-i-1
-				Ni_sum += Ni[j][i]
-				Ne_sum += Ne[j][i]
+				anti_i = RadialWallLoc-i
+				Ni_sum += Ni[j][i]		#Sum from R=wall to R=0	[anti_i] 	####FUDGED####
+				Ne_sum += Ne[j][i]		#Sum from R=0 to R=wall [i] 	 	####FUDGED####
 
 				#If ion sum is greater than electron, sheath has begun.
 				if Ni_sum/Ne_sum >= 1.0: 
-					Sx.append(i*dr[l])
+					Sx.append(i*dr[l])										####FUDGED####
 					break
 				#If no sheath found, append 'NaN' to avoid plotting.
 				if i == (len(Ni[j])-1):
@@ -2703,6 +2717,8 @@ def SheathThickness(folder=l,ax='NaN',Orientation='Axial',Phase='NaN',Ne=list(),
 				#endif
 			#endfor
 		#endfor
+
+	#==========#
 
 	#Determine sheath edge by 'instantaneous' charge density:
 	elif SheathMethod == 'AbsDensity':
@@ -2723,7 +2739,7 @@ def SheathThickness(folder=l,ax='NaN',Orientation='Axial',Phase='NaN',Ne=list(),
 
 	#NEED TO APPLY RADIAL METHOD!!! FOR NOW THIS IS SET TO ZERO EVERYWHERE#
 	if Orientation == 'Radial':
-		for i in range(Sx):
+		for i in range(0,len(Sx)):
 			Sx[i] = np.nan
 		#endfor
 	#endif
@@ -4467,6 +4483,7 @@ if bool(set(NeutSpecies).intersection(Variables)) == True:
 		if write_ASCII == True:
 			DirASCII = CreateNewFolder(DirTrends,'Trend_Data')
 			WriteDataToFile(Xaxis, DirASCII+'Kn_Trends','w')
+			WriteDataToFile('\n', DirASCII+'Kn_Trends','w')
 			WriteDataToFile(KnudsenAverage, DirASCII+'Kn_Trends','a')
 		#endif
 
@@ -4916,8 +4933,8 @@ if savefig_trendphaseresolved == True:
 		#Axial sheath array (Sx) is calculated using radial integrations.
 		#Radial sheath array (Sx) is calculated using axial integrations.
 		Orientation = 'Axial'
-		if Orientation == 'Axial': loc = electrodeloc[0]		#Radial point of interest
-		elif Orientation == 'Radial': loc = electrodeloc[1]		#Axial point of interest
+		if Orientation == 'Axial': loc = electrodeloc[1]		#Axial depth where sheath plotted
+		elif Orientation == 'Radial': loc = electrodeloc[0]		#Radial depth where sheath plotted
 		Phaseaxis = GenerateAxis('Phase',Isym=Isymlist[l])
 
 		#=============#
@@ -4930,16 +4947,24 @@ if savefig_trendphaseresolved == True:
 			Ni = PhaseData[k][proclist[varlist.index('AR+')]]
 
 			#Extract sheath width and record sheath width at electrodeloc
-			Sx = SheathThickness(folder=l,Phase=j,Ne=Ne,Ni=Ni)[0]
+			Sx = SheathThickness(folder=l,Phase=k,Ne=Ne,Ni=Ni)[0]
 			for j in range(0,len(Sx)): 
-				try: Sx[j] = ((SourceWidth[0]*dr[l])-Sx[j])*10	#Convert to mm
-				except: Sx[j] = 0.0								#'NaN' = 0.0
+				Sx[j] = ((SourceWidth[0]*dr[l])-Sx[j])*10	#Convert to mm
 			#endfor
 			SxLoc.append(Sx[loc])
 		#endfor
-		SxDynRangeTrend.append(max(SxLoc)-min(SxLoc))		#Dynamic Range
-		SxMeanExtTrend.append(sum(SxLoc)/len(SxLoc))		#Mean Extension
-		SxMaxExtTrend.append(max(SxLoc))					#Max Extension
+
+		#Determine phase-averaged sheath proprties, removing 'nans' unless all data is 'nan'
+		SxLocNoNaN = [x for x in SxLoc if np.isnan(x) == False]
+		if len(SxLocNoNaN) > 0:
+			SxDynRangeTrend.append(max(SxLocNoNaN)-min(SxLocNoNaN))		#Dynamic Range
+			SxMeanExtTrend.append(sum(SxLocNoNaN)/len(SxLocNoNaN))		#Mean Extension
+			SxMaxExtTrend.append(max(SxLocNoNaN))						#Max Extension
+		else:
+			SxDynRangeTrend.append( np.nan )
+			SxMeanExtTrend.append( np.nan )
+			SxMaxExtTrend.append( np.nan )
+		#endif
 
 		#Calculate phase-averaged (mean) sheath velocity.
 		#Assumes one sheath collapse and one sheath expansion per rf-cycle.
@@ -4989,7 +5014,7 @@ if savefig_trendphaseresolved == True:
 		ax[0].plot(Phaseaxis,SxLoc, lw=2)
 		Ylabel = 'Sheath Extension [mm]'
 		ImageOptions(ax[0],Ylabel=Ylabel,Crop=False)
-		ax[0].xticks([])
+		ax[0].set_xticks([])
 
 		#Plot Waveform onto Temporally collapsed PROES.
 		ax[1].plot(Phaseaxis, ElectrodeWaveform, lw=2)
