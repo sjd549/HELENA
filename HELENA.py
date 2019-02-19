@@ -50,6 +50,8 @@ if 'True' in str(options):
 	print ''
 #endif
 
+#==============#
+
 #Import core modules
 import matplotlib.cm as cm
 import numpy as np
@@ -57,6 +59,11 @@ import scipy as sp
 import math as m
 import os, sys
 import os.path
+
+#Enforce matplotlib to avoid instancing undisplayed windows
+#matplotlib-tcl-asyncdelete-async-handler-deleted-by-the-wrong-thread
+import matplotlib
+matplotlib.use('Agg')
 
 #Import additional modules
 from mpl_toolkits.axes_grid1 import make_axes_locatable
@@ -66,8 +73,7 @@ from matplotlib import ticker
 from scipy import ndimage
 from tqdm import tqdm
 from pylab import *
-
-
+ 
 
 #====================================================================#
 				  		 #LOW LEVEL INPUTS#
@@ -127,6 +133,7 @@ PR_PCMC = ['AR^0.35','EB-0.35','ION-TOT0.35']
 #### PRCCP ####
 #electrodeloc =		[29,44] 					#SPR [0,107]
 #waveformlocs =		[[16,29],[16,44],[16,64]]
+#waveformlocs = 	[[24,44],[23,44],[22,44],[21,44],[20,44],[19,44],[18,44],[17,44],[16,44],[15,44],[14,44],[13,44],[12,44],[11,44],[10,44],[9,44],[8,44],[7,44],[6,44],[5,44],[4,44],[3,44],[2,44],[1,44],[0,44]]
 #DOFWidth =			R;16,Z;41
 #TrendLoc =			H[0];R[29,44,64]
 #ThrustLoc =		74, 						#stdESCT=76, smlESCT=48/54
@@ -172,19 +179,20 @@ PhaseVariables = Ar_Phase					#Requested Movie1 (phase) Variables. +['E','AR+']
 electrodeloc = [29,44]						#Cell location of powered electrode [R,Z].
 waveformlocs = [[16,29],[16,44],[16,64]]	#Cell locations of additional waveforms [R,Z].
 
+#Requested TECPLOT Variables and plotting locations.
+Variables = Ar
+MultiVar = []							#Additional variables plotted ontop of [Variables]
+radialineouts = [44]#[29,44,64,74] 						#Radial 1D-Profiles to be plotted (fixed Z-mesh) --
+heightlineouts = []#[0]						#Axial 1D-Profiles to be plotted (fixed R-mesh) |
+TrendLocation = [] 						#Cell location For Trend Analysis [R,Z], ([] = min/max)
+
 #Various Diagnostic Settings.
-phasecycles = 1							#Number of waveform phase cycles to be plotted. [number]
+phasecycles = 2							#Number of waveform phase cycles to be plotted. [number]
 DoFWidth = 41							#PROES Depth of Field (symmetric on image plane) [cells]
 ThrustLoc = 74							#Z-axis cell for thrust calculation  [cells]
 SheathROI = [34,72]						#Sheath Region of Interest, (Start,End) [cells]
 SourceWidth = [16]						#Source Dimension at ROI, leave empty for auto. [cells]
-
-#Requested TECPLOT Variables and plotting locations.
-Variables = Ar
-MultiVar = []							#Additional variables plotted ontop of [Variables]
-radialineouts = [29,44,64]#[29,44,64,74] 						#Radial 1D-Profiles to be plotted (fixed Z-mesh) --
-heightlineouts = []						#Axial 1D-Profiles to be plotted (fixed R-mesh) |
-TrendLocation = [] 						#Cell location For Trend Analysis [R,Z], ([] = min/max)
+EDF_Threshold = 0.01					#Upper EEDF/IEDF threshold energy fraction for plotting
 
 
 #Requested diagnostics and plotting routines.
@@ -202,8 +210,8 @@ savefig_phaseresolve1D = False			#1D Phase Resolved Images
 savefig_phaseresolve2D = False			#2D Phase Resolved Images
 savefig_PROES = False					#Simulated PROES Diagnostic
 
-savefig_IEDFangular = False				#2D images of angular IEDF; single folders.
-savefig_IEDFtrends = False				#1D IEDF trends; all folders.
+savefig_IEDFangular = True				#2D images of angular IEDF; single folders.
+savefig_IEDFtrends = True				#1D IEDF trends; all folders.
 savefig_EEDF = False					#NO PLOTTING ROUTINE		#IN DEVELOPMENT#
 
 #Write processed data to ASCII files.
@@ -230,8 +238,8 @@ image_plotsymmetry = True				#Toggle radial symmetry
 image_numericaxis = False				#### NOT IMPLIMENTED ####
 image_contourplot = True				#Toggle contour Lines in images
 image_plotgrid = False					#Plot major/minor gridlines on profiles
-image_plotmesh = 'PRCCP'				#### NOT IMPLIMENTED ####	('Auto','PRCCP','PRuICP')
-image_rotate = True						#Rotate image 90 degrees to the right.
+image_plotmesh = 'PRCCP'				#Plot material mesh outlines ('Auto','PRCCP','PRuICP')
+image_rotate = True					#Rotate image 90 degrees to the right.
 
 image_normalize = False					#Normalize image/profiles to local max
 image_logplot = False					#Plot ln(Data), against linear axis.
@@ -343,9 +351,10 @@ Height = list()
 dr = list()
 dz = list()
 
+#Lists for icp.nam variables
 VRFM,VRFM2 = list(),list()
 FREQM,FREQM2 = list(),list()
-FREQICP,IRFPOW = list(),list()
+FREQGLOB,IRFPOW = list(),list()
 MAXFREQ,MINFREQ = list(),list()
 IETRODEM = list()
 
@@ -558,13 +567,13 @@ for l in range(0,numfolders):
 		print 'ICP.NAM READIN ERROR, IGNORING MESH MATERIAL TYPES'
 	#endtry
 
-	#Material Namelist Input (frequencies/voltages/powers)   [FREQICP ONLY READS 10 CHARACTERS]
+	#Material Namelist Input (frequencies/voltages/powers)   [FREQGLOB ONLY READS 10 CHARACTERS]
 	try:
 		VRFM.append(filter(lambda x: 'VRFM=' in x, SImeshdata)[0].split()[1:NUMMETALS])
 		VRFM2.append(filter(lambda x: 'VRFM_2=' in x, SImeshdata)[0].split()[1:NUMMETALS])
 		FREQM.append(filter(lambda x: 'FREQM=' in x, SImeshdata)[0].split()[1:NUMMETALS])
 		FREQM2.append(filter(lambda x: 'FREQM_2=' in x, SImeshdata)[0].split()[1:NUMMETALS])
-		FREQICP.append(float(filter(lambda x:'FREQ=' in x, SImeshdata)[0].strip(' \t\n\r,=FREQ')[0:10]))
+		FREQGLOB.append(float(filter(lambda x:'FREQ=' in x, SImeshdata)[0].strip(' \t\n\r,=FREQ')[0:10]))
 		IRFPOW.append(float(filter(lambda x:'IRFPOW=' in x, SImeshdata)[0].strip(' \t\n\r,=IRFPOW')))
 		IETRODEM.append(filter(lambda x:'IETRODEM=' in x, SImeshdata)[0].split()[1:NUMMETALS])
 		for i in range(0,len(IETRODEM[l])): IETRODEM[l][i] = int(IETRODEM[l][i].strip(','))
@@ -572,7 +581,7 @@ for l in range(0,numfolders):
 		print 'ICP.NAM READIN ERROR, USING DEFAULT MATERIAL PROPERTIES'
 		FREQM.append(13.56E6)
 		FREQM2.append(13.56E6)
-		FREQICP.append(13.56E6)
+		FREQGLOB.append(13.56E6)
 		VRFM.append(300.0)
 		VRFM2.append(150.0)
 		IRFPOW.append(100.0)
@@ -631,8 +640,8 @@ for l in range(0,numfolders):
 		FREQM[l] = float( FREQM[l][IETRODEM[l].index(1)].strip(',') )
 		FREQM2[l] = float( FREQM2[l][IETRODEM[l].index(1)].strip(',') )
 
-		MINFREQ.append( min([FREQM[l],FREQM2[l],FREQICP[l]]) )
-		MAXFREQ.append( max([FREQM[l],FREQM2[l],FREQICP[l]]) )
+		MINFREQ.append( min([FREQM[l],FREQM2[l],FREQGLOB[l]]) )
+		MAXFREQ.append( max([FREQM[l],FREQM2[l],FREQGLOB[l]]) )
 	except:
 		Material_Property_Conversion_Error=1
 	#endtry
@@ -1772,7 +1781,7 @@ def CropImage(ax=plt.gca(),Extent=[],Apply=True,Rotate=True):
 	#R1,R2 are radial limits of image, Z1,Z2 are axial limits. (non-rotated)
 	R1,R2 = ax.get_xlim()[0],ax.get_xlim()[1]
 	Z1,Z2 = ax.get_ylim()[0],ax.get_ylim()[1]
-	if image_rotate == True: 
+	if Rotate == True and image_rotate == True: 
 		R1,Z1, R2,Z2 = Z1,R1, Z2,R2
 	#endif
 
@@ -1797,16 +1806,18 @@ def CropImage(ax=plt.gca(),Extent=[],Apply=True,Rotate=True):
 	#endif
 
 	#Rotate cropping dimentions to match image rotation.
-	if image_rotate == 00:
-		Z1,Z2 = Z1,Z2
-	elif image_rotate == 90 or image_rotate == True:
-		R1,Z1 = Z1,R1
-		R2,Z2 = Z2,R2
-	elif image_rotate == 180 or image_rotate == False:
-		Z1,Z2 = Z2,Z1
-	elif image_rotate == 270:
-		R1,Z2 = Z2,R1
-		R2,Z1 = Z1,R2
+	if Rotate == True:
+		if image_rotate == 00:
+			Z1,Z2 = Z1,Z2
+		elif image_rotate == 90 or image_rotate == True:
+			R1,Z1 = Z1,R1
+			R2,Z2 = Z2,R2
+		elif image_rotate == 180 or image_rotate == False:
+			Z1,Z2 = Z2,Z1
+		elif image_rotate == 270:
+			R1,Z2 = Z2,R1
+			R2,Z1 = Z1,R2
+		#endif
 	#endif
 
 	#Apply cropping dimensions to image.
@@ -1908,7 +1919,7 @@ def CbarMinMax(Image,PROES=False,Symmetry=True):
 #Applies plt.options to current figure based on user input.
 #Returns nothing, current image is required, use figure().
 #ImageOptions(plt.gca(),Xlabel,Ylabel,Title,Legend,Crop=False)
-def ImageOptions(ax=plt.gca(),Xlabel='',Ylabel='',Title='',Legend=[],Crop=True):
+def ImageOptions(ax=plt.gca(),Xlabel='',Ylabel='',Title='',Legend=[],Crop=True,Rotate=True):
 
 	#Apply user overrides to plots.
 	if len(titleoverride) > 0:
@@ -1955,10 +1966,10 @@ def ImageOptions(ax=plt.gca(),Xlabel='',Ylabel='',Title='',Legend=[],Crop=True):
 
 	#Crop image dimensions, use provided dimensions or default if not provided.
 	if isinstance(Crop, (list, np.ndarray) ) == True:
-		CropImage(ax,Crop)
+		CropImage(ax,Extent=Crop,Rotate=Rotate)
 	elif any( [len(image_radialcrop),len(image_axialcrop)] ) > 0:
 		if Crop == True:
-			CropImage(ax)
+			CropImage(ax,Rotate=Rotate)
 		#endif
 	#endif
 
@@ -2253,7 +2264,7 @@ def TrendPlotter(ax=plt.gca(),TrendArray=[],Xaxis=[],Marker='o-',NormFactor=0):
 	#endif
 
 	#Choose how to plot the trends.
-	if image_numericaxis == True:
+	if image_numericaxis == True:			#!!!!!THIS NEEDS GENERALIZING!!!!!#
 		#Plot results against number of cells in each mesh for convergence studies.
 		numcells = list()
 		for l in range(0,numfolders):
@@ -3599,6 +3610,17 @@ if savefig_IEDFangular == True:
 			#Transpose Image for plotting and reverse both lists to align with other data.
 			Image, EDFprofile = Image[::-1].transpose(), EDFprofile[::-1]
 
+			#Determine region of IEDF to plot based on threshold value from array maximum.
+			Threshold = EDF_Threshold*max(EDFprofile)
+			for j in range(EDFprofile.index(max(EDFprofile)),len(EDFprofile)): 
+				if EDFprofile[j] <= Threshold and j != 0: 
+					eVlimit = j*deV
+ 					break
+				elif j == len(EDFprofile)-1:
+					eVlimit = EMAXIPCMC
+				#endif
+			#endfor
+
 
 			#Plot the angular distribution and EDF of the required species.
 			fig,ax = figure([11,9], 2, shareX=True)
@@ -3607,15 +3629,18 @@ if savefig_IEDFangular == True:
 			Extent=[0,EMAXIPCMC, -len(Image)/2,len(Image)/2]
 			fig.suptitle(Title, y=0.995, fontsize=16)
 
-			#Angular Figure
+			#Angularly resolved IEDF Figure
 			im = ax[0].imshow(Image, extent=Extent, aspect='auto')
-			ImageOptions(ax[0],Ylabel='Angular Dispersion [$\\theta^{\circ}$]', Crop=False)
+			ImageCrop = [[0,eVlimit],[-45,45]]					#[[X1,X2],[Y1,Y2]]
+			Xlabel,Ylabel = '','Angular Dispersion [$\\theta^{\circ}$]'
+			ImageOptions(ax[0],Xlabel,Ylabel,Crop=ImageCrop,Rotate=False) 
 			cax = Colourbar(ax[0],variablelist[i]+' EDF($\\theta$)',5)
 
-			#Integrated IEDF figure
+			#Angle Integrated IEDF figure
 			ax[1].plot(eVaxis,EDFprofile, lw=2)
 			Xlabel,Ylabel = 'Energy [eV]',variablelist[i]+' EDF \n [$\\theta$ Integrated]'
-			ImageOptions(ax[1],Xlabel,Ylabel,Crop=False)
+			ImageCrop = [[0,eVlimit],[0,max(EDFprofile)*1.05]]	#[[X1,X2],[Y1,Y2]]
+			ImageOptions(ax[1],Xlabel,Ylabel,Crop=ImageCrop,Rotate=False)
 			InvisibleColourbar(ax[1])
 
 			plt.tight_layout()
@@ -3679,8 +3704,9 @@ if savefig_IEDFtrends == True:
 			#==========#
 			#==========#
 
-			#Obtain conversion from energy-bin axis to eV axis.
-			deV = EMAXIPCMC/IEBINSPCMC
+			#Obtain conversion from energy-bin axis to eV axis and construct energy axis
+			deV, eVaxis = (EMAXIPCMC/IEBINSPCMC), list()
+			for j in range (0,int(IEBINSPCMC)): eVaxis.append(j*deV)
 	
 			#Perform a trend analysis on current folder variable i IEDF
 			#Average energy analysis: Returns mean/mode energies from IEDF.
@@ -3689,12 +3715,17 @@ if savefig_IEDFtrends == True:
 			Mean_eV.append( EDFprofile.index(EDFprofile[meanindex])*deV ) 
 			Mode_eV.append( EDFprofile.index(max(EDFprofile))*deV )
 
-			#Maximum energy analysis: Returns maximum energy below a set threshold.
-			threshold = 0.01*max(EDFprofile)
-			for j in range(0,len(EDFprofile)):
-				if EDFprofile[j] >= threshold: tempMax_eV = j
+			#Maximum energy analysis: Returns maximum energy where the fraction is above threshold.
+			Threshold = EDF_Threshold*max(EDFprofile)
+			for j in range(EDFprofile.index(max(EDFprofile)),len(EDFprofile)): 
+				if EDFprofile[j] <= Threshold and j != 0: 
+					eVlimit = j*deV
+ 					break
+				elif j == len(EDFprofile)-1:
+					eVlimit = EMAXIPCMC
+				#endif
 			#endfor
-			Max_eV.append(tempMax_eV*deV)
+			Max_eV.append(eVlimit)
 
 			#Particle energy variance analysis: Returns FWHM of energy distribution.
 			#Take mean and draw line at y = mean 
@@ -3722,8 +3753,8 @@ if savefig_IEDFtrends == True:
 		#Apply image options to IEDF plot generated in the above loop.
 		Title = Dirlist[l][2::]+'\n'+variablelist[i]+' Angular Energy Distribution Function Profiles'
 		Xlabel,Ylabel = 'Energy [eV]',variablelist[i]+' EDF [$\\theta$ Integrated]'
-		ImageOptions(ax,Xlabel,Ylabel,Title,Legendlist,Crop=False)
-		ax.set_xlim(0,EMAXIPCMC)
+		ImageCrop = [[0,eVlimit],[]]		#[[X1,X2],[Y1,Y2]]
+		ImageOptions(ax,Xlabel,Ylabel,Title,Legendlist,Crop=ImageCrop,Rotate=False)
 
 		plt.savefig(DirIEDFTrends+variablelist[i]+'_EDFprofiles'+ext)
 		plt.close('all')
@@ -3741,7 +3772,8 @@ if savefig_IEDFtrends == True:
 		Title = Dirlist[l][2::]+'\n'+'Average '+variablelist[i]+' Energies'
 		Legend = ['EDF Mean Energy','EDF Mode Energy','EDF Max Energy']
 		Xlabel,Ylabel = 'Varied Property',variablelist[i]+' Energy [eV]'
-		ImageOptions(ax,Xlabel,Ylabel,Title,Legend,Crop=False)
+		ImageCrop = [[],[0,eVlimit]]		#[[X1,X2],[Y1,Y2]]
+		ImageOptions(ax,Xlabel,Ylabel,Title,Legend,Crop=ImageCrop,Rotate=False)
 
 		plt.savefig(DirIEDFTrends+variablelist[i]+'_AverageEnergies'+ext)
 		plt.close('all')
