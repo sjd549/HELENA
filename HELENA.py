@@ -120,12 +120,13 @@ O2 = ['O2','O2+','O','O+','O-','E','FR-O-','FZ-O-']+Phys
 
 Ar_Phase = ['S-E','S-AR+','S-AR4P','SEB-AR+','SEB-AR4P','SRCE-2437','TE','PPOT','FR-E','FZ-E','SEB-AR4P','SEB-AR+']
 
-ESCT_PCMC = ['AR^0.3S','EB-0.3S','ION-TOT0.3S']
-MSHC_PCMC = ['AR^0.5S','EB-0.5S','ION-TOT0.5S','AR^1.1B','EB-1.1B','ION-TOT1.1B']
-SCCP_PCMC = ['AR^7.7J','ION-TOT7.7J','AR^5.1B','ION-TOT5.1B']
-PR_PCMC = ['AR^0.35','EB-0.35','ION-TOT0.35']
+PRCCP_PCMC = ['AR^0.35','EB-0.35','ION-TOT0.35']
+TSHC_PCMC = ['AR^2.0S','EB-2.0S','ION-TOT2.0S','AR^0.2B','EB-0.2B','ION-TOT0.2B','AR^2.2C','EB-2.2C','ION-TOT2.2C','AR^4.2D','EB-4.2D','ION-TOT4.2D','AR^6.2E','EB-6.2E','ION-TOT6.2E','AR^8.2F','EB-8.2F','ION-TOT8.2F']
 
-
+#Archived variable sets
+MSHC2017_PCMC = ['AR^0.5S','EB-0.5S','ION-TOT0.5S','AR^1.1B','EB-1.1B','ION-TOT1.1B']
+SCCP2018_PCMC = ['AR^7.7J','ION-TOT7.7J','AR^5.1B','ION-TOT5.1B']
+ESCT2018_PCMC = ['AR^0.3S','EB-0.3S','ION-TOT0.3S']
 
 ####################
 
@@ -170,8 +171,8 @@ PR_PCMC = ['AR^0.35','EB-0.35','ION-TOT0.35']
 #====================================================================#
 
 #Requested IEDF/NEDF Variables.
-IEDFVariables = PR_PCMC		#Requested iprofile_2d variables (no spaces)
-NEDFVariables = []			#Requested nprofile_2d variables (no spaces)
+IEDFVariables = PRCCP_PCMC		#Requested iprofile_2d variables (no spaces)
+NEDFVariables = []				#Requested nprofile_2d variables (no spaces)
 
 #Requested movie1/movie_icp Variables.
 IterVariables = ['E','S-E','PPOT','TE']		#Requested Movie_icp (iteration) Variables.		
@@ -182,8 +183,8 @@ waveformlocs = [[16,29],[16,44],[16,64]]	#Cell locations of additional waveforms
 #Requested TECPLOT Variables and plotting locations.
 Variables = Ar
 MultiVar = []							#Additional variables plotted ontop of [Variables]
-radialineouts = [44]#[29,44,64,74] 						#Radial 1D-Profiles to be plotted (fixed Z-mesh) --
-heightlineouts = []#[0]						#Axial 1D-Profiles to be plotted (fixed R-mesh) |
+radialineouts = [29,44,64,74] 						#Radial 1D-Profiles to be plotted (fixed Z-mesh) --
+heightlineouts = [0]						#Axial 1D-Profiles to be plotted (fixed R-mesh) |
 TrendLocation = [] 						#Cell location For Trend Analysis [R,Z], ([] = min/max)
 
 #Various Diagnostic Settings.
@@ -199,7 +200,7 @@ EDF_Threshold = 0.01					#Upper EEDF/IEDF threshold energy fraction for plotting
 savefig_convergence = False				#Requires movie_icp.pdt
 savefig_plot2D = False					#Requires TECPLOT2D.PDT
 
-savefig_monoprofiles = False			#Single-Variables; fixed height/radius
+savefig_monoprofiles = False				#Single-Variables; fixed height/radius
 savefig_multiprofiles = False			#Multi-Variables; same folder
 savefig_comparelineouts = False			#Multi-Variables; all folders
 savefig_trendphaseaveraged = False		#Single-Variables; fixed cell location (or max/min)
@@ -239,7 +240,7 @@ image_numericaxis = False				#### NOT IMPLIMENTED ####
 image_contourplot = True				#Toggle contour Lines in images
 image_plotgrid = False					#Plot major/minor gridlines on profiles
 image_plotmesh = 'PRCCP'				#Plot material mesh outlines ('Auto','PRCCP','PRuICP')
-image_rotate = True					#Rotate image 90 degrees to the right.
+image_rotate = True						#Rotate image 90 degrees to the right.
 
 image_normalize = False					#Normalize image/profiles to local max
 image_logplot = False					#Plot ln(Data), against linear axis.
@@ -263,13 +264,14 @@ cbaroverride = ['NotImplimented']
 
 
 
-#V1.0.0 Official Release Version:
+#V1.1.0 Release Version To Do list:
 #Clarified SheathWidth function Axial/Radial definition, also corrected this in the phase-resolved sheath trends diagnostic.
 
 #Corrected 1DPhaseMovie, 2DPhaseMovie and PROES, however the radial direction is not consistent. 
 #1DPhaseMovie needs no reversal using plotradialprofile
 #2PhaseMovie needs no reversal using ImageExtractor2D
-#PROES requires a reversal using plotradialprofile 
+#PROES requires a reversal using plotradialprofile
+#Refactor PROES into 3D array (R,Z,Phase) and perform slice/integration rather than calling plotradial?
 
 #Sheathwidth function integrates axially or radially depending on mesh geometry.
 #Sheathwidth function has 1D (Scott) and 2D (Greg) capabilities
@@ -281,12 +283,17 @@ cbaroverride = ['NotImplimented']
 #Headerlists now contain entire header for datafiles, use 'len(headerlist)' for old function.
 #Convert EnumerateVariable Function to use header, not full rawdata. #header_2Dlist.append(rawdata[0:header_2D])
 
+#Automate AutoConvProfData() and provide a timeout setting. 
+#Automate IEDFVarArgs input for varying PCMC settings.
+
+#IEDF diagnostic capable of comparing between different material surfaces in single image
+#IEDF diagnostic saves different material surfaces in different folders
+
 #Variable Interpolator needs to work with phasedata - Take variables from batch?
 
 #Readicpnam function added replacing old icp.nam reader code.
 
 #Fix issue with ffmpeg "convert-im6.q16: DistributedPixelCache..."
-
 
 
 
@@ -401,7 +408,7 @@ print '   |  |__|  | |  |__   |  |     |  |__   |   \|  |   /  ^  \        '
 print '   |   __   | |   __|  |  |     |   __|  |  . `  |  /  /_\  \       '
 print '   |  |  |  | |  |____ |  `----.|  |____ |  |\   | /  _____  \      '
 print '   |__|  |__| |_______||_______||_______||__| \__|/__/     \__\     '
-print '                                                                v1.0'
+print '                                                              v1.0.1'
 print '--------------------------------------------------------------------'
 print ''
 print 'The following diagnostics were requested:'
@@ -1380,11 +1387,12 @@ for l in tqdm(range(0,numfolders)):
 	if True in [savefig_IEDFangular,savefig_IEDFtrends]:
 
 		#Define arguments and autorun conv_prof.exe if possible.
-		IEDFVarArgs = ['1','1','1','1','1'] #### THIS IS HACKY, WON'T ALWAYS WORK ####
-		args = ['pcmc.prof','title','1','1','1'] + IEDFVarArgs + ['0','0']
+		#### THIS IS HACKY, WON'T ALWAYS WORK, ARGS LIST NEEDS AUTOMATING ####
+		IEDFVarArgs = ['1','1','1','1','1'] 	#Works for 2 species 1 surface.
+		Args = ['pcmc.prof','title','1','1','1'] + IEDFVarArgs + ['0','0']
 		DirAdditions = ['iprofile_tec2d.pdt','nprofile_tec2d.pdt','iprofile_tec1d.pdt', 'nprofile_tec1d.pdt','iprofile_zones_tec1d.pdt','nprofile_zones_tec1d.pdt']
-		try: AutoConvProfData('./conv_prof.exe',args,DirAdditions)
-		except: print Dirlist[l]
+		try: AutoConvProfData('./conv_prof.exe',Args,DirAdditions)
+		except: print 'ConvProf Failure:'+Dirlist[l]
 
 		#Load data from IEDFprofile file and unpack into 1D array.
 		rawdata, nn_IEDF = ExtractRawData(Dir,'iprofile_tec2d.pdt',l)
@@ -1808,12 +1816,12 @@ def CropImage(ax=plt.gca(),Extent=[],Apply=True,Rotate=True):
 	#Rotate cropping dimentions to match image rotation.
 	if Rotate == True:
 		if image_rotate == 00:
-			Z1,Z2 = Z1,Z2
+			Z1,Z2 = Z2,Z1
 		elif image_rotate == 90 or image_rotate == True:
 			R1,Z1 = Z1,R1
 			R2,Z2 = Z2,R2
 		elif image_rotate == 180 or image_rotate == False:
-			Z1,Z2 = Z2,Z1
+			Z1,Z2 = Z1,Z2
 		elif image_rotate == 270:
 			R1,Z2 = Z2,R1
 			R2,Z1 = Z1,R2
@@ -1886,6 +1894,11 @@ def CbarMinMax(Image,PROES=False,Symmetry=True):
 		if Symmetry == False and R1 < 0: 
 			R1 = 0
 		#endif
+		#Reverse axial ROI if required to avoid zero size images, does not affect plotting.
+		#HPEM axial zero in top left corner, array must be read with zero in 'bottom left'.
+		if Z1 > Z2: 
+			Z1,Z2 = Z2,Z1
+		#endif
 
 		#Crop the cell region to the desired region, axial first (Z), then radial (R).
 		if PROES == False:
@@ -1917,9 +1930,10 @@ def CbarMinMax(Image,PROES=False,Symmetry=True):
 
 
 #Applies plt.options to current figure based on user input.
-#Returns nothing, current image is required, use figure().
+#Returns nothing, open figure is required, use figure().
+#For best results call immediately before saving/displaying figure.
 #ImageOptions(plt.gca(),Xlabel,Ylabel,Title,Legend,Crop=False)
-def ImageOptions(ax=plt.gca(),Xlabel='',Ylabel='',Title='',Legend=[],Crop=True,Rotate=True):
+def ImageOptions(fig,ax=plt.gca(),Xlabel='',Ylabel='',Title='',Legend=[],Crop=True,Rotate=True):
 
 	#Apply user overrides to plots.
 	if len(titleoverride) > 0:
@@ -1972,6 +1986,9 @@ def ImageOptions(ax=plt.gca(),Xlabel='',Ylabel='',Title='',Legend=[],Crop=True,R
 			CropImage(ax,Rotate=Rotate)
 		#endif
 	#endif
+
+	#Arrange figure such that labels, legends and titles fit within frame.
+	fig.tight_layout()
 
 	return()
 #enddef
@@ -2870,11 +2887,11 @@ if savefig_plot2D == True:
 
 			#Image plotting details, invert Y-axis to fit 1D profiles.
 			Title = '2D Steady State Plot of '+variablelist[k]+' for \n'+Dirlist[l][2:-1]
-			ImageOptions(ax,Xlabel,Ylabel,Title)
-
 			#Add Colourbar (Axis, Label, Bins)
 			label,bins = VariableLabelMaker(variablelist),5
 			cax = Colourbar(ax,label[k],bins,Lim=CbarMinMax(Image))
+			#Finalize image
+			ImageOptions(fig,ax,Xlabel,Ylabel,Title)
 
 			#Write data to ASCII files if requested.
 			if write_ASCII == True:
@@ -2965,11 +2982,11 @@ if savefig_convergence == True:
 
 					#Image plotting details.
 					Title = str(MovieIterlist[l][k])
-					ImageOptions(ax,Xlabel,Ylabel,Title)
-
 					#Add Colourbar (Axis, Label, Bins)
 					label,bins = VariableLabelMaker(variablelist),5
 					cax = Colourbar(ax,label[i],bins,Lim=CbarMinMax(Image))
+					#Finalize image
+					ImageOptions(fig,ax,Xlabel,Ylabel,Title)
 
 					#Save to seperate folders inside simulation folder.
 					num1,num2,num3 = k % 10, k/10 % 10, k/100 % 10
@@ -3001,7 +3018,7 @@ if savefig_convergence == True:
 		#Image plotting details.
 		Title = 'Convergence of '+str(variablelist)+' for \n'+Dirlist[l][2:-1]
 		Xlabel,Ylabel = 'Simulation Iteration','Normalized Mesh-Average Value'
-		ImageOptions(ax,Xlabel,Ylabel,Title,Legend,Crop=False)
+		ImageOptions(fig,ax,Xlabel,Ylabel,Title,Legend,Crop=False)
 		ax.set_ylim(0,1.01+(len(Legend)*0.05))
 
 		#Save figure.
@@ -3106,7 +3123,7 @@ if savefig_monoprofiles == True:
 				#Apply image options and axis labels.
 				Title = 'Radial Profiles for '+Variablelist[i]+' for \n'+Dirlist[l][2:-1]
 				Xlabel,Ylabel = 'Radial Distance R [cm]',VariableLabelMaker(Variablelist)[i]
-				ImageOptions(ax,Xlabel,Ylabel,Title,Legendlist,Crop=False)
+				ImageOptions(fig,ax,Xlabel,Ylabel,Title,Legendlist,Crop=False)
 
 				#Save profiles in previously created folder.
 				plt.savefig(DirRlineouts+'1D_Radial_'+Variablelist[i]+'_Profiles'+ext)
@@ -3150,7 +3167,7 @@ if savefig_monoprofiles == True:
 				#Apply image options and axis labels.
 				Title = 'Height Profiles for '+Variablelist[i]+' for \n'+Dirlist[l][2:-1]
 				Xlabel,Ylabel = 'Axial Distance Z [cm]',VariableLabelMaker(Variablelist)[i]
-				ImageOptions(ax,Xlabel,Ylabel,Title,Legendlist,Crop=False)
+				ImageOptions(fig,ax,Xlabel,Ylabel,Title,Legendlist,Crop=False)
 
 				#Save profiles in previously created folder.
 				plt.savefig(DirZlineouts+'1D_Axial_'+Variablelist[i]+'_Profiles'+ext)
@@ -3236,7 +3253,7 @@ if savefig_comparelineouts == True:
 				#Apply image options and axis labels.
 				Title = 'Comparison of '+Variablelist[k]+' Profiles at Z='+str(round((radialineouts[j])*dz[l], 2))+'cm for \n'+Dirlist[l][2:-1]
 				Xlabel,Ylabel,Legend = 'Radial Distance R [cm]',Ylabels[k],Legendlist
-				ImageOptions(ax,Xlabel,Ylabel,Title,Legendlist,Crop=False)
+				ImageOptions(fig,ax,Xlabel,Ylabel,Title,Legendlist,Crop=False)
 			#endfor
 
 			#Save one image per variable with data from all simulations.
@@ -3299,7 +3316,7 @@ if savefig_comparelineouts == True:
 				#Apply image options and axis labels.
 				Title = 'Comparison of '+Variablelist[k]+' Profiles at R='+str(round((heightlineouts[j])*dr[l], 2))+'cm for \n'+Dirlist[l][2:-1]
 				Xlabel,Ylabel,Legend = 'Axial Distance Z [cm]',Ylabels[k],Legendlist
-				ImageOptions(ax,Xlabel,Ylabel,Title,Legendlist,Crop=False)
+				ImageOptions(fig,ax,Xlabel,Ylabel,Title,Legendlist,Crop=False)
 			#endfor
 
 			#Save one image per variable with data from all simulations.
@@ -3377,7 +3394,7 @@ if savefig_multiprofiles == True:
 					#Apply image options and axis labels.
 					Title = str(round((heightlineouts[j])*dr[l], 2))+'cm Height profiles for '+Variablelist[i]+','' for \n'+Dirlist[l][2:-1]
 					Xlabel,Ylabel = 'Axial Distance Z [cm]',VariableLabelMaker(Variablelist)[i]
-					ImageOptions(ax,Xlabel,Ylabel,Title,Legendlist,Crop=False)
+					ImageOptions(fig,ax,Xlabel,Ylabel,Title,Legendlist,Crop=False)
 
 					#Save figures in original folder.
 					R = 'R='+str(round((heightlineouts[j])*dr[l], 2))+'_'
@@ -3432,7 +3449,7 @@ if savefig_multiprofiles == True:
 					#Apply image options and axis labels.
 					Title = str(round((radialineouts[j])*dz[l], 2))+'cm Radial Profiles for '+Variablelist[i]+' for \n'+Dirlist[l][2:-1]
 					Xlabel,Ylabel = 'Radial Distance R [cm]',VariableLabelMaker(Variablelist)[i]
-					ImageOptions(ax,Xlabel,Ylabel,Title,Legendlist,Crop=False)
+					ImageOptions(fig,ax,Xlabel,Ylabel,Title,Legendlist,Crop=False)
 
 					#Save lines in previously created folder.
 					Z = 'Z='+str(round((radialineouts[j])*dz[l], 2))+'_'
@@ -3499,7 +3516,7 @@ if savefig_pulseprofiles == True:
 			#Image plotting details.
 			Title = 'Simulation Time Profile of '+str(variablelist[i])+' for \n'+Dirlist[l][2:-1]
 			Xlabel,Ylabel = 'Simulation time [S]',VariableLabelMaker(variablelist)[i]
-			ImageOptions(ax,Xlabel,Ylabel,Title,Legend=[],Crop=False)
+			ImageOptions(fig,ax,Xlabel,Ylabel,Title,Legend=[],Crop=False)
 
 			#Save figure.
 			savefig(DirPulse+FolderNameTrimmer(Dirlist[l])+'_'+variablelist[i]+ext)
@@ -3528,7 +3545,7 @@ if savefig_pulseprofiles == True:
 		#Image plotting details.
 		Title = 'Simulation Time Profile of '+str(variablelist)+' for \n'+Dirlist[l][2:-1]
 		Xlabel,Ylabel = 'Simulation time [S]','Normalized Mesh-Average Value'
-		ImageOptions(ax,Xlabel,Ylabel,Title,Legend,Crop=False)
+		ImageOptions(fig,ax,Xlabel,Ylabel,Title,Legend,Crop=False)
 		ax.set_ylim(0,1.01+(len(Legend)*0.05))
 
 		#Save figure.
@@ -3631,19 +3648,18 @@ if savefig_IEDFangular == True:
 
 			#Angularly resolved IEDF Figure
 			im = ax[0].imshow(Image, extent=Extent, aspect='auto')
-			ImageCrop = [[0,eVlimit],[-45,45]]					#[[X1,X2],[Y1,Y2]]
-			Xlabel,Ylabel = '','Angular Dispersion [$\\theta^{\circ}$]'
-			ImageOptions(ax[0],Xlabel,Ylabel,Crop=ImageCrop,Rotate=False) 
 			cax = Colourbar(ax[0],variablelist[i]+' EDF($\\theta$)',5)
+			Xlabel,Ylabel = '','Angular Dispersion [$\\theta^{\circ}$]'
+			ImageCrop = [[0,eVlimit],[-45,45]]					#[[X1,X2],[Y1,Y2]]
+			ImageOptions(fig,ax[0],Xlabel,Ylabel,Crop=ImageCrop,Rotate=False) 
 
 			#Angle Integrated IEDF figure
 			ax[1].plot(eVaxis,EDFprofile, lw=2)
+			cax = InvisibleColourbar(ax[1])
 			Xlabel,Ylabel = 'Energy [eV]',variablelist[i]+' EDF \n [$\\theta$ Integrated]'
 			ImageCrop = [[0,eVlimit],[0,max(EDFprofile)*1.05]]	#[[X1,X2],[Y1,Y2]]
-			ImageOptions(ax[1],Xlabel,Ylabel,Crop=ImageCrop,Rotate=False)
-			InvisibleColourbar(ax[1])
+			ImageOptions(fig,ax[1],Xlabel,Ylabel,Crop=ImageCrop,Rotate=False)
 
-			plt.tight_layout()
 			plt.savefig(DirEDF+variablelist[i]+'_EDF'+ext)
 			plt.close('all')
 
@@ -3666,14 +3682,12 @@ if savefig_IEDFangular == True:
 				#ION-NEUTRAL ANGULAR ENERGY ANALYSIS#
 #====================================================================#
 
-
-
 if savefig_IEDFtrends == True:
 
 	#For all requested IEDF variables
 	for i in tqdm(range(0,len(IEDFVariables))):
 		#Initiate figure for current variable and any required lists.
-		Legendlist,EDFprofiles = list(),list()
+		Legendlist,EDFprofiles,eVlimits = list(),list(),list()
 		Mode_eV,Mean_eV,Max_eV = list(),list(),list()
 		fig,ax = figure()
 
@@ -3694,19 +3708,18 @@ if savefig_IEDFtrends == True:
 			#Extract image from required variable and flatten angular distribution profile.
 			Image = ImageExtractor2D(DataIEDF[l][processlist[i]],Rmesh=EDFangle,Zmesh=EDFbins)
 			for j in range(0,len(Image)): EDFprofile.append(sum(Image[j]))
-
 			#Transpose Image for plotting and reverse both lists due to reading error.
 			Image, EDFprofile = Image[::-1].transpose(), EDFprofile[::-1]
-
-			#Plot current variable profile to figure for each simulation folder.
-			ax.plot(EDFprofile, lw=2)
-
-			#==========#
-			#==========#
 
 			#Obtain conversion from energy-bin axis to eV axis and construct energy axis
 			deV, eVaxis = (EMAXIPCMC/IEBINSPCMC), list()
 			for j in range (0,int(IEBINSPCMC)): eVaxis.append(j*deV)
+
+			#Plot 1D EDF variable profile to open figure for each simulation folder.
+			ax.plot(eVaxis,EDFprofile, lw=2)
+
+			#==========#
+			#==========#
 	
 			#Perform a trend analysis on current folder variable i IEDF
 			#Average energy analysis: Returns mean/mode energies from IEDF.
@@ -3719,13 +3732,13 @@ if savefig_IEDFtrends == True:
 			Threshold = EDF_Threshold*max(EDFprofile)
 			for j in range(EDFprofile.index(max(EDFprofile)),len(EDFprofile)): 
 				if EDFprofile[j] <= Threshold and j != 0: 
-					eVlimit = j*deV
+					eVlimits.append( j*deV )
  					break
 				elif j == len(EDFprofile)-1:
-					eVlimit = EMAXIPCMC
+					eVlimits.append( EMAXIPCMC )
 				#endif
 			#endfor
-			Max_eV.append(eVlimit)
+			Max_eV.append(eVlimits[-1])
 
 			#Particle energy variance analysis: Returns FWHM of energy distribution.
 			#Take mean and draw line at y = mean 
@@ -3753,8 +3766,8 @@ if savefig_IEDFtrends == True:
 		#Apply image options to IEDF plot generated in the above loop.
 		Title = Dirlist[l][2::]+'\n'+variablelist[i]+' Angular Energy Distribution Function Profiles'
 		Xlabel,Ylabel = 'Energy [eV]',variablelist[i]+' EDF [$\\theta$ Integrated]'
-		ImageCrop = [[0,eVlimit],[]]		#[[X1,X2],[Y1,Y2]]
-		ImageOptions(ax,Xlabel,Ylabel,Title,Legendlist,Crop=ImageCrop,Rotate=False)
+		ImageCrop = [[0,max(eVlimits)],[]]		#[[X1,X2],[Y1,Y2]]
+		ImageOptions(fig,ax,Xlabel,Ylabel,Title,Legendlist,Crop=ImageCrop,Rotate=False)
 
 		plt.savefig(DirIEDFTrends+variablelist[i]+'_EDFprofiles'+ext)
 		plt.close('all')
@@ -3772,8 +3785,8 @@ if savefig_IEDFtrends == True:
 		Title = Dirlist[l][2::]+'\n'+'Average '+variablelist[i]+' Energies'
 		Legend = ['EDF Mean Energy','EDF Mode Energy','EDF Max Energy']
 		Xlabel,Ylabel = 'Varied Property',variablelist[i]+' Energy [eV]'
-		ImageCrop = [[],[0,eVlimit]]		#[[X1,X2],[Y1,Y2]]
-		ImageOptions(ax,Xlabel,Ylabel,Title,Legend,Crop=ImageCrop,Rotate=False)
+		ImageCrop = [[],[0,max(Mean_eV+Mode_eV)*1.15]]		#[[X1,X2],[Y1,Y2]]
+		ImageOptions(fig,ax,Xlabel,Ylabel,Title,Legend,Crop=ImageCrop,Rotate=False)
 
 		plt.savefig(DirIEDFTrends+variablelist[i]+'_AverageEnergies'+ext)
 		plt.close('all')
@@ -3899,7 +3912,7 @@ if savefig_trendphaseaveraged == True or print_generaltrends == True:
 			TrendPlotter(ax,Trend,Xaxis,NormFactor=0)
 			Title='Trend in max '+Variablelist[k]+' with changing '+TrendVariable+' \n'+Dirlist[l][2:-1]
 			Xlabel,Ylabel = 'Varied Property','Max '+YaxisLegend[k]
-			ImageOptions(ax,Xlabel,Ylabel,Title,Legendlist,Crop=False)
+			ImageOptions(fig,ax,Xlabel,Ylabel,Title,Legendlist,Crop=False)
 
 			#Write data to ASCII format datafile if requested.
 			if write_ASCII == True:
@@ -3960,7 +3973,7 @@ if savefig_trendphaseaveraged == True or print_generaltrends == True:
 			TrendPlotter(ax,Trend,Xaxis,NormFactor=0)
 			Title='Trend in max '+Variablelist[k]+' with changing '+TrendVariable+' \n'+Dirlist[l][2:-1]
 			Xlabel,Ylabel = 'Varied Property','Max '+YaxisLegend[k]
-			ImageOptions(ax,Xlabel,Ylabel,Title,Legendlist,Crop=False)
+			ImageOptions(fig,ax,Xlabel,Ylabel,Title,Legendlist,Crop=False)
 
 			#Write data to ASCII format datafile if requested.
 			if write_ASCII == True:
@@ -4062,7 +4075,7 @@ if savefig_trendphaseaveraged == True or print_DCbias == True:
 	#Apply image options and axis labels.
 	Title = 'Trend in DCbias with changing '+TrendVariable+' \n'+Dirlist[l][2:-1]
 	Xlabel,Ylabel = 'Varied Property','DC bias [V]'
-	ImageOptions(ax,Xlabel,Ylabel,Title,Crop=False)
+	ImageOptions(fig,ax,Xlabel,Ylabel,Title,Crop=False)
 
 	plt.savefig(DirTrends+'Powered Electrode DCbias'+ext)
 	plt.close('all')
@@ -4139,7 +4152,7 @@ if savefig_trendphaseaveraged == True or print_totalpower == True:
 		#Apply image options and axis labels.
 		Title = 'Power Deposition with changing '+TrendVariable+' \n'+Dirlist[l][2:-1]
 		Xlabel,Ylabel = 'Varied Property','Power Deposited [W]'
-		ImageOptions(ax,Xlabel,Ylabel,Title,Legend=RequestedPowers,Crop=False)
+		ImageOptions(fig,ax,Xlabel,Ylabel,Title,Legend=RequestedPowers,Crop=False)
 
 		plt.savefig(DirTrends+RequestedPowers[k]+' Deposition Trends'+ext)
 		plt.close('all')
@@ -4159,7 +4172,7 @@ if savefig_trendphaseaveraged == True or print_totalpower == True:
 	#Apply image options and axis labels.
 	Title = 'Power Deposition with changing '+TrendVariable+' \n'+Dirlist[l][2:-1]
 	Xlabel,Ylabel = 'Varied Property','Power Deposited [W]'
-	ImageOptions(ax,Xlabel,Ylabel,Title,Legend=RequestedPowers,Crop=False)
+	ImageOptions(fig,ax,Xlabel,Ylabel,Title,Legend=RequestedPowers,Crop=False)
 
 	plt.savefig(DirTrends+'Power Deposition Comparison'+ext)
 	plt.close('all')
@@ -4351,9 +4364,9 @@ if savefig_trendphaseaveraged == True or print_thrust == True:
 	#Apply image options and save figure.
 	Title = 'Thrust at Z='+str(round(ThrustLoc*dz[0],2))+'cm with varying '+TrendVariable+' \n'+Dirlist[l][2:-1]
 	Xlabel,Ylabel = 'Varied Property','Net Thrust [mN]'
-	ImageOptions(ax1,Xlabel,Ylabel,Title,Crop=False)
-#	ImageOptions(ax2,Ylabel='Ion Thrust [mN]',Crop=False)
 	ax1.legend(Pn, ['Total Thrust','Neutral Component','Ion Component'], fontsize=18, frameon=False)
+	ImageOptions(fig,ax1,Xlabel,Ylabel,Title,Crop=False)
+#	ImageOptions(fig,ax2,Ylabel='Ion Thrust [mN]',Crop=False)
 
 	plt.savefig(DirTrends+'Thrust Trends'+ext)
 	plt.close('all')
@@ -4420,7 +4433,7 @@ if savefig_trendphaseaveraged == True or print_sheath == True:
 	#Apply image options and axis labels.
 	Title = 'Maximum Sheath Extension With Varying '+TrendVariable+' \n'+Dirlist[l][2:-1]
 	Xlabel,Ylabel = 'Varied Property','Sheath Extension [mm]'
-	ImageOptions(ax,Xlabel,Ylabel,Title,Legend=[],Crop=False)
+	ImageOptions(fig,ax,Xlabel,Ylabel,Title,Legend=[],Crop=False)
 
 	plt.savefig(DirTrends+'Sheath Extension (Phase-Averaged)'+ext)
 	plt.close('all')
@@ -4502,8 +4515,7 @@ if bool(set(NeutSpecies).intersection(Variables)) == True:
 			Title = 'Knudsen Number Image for \n'+Dirlist[l][2:-1]
 			Xlabel,Ylabel = 'Radial Distance R [cm]','Axial Distance Z [cm]'
 			cax = Colourbar(ax,'Knudsen Number',5,Lim=CbarMinMax(Image))
-			ImageOptions(ax,Xlabel,Ylabel,Title)
-			plt.gca().invert_yaxis()
+			ImageOptions(fig,ax,Xlabel,Ylabel,Title)
 
 			#Save Figure
 			plt.savefig(Dir2Dplots+'KnudsenNumber'+ext)
@@ -4526,7 +4538,7 @@ if bool(set(NeutSpecies).intersection(Variables)) == True:
 		#Image plotting details.
 		Title = 'Average Knudsen Number with Changing '+TrendVariable+' \n'+Dirlist[l][2:-1]
 		Xlabel,Ylabel = 'Varied Property','Average Knudsen Number'
-		ImageOptions(ax,Xlabel,Ylabel,Title,Crop=False)
+		ImageOptions(fig,ax,Xlabel,Ylabel,Title,Crop=False)
 
 		#Save figure.
 		plt.savefig(DirTrends+'KnudsenNumber Comparison'+ext)
@@ -4644,7 +4656,7 @@ if savefig_phaseresolve1D == True:
 		Title = 'Phase-Resolved Voltage Waveforms for '+FolderNameTrimmer(Dirlist[l])
 		Legend = ['rf self-bias: '+str(round(ElectrodeBias[0],2))+'V']
 		Xlabel,Ylabel = 'Phase [$\omega$t/2$\pi$]','Electrode Potential [V]'
-		ImageOptions(ax,Xlabel,Ylabel,Title,Legend,Crop=False)
+		ImageOptions(fig,ax,Xlabel,Ylabel,Title,Legend,Crop=False)
 		ax.xaxis.set_major_locator(ticker.MultipleLocator(0.25))
 
 		plt.savefig(DirPhaseResolved+VariedValuelist[l]+' Waveform'+ext)
@@ -4731,14 +4743,14 @@ if savefig_phaseresolve1D == True:
 
 					#Plot profile and apply image options.
 					ax[0].plot(axis, PhaseResolvedlineout, lw=2)
-					ImageOptions(ax[0],Xlabel,Ylabel[i],Crop=False)
+					ImageOptions(fig,ax[0],Xlabel,Ylabel[i],Crop=False)
 					ax[0].set_ylim(VariableMin,VariableMax*1.02)
 
 					#Plot waveform and apply image options.
 					ax[1].plot(Phaseaxis, ElectrodeWaveform, lw=2)
 					ax[1].axvline(Phaseaxis[j], color='k', linestyle='--', lw=2)
 					Xlabel,Ylabel = 'Phase [$\omega$t/2$\pi$]','Electrode Potential [V]'
-					ImageOptions(ax[1],Xlabel,Ylabel,Crop=False)
+					ImageOptions(fig,ax[1],Xlabel,Ylabel,Crop=False)
 
 					#Clean up image and save with relevent filename.
 					fig.tight_layout()
@@ -4823,7 +4835,7 @@ if savefig_phaseresolve2D == True:
 		Title = 'Phase-Resolved Voltage Waveforms for '+FolderNameTrimmer(Dirlist[l])
 		Legend = ['rf self-bias: '+str(round(ElectrodeBias[0],2))+'V']
 		Xlabel,Ylabel = 'Phase [$\omega$t/2$\pi$]','Electrode Potential [V]'
-		ImageOptions(ax,Xlabel,Ylabel,Title,Legend,Crop=False)
+		ImageOptions(fig,ax,Xlabel,Ylabel,Title,Legend,Crop=False)
 		ax.xaxis.set_major_locator(ticker.MultipleLocator(0.25))
 
 		plt.savefig(DirPhaseResolved+VariedValuelist[l]+' Waveform'+ext)
@@ -4879,7 +4891,7 @@ if savefig_phaseresolve2D == True:
 				#Plot 2D image, applying image options and cropping as required.
 				fig,ax[0],im,Image = ImagePlotter2D(Image,extent,aspectratio,varlist[i],fig,ax[0])
 				Sx = SheathThickness(folder=l,ax=ax[0],Phase=j,Ne=Ne,Ni=Ni)[0]
-				ImageOptions(ax[0],Xlabel,Ylabel,Crop=True)
+				ImageOptions(fig,ax[0],Xlabel,Ylabel,Crop=True)
 				#Add Colourbar (Axis, Label, Bins)
 				Ylabel = VariableLabelMaker(varlist)
 				cax = Colourbar(ax[0],Ylabel[i],5,Lim=Limits)
@@ -4888,7 +4900,7 @@ if savefig_phaseresolve2D == True:
 				ax[1].plot(Phaseaxis, ElectrodeWaveform, lw=2)
 				ax[1].axvline(Phaseaxis[j], color='k', linestyle='--', lw=2)
 				Xlabel,Ylabel = 'Phase [$\omega$t/2$\pi$]','Electrode Potential [V]'
-				ImageOptions(ax[1],Xlabel,Ylabel,Crop=False)
+				ImageOptions(fig,ax[1],Xlabel,Ylabel,Crop=False)
 				ax[1].xaxis.set_major_locator(ticker.MultipleLocator(0.25))
 				#Add Invisible Colourbar to sync X-axis
 				InvisibleColourbar(ax[0])
@@ -5045,14 +5057,14 @@ if savefig_trendphaseresolved == True:
 		fig,ax = figure(image_aspectratio,2,shareX=True)
 		ax[0].plot(Phaseaxis,SxLoc, lw=2)
 		Ylabel = 'Sheath Extension [mm]'
-		ImageOptions(ax[0],Ylabel=Ylabel,Crop=False)
+		ImageOptions(fig,ax[0],Ylabel=Ylabel,Crop=False)
 		ax[0].set_xticks([])
 
 		#Plot Waveform onto Temporally collapsed PROES.
 		ax[1].plot(Phaseaxis, ElectrodeWaveform, lw=2)
 		ax[1].plot(Phaseaxis, ElectrodeBias, 'k--', lw=2)
 		Xlabel,Ylabel = 'Phase [$\omega$t/2$\pi$]','Electrode Potential [V]'
-		ImageOptions(ax[1],Xlabel,Ylabel,Crop=False)
+		ImageOptions(fig,ax[1],Xlabel,Ylabel,Crop=False)
 		ax[1].xaxis.set_major_locator(ticker.MultipleLocator(0.5))
 
 		plt.savefig(DirPhaseResolved+VariedValuelist[l]+' SheathDynamics'+ext)
@@ -5083,7 +5095,7 @@ if savefig_trendphaseresolved == True:
 	TrendPlotter(ax,SxMaxExtTrend,VariedValuelist,NormFactor=0)
 	Title='Maximum Sheath Extension W.R.T '+TrendVariable+' \n'+Dirlist[l][2:-1]
 	Xlabel,Ylabel = 'Varied Property','Max Sheath Extension [mm]'
-	ImageOptions(ax,Xlabel,Ylabel,Title,Crop=False)
+	ImageOptions(fig,ax,Xlabel,Ylabel,Title,Crop=False)
 
 	plt.savefig(DirSheath+'Max Sheath Extension Trends'+ext)
 	plt.close('all')
@@ -5093,7 +5105,7 @@ if savefig_trendphaseresolved == True:
 	TrendPlotter(ax,SxMeanExtTrend,VariedValuelist,NormFactor=0)
 	Title='Mean Sheath Extension W.R.T '+TrendVariable+' \n'+Dirlist[l][2:-1]
 	Xlabel,Ylabel = 'Varied Property','Mean Sheath Extension [mm]'
-	ImageOptions(ax,Xlabel,Ylabel,Title,Crop=False)
+	ImageOptions(fig,ax,Xlabel,Ylabel,Title,Crop=False)
 
 	plt.savefig(DirSheath+'Mean Sheath Extension Trends'+ext)
 	plt.close('all')
@@ -5103,7 +5115,7 @@ if savefig_trendphaseresolved == True:
 	TrendPlotter(ax,SxDynRangeTrend,VariedValuelist,NormFactor=0)
 	Title='Sheath Dynamic Range W.R.T '+TrendVariable+' \n'+Dirlist[l][2:-1]
 	Xlabel,Ylabel = 'Varied Property','Sheath Dynamic Range [mm]'
-	ImageOptions(ax,Xlabel,Ylabel,Title,Crop=False)
+	ImageOptions(fig,ax,Xlabel,Ylabel,Title,Crop=False)
 
 	plt.savefig(DirSheath+'Sheath Dynamic Range Trends'+ext)
 	plt.close('all')
@@ -5113,7 +5125,7 @@ if savefig_trendphaseresolved == True:
 	TrendPlotter(ax,SxMaxVelTrend,VariedValuelist,NormFactor=0)
 	Title='Maximum Sheath Velocity W.R.T '+TrendVariable+' \n'+Dirlist[l][2:-1]
 	Xlabel,Ylabel = 'Varied Property','Sheath Velocity [km/s]'
-	ImageOptions(ax,Xlabel,Ylabel,Title,Crop=False)
+	ImageOptions(fig,ax,Xlabel,Ylabel,Title,Crop=False)
 
 	plt.savefig(DirSheath+'Max Sheath Velocity Trends'+ext)
 	plt.close('all')
@@ -5123,7 +5135,7 @@ if savefig_trendphaseresolved == True:
 	TrendPlotter(ax,SxMeanVelTrend,VariedValuelist,NormFactor=0)
 	Title='Phase-averaged Sheath Velocity W.R.T '+TrendVariable+' \n'+Dirlist[l][2:-1]
 	Xlabel,Ylabel = 'Varied Property','Sheath Velocity [km/s]'
-	ImageOptions(ax,Xlabel,Ylabel,Title,Crop=False)
+	ImageOptions(fig,ax,Xlabel,Ylabel,Title,Crop=False)
 
 	plt.savefig(DirSheath+'Mean Sheath Velocity Trends'+ext)
 	plt.close('all')
@@ -5187,7 +5199,7 @@ if savefig_PROES == True:
 		Title = 'Phase-Resolved Voltage Waveforms for '+FolderNameTrimmer(Dirlist[l])
 		Legend = ['rf self-bias: '+str(round(ElectrodeBias[0],2))+'V']
 		Xlabel,Ylabel = 'Phase [$\omega$t/2$\pi$]','Electrode Potential [V]'
-		ImageOptions(ax,Xlabel,Ylabel,Title,Legend,Crop=False)
+		ImageOptions(fig,ax,Xlabel,Ylabel,Title,Legend,Crop=False)
 		ax.xaxis.set_major_locator(ticker.MultipleLocator(0.25))
 
 		plt.savefig(DirPROES+VariedValuelist[l]+' Waveform'+ext)
@@ -5320,7 +5332,7 @@ if savefig_PROES == True:
 					ax[0].plot(Phaseaxis,PhaseSx,'w--',lw=1.0)
 					ax[0].plot(Phaseaxis,SymPhaseSx,'w--',lw=1.0)
 				#endif
-				ImageOptions(ax[0],Xlabel='',Ylabel=Ylabel,Crop=Crop)
+				ImageOptions(fig,ax[0],Xlabel='',Ylabel=Ylabel,Crop=Crop)
 				ax[0].set_xticks([])
 				ax[0].set_xlim(x1,x2)
 				#Add Colourbar (Axis, Label, Bins)
@@ -5331,7 +5343,7 @@ if savefig_PROES == True:
 				ax[1].plot(Phaseaxis, ElectrodeWaveform, lw=2)
 				ax[1].plot(Phaseaxis, ElectrodeBias, 'k--', lw=2)
 				Xlabel,Ylabel = 'Phase [$\omega$t/2$\pi$]','Electrode Potential [V]'
-				ImageOptions(ax[1],Xlabel,Ylabel,Crop=False)
+				ImageOptions(fig,ax[1],Xlabel,Ylabel,Crop=False)
 				ax[1].xaxis.set_major_locator(ticker.MultipleLocator(0.25))
 				ax[1].set_xlim(x1,x2)
 				#Add Invisible Colourbar to sync X-axis
@@ -5370,7 +5382,7 @@ if savefig_PROES == True:
 				fig,ax = figure(image_aspectratio,2,shareX=True)
 				ax[0].plot(Phaseaxis,TemporalPROES, lw=2)
 				Ylabel = 'Spatially Integrated '+varlist[i]
-				ImageOptions(ax[0],Ylabel=Ylabel,Crop=False)
+				ImageOptions(fig,ax[0],Ylabel=Ylabel,Crop=False)
 				ax[0].set_xticks([])
 				ax[0].set_xlim(x1,x2)
 
@@ -5378,7 +5390,7 @@ if savefig_PROES == True:
 				ax[1].plot(Phaseaxis, ElectrodeWaveform, lw=2)
 				ax[1].plot(Phaseaxis, ElectrodeBias, 'k--', lw=2)
 				Xlabel,Ylabel = 'Phase [$\omega$t/2$\pi$]','Electrode Potential [V]'
-				ImageOptions(ax[1],Xlabel,Ylabel,Crop=False)
+				ImageOptions(fig,ax[1],Xlabel,Ylabel,Crop=False)
 				ax[1].xaxis.set_major_locator(ticker.MultipleLocator(0.25))
 				ax[1].set_xlim(x1,x2)
 
@@ -5391,13 +5403,13 @@ if savefig_PROES == True:
 #				except: ax[0].plot(Zaxis,SpatialPROES, lw=2)	### HACKY ###
 #				Xlabel = 'Phase [$\omega$t/2$\pi$]'
 #				Ylabel = 'Temporally Integrated '+varlist[i]
-#				ImageOptions(ax[0],Xlabel,Ylabel,Crop=False)
+#				ImageOptions(fig,ax[0],Xlabel,Ylabel,Crop=False)
 
 				#Plot Waveform onto Spatially collapsed PROES.
 #				ax[1].plot(Phaseaxis, ElectrodeWaveform, lw=2)
 #				ax[1].plot(Phaseaxis, ElectrodeBias, 'k--', lw=2)
 #				Xlabel,Ylabel = 'Phase [$\omega$t/2$\pi$]','Electrode Potential [V]'
-#				ImageOptions(ax[1],Xlabel,Ylabel,Crop=False)
+#				ImageOptions(fig,ax[1],Xlabel,Ylabel,Crop=False)
 
 				#plt.savefig(DirPROESloc+VariedValuelist[l]+' '+NameString+' SpatialPROES'+ext)
 #				plt.close('all')
