@@ -118,10 +118,12 @@ Phys = ['P-POT','TE','EF-TOT','EAMB-Z','EAMB-R','RHO','BT','VR-NEUTRAL','VZ-NEUT
 Ar = ['AR3S','AR4SM','AR4SR','AR4SPM','AR4SPR','AR4P','AR4D','AR','AR+','AR2+','AR2*','E','S-AR+','S-AR4P','SEB-AR+','SEB-AR4P','FZ-AR3S','FR-AR3S','FR-AR+','FZ-AR+','FZ-AR3S','FR-AR3S']+Phys
 O2 = ['O2','O2+','O','O+','O-','E','FR-O-','FZ-O-']+Phys
 
-Ar_Phase = ['S-E','S-AR+','S-AR4P','SEB-AR+','SEB-AR4P','SRCE-2437','TE','PPOT','FR-E','FZ-E','SEB-AR4P','SEB-AR+']
+Ar_Phase = ['S-E','S-AR+','S-AR4P','SEB-AR+','SEB-AR4P','SRCE-2437','TE','PPOT','FR-E','FZ-E']
+O2_Phase = ['S-E','S-O+','S-O-','SEB-O+','SEB-O-','TE','PPOT','FR-E','FZ-E']
 
 PRCCP_PCMC = ['AR^0.35','EB-0.35','ION-TOT0.35']
 TSHC_PCMC = ['AR^2.0S','EB-2.0S','ION-TOT2.0S','AR^0.2B','EB-0.2B','ION-TOT0.2B','AR^2.2C','EB-2.2C','ION-TOT2.2C','AR^4.2D','EB-4.2D','ION-TOT4.2D','AR^6.2E','EB-6.2E','ION-TOT6.2E','AR^8.2F','EB-8.2F','ION-TOT8.2F']
+TSHCOI_PCMC = ['AR^0.2S','ION-TOT0.2S','AR^4.4T','ION-TOT4.4T','AR^8.9U','ION-TOT8.9U']
 
 #Archived variable sets
 MSHC2017_PCMC = ['AR^0.5S','EB-0.5S','ION-TOT0.5S','AR^1.1B','EB-1.1B','ION-TOT1.1B']
@@ -137,20 +139,30 @@ ESCT2018_PCMC = ['AR^0.3S','EB-0.3S','ION-TOT0.3S']
 #waveformlocs = 	[[24,44],[23,44],[22,44],[21,44],[20,44],[19,44],[18,44],[17,44],[16,44],[15,44],[14,44],[13,44],[12,44],[11,44],[10,44],[9,44],[8,44],[7,44],[6,44],[5,44],[4,44],[3,44],[2,44],[1,44],[0,44]]
 #DOFWidth =			R;16,Z;41
 #TrendLoc =			H[0];R[29,44,64]
-#ThrustLoc =		74, 						#stdESCT=76, smlESCT=48/54
+#ThrustLoc =		75, 						#stdESCT=76, smlESCT=48/54
 #SheathROI =		[34,72]
 #SourceWidth =		[0.21]						
 #Crop =				R[0.6];Z[1,4.5] 
 
-#### TSHC ####
-#electrodeloc = 	[0,12]
+#### TSHC-Mk2 ####
+#electrodeloc = 	[0,15]
 #waveformlocs = 	[]
 #DOFWidth = 		R;5,Z;10
-#TrendLoc =  		H[0,20];R[20]
+#TrendLoc =  		H[0,20];R[30,60,90]
 #ThrustLoc = 		[]
 #SheathROI = 		[]
 #SourceWidth = 		[]
 #Crop = 			R[0.0,1.0];Z[0.5,2.5]
+
+### TSHC-OI ###
+#electrodeloc = 	[58,15]
+#waveformlocs = 	[]
+#DOFWidth = 		R;000,Z;000
+#TrendLoc =  		H[0,23,45];R[37,47]
+#ThrustLoc = 		[]
+#SheathROI = 		[]
+#SourceWidth = 		[]
+#Crop = 			R[15];Z[5,15]
 
 #### PRuICP ####	
 #electrodeloc = 	[33,33]			#Coil V
@@ -171,36 +183,36 @@ ESCT2018_PCMC = ['AR^0.3S','EB-0.3S','ION-TOT0.3S']
 #====================================================================#
 
 #Requested IEDF/NEDF Variables.
-IEDFVariables = PRCCP_PCMC		#Requested iprofile_2d variables (no spaces)
+IEDFVariables = TSHCOI_PCMC#PRCCP_PCMC		#Requested iprofile_2d variables (no spaces)
 NEDFVariables = []				#Requested nprofile_2d variables (no spaces)
 
 #Requested movie1/movie_icp Variables.
 IterVariables = ['E','S-E','PPOT','TE']		#Requested Movie_icp (iteration) Variables.		
 PhaseVariables = Ar_Phase					#Requested Movie1 (phase) Variables. +['E','AR+']
-electrodeloc = [29,44]						#Cell location of powered electrode [R,Z].
-waveformlocs = [[16,29],[16,44],[16,64]]	#Cell locations of additional waveforms [R,Z].
+electrodeloc = [29,44]#[58,15]						#Cell location of powered electrode [R,Z].
+waveformlocs = []							#Cell locations of additional waveforms [R,Z].
 
 #Requested TECPLOT Variables and plotting locations.
 Variables = Ar
 MultiVar = []							#Additional variables plotted ontop of [Variables]
-radialineouts = [29,44,64,74] 						#Radial 1D-Profiles to be plotted (fixed Z-mesh) --
-heightlineouts = [0]						#Axial 1D-Profiles to be plotted (fixed R-mesh) |
+radialineouts = [44]#[29,44,64,74] 			#Radial 1D-Profiles to be plotted (fixed Z-mesh) --
+heightlineouts = []						#Axial 1D-Profiles to be plotted (fixed R-mesh) |
 TrendLocation = [] 						#Cell location For Trend Analysis [R,Z], ([] = min/max)
 
 #Various Diagnostic Settings.
-phasecycles = 2							#Number of waveform phase cycles to be plotted. [number]
+phasecycles = 0.51							#Number of waveform phase cycles to be plotted. [number]
 DoFWidth = 41							#PROES Depth of Field (symmetric on image plane) [cells]
-ThrustLoc = 74							#Z-axis cell for thrust calculation  [cells]
+ThrustLoc = 75							#Z-axis cell for thrust calculation  [cells]
 SheathROI = [34,72]						#Sheath Region of Interest, (Start,End) [cells]
 SourceWidth = [16]						#Source Dimension at ROI, leave empty for auto. [cells]
-EDF_Threshold = 0.01					#Upper EEDF/IEDF threshold energy fraction for plotting
+EDF_Threshold = 0.01					#Upper Recognised EEDF/IEDF energy fraction (Plot all: 0.0)
 
 
 #Requested diagnostics and plotting routines.
 savefig_convergence = False				#Requires movie_icp.pdt
 savefig_plot2D = False					#Requires TECPLOT2D.PDT
 
-savefig_monoprofiles = False				#Single-Variables; fixed height/radius
+savefig_monoprofiles = False			#Single-Variables; fixed height/radius
 savefig_multiprofiles = False			#Multi-Variables; same folder
 savefig_comparelineouts = False			#Multi-Variables; all folders
 savefig_trendphaseaveraged = False		#Single-Variables; fixed cell location (or max/min)
@@ -209,10 +221,10 @@ savefig_pulseprofiles = False			#Single-Variables; plotted against real-time axi
 
 savefig_phaseresolve1D = False			#1D Phase Resolved Images
 savefig_phaseresolve2D = False			#2D Phase Resolved Images
-savefig_PROES = False					#Simulated PROES Diagnostic
+savefig_PROES = True					#Simulated PROES Diagnostic
 
-savefig_IEDFangular = True				#2D images of angular IEDF; single folders.
-savefig_IEDFtrends = True				#1D IEDF trends; all folders.
+savefig_IEDFangular = False				#2D images of angular IEDF; single folders.
+savefig_IEDFtrends = False				#1D IEDF trends; all folders.
 savefig_EEDF = False					#NO PLOTTING ROUTINE		#IN DEVELOPMENT#
 
 #Write processed data to ASCII files.
@@ -364,6 +376,7 @@ FREQM,FREQM2 = list(),list()
 FREQGLOB,IRFPOW = list(),list()
 MAXFREQ,MINFREQ = list(),list()
 IETRODEM = list()
+IMOVIE_FRAMES = list()
 
 #Create lists to store data
 rawdata_2D = list()
@@ -563,26 +576,26 @@ for l in range(0,numfolders):
 
 
 	#Attempt automated retrieval of SI conversion units.
-	SImeshdata = open(icpnam[l]).readlines()
+	NamelistData = open(icpnam[l]).readlines()
 
 	#Retrieve useful input variables from icp.nam.
 	try:
-		NUMPHASE = int(filter(lambda x: x.isdigit(),filter(lambda x:'IMOVIE_FRAMES' in x,SImeshdata)[0]))
-		NUMMETALS = int(filter(lambda x: x.isdigit(),filter(lambda x:'IMETALS' in x,SImeshdata)[0]))+1
-		MATERIALS = filter(lambda x: 'CMETAL=' in x, SImeshdata)[0].split()[1:NUMMETALS]
+		NUMPHASE = int(filter(lambda x: x.isdigit(),filter(lambda x:'IMOVIE_FRAMES' in x,NamelistData)[0]))
+		NUMMETALS = int(filter(lambda x: x.isdigit(),filter(lambda x:'IMETALS' in x,NamelistData)[0]))+1
+		MATERIALS = filter(lambda x: 'CMETAL=' in x, NamelistData)[0].split()[1:NUMMETALS]
 	except:
 		print 'ICP.NAM READIN ERROR, IGNORING MESH MATERIAL TYPES'
 	#endtry
 
-	#Material Namelist Input (frequencies/voltages/powers)   [FREQGLOB ONLY READS 10 CHARACTERS]
+	#Material Namelist Inputs (frequencies/voltages/powers)   [FREQGLOB ONLY READS 10 CHARACTERS]
 	try:
-		VRFM.append(filter(lambda x: 'VRFM=' in x, SImeshdata)[0].split()[1:NUMMETALS])
-		VRFM2.append(filter(lambda x: 'VRFM_2=' in x, SImeshdata)[0].split()[1:NUMMETALS])
-		FREQM.append(filter(lambda x: 'FREQM=' in x, SImeshdata)[0].split()[1:NUMMETALS])
-		FREQM2.append(filter(lambda x: 'FREQM_2=' in x, SImeshdata)[0].split()[1:NUMMETALS])
-		FREQGLOB.append(float(filter(lambda x:'FREQ=' in x, SImeshdata)[0].strip(' \t\n\r,=FREQ')[0:10]))
-		IRFPOW.append(float(filter(lambda x:'IRFPOW=' in x, SImeshdata)[0].strip(' \t\n\r,=IRFPOW')))
-		IETRODEM.append(filter(lambda x:'IETRODEM=' in x, SImeshdata)[0].split()[1:NUMMETALS])
+		VRFM.append(filter(lambda x: 'VRFM=' in x, NamelistData)[0].split()[1:NUMMETALS])
+		VRFM2.append(filter(lambda x: 'VRFM_2=' in x, NamelistData)[0].split()[1:NUMMETALS])
+		FREQM.append(filter(lambda x: 'FREQM=' in x, NamelistData)[0].split()[1:NUMMETALS])
+		FREQM2.append(filter(lambda x: 'FREQM_2=' in x, NamelistData)[0].split()[1:NUMMETALS])
+		FREQGLOB.append(float(filter(lambda x:'FREQ=' in x, NamelistData)[0].strip(' \t\n\r,=FREQ')[0:10]))
+		IRFPOW.append(float(filter(lambda x:'IRFPOW=' in x, NamelistData)[0].strip(' \t\n\r,=IRFPOW')))
+		IETRODEM.append(filter(lambda x:'IETRODEM=' in x, NamelistData)[0].split()[1:NUMMETALS])
 		for i in range(0,len(IETRODEM[l])): IETRODEM[l][i] = int(IETRODEM[l][i].strip(','))
 	except:
 		print 'ICP.NAM READIN ERROR, USING DEFAULT MATERIAL PROPERTIES'
@@ -594,24 +607,27 @@ for l in range(0,numfolders):
 		IRFPOW.append(100.0)
 	#endtry
 
-	#PCMC Namelist Input
+	#PCMC Namelist Inputs
 	try:
-		IEBINSPCMC = float(filter(lambda x: 'IEBINSPCMC=' in x, SImeshdata)[0].split()[0].strip(' \t\n\r,=IEBINSPCMC'))
-		EMAXIPCMC = float(filter(lambda x: 'EMAXIPCMC=' in x, SImeshdata)[0].split()[0].strip(' \t\n\r,=EMAXIPCMC '))
+		IEBINSPCMC = float(filter(lambda x: 'IEBINSPCMC=' in x, NamelistData)[0].split()[0].strip(' \t\n\r,=IEBINSPCMC'))
+		EMAXIPCMC = float(filter(lambda x: 'EMAXIPCMC=' in x, NamelistData)[0].split()[0].strip(' \t\n\r,=EMAXIPCMC '))
 	except:
 		print 'ICP.NAM READIN ERROR, USING DEFAULT PCMC PROPERTIES'
 		IEBINSPCMC = 250
 		EMAXIPCMC = 160
 	#endtry
 
+	#IMOVIE Namelist Inputs
+	IMOVIE_FRAMES.append(int(filter(lambda x:'IMOVIE_FRAMES=' in x, NamelistData)[0].strip(' \t\n\r,=IMOVIE_FRAMES')))
+
 	#SI Conversion unit extraction.
 	try:
-		RADIUS = float(filter(lambda x:'RADIUS=' in x, SImeshdata)[0].strip(' \t\n\r,=RADIUS'))
-		RADIUST = float(filter(lambda x:'RADIUST=' in x, SImeshdata)[0].strip(' \t\n\r,=RADIUST'))
-		HEIGHT = float(filter(lambda x:'HEIGHT=' in x, SImeshdata)[0].strip(' \t\n\r,=HEIGHT'))
-		HEIGHTT = float(filter(lambda x:'HEIGHTT=' in x, SImeshdata)[0].strip(' \t\n\r,=HEIGHTT'))
-		DEPTH = float(filter(lambda x:'DEPTH=' in x, SImeshdata)[0].strip(' \t\n\r,=DEPTH'))
-		SYM = float(filter(lambda x:'ISYM=' in x, SImeshdata)[0].strip(' \t\n\r,=ISYM'))
+		RADIUS = float(filter(lambda x:'RADIUS=' in x, NamelistData)[0].strip(' \t\n\r,=RADIUS'))
+		RADIUST = float(filter(lambda x:'RADIUST=' in x, NamelistData)[0].strip(' \t\n\r,=RADIUST'))
+		HEIGHT = float(filter(lambda x:'HEIGHT=' in x, NamelistData)[0].strip(' \t\n\r,=HEIGHT'))
+		HEIGHTT = float(filter(lambda x:'HEIGHTT=' in x, NamelistData)[0].strip(' \t\n\r,=HEIGHTT'))
+		DEPTH = float(filter(lambda x:'DEPTH=' in x, NamelistData)[0].strip(' \t\n\r,=DEPTH'))
+		SYM = float(filter(lambda x:'ISYM=' in x, NamelistData)[0].strip(' \t\n\r,=ISYM'))
 		if image_plotsymmetry == True: Isymlist.append(SYM)
 		else: Isymlist.append(0)
 		if RADIUS > 0.0: Radius.append(RADIUS)
@@ -1389,7 +1405,8 @@ for l in tqdm(range(0,numfolders)):
 		#Define arguments and autorun conv_prof.exe if possible.
 		#### THIS IS HACKY, WON'T ALWAYS WORK, ARGS LIST NEEDS AUTOMATING ####
 		IEDFVarArgs = ['1','1','1','1','1'] 	#Works for 2 species 1 surface.
-		Args = ['pcmc.prof','title','1','1','1'] + IEDFVarArgs + ['0','0']
+		ExtraArgs = []#['1','1','1','1','1','1','1','1','1','1']	#Hack For Additional Species
+		Args = ['pcmc.prof','title','1','1','1'] + IEDFVarArgs + ExtraArgs + ['0','0']
 		DirAdditions = ['iprofile_tec2d.pdt','nprofile_tec2d.pdt','iprofile_tec1d.pdt', 'nprofile_tec1d.pdt','iprofile_zones_tec1d.pdt','nprofile_zones_tec1d.pdt']
 		try: AutoConvProfData('./conv_prof.exe',Args,DirAdditions)
 		except: print 'ConvProf Failure:'+Dirlist[l]
@@ -2066,10 +2083,10 @@ def InvisibleColourbar(ax='NaN'):
 #Takes orientation, symmetry and phasecycle options.
 #Returns 1D array in units of [cm] or [omega*t/2pi].
 #Raxis=GenerateAxis('Radial',Isym=Isymlist[l])
-def GenerateAxis(Orientation,Isym=Isymlist[l],phasepoints=range(0,180)):
-	
-	#Extract number of phase datapoints and create axis list.
-	phasepoints = len(phasepoints)
+def GenerateAxis(Orientation,Isym=Isymlist[l],PhaseFrames=range(0,IMOVIE_FRAMES[l])):
+
+	#Create axis list and extract the number of phaseframes
+	PhaseResolution = len(PhaseFrames)
 	axis = list()
 
 	if Orientation == 'Radial':
@@ -2087,8 +2104,8 @@ def GenerateAxis(Orientation,Isym=Isymlist[l],phasepoints=range(0,180)):
 			axis.append(i*dz[l])
 		#endfor
 	elif Orientation == 'Phase':
-		for i in range(0,phasecycles*phasepoints):
-			axis.append(  (np.pi*(i*2)/phasepoints)/(2*np.pi)  )
+		for i in range(0,int(phasecycles*PhaseResolution)):
+			axis.append(  (np.pi*(i*2)/PhaseResolution)/(2*np.pi)  )
 		#endfor
 	#endif
 	return(axis)
@@ -2431,11 +2448,9 @@ def WaveformExtractor(PhaseData,PPOT,waveformlocation=electrodeloc):
 	RLoc = WaveformLoc(waveformlocation,'Phase')[0]
 	ZLoc = WaveformLoc(waveformlocation,'Phase')[1]
 
-	#Obtain applied voltage waveform, Refresh list between folders if needed.
-	for j in range(0,phasecycles):
-		for i in range(0,len(PhaseData)):
-			VoltageWaveform.append(PlotAxialProfile(PhaseData[i],PPOT,'PPOT',ZLoc)[RLoc])
-		#endfor
+	#Create voltage waveform for requested integer number of phasecycles
+	for i in range(0,int(phasecycles*len(PhaseData))):
+		VoltageWaveform.append(PlotAxialProfile(PhaseData[i],PPOT,'PPOT',ZLoc)[RLoc])
 	#endfor
 
 	#Calculate time averaged waveform bias, i.e. waveform symmetry.
@@ -3644,14 +3659,13 @@ if savefig_IEDFangular == True:
 
 			Title = Dirlist[l][2::]+'\n'+variablelist[i]+' Angular Energy Distribution Function'
 			Extent=[0,EMAXIPCMC, -len(Image)/2,len(Image)/2]
-			fig.suptitle(Title, y=0.995, fontsize=16)
 
 			#Angularly resolved IEDF Figure
 			im = ax[0].imshow(Image, extent=Extent, aspect='auto')
 			cax = Colourbar(ax[0],variablelist[i]+' EDF($\\theta$)',5)
 			Xlabel,Ylabel = '','Angular Dispersion [$\\theta^{\circ}$]'
 			ImageCrop = [[0,eVlimit],[-45,45]]					#[[X1,X2],[Y1,Y2]]
-			ImageOptions(fig,ax[0],Xlabel,Ylabel,Crop=ImageCrop,Rotate=False) 
+			ImageOptions(fig,ax[0],Xlabel,Ylabel,Title,Crop=ImageCrop,Rotate=False) 
 
 			#Angle Integrated IEDF figure
 			ax[1].plot(eVaxis,EDFprofile, lw=2)
@@ -4193,6 +4207,7 @@ if savefig_trendphaseaveraged == True or print_thrust == True:
 
 	#Initiate lists required for storing data.
 	NeutralThrustlist,IonThrustlist,Thrustlist = list(),list(),list()
+	NeutralIsplist,IonIsplist,ThrustIsplist = list(),list(),list()
 	Xaxis = list()
 
 	#For all folders.
@@ -4273,7 +4288,7 @@ if savefig_trendphaseaveraged == True or print_thrust == True:
 
 			#CellArea increases from central R=0.
 			#Correct extracted profiles to agree with this direction.
-			print 
+			#ONLY WORKS WHEN SYMMETRY OPTION IS ON, NEED A MORE ROBUST METHOD!
 			Pressure,PressureDown = Pressure[0:R_mesh[l]][::-1],PressureDown[0:R_mesh[l]][::-1]
 			NeutralVelocity = NeutralVelocity[0:R_mesh[l]][::-1]
 			NeutralAxialFlux = NeutralAxialFlux[0:R_mesh[l]][::-1]
@@ -4293,7 +4308,8 @@ if savefig_trendphaseaveraged == True or print_thrust == True:
 				#Calculate differential pressure between ThrustLoc-(ThrustLoc+1)
 				#Ensure pressure index aligns with radial index for correct cell area.
 				if Pressure[i] > 0.0:
-#					DiffPressure = (Pressure[i]-0.85)*133.33				#N/m^2
+					POUT = 0.85	 #0.35										#Torr
+#					DiffPressure = (Pressure[i]-POUT)*133.33				#N/m^2
 					DiffPressure = (Pressure[i]-PressureDown[i])*133.33		#N/m^2
 					DiffForce += DiffPressure*CellArea						#N
 				else:
@@ -4316,8 +4332,8 @@ if savefig_trendphaseaveraged == True or print_thrust == True:
 					IonIsp.append(IonExitVelocity)
 				#endif
 			#endfor
-			if len(IonIsp) == 0: IonIsp.append(1E-30)
-			if len(NeutralIsp) == 0: NeutralIsp.append(1E-30)
+			if len(IonIsp) == 0: IonIsp.append(np.nan)
+			if len(NeutralIsp) == 0: NeutralIsp.append(np.nan)
 
 			#Add total thrust and calculate Isp of each component
 			Thrust = DiffForce + NeutralThrust + IonThrust				#N
@@ -4331,6 +4347,9 @@ if savefig_trendphaseaveraged == True or print_thrust == True:
 			NeutralThrustlist.append( round(NeutralThrust*1000,5) )		#mN
 			IonThrustlist.append( round(IonThrust*1000,5) )				#mN
 			Thrustlist.append( round(Thrust*1000,5) )					#mN
+			NeutralIsplist.append( round(NeutralIsp,5) )				#s
+			IonIsplist.append( round(IonIsp,5) )						#s
+			ThrustIsplist.append( round(ThrustIsp,5) )					#s
 		#endif
 
 		#====================#
@@ -4350,25 +4369,40 @@ if savefig_trendphaseaveraged == True or print_thrust == True:
 	if write_ASCII == True:
 		DirASCII = CreateNewFolder(DirTrends,'Trend_Data')
 		WriteDataToFile(Xaxis+['\n'], DirASCII+'Thrust_Trends','w')
-		WriteDataToFile(Thrustlist, DirASCII+'Thrust_Trends','a')
+		WriteDataToFile(Thrustlist+['\n'], DirASCII+'Thrust_Trends','a')
+		WriteDataToFile(ThrustIsplist, DirASCII+'Thrust_Trends','a')
 	#endif
 
-	#Plot requested thrusts, neutral and ion, to 1st and 2nd y-axes.
+
+	#Plot total thrust and ion/neutral components.
 	fig,ax1 = figure(image_aspectratio,1)
-#	ax2 = ax1.twinx()
-	P1 = TrendPlotter(ax1,Thrustlist,Xaxis,Marker='ko-',NormFactor=0)
-	P2 = TrendPlotter(ax1,NeutralThrustlist,Xaxis,Marker='r^-',NormFactor=0)
-#	P3 = TrendPlotter(ax2,IonThrustlist,Xaxis,Marker='bs-',NormFactor=0)
-	Pn = P1+P2#+P3
+	TrendPlotter(ax1,Thrustlist,Xaxis,Marker='ko-',NormFactor=0)
+	TrendPlotter(ax1,NeutralThrustlist,Xaxis,Marker='r^-',NormFactor=0)
+#	TrendPlotter(ax1,IonThrustlist,Xaxis,Marker='bs-',NormFactor=0)
 
 	#Apply image options and save figure.
-	Title = 'Thrust at Z='+str(round(ThrustLoc*dz[0],2))+'cm with varying '+TrendVariable+' \n'+Dirlist[l][2:-1]
-	Xlabel,Ylabel = 'Varied Property','Net Thrust [mN]'
-	ax1.legend(Pn, ['Total Thrust','Neutral Component','Ion Component'], fontsize=18, frameon=False)
+	Title='Thrust at Z='+str(round(ThrustLoc*dz[0],2))+'cm with varying '+TrendVariable+' \n'+Dirlist[l][2:-1]
+	Xlabel,Ylabel = 'Varied Property','Thrust F$_{T}$ [mN]'
+	ax1.legend(['Total Thrust','Neutral Component','Ion Component'], fontsize=18, frameon=False)
 	ImageOptions(fig,ax1,Xlabel,Ylabel,Title,Crop=False)
-#	ImageOptions(fig,ax2,Ylabel='Ion Thrust [mN]',Crop=False)
 
 	plt.savefig(DirTrends+'Thrust Trends'+ext)
+	plt.close('all')
+
+
+	#Plot Specific Impulse for total thrust and ion/neutral components.
+	fig,ax1 = figure(image_aspectratio,1)
+	TrendPlotter(ax1,ThrustIsplist,Xaxis,Marker='ko-',NormFactor=0)
+	TrendPlotter(ax1,NeutralIsplist,Xaxis,Marker='r^-',NormFactor=0)
+#	TrendPlotter(ax1,IonIsplist,Xaxis,Marker='bs-',NormFactor=0)
+
+	#Apply image options and save figure.
+	Title = 'Specific Impulse at Z='+str(round(ThrustLoc*dz[0],2))+'cm with varying '+TrendVariable+' \n'+Dirlist[l][2:-1]
+	Xlabel,Ylabel = 'Varied Property','Specific Impulse I$_{sp}$ [s]'
+	ax1.legend(['Total I$_{sp}$','Neutral Component','Ion Component'], fontsize=18, frameon=False)
+	ImageOptions(fig,ax1,Xlabel,Ylabel,Title,Crop=False)
+
+	plt.savefig(DirTrends+'Isp Trends'+ext)
 	plt.close('all')
 #endif
 
@@ -4419,8 +4453,8 @@ if savefig_trendphaseaveraged == True or print_sheath == True:
 			SxMaxExtent.append( ((SourceWidth[0]*dr[l])-max(Sx[SheathROI[0]:SheathROI[1]]))*10 )
 			SxLocExtent.append( ((SourceWidth[0]*dr[l])-Sx[loc])*10 )
 		except:
-			SxMaxExtent.append( 'NaN' )
-			SxLocExtent.append( 'NaN' )
+			SxMaxExtent.append( np.nan )
+			SxLocExtent.append( np.nan )
 		#endtry
 	#endfor
 
@@ -5288,14 +5322,14 @@ if savefig_PROES == True:
 					SymPhaseSx.append(Sx[1][Lineouts[k]])
 				#endfor
 
-				#Increase PROES image by required number of phasecycles.
-				for m in range(1,phasecycles):
-					for n in range(0,len(PROES)):
-						PROES.append(PROES[n])
-						PhaseSx.append(PhaseSx[n])
-						SymPhaseSx.append(SymPhaseSx[n])
-					#endfor
+				#Scale PROES image and Sx arrays by required number of phasecycles.
+				ScaledPROES,ScaledPhaseSx,ScaledSymPhaseSx = list(),list(),list()
+				for n in range(0,int(phasecycles*len(PROES))):
+					ScaledPROES.append(PROES[n])
+					ScaledPhaseSx.append(PhaseSx[n])
+					ScaledSymPhaseSx.append(SymPhaseSx[n])
 				#endfor
+				PROES,PhaseSx,SymPhaseSx=ScaledPROES,ScaledPhaseSx,ScaledSymPhaseSx
 
 
 				#Create figure and rotate PROES such that phaseaxis aligns with waveform.
