@@ -195,12 +195,12 @@ waveformlocs = []							#Cell locations of additional waveforms [R,Z].
 #Requested TECPLOT Variables and plotting locations.
 Variables = Ar
 MultiVar = []							#Additional variables plotted ontop of [Variables]
-radialineouts = [44]#[29,44,64,74] 			#Radial 1D-Profiles to be plotted (fixed Z-mesh) --
-heightlineouts = []						#Axial 1D-Profiles to be plotted (fixed R-mesh) |
+radialineouts = [29,44,64,74] 			#Radial 1D-Profiles to be plotted (fixed Z-mesh) --
+heightlineouts = [0]						#Axial 1D-Profiles to be plotted (fixed R-mesh) |
 TrendLocation = [] 						#Cell location For Trend Analysis [R,Z], ([] = min/max)
 
 #Various Diagnostic Settings.
-phasecycles = 0.51							#Number of waveform phase cycles to be plotted. [number]
+phasecycles = 1.0							#Number of waveform phase cycles to be plotted. [number]
 DoFWidth = 41							#PROES Depth of Field (symmetric on image plane) [cells]
 ThrustLoc = 75							#Z-axis cell for thrust calculation  [cells]
 SheathROI = [34,72]						#Sheath Region of Interest, (Start,End) [cells]
@@ -221,7 +221,7 @@ savefig_pulseprofiles = False			#Single-Variables; plotted against real-time axi
 
 savefig_phaseresolve1D = False			#1D Phase Resolved Images
 savefig_phaseresolve2D = False			#2D Phase Resolved Images
-savefig_PROES = True					#Simulated PROES Diagnostic
+savefig_PROES = False					#Simulated PROES Diagnostic
 
 savefig_IEDFangular = False				#2D images of angular IEDF; single folders.
 savefig_IEDFtrends = False				#1D IEDF trends; all folders.
@@ -421,7 +421,7 @@ print '   |  |__|  | |  |__   |  |     |  |__   |   \|  |   /  ^  \        '
 print '   |   __   | |   __|  |  |     |   __|  |  . `  |  /  /_\  \       '
 print '   |  |  |  | |  |____ |  `----.|  |____ |  |\   | /  _____  \      '
 print '   |__|  |__| |_______||_______||_______||__| \__|/__/     \__\     '
-print '                                                              v1.0.1'
+print '                                                              v1.0.2'
 print '--------------------------------------------------------------------'
 print ''
 print 'The following diagnostics were requested:'
@@ -5068,12 +5068,12 @@ if savefig_trendphaseresolved == True:
 
 		#=============#
 
-		#Increase sheath extension by required number of phasecycles.
-		for m in range(1,phasecycles):
-			for n in range(0,len(SxLoc)):
-				SxLoc.append(SxLoc[n])
-			#endfor
+		#Scale sheath extension by required number of phasecycles.
+		ScaledSxLoc = list()
+		for n in range(0,int(phasecycles*len(SxLoc))):
+			ScaledSxLoc.append(SxLoc[n])
 		#endfor
+		SxLoc=ScaledSxLoc
 
 		#Print results to terminal if requested.
 		if print_sheath == True:
