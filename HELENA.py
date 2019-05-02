@@ -57,6 +57,7 @@ import matplotlib.cm as cm
 import numpy as np
 import scipy as sp
 import math as m
+import subprocess
 import os, sys
 import os.path
 
@@ -67,6 +68,7 @@ matplotlib.use('Agg')
 
 #Import additional modules
 from mpl_toolkits.axes_grid1 import make_axes_locatable
+from scipy.signal import savgol_filter
 from subprocess import Popen, PIPE
 from matplotlib import pyplot as plt
 from matplotlib import ticker
@@ -81,7 +83,7 @@ from pylab import *
 
 #Various debug and streamlining options.
 Magmesh = 1							#initmesh.exe magnification factor. (almost obsolete)
-DisableMovie = False				#Suppresses ffmpeg routines, saves RAM.
+DisableMovie = True					#If True: Suppresses ffmpeg routines, saves RAM.
 DebugMode = False					#Produces debug outputs for relevent diagnostics.
 QuickConverge = False				#Supresses 2D Convergence images in savefig_convergence
 
@@ -100,6 +102,11 @@ GlobThrustMethod = 'AxialMomentum'	#Set Global Thrust Calculation Method.
 #Choices:('ThermalVelocity','AxialMomentum')
 DCbiasaxis = 'Auto'					#Direction to calculate dc bias over.
 #Choices:('Axial','Radial','Auto')
+
+#Data Filtering and Smoothing Methods:
+KineticFiltering = True				#Pre-fit kinetic data employing a SavGol filter
+Glob_SavWindow, Glob_SavPolyOrder = 101, 6	#Window > FeatureSize, Polyorder ~= Smoothness
+
 
 
 ####################
@@ -158,7 +165,7 @@ ESCT2018_PCMC = ['AR^0.3S','EB-0.3S','ION-TOT0.3S']
 #electrodeloc = 	[58,15]
 #waveformlocs = 	[]
 #DOFWidth = 		R;000,Z;000
-#TrendLoc =  		H[0,23,45];R[37,47]
+#TrendLoc =  		H[0,23,45];R[46,55,64]			#0.1cm/cell
 #ThrustLoc = 		[]
 #SheathROI = 		[]
 #SourceWidth = 		[]
@@ -183,24 +190,25 @@ ESCT2018_PCMC = ['AR^0.3S','EB-0.3S','ION-TOT0.3S']
 #====================================================================#
 
 #Requested IEDF/NEDF Variables.
-IEDFVariables = TSHCOI_PCMC#PRCCP_PCMC		#Requested iprofile_2d variables (no spaces)
+IEDFVariables = PRCCP_PCMC#TSHCOI_PCMC#		#Requested iprofile_2d variables (no spaces)
 NEDFVariables = []				#Requested nprofile_2d variables (no spaces)
 
 #Requested movie1/movie_icp Variables.
 IterVariables = ['E','S-E','PPOT','TE']		#Requested Movie_icp (iteration) Variables.		
 PhaseVariables = Ar_Phase					#Requested Movie1 (phase) Variables. +['E','AR+']
-electrodeloc = [29,44]#[58,15]						#Cell location of powered electrode [R,Z].
+electrodeloc = [58,15]#[29,44]#				#Cell location of powered electrode [R,Z].
 waveformlocs = []							#Cell locations of additional waveforms [R,Z].
 
 #Requested TECPLOT Variables and plotting locations.
 Variables = Ar
 MultiVar = []							#Additional variables plotted ontop of [Variables]
-radialineouts = [29,44,64,74] 			#Radial 1D-Profiles to be plotted (fixed Z-mesh) --
-heightlineouts = [0]						#Axial 1D-Profiles to be plotted (fixed R-mesh) |
+radialineouts = [46,55,64]#[29,44,64,74] 			#Radial 1D-Profiles to be plotted (fixed Z-mesh) --
+heightlineouts = [0,23,45]#[0]					#Axial 1D-Profiles to be plotted (fixed R-mesh) |
 TrendLocation = [] 						#Cell location For Trend Analysis [R,Z], ([] = min/max)
 
+
 #Various Diagnostic Settings.
-phasecycles = 1.0							#Number of waveform phase cycles to be plotted. [number]
+phasecycles = 1.0						#Number of waveform phase cycles to be plotted. [number]
 DoFWidth = 41							#PROES Depth of Field (symmetric on image plane) [cells]
 ThrustLoc = 75							#Z-axis cell for thrust calculation  [cells]
 SheathROI = [34,72]						#Sheath Region of Interest, (Start,End) [cells]
@@ -224,7 +232,7 @@ savefig_phaseresolve2D = False			#2D Phase Resolved Images
 savefig_PROES = False					#Simulated PROES Diagnostic
 
 savefig_IEDFangular = False				#2D images of angular IEDF; single folders.
-savefig_IEDFtrends = False				#1D IEDF trends; all folders.
+savefig_IEDFtrends = True				#1D IEDF trends; all folders.
 savefig_EEDF = False					#NO PLOTTING ROUTINE		#IN DEVELOPMENT#
 
 #Write processed data to ASCII files.
@@ -307,6 +315,7 @@ cbaroverride = ['NotImplimented']
 
 #Fix issue with ffmpeg "convert-im6.q16: DistributedPixelCache..."
 
+#Fix AutoMovie function and, more generally, address the ignorance of os.system...
 
 
 
@@ -421,7 +430,7 @@ print '   |  |__|  | |  |__   |  |     |  |__   |   \|  |   /  ^  \        '
 print '   |   __   | |   __|  |  |     |   __|  |  . `  |  /  /_\  \       '
 print '   |  |  |  | |  |____ |  `----.|  |____ |  |\   | /  _____  \      '
 print '   |__|  |__| |_______||_______||_______||__| \__|/__/     \__\     '
-print '                                                              v1.0.2'
+print '                                                              v1.0.3'
 print '--------------------------------------------------------------------'
 print ''
 print 'The following diagnostics were requested:'
@@ -963,20 +972,23 @@ def Automovie(FolderDir,Output):
 	#Break if movies not requested
 	if DisableMovie == True: return()
 
-	#Correct file extention on name.
+	#Obtain current directory and set movie output parameters	
 	HomeDir = os.getcwd()
-	Output = Output+'.mp4'
+	Output = str(Output)+'.mp4'
 	Morph, FPS = 1, 24
 
+	#Ensure folder directory is in BASH-friendly format
+	FolderDir = HomeDir+FolderDir[1::]
+
 	#Use ffmpeg to create the movies and save in relevent files.
-	os.chdir(FolderDir)
+	os.system("cd "+FolderDir)
 	os.system("convert *.png -delay 1 -morph "+str(Morph)+" %05d.morph.jpg > /dev/null")
 	os.system("ffmpeg -nostats -loglevel 0 -r "+str(FPS)+" -i %05d.morph.jpg "+Output)
 	os.system("rm *.jpg")
-	os.chdir(HomeDir)
+	os.system("cd "+HomeDir)
+
 	return()
 #enddef
-
 
 #Runs requested dataconversion script with pre-defined arguments.
 #Takes name of convert script, any predefined arguments and newly created files.
@@ -1061,19 +1073,19 @@ def VariableLabelMaker(variablelist):
 
 		#Explicit Ionization Rates.
 		elif variablelist[i] == 'S-E':
-			Variable = 'Bulk e$^-$ Source Rate'
+			Variable = 'Bulk e$^-$ Source Rate \n'
 			VariableUnit = '[m$^{-3}$s$^{-1}$]'
 		elif variablelist[i] == 'SEB-E':
-			Variable = 'Secondry e$^-$ Source Rate'
+			Variable = 'Secondry e$^-$ Source Rate \n'
 			VariableUnit = '[m$^{-3}$s$^{-1}$]'
 		elif variablelist[i] == 'EB-ESORC':
-			Variable = 'Secondry e$^-$ Relaxation Rate'
+			Variable = 'Secondry e$^-$ Relaxation Rate \n'
 			VariableUnit = '[m$^{-3}$s$^{-1}$]'
 		elif variablelist[i] == 'S-AR+':
-			Variable = 'Bulk Ar+ Ionization Rate'
+			Variable = 'Bulk Ar+ Ionization Rate \n'
 			VariableUnit = '[m$^{-3}$s$^{-1}$]'
 		elif variablelist[i] == 'SEB-AR+':
-			Variable = 'Secondry Ar+ Ionization Rate'
+			Variable = 'Secondry Ar+ Ionization Rate \n'
 			VariableUnit = '[m$^{-3}$s$^{-1}$]'
 
 		#Explicit Species Temperatures.
@@ -3013,7 +3025,7 @@ if savefig_convergence == True:
 
 			#Create .mp4 movie from completed images.
 			Prefix = FolderNameTrimmer(Dirlist[l])
-#			Automovie(DirMovieplots,Prefix+'_'+variablelist[i])
+			Automovie(DirMovieplots,Prefix+'_'+variablelist[i])
 		#endfor
 
 
@@ -3645,7 +3657,7 @@ if savefig_IEDFangular == True:
 			#Determine region of IEDF to plot based on threshold value from array maximum.
 			Threshold = EDF_Threshold*max(EDFprofile)
 			for j in range(EDFprofile.index(max(EDFprofile)),len(EDFprofile)): 
-				if EDFprofile[j] <= Threshold and j != 0: 
+				if EDFprofile[j] < Threshold and j != 0: 
 					eVlimit = j*deV
  					break
 				elif j == len(EDFprofile)-1:
@@ -3701,8 +3713,9 @@ if savefig_IEDFtrends == True:
 	#For all requested IEDF variables
 	for i in tqdm(range(0,len(IEDFVariables))):
 		#Initiate figure for current variable and any required lists.
-		Legendlist,EDFprofiles,eVlimits = list(),list(),list()
-		Mode_eV,Mean_eV,Max_eV = list(),list(),list()
+		Legendlist,EDFprofiles,EDFEnergyProfile = list(),list(),list()
+		Mode_eV,Mean_eV,Median_eV = list(),list(),list()
+		Total_eV,Range_eV,FWHM_eV = list(),list(),list()
 		fig,ax = figure()
 
 		#Create new global trend folder if it doesn't exist already.
@@ -3710,7 +3723,7 @@ if savefig_IEDFtrends == True:
 		DirTrends = CreateNewFolder(os.getcwd()+'/',TrendVariable+' Trends')
 		#Create folder for IEDF trends if it doesn't exist already.
 		DirIEDFTrends = CreateNewFolder(DirTrends,'IEDF Trends')
-		
+
 		#For all simulation folders.
 		for l in range(0,numfolders):
 			EDFprofile = list()
@@ -3729,30 +3742,83 @@ if savefig_IEDFtrends == True:
 			deV, eVaxis = (EMAXIPCMC/IEBINSPCMC), list()
 			for j in range (0,int(IEBINSPCMC)): eVaxis.append(j*deV)
 
-			#Plot 1D EDF variable profile to open figure for each simulation folder.
+			#Plot 1D EDF variable profile on open figure for each simulation folder.
 			ax.plot(eVaxis,EDFprofile, lw=2)
 
 			#==========#
 			#==========#
-	
-			#Perform a trend analysis on current folder variable i IEDF
-			#Average energy analysis: Returns mean/mode energies from IEDF.
-			mean = (max(EDFprofile)+min(EDFprofile))/2
-			meanindex = (np.abs(EDFprofile[2::]-mean)).argmin()
-			Mean_eV.append( EDFprofile.index(EDFprofile[meanindex])*deV ) 
+
+			#Perform energy trend diagnostics on current folder (variable 'i') IEDF
+			#Smooth kinetic data prior to analysis if requested (Savitzk-Golay filter)
+			if KineticFiltering == True:
+				WindowSize, PolyOrder = Glob_SavWindow, Glob_SavPolyOrder
+				EDFprofile = (savgol_filter(EDFprofile, WindowSize, PolyOrder)).tolist()
+				#endfor
+			#endif
+
+			#Energy extrema analysis: Returns maximum energy where the fraction is above threshold.
+			Threshold = EDF_Threshold*max(EDFprofile)
+			ThresholdArray = list()
+			for j in range(0,len(EDFprofile)):
+				if EDFprofile[j] >= Threshold: ThresholdArray.append(j)
+			#endfor
+			IndexRange = [min(ThresholdArray),max(ThresholdArray)]
+			Range_eV = [IndexRange[0]*deV,IndexRange[1]*deV]
+
+			#Total energy analysis: Returns total energy contained within EDF profile
+			EDFEnergyProfile = list()
+			for j in range(0,len(EDFprofile)):
+				EDFEnergyProfile.append( EDFprofile[j]*(j*deV) )
+			#endfor
+			Total_eV.append(sum(EDFEnergyProfile))
+
+			#Average energy analysis: Returns mean/mode/median energies from IEDF.
+			#Modal energy taken as most common energy fraction (disregarding EDF_threshold)
 			Mode_eV.append( EDFprofile.index(max(EDFprofile))*deV )
 
-			#Maximum energy analysis: Returns maximum energy where the fraction is above threshold.
-			Threshold = EDF_Threshold*max(EDFprofile)
-			for j in range(EDFprofile.index(max(EDFprofile)),len(EDFprofile)): 
-				if EDFprofile[j] <= Threshold and j != 0: 
-					eVlimits.append( j*deV )
- 					break
-				elif j == len(EDFprofile)-1:
-					eVlimits.append( EMAXIPCMC )
+			#Mean energy obtained as integrated energy fraction most closely matching total energy
+			#averaged over effective energy range determined from EDF_threshold. 
+			BinAveragedEnergy = sum(EDFEnergyProfile)/len(EDFEnergyProfile)			#(Total Energy/Num Bins)
+			ResidualArray = list()
+			for j in range(IndexRange[0],IndexRange[1]):							#Using EDF_threshold
+				ResidualArray.append(abs(EDFEnergyProfile[j]-BinAveragedEnergy))	#Calculate Residuals
+			#endfor
+#			Intersection = (np.abs(EDFEnergyProfile-BinAveragedEnergy)).argmin()	#Single Intersection case
+			Intersections = np.argsort(ResidualArray)[:80]			#Capture Multiple intersections
+			Intersections = sorted(Intersections,reverse=False)		#High energy intersection indices first
+
+			IntersectionRegions,k = list(),0								#k defines region lower edge
+			for j in range(0,len(Intersections)-1):
+				RegionThreshold = 0.05*len(EDFEnergyProfile)
+				if Intersections[j]+RegionThreshold < Intersections[j+1]:	#If threshold jump observed...
+					IntersectionRegions.append(Intersections[k:j])			#Save current intersect region
+					k = j+1													#Update region edge index
+				elif j == len(Intersections)-2:
+					IntersectionRegions.append(Intersections[k:j])			#Save final intersect region
 				#endif
 			#endfor
-			Max_eV.append(eVlimits[-1])
+			Intersections = list()
+			for j in range(0,len(IntersectionRegions)):						#For all intersection regions
+				try: Intersections.append(min(IntersectionRegions[j]))		#Identify central index
+				except: 
+					if j == 0: Intersections.append(0)						#Hacky fix for first index
+				#endtry
+			#endfor
+			FWHM_eV.append([min(Intersections)*deV,max(Intersections)*deV])	#Extrema represent FWHM of EDF
+			MeanEnergyIndex = (max(Intersections)+min(Intersections))/2		#Mean energy lies between extrema
+			Mean_eV.append( MeanEnergyIndex*deV )
+
+			#Median energy calculated as EDF index representing midpoint of equal integrated energies
+			RisingSum,FallingSum,AbsDiff = 0.0,0.0,list()
+			for j in range(0,len(EDFprofile)):
+				Rising_j, Falling_j = j, (len(EDFprofile)-1-2)-j
+				RisingSum += EDFprofile[Rising_j]*(Rising_j*deV)
+				FallingSum += EDFprofile[Falling_j]*(Falling_j*deV)
+				AbsDiff.append(abs(RisingSum-FallingSum))
+				#endif
+			#endfor
+			MedianIndex = AbsDiff.index(min(AbsDiff))
+			Median_eV.append( MedianIndex*deV ) 		#### MEDIANS' FUCKED UP BRAH! ####
 
 			#Particle energy variance analysis: Returns FWHM of energy distribution.
 			#Take mean and draw line at y = mean 
@@ -3760,8 +3826,28 @@ if savefig_IEDFtrends == True:
 			#If only one intercept, first intercept is x = 0
 			#Integrate EDFprofile indices between intercepts 
 			#Save in 1D array, can be used to get energy spread percentage.
-		#endfor
 
+			#OLD MEAN CALCULATION - CALCULATES MEAN FRACTION, NOT MEAN ENERGY
+#			meanfraction = (max(EDFprofile)+min(EDFprofile))/2
+#			meanindex = (np.abs(EDFprofile[2::]-meanfraction)).argmin()
+#			Mean_eV.append( EDFprofile.index(EDFprofile[meanindex])*deV )
+
+			#==========#
+			#==========#
+
+#			DebugMode = True
+			if DebugMode == True:
+				fig2,ax2 = figure()
+				ax2.plot(EDFEnergyProfile, 'k-', lw=2)
+				ax2.plot(ResidualArray, 'r-', lw=2)
+				ax2.plot((0,len(EDFEnergyProfile)),(BinAveragedEnergy,BinAveragedEnergy),'b--',lw=2)
+				ax2.plot((max(Intersections),max(Intersections)),(0,0.25),'b--',lw=2)
+				ax2.plot((min(Intersections),min(Intersections)),(0,0.25),'b--',lw=2)
+				ax2.plot((MeanEnergyIndex,MeanEnergyIndex),(0,0.25),'m--',lw=2)
+				ax2.legend(['Integrated Energy','abs(ResidualArray)','BinAveragedEnergy'])
+				plt.show()
+			#endif
+		#endfor
 
 		#Write data to ASCII format datafile if requested.
 		if write_ASCII == True:
@@ -3769,9 +3855,10 @@ if savefig_IEDFtrends == True:
 				DirASCII = CreateNewFolder(DirTrends,'Trend_Data')
 				DirASCIIIEDF = CreateNewFolder(DirASCII,'IEDF_Data')
 			#endif
+			WriteDataToFile(Legendlist+['\n']+Total_eV, DirASCIIIEDF+variablelist[i]+'_Total', 'w')
+			WriteDataToFile(Legendlist+['\n']+Range_eV, DirASCIIIEDF+variablelist[i]+'_Range', 'w')
 			WriteDataToFile(Legendlist+['\n']+Mode_eV, DirASCIIIEDF+variablelist[i]+'_Mode', 'w')
 			WriteDataToFile(Legendlist+['\n']+Mean_eV, DirASCIIIEDF+variablelist[i]+'_Mean', 'w')
-			WriteDataToFile(Legendlist+['\n']+Max_eV, DirASCIIIEDF+variablelist[i]+'_Max', 'w')
 		#endif
 
 		##IEDF PROFILES##
@@ -3780,24 +3867,25 @@ if savefig_IEDFtrends == True:
 		#Apply image options to IEDF plot generated in the above loop.
 		Title = Dirlist[l][2::]+'\n'+variablelist[i]+' Angular Energy Distribution Function Profiles'
 		Xlabel,Ylabel = 'Energy [eV]',variablelist[i]+' EDF [$\\theta$ Integrated]'
-		ImageCrop = [[0,max(eVlimits)],[]]		#[[X1,X2],[Y1,Y2]]
+		ImageCrop = [ [0,Range_eV[1]],[] ]		#[[X1,X2],[Y1,Y2]]
 		ImageOptions(fig,ax,Xlabel,Ylabel,Title,Legendlist,Crop=ImageCrop,Rotate=False)
 
 		plt.savefig(DirIEDFTrends+variablelist[i]+'_EDFprofiles'+ext)
 		plt.close('all')
 
 
-		#ENERGY ANALYSIS#
-		#===============#
+		##ENERGY ANALYSIS##
+		#=================#
 
-		#Plot average energy analysis profiles against simulation folder names.
+		#Plot IEDF average energies with respect to simulation folder names.
 		fig,ax = figure()
 		TrendPlotter(ax,Mean_eV,Legendlist,NormFactor=0)
 		TrendPlotter(ax,Mode_eV,Legendlist,NormFactor=0)
-#		TrendPlotter(ax,Max_eV,Legendlist,NormFactor=0)
+#		TrendPlotter(ax,Range_eV[0],Legendlist,NormFactor=0)
+#		TrendPlotter(ax,Range_eV[1],Legendlist,NormFactor=0)
 
 		Title = Dirlist[l][2::]+'\n'+'Average '+variablelist[i]+' Energies'
-		Legend = ['EDF Mean Energy','EDF Mode Energy','EDF Max Energy']
+		Legend = ['EDF Mean Energy','EDF Mode Energy','EDF Min Energy','EDF Max Energy']
 		Xlabel,Ylabel = 'Varied Property',variablelist[i]+' Energy [eV]'
 		ImageCrop = [[],[0,max(Mean_eV+Mode_eV)*1.15]]		#[[X1,X2],[Y1,Y2]]
 		ImageOptions(fig,ax,Xlabel,Ylabel,Title,Legend,Crop=ImageCrop,Rotate=False)
@@ -4708,12 +4796,11 @@ if savefig_phaseresolve1D == True:
 
 		#==============#
 
-
 		#for all requested variables.
 		for i in tqdm(range(0,len(proclist))):
 
 			#Create new folder to keep specific plots.
-			DirMovieplots = CreateNewFolder(DirPhaseResolved,varlist[i]+'_1DPhaseResolved/')
+			DirMovieplots = CreateNewFolder(DirPhaseResolved,varlist[i]+'_1DPhaseResolved')
 
 			#Refresh lineout lists between variables.
 			Lineouts,LineoutsOrientation = list(),list()
