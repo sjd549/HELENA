@@ -85,7 +85,7 @@ from pylab import *
 Magmesh = 1							#initmesh.exe magnification factor. (almost obsolete)
 DisableMovie = True					#If True: Suppresses ffmpeg routines, saves RAM.
 DebugMode = False					#Produces debug outputs for relevent diagnostics.
-QuickConverge = False				#Supresses 2D Convergence images in savefig_convergence
+QuickConverge = True				#Supresses 2D Convergence images in savefig_convergence
 
 #Warning suppressions
 np.seterr(divide='ignore', invalid='ignore')		#Suppresses divide by zero errors
@@ -96,16 +96,19 @@ np.seterr(divide='ignore', invalid='ignore')		#Suppresses divide by zero errors
 FileExtensions = ['.PDT','.pdt','.nam']
 
 #Numerical Calculation Methods:
-GlobSheathMethod = 'AbsDensity'		#Set Global Sheath Calculation Method.
+GlobSheathMethod = 'AbsDensity'			#Set Global Sheath Calculation Method.
 #Choices: ('AbsDensity','IntDensity')
-GlobThrustMethod = 'AxialMomentum'	#Set Global Thrust Calculation Method. 
+GlobThrustMethod = 'AxialMomentum'		#Set Global Thrust Calculation Method. 
 #Choices:('ThermalVelocity','AxialMomentum')
-DCbiasaxis = 'Auto'					#Direction to calculate dc bias over.
+DCbiasaxis = 'Auto'						#Direction to calculate dc bias over.
 #Choices:('Axial','Radial','Auto')
+GlobMeanCalculation = 'MeanFraction'	#Definition of 'mean' EDF value
+#Choices: ('MeanEnergy','MeanFraction')
 
 #Data Filtering and Smoothing Methods:
-KineticFiltering = True				#Pre-fit kinetic data employing a SavGol filter
+KineticFiltering = True					#Pre-fit kinetic data employing a SavGol filter
 Glob_SavWindow, Glob_SavPolyOrder = 101, 6	#Window > FeatureSize, Polyorder ~= Smoothness
+
 
 
 
@@ -137,11 +140,13 @@ MSHC2017_PCMC = ['AR^0.5S','EB-0.5S','ION-TOT0.5S','AR^1.1B','EB-1.1B','ION-TOT1
 SCCP2018_PCMC = ['AR^7.7J','ION-TOT7.7J','AR^5.1B','ION-TOT5.1B']
 ESCT2018_PCMC = ['AR^0.3S','EB-0.3S','ION-TOT0.3S']
 
+
+
 ####################
 
 #Commonly Used Diagnostic Settings:
 #### PRCCP ####
-#electrodeloc =		[29,44] 					#SPR [0,107]
+#electrodeloc =		[29,44] 					#Reverse [29,62]
 #waveformlocs =		[[16,29],[16,44],[16,64]]
 #waveformlocs = 	[[24,44],[23,44],[22,44],[21,44],[20,44],[19,44],[18,44],[17,44],[16,44],[15,44],[14,44],[13,44],[12,44],[11,44],[10,44],[9,44],[8,44],[7,44],[6,44],[5,44],[4,44],[3,44],[2,44],[1,44],[0,44]]
 #DOFWidth =			R;16,Z;41
@@ -151,7 +156,27 @@ ESCT2018_PCMC = ['AR^0.3S','EB-0.3S','ION-TOT0.3S']
 #SourceWidth =		[0.21]						
 #Crop =				R[0.6];Z[1,4.5] 
 
-#### TSHC-Mk2 ####
+#### PRuICP ####	
+#electrodeloc = 	[33,33]			#Coil V
+#waveformlocs = 	[]
+#DOFWidth = 		[]
+#TrendLoc = 		H[0];R[36,50]
+#ThrustLoc = 		[79]
+#SheathROI = 		[]
+#SourceWidth = 		[]
+#Crop = 			R[0.0,1.0];Z[1.5,10]
+
+#### PP-SCCP ####
+#electrodeloc = 	[0,3]
+#waveformlocs = 	[]
+#DOFWidth = 		R;??,Z;??
+#TrendLoc =  		H[0];R[]
+#ThrustLoc = 		[]
+#SheathROI = 		[]
+#SourceWidth = 		[]
+#Crop = 			R[];Z[]
+
+#### TSHC ####
 #electrodeloc = 	[0,15]
 #waveformlocs = 	[]
 #DOFWidth = 		R;5,Z;10
@@ -164,24 +189,15 @@ ESCT2018_PCMC = ['AR^0.3S','EB-0.3S','ION-TOT0.3S']
 ### TSHC-OI ###
 #electrodeloc = 	[58,15]
 #waveformlocs = 	[]
-#DOFWidth = 		R;000,Z;000
+#DOFWidth = 		R;??,Z;??
 #TrendLoc =  		H[0,23,45];R[46,55,64]			#0.1cm/cell
 #ThrustLoc = 		[]
 #SheathROI = 		[]
 #SourceWidth = 		[]
 #Crop = 			R[15];Z[5,15]
 
-#### PRuICP ####	
-#electrodeloc = 	[33,33]			#Coil V
-#waveformlocs = 	[]
-#DOFWidth = 		[]
-#TrendLoc = 		H[0];R[36,50]
-#ThrustLoc = 		[79]
-#SheathROI = 		[]
-#SourceWidth = 		[]
-#Crop = 			R[0.0,1.0];Z[1.5,10]
-
 ####################
+
 
 
 
@@ -190,13 +206,13 @@ ESCT2018_PCMC = ['AR^0.3S','EB-0.3S','ION-TOT0.3S']
 #====================================================================#
 
 #Requested IEDF/NEDF Variables.
-IEDFVariables = PRCCP_PCMC#TSHCOI_PCMC#		#Requested iprofile_2d variables (no spaces)
+IEDFVariables = PRCCP_PCMC#TSHCOI_PCMC		#Requested iprofile_2d variables (no spaces)
 NEDFVariables = []				#Requested nprofile_2d variables (no spaces)
 
 #Requested movie1/movie_icp Variables.
 IterVariables = ['E','S-E','PPOT','TE']		#Requested Movie_icp (iteration) Variables.		
 PhaseVariables = Ar_Phase					#Requested Movie1 (phase) Variables. +['E','AR+']
-electrodeloc = [58,15]#[29,44]#				#Cell location of powered electrode [R,Z].
+electrodeloc = [29,44]#[58,15]				#Cell location of powered electrode [R,Z].
 waveformlocs = []							#Cell locations of additional waveforms [R,Z].
 
 #Requested TECPLOT Variables and plotting locations.
@@ -208,7 +224,7 @@ TrendLocation = [] 						#Cell location For Trend Analysis [R,Z], ([] = min/max)
 
 
 #Various Diagnostic Settings.
-phasecycles = 1.0						#Number of waveform phase cycles to be plotted. [number]
+phasecycles = 1.0						#Number of waveform phase cycles to be plotted. [float]
 DoFWidth = 41							#PROES Depth of Field (symmetric on image plane) [cells]
 ThrustLoc = 75							#Z-axis cell for thrust calculation  [cells]
 SheathROI = [34,72]						#Sheath Region of Interest, (Start,End) [cells]
@@ -217,7 +233,7 @@ EDF_Threshold = 0.01					#Upper Recognised EEDF/IEDF energy fraction (Plot all: 
 
 
 #Requested diagnostics and plotting routines.
-savefig_convergence = False				#Requires movie_icp.pdt
+savefig_convergence = True				#Requires movie_icp.pdt
 savefig_plot2D = False					#Requires TECPLOT2D.PDT
 
 savefig_monoprofiles = False			#Single-Variables; fixed height/radius
@@ -232,7 +248,7 @@ savefig_phaseresolve2D = False			#2D Phase Resolved Images
 savefig_PROES = False					#Simulated PROES Diagnostic
 
 savefig_IEDFangular = False				#2D images of angular IEDF; single folders.
-savefig_IEDFtrends = True				#1D IEDF trends; all folders.
+savefig_IEDFtrends = False				#1D IEDF trends; all folders.
 savefig_EEDF = False					#NO PLOTTING ROUTINE		#IN DEVELOPMENT#
 
 #Write processed data to ASCII files.
@@ -258,9 +274,11 @@ image_cbarlimit = []					#[min,max] colourbar limits
 image_plotsymmetry = True				#Toggle radial symmetry
 image_numericaxis = False				#### NOT IMPLIMENTED ####
 image_contourplot = True				#Toggle contour Lines in images
+image_1Doverlay = False					#Overlay location(s) of radialineouts/heightlineouts
 image_plotgrid = False					#Plot major/minor gridlines on profiles
 image_plotmesh = 'PRCCP'				#Plot material mesh outlines ('Auto','PRCCP','PRuICP')
 image_rotate = True						#Rotate image 90 degrees to the right.
+
 
 image_normalize = False					#Normalize image/profiles to local max
 image_logplot = False					#Plot ln(Data), against linear axis.
@@ -384,6 +402,7 @@ VRFM,VRFM2 = list(),list()
 FREQM,FREQM2 = list(),list()
 FREQGLOB,IRFPOW = list(),list()
 MAXFREQ,MINFREQ = list(),list()
+PRESOUT = list()
 IETRODEM = list()
 IMOVIE_FRAMES = list()
 
@@ -606,6 +625,7 @@ for l in range(0,numfolders):
 		IRFPOW.append(float(filter(lambda x:'IRFPOW=' in x, NamelistData)[0].strip(' \t\n\r,=IRFPOW')))
 		IETRODEM.append(filter(lambda x:'IETRODEM=' in x, NamelistData)[0].split()[1:NUMMETALS])
 		for i in range(0,len(IETRODEM[l])): IETRODEM[l][i] = int(IETRODEM[l][i].strip(','))
+		PRESOUT.append(  float(filter(lambda x:'PRESOUT=' in x, NamelistData)[0].strip(' \t\n\r,=PRESOUT')))
 	except:
 		print 'ICP.NAM READIN ERROR, USING DEFAULT MATERIAL PROPERTIES'
 		FREQM.append(13.56E6)
@@ -614,6 +634,7 @@ for l in range(0,numfolders):
 		VRFM.append(300.0)
 		VRFM2.append(150.0)
 		IRFPOW.append(100.0)
+		PRESOUT.append(0.85)
 	#endtry
 
 	#PCMC Namelist Inputs
@@ -649,9 +670,9 @@ for l in range(0,numfolders):
 		dz.append(Height[-1]/(Z_mesh[-1]-1))
 	except:
 		#If the geometry section cannot be found, manual input is required.
-		print '#=================================================#'
-		print 'icp.nam not found, please manually define variables'
-		print '#=================================================#'
+		print '#================================================#'
+		print 'icp.nam not found, please manually define geometry'
+		print '#================================================#'
 		radius = float(raw_input("Please Define SI radius: "))
 		height = float(raw_input("Please Define SI height: "))
 		depth = float(raw_input("Please Define SI depth: "))
@@ -1788,6 +1809,35 @@ def SymmetryConverter(Image,Radial=False):
 
 
 
+#Scales a 2D array by the requested X and Y scale factors, can scale asymmetrically.
+#Takes a rectilinear 2D array of floats and returns a scaled rectilinear 2D array.
+#Employs a linear interpolation scheme when mapping new datapoints.
+#ScaledArray = ScaleArray(2DArray,ScaleFactors=[3,3])
+def ScaleArray(Array,ScaleFactors):
+	from scipy.ndimage.interpolation import map_coordinates
+
+	#Define old and new array scales based upon supplied factors
+	OldScale = [len(Array),len(Array[0])]
+	NewScale = [int(OldScale[0]*ScaleFactors[0]),int(OldScale[1]*ScaleFactors[1])]
+
+	#Create new 2D array with required NewScale
+	Array,NewDims = np.asarray(Array),list()
+	for OriginalLength, NewLength in zip(Array.shape, (NewScale[0],NewScale[1])):
+		NewDims.append(np.linspace(0, OriginalLength-1, NewLength))
+	#Map old data onto new array employing a linear interpolation
+	Coords = np.meshgrid(*NewDims, indexing='ij')
+	ScaledArray = map_coordinates(Array, Coords)
+
+	return(ScaledArray)
+#enddef
+
+
+
+#=========================#
+#=========================#
+
+
+
 #Create figure of desired size and with variable axes.
 #Returns figure and axes seperately.
 #fig,ax = figure(image_aspectratio,1,shareX=False)
@@ -1943,9 +1993,14 @@ def CbarMinMax(Image,PROES=False,Symmetry=True):
 		#endif
 	#endif
 
-	#Flatten 'nD' image and obtain min/max in region, defaults to full image if no cropping.
-	flatimage = [item for sublist in Image for item in sublist]
-	cropmin,cropmax = min(flatimage),max(flatimage)
+	#Flatten image and obtain min/max in region, defaults to full image if no cropping.
+	try:	
+		flatimage = [item for sublist in Image for item in sublist]
+		cropmin,cropmax = min(flatimage),max(flatimage)
+	except:	
+			print 'IMAGE CROPPING OUTSIDE MESH BOUNDARIES: CHECK IMAGE_RADIALCROP,IMAGE_AXIALCROP'
+			exit()
+	#endtry
 
 	#Return cropped values in list [min,max], as required by colourbar.
 	return([cropmin,cropmax])
@@ -2753,6 +2808,7 @@ def SheathThickness(folder=l,ax='NaN',Orientation='Axial',Phase='NaN',Ne=list(),
 				#endif
 			#endfor
 			RadialWallLoc = len(Ni[j])				####FUDGED####
+			RadialWallLocSI = len(Ni[j])*dr[l]		####FUDGED####
 			
 			#Refresh sums after every radial profile.
 			Ni_sum,Ne_sum = 0.0,0.0
@@ -2766,9 +2822,9 @@ def SheathThickness(folder=l,ax='NaN',Orientation='Axial',Phase='NaN',Ne=list(),
 				if Ni_sum/Ne_sum >= 1.0: 
 					Sx.append(i*dr[l])										####FUDGED####
 					break
-				#If no sheath found, append 'NaN' to avoid plotting.
+				#If no sheath found, OR append 'NaN' to avoid plotting.
 				if i == (len(Ni[j])-1):
-					Sx.append(np.nan)
+					Sx.append(np.nan)	  ####SHOULD BE EQUAL TO WALL (IF NON-EXISTANT####
 				#endif
 			#endfor
 		#endfor
@@ -2786,7 +2842,8 @@ def SheathThickness(folder=l,ax='NaN',Orientation='Axial',Phase='NaN',Ne=list(),
 					break
 				#If no sheath found, append 'NaN' to avoid plotting.
 				if i == (len(Ni[j])-1):
-					Sx.append(np.nan)
+					Sx.append(0.0)
+					#Sx.append(np.nan)
 				#endif
 			#endfor
 		#endfor
@@ -2903,6 +2960,22 @@ if savefig_plot2D == True:
 			fig,ax,im,Image = ImagePlotter2D(Image,extent,aspectratio,variablelist[k])
 			#Add sheath thickness to figure if requested.
 			Sx = SheathThickness(folder=l,ax=ax)[0]
+
+			#Overlay location of 1D profiles if requested, adjusting for image rotation.
+			if image_1Doverlay == True:
+				for j in range(0,len(radialineouts)):
+					X1,X2 = extent[0],extent[1]
+					Y1,Y2 = radialineouts[j]*dz[l],radialineouts[j]*dz[l]
+					if image_rotate == True: X1,X2,Y1,Y2 = Y1,Y2,X1,X2
+					ax.plot((X1,X2),(Y1,Y2),'k--',lw=2)
+				#endfor
+				for j in range(0,len(heightlineouts)):
+					X1,X2 = heightlineouts[j]*dr[l],heightlineouts[j]*dr[l]
+					Y1,Y2 = extent[2],extent[3]
+					if image_rotate == True: X1,X2,Y1,Y2 = Y1,Y2,X1,X2
+					ax.plot((X1,X2),(Y1,Y2),'k--',lw=2)
+				#endfor
+			#endif
 
 			#Define image beautification variables.
 			if image_rotate == True:
@@ -3036,17 +3109,36 @@ if savefig_convergence == True:
 		Legend = VariableLabelMaker(variablelist)
 		fig, ax = plt.subplots(1, figsize=(10,10))
 
+		#Obtain final iteration values for use as normalisation factors
+		FinalIterationValues = list()
+		for i in range(0,len(processlist)):
+			Image = ImageExtractor2D(IterMovieData[l][-1][processlist[i]],variablelist[i])
+			FinalIterationValues.append( sum(Image.flatten())/len(Image.flatten()) )
+		#endfor
+
 		#Normalize and plot each variable in ConvergenceTrends to single figure.
 		for i in range(0,len(ConvergenceTrends)):
-			ConvergenceTrends[i] = Normalize(ConvergenceTrends[i])[0]
+			ConvergenceTrends[i] = Normalize(ConvergenceTrends[i],NormFactor=FinalIterationValues[i])[0]
 			ax.plot(Xaxis,ConvergenceTrends[i], lw=2)
 		#endfor
+		Limits = [min(np.asarray(ConvergenceTrends).flatten()),max(np.asarray(ConvergenceTrends).flatten())]
 
 		#Image plotting details.
 		Title = 'Convergence of '+str(variablelist)+' for \n'+Dirlist[l][2:-1]
 		Xlabel,Ylabel = 'Simulation Iteration','Normalized Mesh-Average Value'
 		ImageOptions(fig,ax,Xlabel,Ylabel,Title,Legend,Crop=False)
-		ax.set_ylim(0,1.01+(len(Legend)*0.05))
+		ax.set_ylim(Limits[0],Limits[1])
+
+		#Write data to ASCII files if requested.
+		if write_ASCII == True:
+			DirASCII = CreateNewFolder(DirConvergence, 'Convergence_Data')
+			SaveString = FolderNameTrimmer(Dirlist[l])+'_ConvergenceData'
+			WriteDataToFile(variablelist+['\n'], DirASCII+SaveString, 'w')
+			#endif
+			for i in range(0,len(ConvergenceTrends)):
+				WriteDataToFile(ConvergenceTrends[i]+['\n'], DirASCII+SaveString, 'a')
+			#endfor
+		#endif
 
 		#Save figure.
 		savefig(DirConvergence+FolderNameTrimmer(Dirlist[l])+'_Convergence'+ext)
@@ -3778,73 +3870,129 @@ if savefig_IEDFtrends == True:
 
 			#Mean energy obtained as integrated energy fraction most closely matching total energy
 			#averaged over effective energy range determined from EDF_threshold. 
-			BinAveragedEnergy = sum(EDFEnergyProfile)/len(EDFEnergyProfile)			#(Total Energy/Num Bins)
-			ResidualArray = list()
-			for j in range(IndexRange[0],IndexRange[1]):							#Using EDF_threshold
-				ResidualArray.append(abs(EDFEnergyProfile[j]-BinAveragedEnergy))	#Calculate Residuals
-			#endfor
-#			Intersection = (np.abs(EDFEnergyProfile-BinAveragedEnergy)).argmin()	#Single Intersection case
-			Intersections = np.argsort(ResidualArray)[:80]			#Capture Multiple intersections
-			Intersections = sorted(Intersections,reverse=False)		#High energy intersection indices first
+			if GlobMeanCalculation == 'MeanEnergy':
+				BinAveragedEnergy = sum(EDFEnergyProfile)/len(EDFEnergyProfile)		#(Total Energy/Num Bins)
+				ResidualArray = list()
+				#Calculate Residuals using EDF_threshold as upper energy percentile
+				for j in range(IndexRange[0],IndexRange[1]):						
+					ResidualArray.append(abs(EDFEnergyProfile[j]-BinAveragedEnergy))
+				#endfor
+				#Capture mean/residual intersections, sort high energy intersection indices first
+				NumIntersections = int(len(EDFprofile)/10)
+				Intersections = np.argsort(ResidualArray)[:NumIntersections]			
+				Intersections = sorted(Intersections,reverse=False)	
+				#Single Intersection case
+#				Intersection = (np.abs(EDFEnergyProfile-BinAveragedEnergy)).argmin()
+	
+				#k defines region lower energy edge index
+				IntersectionRegions,k = list(),0			
+				for j in range(0,len(Intersections)-1):
+					RegionThreshold = 0.05*len(EDFEnergyProfile)
+					#If threshold jump observed, save current intersect region index (k)
+					if Intersections[j]+RegionThreshold < Intersections[j+1]:
+						IntersectionRegions.append(Intersections[k:j])
+						k = j+1
+					#Save final intersect region index
+					elif j == len(Intersections)-2:
+						IntersectionRegions.append(Intersections[k:j])
+					#endif
+				#endfor
+				Intersections = list()
+				#If odd number of intersections, likely that low energy one was missed
+				if len(IntersectionRegions) % 2 == 1: Intersections.append(1.0)
+				#For all intersection regions identify the central index
+				for j in range(0,len(IntersectionRegions)):	
+					try:	
+						RegionCentralIndex = int(len(IntersectionRegions[j])/2.0)
+						Intersections.append( IntersectionRegions[j][RegionCentralIndex] )
+					except:
+						#If no intersections, assume a single zero energy intersection
+						if j == 0: Intersections.append(0.0)
+					#endtry
+				#endfor
+				#Extrema represent FWHM of EDF, mean energy lies between extrema
+				FWHM_eV.append([min(Intersections)*deV,max(Intersections)*deV])
+				MeanEnergyIndex = (max(Intersections)+min(Intersections))/2
+			#endif
 
-			IntersectionRegions,k = list(),0								#k defines region lower edge
-			for j in range(0,len(Intersections)-1):
-				RegionThreshold = 0.05*len(EDFEnergyProfile)
-				if Intersections[j]+RegionThreshold < Intersections[j+1]:	#If threshold jump observed...
-					IntersectionRegions.append(Intersections[k:j])			#Save current intersect region
-					k = j+1													#Update region edge index
-				elif j == len(Intersections)-2:
-					IntersectionRegions.append(Intersections[k:j])			#Save final intersect region
-				#endif
-			#endfor
-			Intersections = list()
-			for j in range(0,len(IntersectionRegions)):						#For all intersection regions
-				try: Intersections.append(min(IntersectionRegions[j]))		#Identify central index
-				except: 
-					if j == 0: Intersections.append(0)						#Hacky fix for first index
-				#endtry
-			#endfor
-			FWHM_eV.append([min(Intersections)*deV,max(Intersections)*deV])	#Extrema represent FWHM of EDF
-			MeanEnergyIndex = (max(Intersections)+min(Intersections))/2		#Mean energy lies between extrema
+			#Mean energy obtained as ion energy with population fraction most closely matching IEDF average
+			#OLD MEAN ENERGY DEFINITION - MEAN DEFINED BY FRACTION NOT BY ENERGY
+			if GlobMeanCalculation == 'MeanFraction':
+				BinAveragedFraction = sum(EDFprofile)/len(EDFprofile)
+				ResidualArray = list()
+				#Calculate Residuals using EDF_threshold as upper energy percentile
+				for j in range(IndexRange[0],IndexRange[1]):						
+					ResidualArray.append(abs(EDFprofile[j]-BinAveragedFraction))
+				#endfor
+				#Capture mean/residual intersections, sort high energy intersection indices first
+				NumIntersections = int(len(EDFprofile)/8)
+				Intersections = np.argsort(ResidualArray)[:NumIntersections]			
+				Intersections = sorted(Intersections,reverse=False)	
+
+				#k defines region lower energy edge index
+				IntersectionRegions,k = list(),0			
+				for j in range(0,len(Intersections)-1):
+					RegionThreshold = 0.05*len(EDFprofile)
+					#If threshold jump observed, save current intersect region index (k)
+					if Intersections[j]+RegionThreshold < Intersections[j+1]:
+						IntersectionRegions.append(Intersections[k:j])
+						k = j+1
+					#Save final intersect region index
+					elif j == len(Intersections)-2:
+						IntersectionRegions.append(Intersections[k:j])
+					#endif
+				#endfor
+
+				Intersections = list()
+				#If odd number of intersections, likely that low energy one was missed
+				if len(IntersectionRegions) % 2 == 1: Intersections.append(1.0)
+				#For all intersection regions identify the central index
+				for j in range(0,len(IntersectionRegions)):	
+					try:	
+						RegionCentralIndex = int(len(IntersectionRegions[j])/2.0)
+						Intersections.append( IntersectionRegions[j][RegionCentralIndex] )
+					except:
+						#If no intersections, assume a single zero energy intersection
+						if j == 0: Intersections.append(0.0)
+					#endtry
+				#endfor
+				#Extrema represent FWHM of EDF, mean energy lies between extrema
+				FWHM_eV.append([min(Intersections)*deV,max(Intersections)*deV])
+				MeanEnergyIndex = (max(Intersections)+min(Intersections))/2
+			#endif
 			Mean_eV.append( MeanEnergyIndex*deV )
 
 			#Median energy calculated as EDF index representing midpoint of equal integrated energies
-			RisingSum,FallingSum,AbsDiff = 0.0,0.0,list()
-			for j in range(0,len(EDFprofile)):
-				Rising_j, Falling_j = j, (len(EDFprofile)-1-2)-j
-				RisingSum += EDFprofile[Rising_j]*(Rising_j*deV)
-				FallingSum += EDFprofile[Falling_j]*(Falling_j*deV)
-				AbsDiff.append(abs(RisingSum-FallingSum))
+#			RisingSum,FallingSum,AbsDiff = 0.0,0.0,list()
+#			for j in range(0,len(EDFprofile)):
+#				Rising_j, Falling_j = j, (len(EDFprofile)-1-2)-j
+#				RisingSum += EDFprofile[Rising_j]*(Rising_j*deV)
+#				FallingSum += EDFprofile[Falling_j]*(Falling_j*deV)
+#				AbsDiff.append(abs(RisingSum-FallingSum))
 				#endif
 			#endfor
-			MedianIndex = AbsDiff.index(min(AbsDiff))
-			Median_eV.append( MedianIndex*deV ) 		#### MEDIANS' FUCKED UP BRAH! ####
+#			MedianIndex = AbsDiff.index(min(AbsDiff))
+#			Median_eV.append( MedianIndex*deV ) 				#### MEDIANS' FUCKED UP BRAH! ####
 
 			#Particle energy variance analysis: Returns FWHM of energy distribution.
-			#Take mean and draw line at y = mean 
-			#Calculate where y = mean intercepts EDFprofile
-			#If only one intercept, first intercept is x = 0
-			#Integrate EDFprofile indices between intercepts 
-			#Save in 1D array, can be used to get energy spread percentage.
-
-			#OLD MEAN CALCULATION - CALCULATES MEAN FRACTION, NOT MEAN ENERGY
-#			meanfraction = (max(EDFprofile)+min(EDFprofile))/2
-#			meanindex = (np.abs(EDFprofile[2::]-meanfraction)).argmin()
-#			Mean_eV.append( EDFprofile.index(EDFprofile[meanindex])*deV )
+#			Take mean and draw line at y = mean 
+#			Calculate where y = mean intercepts EDFprofile
+#			If only one intercept, first intercept is x = 0
+#			Integrate EDFprofile indices between intercepts 
+#			Save in 1D array, can be used to get energy spread percentage.
 
 			#==========#
 			#==========#
 
-#			DebugMode = True
 			if DebugMode == True:
 				fig2,ax2 = figure()
 				ax2.plot(EDFEnergyProfile, 'k-', lw=2)
 				ax2.plot(ResidualArray, 'r-', lw=2)
 				ax2.plot((0,len(EDFEnergyProfile)),(BinAveragedEnergy,BinAveragedEnergy),'b--',lw=2)
-				ax2.plot((max(Intersections),max(Intersections)),(0,0.25),'b--',lw=2)
-				ax2.plot((min(Intersections),min(Intersections)),(0,0.25),'b--',lw=2)
-				ax2.plot((MeanEnergyIndex,MeanEnergyIndex),(0,0.25),'m--',lw=2)
-				ax2.legend(['Integrated Energy','abs(ResidualArray)','BinAveragedEnergy'])
+				ax2.plot((max(Intersections),max(Intersections)),(0,0.0025),'b--',lw=2)
+				ax2.plot((min(Intersections),min(Intersections)),(0,0.0025),'b--',lw=2)
+				ax2.plot((MeanEnergyIndex,MeanEnergyIndex),(0,0.0025),'m--',lw=2)
+				ax2.legend(['Integrated Energy','abs(ResidualArray)','BinAveragedEnergy/Fraction'])
 				plt.show()
 			#endif
 		#endfor
@@ -4375,7 +4523,7 @@ if savefig_trendphaseaveraged == True or print_thrust == True:
 			#Assumes pressure differential, ion/neutral flux equal for all angles at given radii.
 
 			#CellArea increases from central R=0.
-			#Correct extracted profiles to agree with this direction.
+			#Correct extracted profiles to agree with this orientation.
 			#ONLY WORKS WHEN SYMMETRY OPTION IS ON, NEED A MORE ROBUST METHOD!
 			Pressure,PressureDown = Pressure[0:R_mesh[l]][::-1],PressureDown[0:R_mesh[l]][::-1]
 			NeutralVelocity = NeutralVelocity[0:R_mesh[l]][::-1]
@@ -4396,9 +4544,8 @@ if savefig_trendphaseaveraged == True or print_thrust == True:
 				#Calculate differential pressure between ThrustLoc-(ThrustLoc+1)
 				#Ensure pressure index aligns with radial index for correct cell area.
 				if Pressure[i] > 0.0:
-					POUT = 0.85	 #0.35										#Torr
-#					DiffPressure = (Pressure[i]-POUT)*133.33				#N/m^2
-					DiffPressure = (Pressure[i]-PressureDown[i])*133.33		#N/m^2
+					DiffPressure = (Pressure[i]-PRESOUT[l])*133.33			#N/m^2
+#					DiffPressure = (Pressure[i]-PressureDown[i])*133.33		#N/m^2
 					DiffForce += DiffPressure*CellArea						#N
 				else:
 					DiffForce += 0.0
