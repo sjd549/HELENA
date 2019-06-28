@@ -147,10 +147,9 @@ ESCT2018_PCMC = ['AR^0.3S','EB-0.3S','ION-TOT0.3S']
 #Commonly Used Diagnostic Settings:
 #### PRCCP ####
 #electrodeloc =		[29,44] 					#Reverse [29,62]
-#waveformlocs =		[[16,29],[16,44],[16,64]]
-#waveformlocs = 	[[24,44],[23,44],[22,44],[21,44],[20,44],[19,44],[18,44],[17,44],[16,44],[15,44],[14,44],[13,44],[12,44],[11,44],[10,44],[9,44],[8,44],[7,44],[6,44],[5,44],[4,44],[3,44],[2,44],[1,44],[0,44]]
+#waveformlocs =		[[16,29],[16,44],[16,64],[0,44]]
 #DOFWidth =			R;16,Z;41
-#TrendLoc =			H[0];R[29,44,64]
+#TrendLoc =			H[0];R[29,44,64,75]
 #ThrustLoc =		75, 						#stdESCT=76, smlESCT=48/54
 #SheathROI =		[34,72]
 #SourceWidth =		[0.21]						
@@ -186,15 +185,15 @@ ESCT2018_PCMC = ['AR^0.3S','EB-0.3S','ION-TOT0.3S']
 #SourceWidth = 		[]
 #Crop = 			R[0.0,1.0];Z[0.5,2.5]
 
-### TSHC-OI ###
+### TSHC-OI Mk3 ###
 #electrodeloc = 	[58,15]
 #waveformlocs = 	[]
 #DOFWidth = 		R;??,Z;??
-#TrendLoc =  		H[0,23,45];R[46,55,64]			#0.1cm/cell
+#TrendLoc =  		H[0,23,45];R[46,55,64]			#R,Z = 0.2cm/cell,0.1cm/cell
 #ThrustLoc = 		[]
 #SheathROI = 		[]
 #SourceWidth = 		[]
-#Crop = 			R[15];Z[5,15]
+#Crop = 			R[0,12];Z[4,7]
 
 ####################
 
@@ -207,33 +206,33 @@ ESCT2018_PCMC = ['AR^0.3S','EB-0.3S','ION-TOT0.3S']
 
 #Requested IEDF/NEDF Variables.
 IEDFVariables = PRCCP_PCMC#TSHCOI_PCMC		#Requested iprofile_2d variables (no spaces)
-NEDFVariables = []				#Requested nprofile_2d variables (no spaces)
+NEDFVariables = []							#Requested nprofile_2d variables (no spaces)
 
 #Requested movie1/movie_icp Variables.
 IterVariables = ['E','S-E','PPOT','TE']		#Requested Movie_icp (iteration) Variables.		
 PhaseVariables = Ar_Phase					#Requested Movie1 (phase) Variables. +['E','AR+']
-electrodeloc = [29,44]#[58,15]				#Cell location of powered electrode [R,Z].
-waveformlocs = []							#Cell locations of additional waveforms [R,Z].
+electrodeloc = [29,44]						#Cell location of powered electrode [R,Z].
+waveformlocs = [[16,29],[16,44],[16,64],[0,44]]							#Cell locations of additional waveforms [R,Z].
 
 #Requested TECPLOT Variables and plotting locations.
 Variables = Ar
 MultiVar = []							#Additional variables plotted ontop of [Variables]
-radialineouts = [46,55,64]#[29,44,64,74] 			#Radial 1D-Profiles to be plotted (fixed Z-mesh) --
-heightlineouts = [0,23,45]#[0]					#Axial 1D-Profiles to be plotted (fixed R-mesh) |
+radialineouts = [44]#[29,44,64,75] 			#Radial 1D-Profiles to be plotted (fixed Z-mesh) --
+heightlineouts = []#[0]					#Axial 1D-Profiles to be plotted (fixed R-mesh) |
 TrendLocation = [] 						#Cell location For Trend Analysis [R,Z], ([] = min/max)
 
 
 #Various Diagnostic Settings.
-phasecycles = 1.0						#Number of waveform phase cycles to be plotted. [float]
-DoFWidth = 41							#PROES Depth of Field (symmetric on image plane) [cells]
-ThrustLoc = 75							#Z-axis cell for thrust calculation  [cells]
+phasecycles = 2.0						#Number of waveform phase cycles to be plotted. (float)
+DoFWidth = 41							#PROES Depth of Field (symmetric on image plane) (cells)
+ThrustLoc = 75							#Z-axis cell for thrust calculation  (cells)
 SheathROI = [34,72]						#Sheath Region of Interest, (Start,End) [cells]
 SourceWidth = [16]						#Source Dimension at ROI, leave empty for auto. [cells]
 EDF_Threshold = 0.01					#Upper Recognised EEDF/IEDF energy fraction (Plot all: 0.0)
 
 
 #Requested diagnostics and plotting routines.
-savefig_convergence = True				#Requires movie_icp.pdt
+savefig_convergence = False				#Requires movie_icp.pdt
 savefig_plot2D = False					#Requires TECPLOT2D.PDT
 
 savefig_monoprofiles = False			#Single-Variables; fixed height/radius
@@ -245,7 +244,7 @@ savefig_pulseprofiles = False			#Single-Variables; plotted against real-time axi
 
 savefig_phaseresolve1D = False			#1D Phase Resolved Images
 savefig_phaseresolve2D = False			#2D Phase Resolved Images
-savefig_PROES = False					#Simulated PROES Diagnostic
+savefig_PROES = True					#Simulated PROES Diagnostic
 
 savefig_IEDFangular = False				#2D images of angular IEDF; single folders.
 savefig_IEDFtrends = False				#1D IEDF trends; all folders.
@@ -268,7 +267,7 @@ print_sheath = False					#Print sheath width at electrodeloc
 image_extension = '.png'				#Extensions ('.png', '.jpg', '.eps')
 image_aspectratio = [10,10]				#[x,y] in cm [Doesn't rotate dynamically]
 image_radialcrop = [0.6]				#[R1,R2] in cm
-image_axialcrop = [1,4]					#[Z1,Z2] in cm
+image_axialcrop = [1,4.5]				#[Z1,Z2] in cm
 image_cbarlimit = []					#[min,max] colourbar limits	
 
 image_plotsymmetry = True				#Toggle radial symmetry
@@ -1929,7 +1928,7 @@ def CropImage(ax=plt.gca(),Extent=[],Apply=True,Rotate=True):
 #Assumes image symmetry for best results, otherwise R1 is set to zero.
 #Works for PROES images too, requires PROES='Axial' or 'Radial'.
 #[Minimum,Maximum] = CbarMinMax(Image,PROES=False)
-def CbarMinMax(Image,PROES=False,Symmetry=True):
+def CbarMinMax(Image,PROES=False,Symmetry=image_plotsymmetry):
 
 	#Return user defined limits if specified.
 	if len(image_cbarlimit) == 2:
@@ -1979,12 +1978,21 @@ def CbarMinMax(Image,PROES=False,Symmetry=True):
 			Z1,Z2 = Z2,Z1
 		#endif
 
-		#Crop the cell region to the desired region, axial first (Z), then radial (R).
+		#Crop the cell region to the desired region
 		if PROES == False:
-			Image = Image[Z1:Z2]
-			Image = np.asarray(Image).transpose()
-			Image = Image[R1:R2]
-			Image = np.asarray(Image).transpose()
+			#Default Orientation, image orientated radially then axially Image[R][Z]
+			if Symmetry == False:
+				Image = Image[Z1:Z2]
+				Image = np.asarray(Image).transpose()
+				Image = Image[R1:R2]
+				Image = np.asarray(Image).transpose()
+			#90 Deg Rotated Orientation, image orientated axially then radially Image[Z][R]
+			elif Symmetry == True:
+				Image = Image[Z1:Z2]
+				Image = np.asarray(Image).transpose()
+				Image = Image[R1:R2]
+				Image = np.asarray(Image).transpose()
+			#endif
 		#Crop the cell region for PROES images, they only require y-axis cropping (R,Z).
 		elif PROES == 'Axial':
 			Image = Image[::-1][Z1:Z2]			#Account for reversed PhaseData
@@ -2091,19 +2099,22 @@ def ImageOptions(fig,ax=plt.gca(),Xlabel='',Ylabel='',Title='',Legend=[],Crop=Tr
 #cbar = Colourbar(ax[0],'Label',5,Lim=[0,1])
 def Colourbar(ax=plt.gca(),Label='',Ticks=5,Lim=[]):
 
-	#Colourbar plotting details
+	#Set default font and spacing options and modify if required
+	Rotation,Labelpad = 270,30
+	LabelFontSize,TickFontsize = 24,18
+	if '\n' in Label: Labelpad += 25		#Pad label for multi-line names
+
+	#Create and define colourbar axis
 	divider = make_axes_locatable(ax)
 	cax = divider.append_axes("right", size="2%", pad=0.1)
 	cbar = plt.colorbar(im, cax=cax)
-	#Set number of ticks, label location and scientific notation.
-	tick_locator = ticker.MaxNLocator(nbins=Ticks)
-	cbar.locator = tick_locator
-	cbar.set_label(Label, rotation=270,labelpad=30,fontsize=24)
+
+	#Set number of ticks, label location and define scientific notation.
+	cbar.set_label(Label, rotation=Rotation,labelpad=Labelpad,fontsize=LabelFontSize)
 	cbar.formatter.set_powerlimits((-2,3))
-	cbar.update_ticks()
-	#Size of font
-	cbar.ax.yaxis.offsetText.set(size=18)
-	yticks(fontsize=18)
+	cbar.locator = ticker.MaxNLocator(nbins=Ticks)
+	cbar.ax.yaxis.offsetText.set(size=TickFontsize)
+	yticks(fontsize=TickFontsize)
 
 	#Apply colourbar limits if specified.  (lim=[min,max])
 	if len(Lim) == 2: im.set_clim(vmin=Lim[0], vmax=Lim[1])
@@ -2517,7 +2528,8 @@ def WaveformExtractor(PhaseData,PPOT,waveformlocation=electrodeloc):
 
 	#Create voltage waveform for requested integer number of phasecycles
 	for i in range(0,int(phasecycles*len(PhaseData))):
-		VoltageWaveform.append(PlotAxialProfile(PhaseData[i],PPOT,'PPOT',ZLoc)[RLoc])
+		Index = i % len(PhaseData)		#Use modulo index for additional phase cycles
+		VoltageWaveform.append(PlotAxialProfile(PhaseData[Index],PPOT,'PPOT',ZLoc)[RLoc])
 	#endfor
 
 	#Calculate time averaged waveform bias, i.e. waveform symmetry.
@@ -2766,15 +2778,18 @@ def SheathThickness(folder=l,ax='NaN',Orientation='Axial',Phase='NaN',Ne=list(),
 	SheathMethod=GlobSheathMethod
 	Sx,SymSx = list(),list()	
 
+	#Identify charged species within sheath regions
+	PosIonSpecies = ['AR+']#['O2+']#
+
 	#Obtain current folder ion and electron densities if not already supplied.
 	#Default to 2D data format.
 	if Phase == 'NaN' and len(Ne) == 0:
-		IONproc = VariableEnumerator(['AR+'],rawdata_2D[folder],header_2Dlist[folder])[0][0]
+		IONproc = VariableEnumerator(PosIonSpecies,rawdata_2D[folder],header_2Dlist[folder])[0][0]
 		Eproc = VariableEnumerator(['E'],rawdata_2D[folder],header_2Dlist[folder])[0][0]
 		Ne,Ni = Data[folder][Eproc], Data[folder][IONproc]
 	#If phase is supplied, use phase data format.
 	elif Phase != 'NaN' and len(Ne) == 0:
-		IONproc = VariableEnumerator(['AR+'],rawdata_phasemovie[folder],header_phasemovie[folder])[0][0]
+		IONproc = VariableEnumerator(PosIonSpecies,rawdata_phasemovie[folder],header_phasemovie[folder])[0][0]
 		Eproc = VariableEnumerator(['E'],rawdata_phasemovie[folder],header_phasemovie[folder])[0][0]
 		IONproc,Eproc = IONproc-2, Eproc-2		#Skip R,Z data inputs in phase data.
 		Ne,Ni = PhaseMovieData[folder][Phase][Eproc], PhaseMovieData[folder][Phase][IONproc]
@@ -2795,11 +2810,11 @@ def SheathThickness(folder=l,ax='NaN',Orientation='Axial',Phase='NaN',Ne=list(),
 	if SheathMethod == 'IntDensity':
 		#Sheath extension: integral_(R0->Rwall) ne dR == integral_(Rwall->R0) ni dR (Gibson 2015)
 		for j in range(0,len(Ni)):
-
-			#Define wall radius to integrate electrons into bulk from.
+			#Define wall radius to integrate ions into bulk from.
 			for i in range(0,len(Ni[j])):
+
 				#if ion density drops to zero, we've hit a material surface.
-				if Ni[j][i] == 0.0 and i == 0:
+				if Ni[j][i] == 0.0 and i == 0:		
 					RadialWallLoc = 0
 					break
 				elif Ni[j][i] == 0.0 and i > 0:
@@ -2808,23 +2823,23 @@ def SheathThickness(folder=l,ax='NaN',Orientation='Axial',Phase='NaN',Ne=list(),
 				#endif
 			#endfor
 			RadialWallLoc = len(Ni[j])				####FUDGED####
-			RadialWallLocSI = len(Ni[j])*dr[l]		####FUDGED####
 			
 			#Refresh sums after every radial profile.
 			Ni_sum,Ne_sum = 0.0,0.0
 			for i in range(0,RadialWallLoc):
-				#Sum density outward radially for ions and electrons.
-				anti_i = RadialWallLoc-i
-				Ni_sum += Ni[j][i]		#Sum from R=wall to R=0	[anti_i] 	####FUDGED####
-				Ne_sum += Ne[j][i]		#Sum from R=0 to R=wall [i] 	 	####FUDGED####
+				#Sum density radially for ions and electrons.
+				anti_i = RadialWallLoc-i-1
+				Ni_sum += Ni[j][i]			#Sum from R=wall to R=0	[anti_i] 	####FUDGED####
+				Ne_sum += Ne[j][i]			#Sum from R=0 to R=wall [i] 	 	####FUDGED####
 
 				#If ion sum is greater than electron, sheath has begun.
 				if Ni_sum/Ne_sum >= 1.0: 
-					Sx.append(i*dr[l])										####FUDGED####
+					Sx.append(i*dr[l])											####FUDGED####
 					break
-				#If no sheath found, OR append 'NaN' to avoid plotting.
+				#If no sheath found, append 'NaN' to avoid plotting.
 				if i == (len(Ni[j])-1):
-					Sx.append(np.nan)	  ####SHOULD BE EQUAL TO WALL (IF NON-EXISTANT####
+#					Sx.append(0.0)
+					Sx.append(np.nan)
 				#endif
 			#endfor
 		#endfor
@@ -2842,8 +2857,8 @@ def SheathThickness(folder=l,ax='NaN',Orientation='Axial',Phase='NaN',Ne=list(),
 					break
 				#If no sheath found, append 'NaN' to avoid plotting.
 				if i == (len(Ni[j])-1):
-					Sx.append(0.0)
-					#Sx.append(np.nan)
+#					Sx.append(0.0)
+					Sx.append(np.nan)
 				#endif
 			#endfor
 		#endfor
@@ -3986,14 +4001,19 @@ if savefig_IEDFtrends == True:
 
 			if DebugMode == True:
 				fig2,ax2 = figure()
+				try: BinAveragedValue = BinAveragedEnergy		#MeanEnergy Value
+				except: BinAveragedValue = BinAveragedFraction	#MeanFraction Value
+				Ylims = [0,max(EDFEnergyProfile)]
+
+				fig2,ax2 = figure()
 				ax2.plot(EDFEnergyProfile, 'k-', lw=2)
 				ax2.plot(ResidualArray, 'r-', lw=2)
-				ax2.plot((0,len(EDFEnergyProfile)),(BinAveragedEnergy,BinAveragedEnergy),'b--',lw=2)
-				ax2.plot((max(Intersections),max(Intersections)),(0,0.0025),'b--',lw=2)
-				ax2.plot((min(Intersections),min(Intersections)),(0,0.0025),'b--',lw=2)
-				ax2.plot((MeanEnergyIndex,MeanEnergyIndex),(0,0.0025),'m--',lw=2)
+				ax2.plot((0,len(EDFEnergyProfile)),(BinAveragedValue,BinAveragedValue),'b--',lw=2)
+				ax2.plot((max(Intersections),max(Intersections)),(Ylims[0],Ylims[1]),'b--',lw=2)
+				ax2.plot((min(Intersections),min(Intersections)),(Ylims[0],Ylims[1]),'b--',lw=2)
+				ax2.plot((MeanEnergyIndex,MeanEnergyIndex),(Ylims[0],Ylims[1]),'m--',lw=2)
 				ax2.legend(['Integrated Energy','abs(ResidualArray)','BinAveragedEnergy/Fraction'])
-				plt.show()
+#				plt.savefig(DirIEDFTrends+'_DebugOutput.png')
 			#endif
 		#endfor
 
@@ -5258,7 +5278,7 @@ if savefig_trendphaseresolved == True:
 			Ne = PhaseData[k][proclist[varlist.index('E')]]
 			Ni = PhaseData[k][proclist[varlist.index('AR+')]]
 
-			#Extract sheath width and record sheath width at electrodeloc
+			#Calculate sheath width and record sheath width at electrodeloc
 			Sx = SheathThickness(folder=l,Phase=k,Ne=Ne,Ni=Ni)[0]
 			for j in range(0,len(Sx)): 
 				Sx[j] = ((SourceWidth[0]*dr[l])-Sx[j])*10	#Convert to mm
@@ -5559,9 +5579,10 @@ if savefig_PROES == True:
 				#Scale PROES image and Sx arrays by required number of phasecycles.
 				ScaledPROES,ScaledPhaseSx,ScaledSymPhaseSx = list(),list(),list()
 				for n in range(0,int(phasecycles*len(PROES))):
-					ScaledPROES.append(PROES[n])
-					ScaledPhaseSx.append(PhaseSx[n])
-					ScaledSymPhaseSx.append(SymPhaseSx[n])
+					Index = n % len(PROES)		#Modulo index for multiple phasecycles
+					ScaledPROES.append(PROES[Index])
+					ScaledPhaseSx.append(PhaseSx[Index])
+					ScaledSymPhaseSx.append(SymPhaseSx[Index])
 				#endfor
 				PROES,PhaseSx,SymPhaseSx=ScaledPROES,ScaledPhaseSx,ScaledSymPhaseSx
 
