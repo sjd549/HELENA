@@ -205,20 +205,20 @@ ESCT2018_PCMC = ['AR^0.3S','EB-0.3S','ION-TOT0.3S']
 #====================================================================#
 
 #Requested IEDF/NEDF Variables.
-IEDFVariables = PRCCP_PCMC#TSHCOI_PCMC		#Requested iprofile_2d variables (no spaces)
+IEDFVariables = PRCCP_PCMC					#Requested iprofile_2d variables (no spaces)
 NEDFVariables = []							#Requested nprofile_2d variables (no spaces)
 
 #Requested movie1/movie_icp Variables.
 IterVariables = ['E','S-E','PPOT','TE']		#Requested Movie_icp (iteration) Variables.		
 PhaseVariables = Ar_Phase					#Requested Movie1 (phase) Variables. +['E','AR+']
 electrodeloc = [29,44]						#Cell location of powered electrode [R,Z].
-waveformlocs = [[16,29],[16,44],[16,64],[0,44]]							#Cell locations of additional waveforms [R,Z].
+waveformlocs = [[16,29],[16,44],[16,64],[0,44]]		#Cell locations of additional waveforms [R,Z].
 
 #Requested TECPLOT Variables and plotting locations.
 Variables = Ar
 MultiVar = []							#Additional variables plotted ontop of [Variables]
-radialineouts = [44]#[29,44,64,75] 			#Radial 1D-Profiles to be plotted (fixed Z-mesh) --
-heightlineouts = []#[0]					#Axial 1D-Profiles to be plotted (fixed R-mesh) |
+radialineouts = [29,44,64,75] 			#Radial 1D-Profiles to be plotted (fixed Z-mesh) --
+heightlineouts = [0]					#Axial 1D-Profiles to be plotted (fixed R-mesh) |
 TrendLocation = [] 						#Cell location For Trend Analysis [R,Z], ([] = min/max)
 
 
@@ -244,7 +244,7 @@ savefig_pulseprofiles = False			#Single-Variables; plotted against real-time axi
 
 savefig_phaseresolve1D = False			#1D Phase Resolved Images
 savefig_phaseresolve2D = False			#2D Phase Resolved Images
-savefig_PROES = True					#Simulated PROES Diagnostic
+savefig_PROES = False					#Simulated PROES Diagnostic
 
 savefig_IEDFangular = False				#2D images of angular IEDF; single folders.
 savefig_IEDFtrends = False				#1D IEDF trends; all folders.
@@ -257,6 +257,7 @@ write_ASCII = True						#All diagnostic output written to ASCII.
 #Steady-State diagnostics terminal output toggles.
 print_generaltrends = False				#Verbose Min/Max Trend Outputs.
 print_Knudsennumber = False				#Print cell averaged Knudsen Number
+print_soundspeed = False				#Print cell averaged sound speed
 print_totalpower = False				#Print all requested total powers
 print_DCbias = False					#Print DC bias at electrodeloc
 print_thrust = False					#Print neutral, ion and total thrust
@@ -302,6 +303,8 @@ cbaroverride = ['NotImplimented']
 
 
 #V1.1.0 Release Version To Do list:
+#Fix sound speed diagnostic - Current version has issue with NaNs and incorrect averaging
+
 #Clarified SheathWidth function Axial/Radial definition, also corrected this in the phase-resolved sheath trends diagnostic.
 
 #Corrected 1DPhaseMovie, 2DPhaseMovie and PROES, however the radial direction is not consistent. 
@@ -331,7 +334,6 @@ cbaroverride = ['NotImplimented']
 #Readicpnam function added replacing old icp.nam reader code.
 
 #Fix issue with ffmpeg "convert-im6.q16: DistributedPixelCache..."
-
 #Fix AutoMovie function and, more generally, address the ignorance of os.system...
 
 
@@ -463,7 +465,7 @@ if True in [savefig_phaseresolve1D]:
 	print'# 1D Phase-Resolved Profile Processing'
 if True in [savefig_monoprofiles,savefig_multiprofiles,savefig_comparelineouts,savefig_pulseprofiles]:
 	print'# 1D Steady-State Profile Processing'
-if True in [print_generaltrends,print_Knudsennumber,print_totalpower,print_DCbias,print_thrust]:
+if True in [print_generaltrends,print_Knudsennumber,print_soundspeed, print_totalpower,print_DCbias,print_thrust]:
 	print'# 1D Specific Trend Analysis'
 if savefig_trendphaseaveraged == True:
 	print'# 1D Steady-State Trend Processing'
@@ -1320,12 +1322,12 @@ def VariableUnitConversion(profile,variable):
 
 def ManualPRCCPMesh(Ax=plt.gca()):
 	#Plot pocket rocket material dimensions.
-	Ax.plot((1.32,1.32),   (-1.0,-0.21), 'w-', linewidth=2)
-	Ax.plot((3.7,3.7),     (-1.0,-0.21), 'w-', linewidth=2)
-	Ax.plot((1.32,1.32),   ( 1.0, 0.21), 'w-', linewidth=2)
-	Ax.plot((3.7,3.7),     ( 1.0, 0.21), 'w-', linewidth=2)
-	Ax.plot((1.32,3.7),    ( 0.21, 0.21), 'w-', linewidth=2)
-	Ax.plot((1.32,3.7),    (-0.21,-0.21), 'w-', linewidth=2)
+	Ax.plot((1.32,1.32),   (-1.0,-0.21), '-', color='dimgrey', linewidth=2)
+	Ax.plot((3.7,3.7),     (-1.0,-0.21), '-', color='dimgrey', linewidth=2)
+	Ax.plot((1.32,1.32),   ( 1.0, 0.21), '-', color='dimgrey', linewidth=2)
+	Ax.plot((3.7,3.7),     ( 1.0, 0.21), '-', color='dimgrey', linewidth=2)
+	Ax.plot((1.32,3.7),    ( 0.21, 0.21), '-', color='dimgrey', linewidth=2)
+	Ax.plot((1.32,3.7),    (-0.21,-0.21), '-', color='dimgrey', linewidth=2)
 
 	#Alumina Dielectric
 	Ax.plot((34.2*dz[l],73.8*dz[l]),  ( 0.21,  0.21), 'c-', linewidth=2)
@@ -1342,10 +1344,10 @@ def ManualPRCCPMesh(Ax=plt.gca()):
 	Ax.plot((50*dz[l],50*dz[l]),  (-0.31,-0.60), 'r-', linewidth=2)
 
 	#Grounded electrodes
-	Ax.plot((34*dz[l],34*dz[l]),  (-1.0,-0.21), 'w-', linewidth=2)
-	Ax.plot((34*dz[l],34*dz[l]),  ( 1.0, 0.21), 'w-', linewidth=2)
-	Ax.plot((74*dz[l],74*dz[l]),  (-1.0,-0.21), 'w-', linewidth=2)
-	Ax.plot((74*dz[l],74*dz[l]),  ( 1.0, 0.21), 'w-', linewidth=2)
+	Ax.plot((34*dz[l],34*dz[l]),  (-1.0,-0.21), '-', color='dimgrey', linewidth=2)
+	Ax.plot((34*dz[l],34*dz[l]),  ( 1.0, 0.21), '-', color='dimgrey', linewidth=2)
+	Ax.plot((74*dz[l],74*dz[l]),  (-1.0,-0.21), '-', color='dimgrey', linewidth=2)
+	Ax.plot((74*dz[l],74*dz[l]),  ( 1.0, 0.21), '-', color='dimgrey', linewidth=2)
 #enddef
 
 #===================##===================#
@@ -1941,6 +1943,10 @@ def CbarMinMax(Image,PROES=False,Symmetry=image_plotsymmetry):
 	if image_logplot == True: Image = np.log(Image)
 	if image_normalize == True: Image = normalize(Image)
 
+	#Remove any infinites or nans to avoid mathematical errors
+	np.where(np.isfinite(Image), Image, 0)		#Replace 'infs'
+	Image = filter(lambda v: v==v, Image)		#Remove nans
+
 	#Extract min/max from cropped region if a region is supplied.
 	if any( [len(image_radialcrop),len(image_axialcrop)] ) > 0:
 
@@ -2006,8 +2012,8 @@ def CbarMinMax(Image,PROES=False,Symmetry=image_plotsymmetry):
 		flatimage = [item for sublist in Image for item in sublist]
 		cropmin,cropmax = min(flatimage),max(flatimage)
 	except:	
-			print 'IMAGE CROPPING OUTSIDE MESH BOUNDARIES: CHECK IMAGE_RADIALCROP,IMAGE_AXIALCROP'
-			exit()
+		print 'IMAGE CROPPING OUTSIDE MESH BOUNDARIES: CHECK IMAGE_RADIALCROP,IMAGE_AXIALCROP'
+		exit()
 	#endtry
 
 	#Return cropped values in list [min,max], as required by colourbar.
@@ -2661,6 +2667,63 @@ def MinMaxTrends(lineout,Orientation,process):
 #=========================#
 
 
+#TREND ANALYSIS - Speed of Sound
+#Calculates local sound speed via Newton-Laplace equation
+#Takes appropriate neutral density [m-3] and pressure [Torr] (0D,1D or 2D)
+#Returns same dimensionality array of sound speeds in m/s
+#SoundSpeed = LocalSoundSpeed(ArgonDensity,Pressure,Dimension='2D')
+def LocalSoundSpeed(NeutralDensity,Pressure,Dimension='2D'):
+	#Initiate required lists and set atomic values
+	SoundSpeedArray = list()
+	AdiabaticIndex = 5.0/3.0		#For Argon/Helium
+	AtomicMass = 39.948*1.66E-27	#Kg
+
+	#For 0D values:
+	if Dimension == '0D':
+		ElasticityModulus = AdiabaticIndex*Pressure*133.33
+		MassDensity = NeutralDensity*AtomicMass
+		try: SoundSpeedArray = np.sqrt( ElasticityModulus/MassDensity )
+		except: SoundSpeedArray = np.nan
+	#endif
+
+	#For 1D arrays:
+	if Dimension == '1D':
+		for i in range(0,len(NeutralDensity)):
+			ElasticityModulus = AdiabaticIndex*Pressure[i]*133.33
+			MassDensity = NeutralDensity[i]*AtomicMass
+
+			#Calculate local sound speed via Newton-Laplace equation
+			try: SoundSpeed = np.sqrt( ElasticityModulus/MassDensity )
+			except: SoundSpeed = np.nan
+			SoundSpeedArray.append( SoundSpeed )
+		#endfor
+	#endif
+
+	#For 2D arrays:
+	if Dimension == '2D':
+		for i in range(0,len(NeutralDensity)):
+			SoundSpeedArray.append(list())
+			for j in range(0,len(NeutralDensity[i])):
+				ElasticityModulus = AdiabaticIndex*Pressure[i][j]*133.33
+				MassDensity = NeutralDensity[i][j]*AtomicMass
+
+				#Calculate local sound speed via Newton-Laplace equation
+				try: SoundSpeed = np.sqrt( ElasticityModulus/MassDensity )
+				except: SoundSpeed = np.nan
+				SoundSpeedArray[i].append( SoundSpeed )
+			#endfor
+		#endfor
+	#endif
+
+	return(SoundSpeedArray)
+#enddef
+
+
+
+#=========================#
+#=========================#
+
+
 
 #TREND ANALYSIS - DCbias
 #Takes a PPOT profile and calcuates DCbias via difference in voltage drop.
@@ -2834,12 +2897,12 @@ def SheathThickness(folder=l,ax='NaN',Orientation='Axial',Phase='NaN',Ne=list(),
 
 				#If ion sum is greater than electron, sheath has begun.
 				if Ni_sum/Ne_sum >= 1.0: 
-					Sx.append(i*dr[l])											####FUDGED####
+					Sx.append(i*dr[l])		#[cm]								####FUDGED####
 					break
 				#If no sheath found, append 'NaN' to avoid plotting.
 				if i == (len(Ni[j])-1):
-#					Sx.append(0.0)
-					Sx.append(np.nan)
+#					Sx.append(0.0)			#[cm]
+					Sx.append(np.nan)		#[cm]
 				#endif
 			#endfor
 		#endfor
@@ -2974,7 +3037,7 @@ if savefig_plot2D == True:
 			extent,aspectratio = DataExtent(l)
 			fig,ax,im,Image = ImagePlotter2D(Image,extent,aspectratio,variablelist[k])
 			#Add sheath thickness to figure if requested.
-			Sx = SheathThickness(folder=l,ax=ax)[0]
+			if image_sheath == True: Sx = SheathThickness(folder=l,ax=ax)[0]
 
 			#Overlay location of 1D profiles if requested, adjusting for image rotation.
 			if image_1Doverlay == True:
@@ -3012,7 +3075,7 @@ if savefig_plot2D == True:
 			if write_ASCII == True:
 				DirWrite = CreateNewFolder(Dir2Dplots, '2Dplots_Data')
 				WriteDataToFile(Image, DirWrite+variablelist[k])
-				if k == len(processlist)-1: WriteDataToFile(Sx, DirWrite+'Sx-EXT')
+				if image_sheath == True and k == len(processlist)-1: WriteDataToFile(Sx, DirWrite+'Sx-EXT')
 			#endif
 
 			#Save Figure
@@ -4753,7 +4816,7 @@ if bool(set(NeutSpecies).intersection(Variables)) == True:
 			Dimentionality = 2*(Radius[l]/100)		#meters
 			CrossSection = np.pi*((7.1E-11)**2)		#meters
 
-			#Create extract data for the neutral flux and neutral velocity.
+			#Extract data for the neutral flux and neutral velocity.
 			processlist,Variablelist = VariableEnumerator(NeutSpecies,rawdata_2D[l],header_2Dlist[l])
 
 			#Update X-axis with folder information.
@@ -4803,11 +4866,11 @@ if bool(set(NeutSpecies).intersection(Variables)) == True:
 			#Image plotting details, invert Y-axis to fit 1D profiles.
 			Title = 'Knudsen Number Image for \n'+Dirlist[l][2:-1]
 			Xlabel,Ylabel = 'Radial Distance R [cm]','Axial Distance Z [cm]'
-			cax = Colourbar(ax,'Knudsen Number',5,Lim=CbarMinMax(Image))
+			cax = Colourbar(ax,'Knudsen Number $K_{n}$',5,Lim=CbarMinMax(Image))
 			ImageOptions(fig,ax,Xlabel,Ylabel,Title)
 
 			#Save Figure
-			plt.savefig(Dir2Dplots+'KnudsenNumber'+ext)
+			plt.savefig(Dir2Dplots+'2DPlot Kn'+ext)
 			plt.close('all')
 		#endfor
 
@@ -4825,19 +4888,132 @@ if bool(set(NeutSpecies).intersection(Variables)) == True:
 		TrendPlotter(ax,KnudsenAverage,Xaxis,NormFactor=0)
 
 		#Image plotting details.
-		Title = 'Average Knudsen Number with Changing '+TrendVariable+' \n'+Dirlist[l][2:-1]
-		Xlabel,Ylabel = 'Varied Property','Average Knudsen Number'
+		Title = 'Average Knudsen Number with Varying '+TrendVariable+' \n'+Dirlist[l][2:-1]
+		Xlabel,Ylabel = 'Varied Property','Average Knudsen Number $K_{n}$'
 		ImageOptions(fig,ax,Xlabel,Ylabel,Title,Crop=False)
 
 		#Save figure.
-		plt.savefig(DirTrends+'KnudsenNumber Comparison'+ext)
+		plt.savefig(DirTrends+'KnudsenNumber_Comparison'+ext)
+		plt.close('all')
+	#endif
+#endif
+
+
+
+#====================================================================#
+				  #LOCAL/GLOBAL SOUND SPEED ANALYSIS#
+#====================================================================#
+
+
+#Only perform if a neutralspecies is included within the atomic set.
+if bool(set(NeutSpecies).intersection(Variables)) == True:
+	if savefig_trendphaseaveraged == True or print_soundspeed == True:
+
+		#Create Trend folder to keep output plots.
+		TrendVariable = filter(lambda x: x.isalpha(), FolderNameTrimmer(Dirlist[0]))
+		DirTrends = CreateNewFolder(os.getcwd()+'/',TrendVariable+' Trends')
+
+		#Initiate lists required for storing data.
+		AverageSoundSpeed,Xaxis = list(),list()
+		NeutralDensities = list()
+
+		#For all folders.
+		for l in range(0,numfolders):
+
+			#Extract spatially resolved pressure and neutral densities.
+			processlist,variablelist = VariableEnumerator(['PRESSURE'],rawdata_2D[l],header_2Dlist[l])
+			Pressure = ImageExtractor2D(Data[l][processlist[0]],variablelist[0])
+			#If single neutral species - extract density
+			processlist,Variablelist = VariableEnumerator(NeutSpecies,rawdata_2D[l],header_2Dlist[l])
+			if len(processlist) == 1: 
+				NeutralDensity = ImageExtractor2D(Data[l][processlist[0]],variablelist[0])
+			#If multiple neutral species, combine them to get total neutral density
+			elif len(processlist) > 1:
+				for i in range(0,len(processlist)):
+					NeutralDensities.append( ImageExtractor2D(Data[l][processlist[i]],variablelist[i]) )
+				#endfor
+
+				#Create empty neutral density array based on mesh size and symmetry options.
+				numrows = len(Data[l][0])/R_mesh[l]
+				NeutralDensity = np.zeros([Z_mesh[l],R_mesh[l]])
+
+				#Combine all neutral densities to get total neutral density - if required.
+				for i in range(0,len(NeutralDensities)):
+					for j in range(0,len(NeutralDensities[i])):
+						for k in range(0,len(NeutralDensities[i][j])):
+							NeutralDensity[j][k] += NeutralDensities[i][j][k]
+						#endfor
+					#endfor
+				#endfor
+			#endif
+
+			#Update X-axis with folder information.
+			Xaxis.append( FolderNameTrimmer(Dirlist[l]) )
+
+			#Calculate 2D sound speed image using neutral density and pressure
+			Image = LocalSoundSpeed(NeutralDensity,Pressure,Dimension='2D')
+
+			#Display mesh-averaged sound speed to terminal if requested.
+			AverageSoundSpeed.append( sum(Image)/(len(Image[0])*len(Image)) )
+			if print_soundspeed == True:
+				print Dirlist[l]
+				print 'Average Sound Speed:', AverageSoundSpeed[l]
+			#endif
+
+			#Create new folder to keep 2D output plots.
+			Dir2Dplots = CreateNewFolder(Dirlist[l],'2Dplots')
+			#Write image data to ASCII format datafile if requested.
+			if write_ASCII == True:
+				DirASCII = CreateNewFolder(Dir2Dplots,'2Dplots_Data')
+				WriteDataToFile(Image, DirASCII+'Cs','w')
+			#endif
+
+			#Label and save the 2D Plots.
+			extent,aspectratio = DataExtent(l)
+			fig,ax,im,Image = ImagePlotter2D(Image,extent,aspectratio)
+			#Add sheath thickness to figure if requested.
+			Sx = SheathThickness(folder=l,ax=ax)[0]
+
+			#Image plotting details, invert Y-axis to fit 1D profiles.
+			#ERROR WITH IMAGE LIMIT - LIKELY DUE TO NANS - #Lim=CbarMinMax(Image)
+			Title = 'Sound Speed Image for \n'+Dirlist[l][2:-1]
+			Xlabel,Ylabel = 'Radial Distance R [cm]','Axial Distance Z [cm]'
+			cax = Colourbar(ax,'Sound Speed $C_{s}$ [m/s]',5,Lim=[]) 
+			ImageOptions(fig,ax,Xlabel,Ylabel,Title)
+
+			#Save Figure
+			plt.savefig(Dir2Dplots+'2DPlot Cs'+ext)
+			plt.close('all')
+		#endfor
+
+
+		#Write trend data to ASCII format datafile if requested.
+		if write_ASCII == True:
+			DirASCII = CreateNewFolder(DirTrends,'Trend_Data')
+			WriteDataToFile(Xaxis, DirASCII+'Cs_Trends','w')
+			WriteDataToFile('\n', DirASCII+'Cs_Trends','w')
+			WriteDataToFile(AverageSoundSpeed, DirASCII+'Cs_Trends','a')
+		#endif
+
+		#Plot a comparison of all average Knudsen numbers.
+		fig,ax = figure(image_aspectratio,1)
+		TrendPlotter(ax,AverageSoundSpeed,Xaxis,NormFactor=0)
+
+		#Image plotting details.
+		Title = 'Average Sound Speed with Varying '+TrendVariable+' \n'+Dirlist[l][2:-1]
+		Xlabel,Ylabel = 'Varied Property','Average Sound Speed'
+		ImageOptions(fig,ax,Xlabel,Ylabel,Title,Crop=False)
+
+		#Save figure.
+		plt.savefig(DirTrends+'SoundSpeed_Comparison'+ext)
 		plt.close('all')
 	#endif
 #endif
 
 #===============================#
+#===============================#
 
-if any([savefig_trendphaseaveraged, print_generaltrends, print_Knudsennumber, print_totalpower, print_DCbias, print_thrust, print_sheath]) == True:
+if any([savefig_trendphaseaveraged, print_generaltrends, print_Knudsennumber, print_soundspeed, print_totalpower, print_DCbias, print_thrust, print_sheath]) == True:
 	print'---------------------------'
 	print'# Trend Processing Complete'
 	print'---------------------------'
@@ -5325,7 +5501,8 @@ if savefig_trendphaseresolved == True:
 		#Scale sheath extension by required number of phasecycles.
 		ScaledSxLoc = list()
 		for n in range(0,int(phasecycles*len(SxLoc))):
-			ScaledSxLoc.append(SxLoc[n])
+			Index = n % len(SxLoc)		#Modulo index for multiple phasecycles
+			ScaledSxLoc.append(SxLoc[Index])
 		#endfor
 		SxLoc=ScaledSxLoc
 
@@ -5565,15 +5742,17 @@ if savefig_PROES == True:
 						elif LineoutsOrientation[k] == 'Axial':
 							PROES.append(PlotAxialProfile(PhaseData[j],proclist[i],varlist[i],LineoutLoc)[::-1])
 						#endif
-					#endif
+					#endif 
 
-					#Extract Ni and Ne variables and perform sheath processing.
-					Ne = SxData[j][Sxproc[Sxvar.index('E')]]
-					Ni = SxData[j][Sxproc[Sxvar.index('AR+')]]
-					#Extract the full spatial sheath extent for phase 'j', save location for PROES.
-					Sx = SheathThickness(folder=l,Orientation=LineoutsOrientation[k],Phase=j,Ne=Ne,Ni=Ni)
-					PhaseSx.append(Sx[0][Lineouts[k]])
-					SymPhaseSx.append(Sx[1][Lineouts[k]])
+					if image_sheath == True:
+						#Extract Ni and Ne variables and perform sheath processing.
+						Ne = SxData[j][Sxproc[Sxvar.index('E')]]
+						Ni = SxData[j][Sxproc[Sxvar.index('AR+')]]
+						#Extract the full spatial sheath extent for phase 'j', save location for PROES.
+						Sx = SheathThickness(folder=l,Orientation=LineoutsOrientation[k],Phase=j,Ne=Ne,Ni=Ni)
+						PhaseSx.append(Sx[0][Lineouts[k]])
+						SymPhaseSx.append(Sx[1][Lineouts[k]])
+					#endif
 				#endfor
 
 				#Scale PROES image and Sx arrays by required number of phasecycles.
@@ -5581,11 +5760,13 @@ if savefig_PROES == True:
 				for n in range(0,int(phasecycles*len(PROES))):
 					Index = n % len(PROES)		#Modulo index for multiple phasecycles
 					ScaledPROES.append(PROES[Index])
-					ScaledPhaseSx.append(PhaseSx[Index])
-					ScaledSymPhaseSx.append(SymPhaseSx[Index])
+					if image_sheath == True:
+						ScaledPhaseSx.append(PhaseSx[Index])
+						ScaledSymPhaseSx.append(SymPhaseSx[Index])
+					#endif
 				#endfor
-				PROES,PhaseSx,SymPhaseSx=ScaledPROES,ScaledPhaseSx,ScaledSymPhaseSx
-
+				try: PROES,PhaseSx,SymPhaseSx=ScaledPROES,ScaledPhaseSx,ScaledSymPhaseSx
+				except: PROES = ScaledPROES
 
 				#Create figure and rotate PROES such that phaseaxis aligns with waveform.
 				fig,ax = figure(image_aspectratio,2,shareX=True)
