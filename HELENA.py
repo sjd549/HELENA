@@ -3679,6 +3679,7 @@ if savefig_pulseprofiles == True:
 		#Create new folder and initiate required lists.
 		PulseTrends,Xaxis = list(),list()
 		DirPulse = CreateNewFolder(Dirlist[l],'Pulse_Profiles/')
+		DirMeshAve = CreateNewFolder(DirPulse,'Mesh_Averaged/')
 
 		#Create processlist for each folder as required.
 		processlist,variablelist = VariableEnumerator(Variables,rawdata_itermovie[l],header_itermovie[l])
@@ -3688,8 +3689,9 @@ if savefig_pulseprofiles == True:
 		#endfor
 
 		#Create list and x-axis for convergence trend plotting.
-		#DtActual is approximate, exact dt per 'iteration' is not known.
-		DtActual = (1/FREQM[l])*100					#S	(~8 microseconds @ 13.56MHz)
+		#DtActual is approximate, exact dt per iteration depends upon modules and solvers employed.
+		DtActual = (1.0/FREQM[l])*100				#s	(~8 microseconds @ 13.56MHz)
+		DtActual = DtActual*1000					#ms
 		for i in range(0,len(MovieIterlist[l])):
 			Xaxis.append( float(filter(lambda x: x.isdigit(), MovieIterlist[l][i]))*DtActual )
 		#endfor
@@ -3712,18 +3714,19 @@ if savefig_pulseprofiles == True:
 
 			#Image plotting details.
 			Title = 'Simulation Time Profile of '+str(variablelist[i])+' for \n'+Dirlist[l][2:-1]
-			Xlabel,Ylabel = 'Simulation time [S]',VariableLabelMaker(variablelist)[i]
+			Xlabel,Ylabel = 'Simulation time [ms]',VariableLabelMaker(variablelist)[i]
 			ImageOptions(fig,ax,Xlabel,Ylabel,Title,Legend=[],Crop=False)
 
 			#Save figure.
-			savefig(DirPulse+FolderNameTrimmer(Dirlist[l])+'_'+variablelist[i]+ext)
+			savefig(DirMeshAve+FolderNameTrimmer(Dirlist[l])+'_'+variablelist[i]+ext)
 			plt.close('all')
 
 			#Write data to ASCII files if requested.
 			if write_ASCII == True:
 				DirWrite = CreateNewFolder(DirPulse, 'Pulse_Data')
-				WriteDataToFile(Xaxis, DirWrite+variablelist[i], 'w')
-				WriteDataToFile(['\n']+PulseProfile, DirWrite+variablelist[i], 'a')
+				DirWriteMeshAve = CreateNewFolder(DirWrite, 'MeshAveraged_Data')
+				WriteDataToFile(Xaxis, DirWriteMeshAve+variablelist[i], 'w')
+				WriteDataToFile(['\n']+PulseProfile, DirWriteMeshAve+variablelist[i], 'a')
 			#endif
 		#endfor
 
@@ -3741,12 +3744,12 @@ if savefig_pulseprofiles == True:
 
 		#Image plotting details.
 		Title = 'Simulation Time Profile of '+str(variablelist)+' for \n'+Dirlist[l][2:-1]
-		Xlabel,Ylabel = 'Simulation time [S]','Normalized Mesh-Average Value'
+		Xlabel,Ylabel = 'Simulation time [ms]','Normalized Mesh-Average Value'
 		ImageOptions(fig,ax,Xlabel,Ylabel,Title,Legend,Crop=False)
 		ax.set_ylim(0,1.01+(len(Legend)*0.05))
 
 		#Save figure.
-		savefig(DirPulse+'Normalized_'+FolderNameTrimmer(Dirlist[l])+ext)
+		savefig(DirMeshAve+'Normalized_'+FolderNameTrimmer(Dirlist[l])+ext)
 		plt.close('all')
 	#endfor
 	print'-------------------------'
