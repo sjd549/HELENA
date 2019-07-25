@@ -100,10 +100,14 @@ GlobSheathMethod = 'AbsDensity'			#Set Global Sheath Calculation Method.
 #Choices: ('AbsDensity','IntDensity')
 GlobThrustMethod = 'AxialMomentum'		#Set Global Thrust Calculation Method. 
 #Choices:('ThermalVelocity','AxialMomentum')
-DCbiasaxis = 'Auto'						#Direction to calculate dc bias over.
-#Choices:('Axial','Radial','Auto')
 GlobMeanCalculation = 'MeanFraction'	#Definition of 'mean' EDF value
 #Choices: ('MeanEnergy','MeanFraction')
+
+#Overrides or 'fudge factors' for diagnostics
+DCbiasaxis = 'Auto'						#Force Direction Over Which DCBias is Calculated
+#Choices:('Axial','Radial','Auto')
+SheathIonSpeciesOverride = []			#Force Sheath Calculation Chemistry (blank for auto)
+#['AR+'] #['O+']
 
 #Data Filtering and Smoothing Methods:
 KineticFiltering = True					#Pre-fit kinetic data employing a SavGol filter
@@ -225,7 +229,7 @@ EDF_Threshold = 0.01					#Upper Recognised EEDF/IEDF energy fraction (Plot all: 
 
 #Requested diagnostics and plotting routines.
 savefig_convergence = False				#Requires movie_icp.pdt
-savefig_plot2D = False					#Requires TECPLOT2D.PDT
+savefig_plot2D = True					#Requires TECPLOT2D.PDT
 
 savefig_monoprofiles = False			#Single-Variables; fixed height/radius
 savefig_multiprofiles = False			#Multi-Variables; same folder
@@ -274,7 +278,7 @@ image_rotate = True						#Rotate image 90 degrees to the right.
 
 image_normalize = False					#Normalize image/profiles to local max
 image_logplot = False					#Plot ln(Data), against linear axis.
-image_sheath = True						#Plot sheath width onto 2D images.
+image_sheath = True					#Plot sheath width onto 2D images.
 
 
 #Overrides the automatic image labelling.
@@ -2891,28 +2895,83 @@ def DCbiasMagnitude(PPOTlineout):
 #Returns array of sheath distances from origin and can plot this if requested.
 #Sx = SheathThickness(folder=l,Phase=moviephaselist[k])
 def SheathThickness(folder=l,ax='NaN',Orientation='Axial',Phase='NaN',Ne=list(),Ni=list()):
-	#Initiate required lists and set sheath method.
+	#Initiate required lists and import global variables
 	SheathMethod=GlobSheathMethod
-	Sx,SymSx = list(),list()	
+	global PosSpecies
+	global NegSpecies
+	NPos,NNeg = list(),list()
+	Sx,SymSx = list(),list()
 
-	#Identify charged species within sheath regions
-	PosIonSpecies = ['AR+']#['O2+']#
+	#Force single sheath species - Legacy Code or for testing purposes
+	if len(SheathIonSpeciesOverride) == 1: 
+		PosSpecies = SheathIonSpeciesOverride
+		NegSpecies = []
+	#endif	
+
+	#Identify charged species and alter names to suit TECPLOT2D nomenclature
+	for i in range(0,len(PosSpecies)): PosSpecies[i] = PosSpecies[i] = PosSpecies[i].replace('^','+')
+	for i in range(0,len(NegSpecies)): NegSpecies[i] = NegSpecies[i] = NegSpecies[i].replace('^','-')
+	if 'E' in NegSpecies: NegSpecies.remove('E')
+
 
 	#Obtain current folder ion and electron densities if not already supplied.
 	#Default to 2D data format.
 	if Phase == 'NaN' and len(Ne) == 0:
-		IONproc = VariableEnumerator(PosIonSpecies,rawdata_2D[folder],header_2Dlist[folder])[0][0]
+		#Obtain electron density and extract 2D image for further processing.
 		Eproc = VariableEnumerator(['E'],rawdata_2D[folder],header_2Dlist[folder])[0][0]
-		Ne,Ni = Data[folder][Eproc], Data[folder][IONproc]
-	#If phase is supplied, use phase data format.
+		Ne = ImageExtractor2D( Data[folder][Eproc] )
+
+		#Obtain all positive and negative ion densities and extract 2D images for further processing
+		PosSpeciesproc = VariableEnumerator(PosSpecies,rawdata_2D[folder],header_2Dlist[folder])[0]
+		for i in range(0,len(PosSpeciesproc)): 
+			NPos.append( ImageExtractor2D(Data[folder][PosSpeciesproc[i]]) )
+		#endfor
+		NegSpeciesproc = VariableEnumerator(NegSpecies,rawdata_2D[folder],header_2Dlist[folder])[0]
+		for i in range(0,len(NegSpeciesproc)): 
+			NNeg.append( ImageExtractor2D(Data[folder][NegSpeciesproc[i]]) )	
+		#endfor
+
+	#If phase is supplied, use phase data format.  (Proc=Proc-2 to skip R,Z data in phase data)
 	elif Phase != 'NaN' and len(Ne) == 0:
-		IONproc = VariableEnumerator(PosIonSpecies,rawdata_phasemovie[folder],header_phasemovie[folder])[0][0]
 		Eproc = VariableEnumerator(['E'],rawdata_phasemovie[folder],header_phasemovie[folder])[0][0]
-		IONproc,Eproc = IONproc-2, Eproc-2		#Skip R,Z data inputs in phase data.
-		Ne,Ni = PhaseMovieData[folder][Phase][Eproc], PhaseMovieData[folder][Phase][IONproc]
+		Ne = ImageExtractor2D( PhaseMovieData[folder][Phase][Eproc-2] ) 
+
+		#Obtain all positive and negative ion densities and extract 2D images for further processing
+		PosSpeciesproc=VariableEnumerator(PosSpecies,rawdata_phasemovie[folder],header_phasemovie[folder])[0]
+		for i in range(0,len(PosSpeciesproc)): 
+			NPos.append( ImageExtractor2D(PhaseMovieData[folder][Phase][PosSpeciesproc[i]-2]) )
+		#endfor
+		NegSpeciesproc=VariableEnumerator(NegSpecies,rawdata_phasemovie[folder],header_phasemovie[folder])[0]
+		for i in range(0,len(NegSpeciesproc)): 
+			NNeg.append( ImageExtractor2D(PhaseMovieData[folder][Phase][NegSpeciesproc[i]-2]) )
+		#endfor
 	#endif
-	#Extract 2D image for further processing.
-	Ne,Ni = ImageExtractor2D(Ne),ImageExtractor2D(Ni)
+
+	#Combine 2D images of all positive ion species densities and all negative ion species densitiies
+#	NPos = [[sum(x) for x in zip(NPos[0][i],NPos[1][i])] for i in range(len(NPos[0]))]
+#							HOW TO ZIP ARBITARY NUMBER OF ARRAYS?
+	TotNPos = np.zeros( (len(Ne),len(Ne[0])) ).tolist()
+	for i in range(0,len(TotNPos)):
+		for j in range(0,len(TotNPos[0])):
+			for k in range(0,len(PosSpeciesproc)): TotNPos[i][j] += NPos[k][i][j]
+			#endfor
+		#endfor
+	#endfor
+	TotNNeg = np.zeros( (len(Ne),len(Ne[0])) ).tolist()
+	for i in range(0,len(TotNNeg)):
+		for j in range(0,len(TotNNeg[0])):
+			for k in range(0,len(NegSpeciesproc)): TotNNeg[i][j] -= NNeg[k][i][j]
+			#endfor
+		#endfor
+	#endfor
+
+	#Determine effective positive ion density as: Neff = sum(Total NPos)-sum(Total NNeg)
+	Neff = np.zeros( (len(Ne),len(Ne[0])) ).tolist()
+	for i in range(0,len(Neff)):
+		for j in range(0,len(Neff[0])):
+			Neff[i][j] = TotNPos[i][j] - TotNNeg[i][j]
+		#endfor
+	#endfor
 
 	#=======#
 
@@ -2926,35 +2985,35 @@ def SheathThickness(folder=l,ax='NaN',Orientation='Axial',Phase='NaN',Ne=list(),
 	#Determine sheath edge through integration of charge density:
 	if SheathMethod == 'IntDensity':
 		#Sheath extension: integral_(R0->Rwall) ne dR == integral_(Rwall->R0) ni dR (Gibson 2015)
-		for j in range(0,len(Ni)):
+		for i in range(0,len(Neff)):
 			#Define wall radius to integrate ions into bulk from.
-			for i in range(0,len(Ni[j])):
+			for j in range(0,len(Neff[i])):
 
 				#if ion density drops to zero, we've hit a material surface.
-				if Ni[j][i] == 0.0 and i == 0:		
+				if Neff[i][j] == 0.0 and j == 0:		
 					RadialWallLoc = 0
 					break
-				elif Ni[j][i] == 0.0 and i > 0:
-					RadialWallLoc = i-1
+				elif Neff[i][j] == 0.0 and j > 0:
+					RadialWallLoc = j-1
 					break
 				#endif
 			#endfor
-			RadialWallLoc = len(Ni[j])				####FUDGED####
+			RadialWallLoc = len(Neff[i])				####FUDGED####
 			
 			#Refresh sums after every radial profile.
-			Ni_sum,Ne_sum = 0.0,0.0
-			for i in range(0,RadialWallLoc):
+			Neff_sum,Ne_sum = 0.0,0.0
+			for j in range(0,RadialWallLoc):
 				#Sum density radially for ions and electrons.
-				anti_i = RadialWallLoc-i-1
-				Ni_sum += Ni[j][i]			#Sum from R=wall to R=0	[anti_i] 	####FUDGED####
-				Ne_sum += Ne[j][i]			#Sum from R=0 to R=wall [i] 	 	####FUDGED####
+				anti_j = RadialWallLoc-j-1
+				Neff_sum += Neff[i][j]		#Sum from R=wall to R=0	[anti_j] 	####FUDGED####
+				Ne_sum += Ne[i][j]			#Sum from R=0 to R=wall [j] 	 	####FUDGED####
 
 				#If ion sum is greater than electron, sheath has begun.
-				if Ni_sum/Ne_sum >= 1.0: 
-					Sx.append(i*dr[l])		#[cm]								####FUDGED####
+				if Neff_sum/Ne_sum >= 1.005: 									####FUDGED####
+					Sx.append(j*dr[l])		#[cm]								
 					break
 				#If no sheath found, append 'NaN' to avoid plotting.
-				if i == (len(Ni[j])-1):
+				if j == (len(Neff[i])-1):
 #					Sx.append(0.0)			#[cm]
 					Sx.append(np.nan)		#[cm]
 				#endif
@@ -2966,14 +3025,14 @@ def SheathThickness(folder=l,ax='NaN',Orientation='Axial',Phase='NaN',Ne=list(),
 	#Determine sheath edge by 'instantaneous' charge density:
 	elif SheathMethod == 'AbsDensity':
 		#Sheath extension: ni @R >= ne @R, simplified model.
-		for j in range(0,len(Ni)):
-			for i in range(0,len(Ni[j])):
+		for i in range(0,len(Neff)):
+			for j in range(0,len(Neff[i])):
 				#Sheath starts when ion density exceeds electron density.
-				if Ni[j][i]/Ne[j][i] >= 1.0:		###SUPPRESS OUTPUT?###
-					Sx.append(i*dr[l])
+				if Neff[i][j]/Ne[i][j] >= 1.005:
+					Sx.append(j*dr[l])
 					break
 				#If no sheath found, append 'NaN' to avoid plotting.
-				if i == (len(Ni[j])-1):
+				if j == (len(Neff[j])-1):
 #					Sx.append(0.0)
 					Sx.append(np.nan)
 				#endif
