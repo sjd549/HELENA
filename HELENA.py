@@ -121,10 +121,10 @@ Glob_SavWindow, Glob_SavPolyOrder = 101, 6	#Window > FeatureSize, Polyorder ~= S
 #Commonly used variable sets.
 Phys = ['P-POT','TE','EF-TOT','EAMB-Z','EAMB-R','RHO','BT','VR-NEUTRAL','VZ-NEUTRAL','VR-ION+','VZ-ION+','EFLUX-R','EFLUX-Z','TG-AVE','PRESSURE','POW-RF','POW-RF-E','EB-ESORC','COLF']
 Ar = ['AR3S','AR4SM','AR4SR','AR4SPM','AR4SPR','AR4P','AR4D','AR','AR+','AR2+','AR2*','E','S-AR+','S-AR4P','SEB-AR+','SEB-AR4P','FZ-AR3S','FR-AR3S','FR-AR+','FZ-AR+','FZ-AR3S','FR-AR3S']+Phys
-O2 = ['O2','O2+','O','O+','O-','E','FR-O-','FZ-O-']+Phys
+O2 = ['O3','O2','O2+','O','O+','O-','E','S-O2+','S-O+','S-O-','SEB-O+','SEB-O2+','SEB-O-','FR-O-','FZ-O-']+['O3P3P','O***','S-O3P3P','S-O***','SEB-O3P3P','SEB-O***']+Phys
 
 Ar_Phase = ['S-E','S-AR+','S-AR4P','SEB-AR+','SEB-AR4P','SRCE-2437','TE','PPOT','FR-E','FZ-E']
-O2_Phase = ['S-E','S-O+','S-O-','SEB-O+','SEB-O-','TE','PPOT','FR-E','FZ-E']
+O2_Phase = ['S-E','S-O+','S-O-','S-O2+','SEB-O+','SEB-O-','SEB-O2+','TE','PPOT','FR-E','FZ-E']+['S-O3P3P','SEB-O3P3P']
 
 PRCCPAr_PCMC = ['AR^0.35','EB-0.35','ION-TOT0.35']
 PRCCPO2_PCMC = ['O^0.35','EB-0.35','ION-TOT0.35']
@@ -144,7 +144,7 @@ ESCT2018_PCMC = ['AR^0.3S','EB-0.3S','ION-TOT0.3S']
 #### PRCCP ####
 #electrodeloc =		[29,44] 					#Reverse [29,62]
 #waveformlocs =		[[16,29],[16,44],[16,64],[0,44]]
-#DOFWidth =			R;16,Z;41
+#DOFWidth =			R;16,Z;21
 #TrendLoc =			H[0];R[29,44,64,75]
 #ThrustLoc =		75, 						#stdESCT=76, smlESCT=48/54
 #SheathROI =		[34,72]
@@ -220,7 +220,7 @@ TrendLocation = [] 						#Cell location For Trend Analysis [R,Z], ([] = min/max)
 
 #Various Diagnostic Settings.
 phasecycles = 2.0						#Number of waveform phase cycles to be plotted. (float)
-DoFWidth = 41							#PROES Depth of Field (symmetric on image plane) (cells)
+DoFWidth = 21							#PROES Depth of Field (symmetric about image plane) (cells)
 ThrustLoc = 75							#Z-axis cell for thrust calculation  (cells)
 SheathROI = [34,72]						#Sheath Region of Interest, (Start,End) [cells]
 SourceWidth = [16]						#Source Dimension at ROI, leave empty for auto. [cells]
@@ -229,7 +229,7 @@ EDF_Threshold = 0.01					#Upper Recognised EEDF/IEDF energy fraction (Plot all: 
 
 #Requested diagnostics and plotting routines.
 savefig_convergence = False				#Requires movie_icp.pdt
-savefig_plot2D = True					#Requires TECPLOT2D.PDT
+savefig_plot2D = False					#Requires TECPLOT2D.PDT
 
 savefig_monoprofiles = False			#Single-Variables; fixed height/radius
 savefig_multiprofiles = False			#Multi-Variables; same folder
@@ -240,7 +240,7 @@ savefig_pulseprofiles = False			#Single-Variables; plotted against real-time axi
 
 savefig_phaseresolve1D = False			#1D Phase Resolved Images
 savefig_phaseresolve2D = False			#2D Phase Resolved Images
-savefig_PROES = False					#Simulated PROES Diagnostic
+savefig_PROES =	False					#Simulated PROES Diagnostic
 
 savefig_IEDFangular = False				#2D images of angular IEDF; single folders.
 savefig_IEDFtrends = False				#1D IEDF trends; all folders.
@@ -278,7 +278,7 @@ image_rotate = True						#Rotate image 90 degrees to the right.
 
 image_normalize = False					#Normalize image/profiles to local max
 image_logplot = False					#Plot ln(Data), against linear axis.
-image_sheath = True					#Plot sheath width onto 2D images.
+image_sheath = False#True					#Plot sheath width onto 2D images.
 
 
 #Overrides the automatic image labelling.
@@ -1139,7 +1139,7 @@ def VariableLabelMaker(variablelist):
 	#Define common lists for implicit legend generation.
 	Powerlist = ['POW-ALL','POW-TOT','POW-ICP','POW-RF','POW-RF-E']
 	Fluxlist = ['FZ-','FR-','EFLUX-R','EFLUX-Z']
-	Ionizationlist = ['S-','SEB-']
+	Ionisationlist = ['S-','SEB-']
 	Velocitylist = ['VZ-','VR-']
 
 	Variablelegends = list()
@@ -1270,7 +1270,7 @@ def VariableLabelMaker(variablelist):
 
 
 		#Implicit Variables.
-		elif IsStringInVariable(variablelist[i],Ionizationlist) == True:
+		elif IsStringInVariable(variablelist[i],Ionisationlist) == True:
 			Variable = variablelist[i]
 			VariableUnit = '[m$^{-3}$s$^{-1}$]'
 		elif IsStringInVariable(variablelist[i],['SRCE-']) == True:
@@ -1288,6 +1288,9 @@ def VariableLabelMaker(variablelist):
 		elif IsStringInVariable(variablelist[i],['POW-']) == True:
 			Variable = variablelist[i]
 			VariableUnit = '[Wcm$^{-3}$]'
+		elif variablelist[i] in [x.replace('^', '+') for x in AtomicSpecies]:
+			Variable = variablelist[i]
+			VariableUnit = '[m$^{-3}$]'
 		elif variablelist[i] in AtomicSpecies:
 			Variable = variablelist[i]
 			VariableUnit = '[m$^{-3}$]'
@@ -1372,7 +1375,7 @@ def VariableUnitConversion(profile,variable):
 	#endif
 
 	#For densities, convert from [cm-3] to [m-3]. (AtomicSpecies is defined in icp.nam input)
-	if variable in AtomicSpecies:
+	if variable in AtomicSpecies or variable in [x.replace('^', '+') for x in AtomicSpecies]:
 		for i in range(0,len(profile)):
 			profile[i] = profile[i]*1E6
 		#endfor
@@ -2889,7 +2892,7 @@ def DCbiasMagnitude(PPOTlineout):
 
 
 
-#Calculates sheath width assuming Child-Langmuir conditions.
+#Calculates Brinkmann sheath width assuming Child-Langmuir conditions.
 #Calculation Methods: 'AbsDensity', 'IntDensity'
 #Takes current folder, current axis, movie1 Phase and sheath calc method.
 #Returns array of sheath distances from origin and can plot this if requested.
@@ -2911,7 +2914,7 @@ def SheathThickness(folder=l,ax='NaN',Orientation='Axial',Phase='NaN',Ne=list(),
 	#Identify charged species and alter names to suit TECPLOT2D nomenclature
 	for i in range(0,len(PosSpecies)): PosSpecies[i] = PosSpecies[i] = PosSpecies[i].replace('^','+')
 	for i in range(0,len(NegSpecies)): NegSpecies[i] = NegSpecies[i] = NegSpecies[i].replace('^','-')
-	if 'E' in NegSpecies: NegSpecies.remove('E')
+	if 'E' in NegSpecies: NegSpecies.remove('E')			#Might Cause An Issue With Global!!!
 
 
 	#Obtain current folder ion and electron densities if not already supplied.
@@ -2945,7 +2948,15 @@ def SheathThickness(folder=l,ax='NaN',Orientation='Axial',Phase='NaN',Ne=list(),
 		for i in range(0,len(NegSpeciesproc)): 
 			NNeg.append( ImageExtractor2D(PhaseMovieData[folder][Phase][NegSpeciesproc[i]-2]) )
 		#endfor
+
+	#If specific electron and ion species densities are supplied, use those
+	elif len(Ne) > 0 or len(Ni) > 0:
+		Ne = ImageExtractor2D( Ne ) 		#Ne[i][j]
+		NPos = [ ImageExtractor2D( Ni ) ]	#Put in array []    (NPos[k][i][j])
+		PosSpeciesproc = ['Dummy']			#Set length to 1
+		NegSpeciesproc = []					#Set length to 0
 	#endif
+
 
 	#Combine 2D images of all positive ion species densities and all negative ion species densitiies
 #	NPos = [[sum(x) for x in zip(NPos[0][i],NPos[1][i])] for i in range(len(NPos[0]))]
@@ -3249,14 +3260,15 @@ if savefig_convergence == True:
 			#endtry
 			
 			#Reshape specific part of 1D Data array into 2D image for plotting.
-			for k in range(0,len(MovieIterlist[l])):
+			if QuickConverge == False:
+				for k in range(0,len(MovieIterlist[l])):
 
-				#Extract full 2D image for further processing.
-				Image = ImageExtractor2D(IterMovieData[l][k][processlist[i]],variablelist[i])
-				#Take Max value of image for general convergence trend.
-				ConvergenceTrends[-1].append( sum(Image.flatten())/len(Image.flatten()) )
+					#Extract full 2D image for further processing.
+					Image = ImageExtractor2D(IterMovieData[l][k][processlist[i]],variablelist[i])
+					#Take Max value of image for general convergence trend.
+					ConvergenceTrends[-1].append( sum(Image.flatten())/len(Image.flatten()) )
 
-				if QuickConverge == False:
+					
 					#Generate and rotate figure as requested.
 					extent,aspectratio = DataExtent(l)
 					fig,ax,im,Image = ImagePlotter2D(Image,extent,aspectratio,variablelist[i])
@@ -3284,12 +3296,22 @@ if savefig_convergence == True:
 					Number = str(num3)+str(num2)+str(num1)
 					savefig(DirMovieplots+variablelist[i]+'_'+Number+ext)
 					plt.close('all')
-				#endif
-			#endfor
+				#endfor
 
-			#Create .mp4 movie from completed images.
-			Prefix = FolderNameTrimmer(Dirlist[l])
-			Automovie(DirMovieplots,Prefix+'_'+variablelist[i])
+				#Create .mp4 movie from completed images.
+				Prefix = FolderNameTrimmer(Dirlist[l])
+				Automovie(DirMovieplots,Prefix+'_'+variablelist[i])
+
+
+			#Extract images for convergence trend plotting, but do not plot images.
+			if QuickConverge == True:
+				for k in range(0,len(MovieIterlist[l])):
+					#Extract full 2D image for further processing.
+					Image = ImageExtractor2D(IterMovieData[l][k][processlist[i]],variablelist[i])
+					#Take Max value of image for general convergence trend.
+					ConvergenceTrends[-1].append( sum(Image.flatten())/len(Image.flatten()) )
+				#endfor
+			#endif
 		#endfor
 
 
@@ -3330,6 +3352,15 @@ if savefig_convergence == True:
 				WriteDataToFile(ConvergenceTrends[i]+['\n'], DirASCII+SaveString, 'a')
 			#endfor
 		#endif
+
+		#Print convergence data to terminal if required
+		print ''
+		print 'Percentage Variation At Last Iteration:'
+		for i in range(0,len(ConvergenceTrends)):
+			ConvergenceFraction = 1-abs( ConvergenceTrends[i][-1]/ConvergenceTrends[i][-2] )
+			ConvergencePercentage = round( (ConvergenceFraction*100), 6)
+			print variablelist[i], ConvergencePercentage, '%'
+		#endfor
 
 		#Save figure.
 		savefig(DirConvergence+FolderNameTrimmer(Dirlist[l])+'_Convergence'+ext)
@@ -5911,7 +5942,7 @@ if savefig_PROES == True:
 				DirPROESloc = CreateNewFolder(DirPROES,lineoutstring[3::])
 
 				#Create PROES image along line of sight with phase-locked waveform.
-				fig.suptitle( 'Simulated '+varlist[i]+' PROES for '+VariedValuelist[l]+lineoutstring+'\n DoF = '+str(round(DoFWidth*dz[l],2))+' cm', y=0.95, fontsize=18)
+				fig.suptitle( 'Simulated '+varlist[i]+' PROES for '+VariedValuelist[l]+lineoutstring+'\n DoF = '+str(round(((2*DoFWidth)+1)*dz[l],2))+' cm', y=0.95, fontsize=18)
 				im = ax[0].contour(PROES,extent=[x1,x2,y1,y2],origin='lower',aspect='auto')
 				im = ax[0].imshow(PROES,extent=[x1,x2,y1,y2],origin='bottom',aspect='auto')
 				if image_sheath == True:
@@ -6100,70 +6131,6 @@ if any([savefig_trendphaseresolved, savefig_phaseresolve1D, savefig_phaseresolve
 
 # Disabled the following warning message regarding scalar assignment of 'arr' axis.
 # /home/sjd549/.local/lib/python2.7/site-packages/numpy/ma/core.py:6385
-
-
-
-
-
-	##### ANALYSIS NEEDS MADE INTO A GENERAL FUNCTION. #####
-	##### ATTACH AS SEPERATE 1D/2D TREND (KNUDSEN LIKE) #####
-	##### ALSO MAKE NORMALIZATION OF VZ/VR-NEUTRAL #####
-#====================================================================#
-				  	#SOUND SPEED - SHOCKWAVE ANALYSIS#
-#====================================================================#
-
-if True == False:
-	#Create Trend folder to keep output plots.
-	TrendVariable = filter(lambda x: x.isalpha(), FolderNameTrimmer(Dirlist[0]))
-	DirTrends = CreateNewFolder(os.getcwd()+'/',TrendVariable+' Trends')
-
-	#For Argon, GasConstant in units of [J/kg K]
-	AdiabaticIndex=1.66
-	GasConstant=208
-
-	# SoundVelocity=np.sqrt(k*Pressure/Density)
-
-	SoundVelocity=np.sqrt(AdiabaticIndex*GasConstant*NeutralTemp)
-#endif
-
-#=====================================================================#
-#=====================================================================#
-
-
-
-
-
-
-
-#====================================================================#
-				#MORE DETAILED GRAPHS/CONTOUR PLOTS#
-#====================================================================#
-
-if True == False:
-	#SeaBorn Colour, as_cmap causes issue!
-	#Set_Style should remove grids but doesn't.
-	try:
-		import seaborn as sns
-		GlobalCmap = sns.color_palette("muted", as_cmap=True)
-		sns.set_style("whitegrid", {'axes.grid' : False})
-	except:
-		GlobalCmap = matplotlib.cm.get_cmap('jet')
-	#endtry
-
-	#NB:
-	#Need to replace plotting functions with:
-	#im = ax.imshow(Image,extent=extent,cmap=GlobalCmap,origin="lower")
-#endif
-
-#=====================================================================#
-#=====================================================================#
-
-
-
-
-
-
-
 
 
 #====================================================================#
