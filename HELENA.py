@@ -110,16 +110,18 @@ SheathIonSpeciesOverride = []			#Force Sheath Calculation Chemistry (blank for a
 #['AR+'] #['O+']
 
 #Data Filtering and Smoothing Methods:
-KineticFiltering = True					#Pre-fit kinetic data employing a SavGol filter
+KineticFiltering = True						#Pre-fit kinetic data employing a SavGol filter
 Glob_SavWindow, Glob_SavPolyOrder = 101, 6	#Window > FeatureSize, Polyorder ~= Smoothness
 
-
+#Define units for particular variables
+PressureType = 'Pa'							#'Torr','mTorr','Pa'
+BfieldType	=  'Gauss'						#'Gauss','Tesla'
 
 
 ####################
 
 #Commonly used variable sets.
-Phys = ['P-POT','TE','EF-TOT','EAMB-Z','EAMB-R','RHO','BT','VR-NEUTRAL','VZ-NEUTRAL','VR-ION+','VZ-ION+','EFLUX-R','EFLUX-Z','TG-AVE','PRESSURE','POW-RF','POW-RF-E','EB-ESORC','COLF']
+Phys = ['P-POT','TE','EF-TOT','EAMB-Z','EAMB-R','RHO','BRS','BZS','BT','VR-NEUTRAL','VZ-NEUTRAL','VR-ION+','VZ-ION+','EFLUX-R','EFLUX-Z','JZ-NET','JR-NET','TG-AVE','PRESSURE','POW-RF','POW-RF-E','POW-ICP','EB-ESORC','COLF']
 Ar = ['AR3S','AR4SM','AR4SR','AR4SPM','AR4SPR','AR4P','AR4D','AR','AR+','AR2+','AR2*','E','S-AR+','S-AR4P','SEB-AR+','SEB-AR4P','FZ-AR3S','FR-AR3S','FR-AR+','FZ-AR+','FZ-AR3S','FR-AR3S']+Phys
 O2 = ['O3','O2','O2+','O','O+','O-','E','S-O2+','S-O+','S-O-','SEB-O+','SEB-O2+','SEB-O-','FR-O-','FZ-O-']+['O3P3P','O***','S-O3P3P','S-O***','SEB-O3P3P','SEB-O***']+Phys
 
@@ -129,9 +131,12 @@ O2_Phase = ['S-E','S-O+','S-O-','S-O2+','SEB-O+','SEB-O-','SEB-O2+','TE','PPOT',
 PRCCPAr_PCMC = ['AR^0.35','EB-0.35','ION-TOT0.35']
 PRCCPO2_PCMC = ['O^0.35','EB-0.35','ION-TOT0.35']
 TSHC_PCMC = ['AR^2.0S','EB-2.0S','ION-TOT2.0S','AR^0.2B','EB-0.2B','ION-TOT0.2B','AR^2.2C','EB-2.2C','ION-TOT2.2C','AR^4.2D','EB-4.2D','ION-TOT4.2D','AR^6.2E','EB-6.2E','ION-TOT6.2E','AR^8.2F','EB-8.2F','ION-TOT8.2F']
-TSHCOI_PCMC = ['AR^0.2S','ION-TOT0.2S','AR^4.4T','ION-TOT4.4T','AR^8.9U','ION-TOT8.9U']
+
+EVgeny_PCMC = ['AR^0.1P','EB-0.1P','ION-TOT0.1P','AR^1.6Q','EB-1.6Q','ION-TOT1.6Q']
+HYPI_PCMC = []
 
 #Archived variable sets
+TSHCOI2019_PCMC = ['AR^0.2S','ION-TOT0.2S','AR^4.4T','ION-TOT4.4T','AR^8.9U','ION-TOT8.9U']
 MSHC2017_PCMC = ['AR^0.5S','EB-0.5S','ION-TOT0.5S','AR^1.1B','EB-1.1B','ION-TOT1.1B']
 SCCP2018_PCMC = ['AR^7.7J','ION-TOT7.7J','AR^5.1B','ION-TOT5.1B']
 ESCT2018_PCMC = ['AR^0.3S','EB-0.3S','ION-TOT0.3S']
@@ -160,6 +165,7 @@ ESCT2018_PCMC = ['AR^0.3S','EB-0.3S','ION-TOT0.3S']
 #SheathROI = 		[]
 #SourceWidth = 		[]
 #Crop = 			R[0.0,1.0];Z[1.5,10]
+#Plotmesh = 		'PRCCP'
 
 #### PP-SCCP ####
 #electrodeloc = 	[0,3]
@@ -191,6 +197,27 @@ ESCT2018_PCMC = ['AR^0.3S','EB-0.3S','ION-TOT0.3S']
 #SourceWidth = 		[]
 #Crop = 			R[0,12];Z[4,7]
 
+### HYPERION-I Mk1 ###
+#electrodeloc = 	[51,24]							#Middle ICP Coil
+#waveformlocs = 	[[51,14][51,34]]				#Upper(Positive), Lower(Negative) coils
+#DOFWidth = 		R;??,Z;??
+#TrendLoc =  		H[];R[24]						#R,Z = 0.2cm/cell,0.1cm/cell
+#ThrustLoc = 		[]
+#SheathROI = 		[]
+#SourceWidth = 		[]
+#Crop = 			R[];Z[]
+
+### EVgeny Mk1 ###
+#electrodeloc = 	[]
+#waveformlocs = 	[]
+#DOFWidth = 		R;??,Z;??
+#TrendLoc =  		H[];R[]							#R,Z = 0.2cm/cell,0.1cm/cell
+#ThrustLoc = 		[]
+#SheathROI = 		[]
+#SourceWidth = 		[]
+#Crop = 			R[];Z[]
+#Plotmesh = 		'EVgeny'
+
 ####################
 
 
@@ -201,19 +228,19 @@ ESCT2018_PCMC = ['AR^0.3S','EB-0.3S','ION-TOT0.3S']
 #====================================================================#
 
 #Requested IEDF/NEDF Variables.
-IEDFVariables = PRCCPAr_PCMC				#Requested iprofile_2d variables (no spaces)
+IEDFVariables = EVgeny_PCMC					#Requested iprofile_2d variables (no spaces)
 NEDFVariables = []							#Requested nprofile_2d variables (no spaces)
 
 #Requested movie1/movie_icp Variables.
 IterVariables = ['E','S-E','PPOT','TE']		#Requested Movie_icp (iteration) Variables.		
-PhaseVariables = Ar_Phase					#Requested Movie1 (phase) Variables. +['E','AR+']
-electrodeloc = [29,44]						#Cell location of powered electrode [R,Z].
-waveformlocs = [[16,29],[16,44],[16,64],[0,44]]		#Cell locations of additional waveforms [R,Z].
+PhaseVariables = O2_Phase#Ar_Phase					#Requested Movie1 (phase) Variables. +['E','AR+']
+electrodeloc = [51,24]#[29,44]						#Cell location of powered electrode [R,Z].
+waveformlocs = []#[[16,29],[16,44],[16,64],[0,44]]		#Cell locations of additional waveforms [R,Z].
 
 #Requested TECPLOT Variables and plotting locations.
 Variables = Ar
 MultiVar = []							#Additional variables plotted ontop of [Variables]
-radialineouts = [29,44,64,75] 			#Radial 1D-Profiles to be plotted (fixed Z-mesh) --
+radialineouts = []#[24]#[29,44,64,75] 			#Radial 1D-Profiles to be plotted (fixed Z-mesh) --
 heightlineouts = [0]					#Axial 1D-Profiles to be plotted (fixed R-mesh) |
 TrendLocation = [] 						#Cell location For Trend Analysis [R,Z], ([] = min/max)
 
@@ -229,11 +256,11 @@ EDF_Threshold = 0.01					#Upper Recognised EEDF/IEDF energy fraction (Plot all: 
 
 #Requested diagnostics and plotting routines.
 savefig_convergence = False				#Requires movie_icp.pdt
-savefig_plot2D = False					#Requires TECPLOT2D.PDT
+savefig_plot2D = True					#Requires TECPLOT2D.PDT
 
 savefig_monoprofiles = False			#Single-Variables; fixed height/radius
 savefig_multiprofiles = False			#Multi-Variables; same folder
-savefig_comparelineouts = False			#Multi-Variables; all folders
+savefig_comparelineouts = True			#Multi-Variables; all folders
 savefig_trendphaseaveraged = False		#Single-Variables; fixed cell location (or max/min)
 savefig_trendphaseresolved = False		#Single-Variables; Phase-resolved data.
 savefig_pulseprofiles = False			#Single-Variables; plotted against real-time axis
@@ -263,8 +290,8 @@ print_sheath = False					#Print sheath width at electrodeloc
 #Image plotting options.
 image_extension = '.png'				#Extensions ('.png', '.jpg', '.eps')
 image_aspectratio = [10,10]				#[x,y] in cm [Doesn't rotate dynamically]
-image_radialcrop = [0.6]				#[R1,R2] in cm
-image_axialcrop = [1,4.5]				#[Z1,Z2] in cm
+image_radialcrop = []#[0.5]				#[R1,R2] in cm
+image_axialcrop = []#[1,4.5]			#[Z1,Z2] in cm
 image_cbarlimit = []					#[min,max] colourbar limits	
 
 image_plotsymmetry = True				#Toggle radial symmetry
@@ -272,13 +299,13 @@ image_numericaxis = False				#### NOT IMPLIMENTED ####
 image_contourplot = True				#Toggle contour Lines in images
 image_1Doverlay = False					#Overlay location(s) of radialineouts/heightlineouts
 image_plotgrid = False					#Plot major/minor gridlines on profiles
-image_plotmesh = 'PRCCP'				#Plot material mesh outlines ('Auto','PRCCP','PRuICP')
+image_plotmesh = 'EVgeny'#'PRCCP'				#Plot material mesh outlines ('Auto','PRCCP','PRuICP')
 image_rotate = True						#Rotate image 90 degrees to the right.
 
 
 image_normalize = False					#Normalize image/profiles to local max
 image_logplot = False					#Plot ln(Data), against linear axis.
-image_sheath = False#True					#Plot sheath width onto 2D images.
+image_sheath = False					#Plot sheath width onto 2D images.
 
 
 #Overrides the automatic image labelling.
@@ -391,6 +418,7 @@ dz = list()
 #Lists for icp.nam variables
 VRFM,VRFM2 = list(),list()
 FREQM,FREQM2 = list(),list()
+FREQC        = list()
 FREQGLOB,IRFPOW = list(),list()
 MAXFREQ,MINFREQ = list(),list()
 PRESOUT = list()
@@ -648,6 +676,7 @@ for l in range(0,numfolders):
 		VRFM2.append(filter(lambda x: 'VRFM_2=' in x, NamelistData)[0].split()[1:NUMMETALS])
 		FREQM.append(filter(lambda x: 'FREQM=' in x, NamelistData)[0].split()[1:NUMMETALS])
 		FREQM2.append(filter(lambda x: 'FREQM_2=' in x, NamelistData)[0].split()[1:NUMMETALS])
+		FREQC.append(filter(lambda x: 'FREQC=' in x, NamelistData)[0].split()[1:NUMMETALS])
 		FREQGLOB.append(float(filter(lambda x:'FREQ=' in x, NamelistData)[0].strip(' \t\n\r,=FREQ')[0:10]))
 		IRFPOW.append(float(filter(lambda x:'IRFPOW=' in x, NamelistData)[0].strip(' \t\n\r,=IRFPOW')))
 		IETRODEM.append(filter(lambda x:'IETRODEM=' in x, NamelistData)[0].split()[1:NUMMETALS])
@@ -659,6 +688,7 @@ for l in range(0,numfolders):
 		print '#===========================================================================#'
 		FREQM.append(13.56E6)
 		FREQM2.append(13.56E6)
+		FREQC.append(13.56E6)
 		FREQGLOB.append(13.56E6)
 		VRFM.append(300.0)
 		VRFM2.append(150.0)
@@ -751,14 +781,15 @@ for l in range(0,numfolders):
 
 	#clean up variables and assign required types.
 	try:
-#		for i in range(0,len(CMETALS[l])): CMETALS[l][i] = CMETALS[i].strip(',\'') <-Broken
+		for i in range(0,len(CMETALS[l])): CMETALS[l][i] = CMETALS[i].strip(',\'') <-Broken
 		VRFM[l] = float( VRFM[l][IETRODEM[l].index(1)].strip(',') )
 		VRFM2[l] = float( VRFM2[l][IETRODEM[l].index(1)].strip(',') )
 		FREQM[l] = float( FREQM[l][IETRODEM[l].index(1)].strip(',') )
 		FREQM2[l] = float( FREQM2[l][IETRODEM[l].index(1)].strip(',') )
+		FREQC[l] = float( FREQMC[l][IETRODEM[l].index(1)].strip(',') )
 
-		MINFREQ.append( min([FREQM[l],FREQM2[l],FREQGLOB[l]]) )
-		MAXFREQ.append( max([FREQM[l],FREQM2[l],FREQGLOB[l]]) )
+		MINFREQ.append( min([FREQM[l],FREQM2[l],FREQC[l],FREQGLOB[l]]) )
+		MAXFREQ.append( max([FREQM[l],FREQM2[l],FREQC[l],FREQGLOB[l]]) )
 	except:
 		Material_Property_Conversion_Error=1
 	#endtry
@@ -1183,7 +1214,7 @@ def VariableLabelMaker(variablelist):
 		#Explicit Species Velocities and Resulting Pressure.
 		elif variablelist[i] == 'PRESSURE':
 			Variable = 'Pressure'
-			VariableUnit = '[Torr]'
+			VariableUnit = '['+str(PressureType)+']'			#Default: '[Torr]'
 		elif variablelist[i] == 'VZ-NEUTRAL':
 			Variable = 'Neutral Axial Velocity'
 			VariableUnit = '[ms$^{-1}$]'
@@ -1244,7 +1275,13 @@ def VariableLabelMaker(variablelist):
 			VariableUnit = '[Vcm$^{-1}$]'
 		elif variablelist[i] == 'BT':
 			Variable = 'B-field Strength'
-			VariableUnit = '[G]'
+			VariableUnit = '['+str(BfieldType)+']'			#Default: '[G]'
+		elif variablelist[i] == 'BRS':
+			Variable = 'Radial B-field Strength'
+			VariableUnit = '['+str(BfieldType)+']'			#Default: '[G]'
+		elif variablelist[i] == 'BZS':
+			Variable = 'Axial B-field Strength'
+			VariableUnit = '['+str(BfieldType)+']'			#Default: '[G]'
 		elif variablelist[i] == 'JZ-NET':
 			Variable = 'Axial Current Density'
 			VariableUnit = '[mA cm$^{-2}$]'
@@ -1254,7 +1291,10 @@ def VariableLabelMaker(variablelist):
 
 		#Explicit Power Deposition.
 		elif variablelist[i] == 'POW-TOT':
-			Variable = 'Total RF-Power Deposited'
+			Variable = 'Capacitively Coupled RF-Power'
+			VariableUnit = '[Wm$^{-3}$]'
+		elif variablelist[i] == 'POW-ICP':
+			Variable = 'Inductively Coupled RF-Power'
 			VariableUnit = '[Wm$^{-3}$]'
 		elif variablelist[i] == 'POW-RF':
 			Variable = 'RF-Power Deposited'
@@ -1267,7 +1307,6 @@ def VariableLabelMaker(variablelist):
 		elif variablelist[i] == 'COLF':
 			Variable = 'Electron Collision Frequency'
 			VariableUnit = '[s$^{-1}$]'
-
 
 		#Implicit Variables.
 		elif IsStringInVariable(variablelist[i],Ionisationlist) == True:
@@ -1311,7 +1350,18 @@ def VariableLabelMaker(variablelist):
 #Implicitly calculates for common variables, explicitly for densities.
 def VariableUnitConversion(profile,variable):
 
-	#For ionization rates, convert from [cm3 s-1] to [m3 s-1]
+	#For Pressures, convert to mTorr or Pa as requested, or retain as default Torr.
+	if IsStringInVariable(variable,['PRESSURE']) == True and PressureType == 'Pa':
+		for i in range(0,len(profile)):
+			profile[i] = profile[i]*133.333333333
+		#endfor
+	if IsStringInVariable(variable,['PRESSURE']) == True and PressureType == 'mTorr':
+		for i in range(0,len(profile)):
+			profile[i] = profile[i]*1000.0
+		#endfor
+	#endif
+
+	#For ionisation rates, convert from [cm3 s-1] to [m3 s-1]
 	if IsStringInVariable(variable,['S-','SEB-']) == True:
 		for i in range(0,len(profile)):
 			profile[i] = profile[i]*1E6
@@ -1340,6 +1390,21 @@ def VariableUnitConversion(profile,variable):
 			profile[i] = profile[i]*(0.01)*(0.001)	#Ion [kms-1]
 		#endfor
 	if IsStringInVariable(variable,['VZ-NEUTRAL','VZ-ION+','VZ-ION-']) == True:
+		for i in range(0,len(profile)):
+			profile[i] = profile[i]*(-1)
+		#endfor
+	#endif
+
+	#For B-field strengths, convert to Tesla or retain as default Gauss. (also reverse axial field)
+	if IsStringInVariable(variable,['BT','BRS']) == True and BfieldType == 'Tesla':
+		for i in range(0,len(profile)):
+			profile[i] = profile[i]/10000
+		#endfor
+	if IsStringInVariable(variable,['BZS']) == True and BfieldType == 'Tesla':
+		for i in range(0,len(profile)):
+			profile[i] = (profile[i]/10000)*(-1)
+		#endfor
+	if IsStringInVariable(variable,['BZS']) == True:
 		for i in range(0,len(profile)):
 			profile[i] = profile[i]*(-1)
 		#endfor
@@ -1413,6 +1478,38 @@ def ManualPRCCPMesh(Ax=plt.gca()):
 	Ax.plot((34*dz[l],34*dz[l]),  ( 1.0, 0.21), '-', color='dimgrey', linewidth=2)
 	Ax.plot((74*dz[l],74*dz[l]),  (-1.0,-0.21), '-', color='dimgrey', linewidth=2)
 	Ax.plot((74*dz[l],74*dz[l]),  ( 1.0, 0.21), '-', color='dimgrey', linewidth=2)
+#enddef
+
+def ManualEVgenyMesh(Ax=plt.gca()):
+	#Plot upstream ICP material dimensions.
+	Ax.plot((1*dz[l],1*dz[l]),     (0*dr[l],10*dr[l]), '-', color='dimgrey', linewidth=4)
+	Ax.plot((1*dz[l],1*dz[l]),     (-10*dr[l],0*dr[l]), '-', color='dimgrey', linewidth=4)
+	Ax.plot((1*dz[l],39*dz[l]),    (10*dr[l],10*dr[l]), '-', color='dimgrey', linewidth=4)
+	Ax.plot((1*dz[l],39*dz[l]),    (-10*dr[l],-10*dr[l]), '-', color='dimgrey', linewidth=4)
+	Ax.plot((39*dz[l],39*dz[l]),   (10*dr[l], 80*dr[l]), '-', color='dimgrey', linewidth=4)
+	Ax.plot((39*dz[l],39*dz[l]),   (-10*dr[l], -80*dr[l]), '-', color='dimgrey', linewidth=4)
+	Ax.plot((39*dz[l],85*dz[l]),   (80*dr[l],80*dr[l]), '-', color='dimgrey', linewidth=4)
+	Ax.plot((39*dz[l],85*dz[l]),   (-80*dr[l],-80*dr[l]), '-', color='dimgrey', linewidth=4)
+	Ax.plot((85*dz[l],85*dz[l]),   (0*dr[l],80*dr[l]), '-', color='dimgrey', linewidth=4)
+	Ax.plot((85*dz[l],85*dz[l]),   (-80*dr[l],0*dr[l]), '-', color='dimgrey', linewidth=4)
+
+	#Alumina Dielectric
+	Ax.plot((1*dz[l],4*dz[l]),    (10*dr[l],10*dr[l]), 'c-', linewidth=4)
+	Ax.plot((1*dz[l],4*dz[l]),    (-10*dr[l],-10*dr[l]), 'c-', linewidth=4)
+	Ax.plot((21*dz[l],39*dz[l]),  (10*dr[l],10*dr[l]), 'c-', linewidth=4)
+	Ax.plot((21*dz[l],39*dz[l]),  (-10*dr[l],-10*dr[l]), 'c-', linewidth=4)
+
+	#Powered Electrode - Cathode
+	Ax.plot((5*dz[l],20*dz[l]),   (10*dr[l],10*dr[l]), '-', color='orange', linewidth=5)
+	Ax.plot((5*dz[l],20*dz[l]),   (-10*dr[l],-10*dr[l]), '-', color='orange', linewidth=5)
+
+	#Powered Electrode - Anode
+	Ax.plot((40*dz[l],84*dz[l]),   (81*dr[l],81*dr[l]), '-', color='red', linewidth=5)
+	Ax.plot((40*dz[l],84*dz[l]),   (-81*dr[l],-81*dr[l]), '-', color='red', linewidth=5)
+
+	#Solenoid
+	Ax.plot((40*dz[l],84*dz[l]),   (83*dr[l],83*dr[l]), '-', color='lightgreen', linewidth=5)
+	Ax.plot((40*dz[l],84*dz[l]),   (-83*dr[l],-83*dr[l]), '-', color='lightgreen', linewidth=5)
 #enddef
 
 #===================##===================#
@@ -1504,7 +1601,7 @@ for l in tqdm(range(0,numfolders)):
 		#Define arguments and autorun conv_prof.exe if possible.
 		#### THIS IS HACKY, WON'T ALWAYS WORK, ARGS LIST NEEDS AUTOMATING ####
 		IEDFVarArgs = ['1','1','1','1','1'] 	#Works for 2 species 1 surface.
-		ExtraArgs = []#['1','1','1','1','1','1','1','1','1','1']	#Hack For Additional Species
+		ExtraArgs = ['1','1','1','1','1','1','1','1','1','1']#[]	#Hack For Additional Species
 		Args = ['pcmc.prof','title','1','1','1'] + IEDFVarArgs + ExtraArgs + ['0','0']
 		DirAdditions = ['iprofile_tec2d.pdt','nprofile_tec2d.pdt','iprofile_tec1d.pdt', 'nprofile_tec1d.pdt','iprofile_zones_tec1d.pdt','nprofile_zones_tec1d.pdt']
 		try: AutoConvProfData('./conv_prof.exe',Args,DirAdditions)
@@ -2135,6 +2232,8 @@ def ImageOptions(fig,ax=plt.gca(),Xlabel='',Ylabel='',Title='',Legend=[],Crop=Tr
 		#NOT IMPLIMENTED!! REQUIRES initmesh.out READER#
 	elif image_plotmesh == 'PRCCP' and Crop == True:	
 		ManualPRCCPMesh(ax)
+	elif image_plotmesh == 'EVgeny' and Crop == True:
+		ManualEVgenyMesh(ax)
 	#endif
 
 	#Crop image dimensions, use provided dimensions or default if not provided.
@@ -2898,10 +2997,14 @@ def DCbiasMagnitude(PPOTlineout):
 #Returns array of sheath distances from origin and can plot this if requested.
 #Sx = SheathThickness(folder=l,Phase=moviephaselist[k])
 def SheathThickness(folder=l,ax='NaN',Orientation='Axial',Phase='NaN',Ne=list(),Ni=list()):
-	#Initiate required lists and import global variables
+	#Return null array if sheath plotting is not required:
+	if image_sheath == False: return([np.nan],[np.nan])
+
+	#Import global sheath calculation method and charged particle species names
 	SheathMethod=GlobSheathMethod
 	global PosSpecies
 	global NegSpecies
+	#Initiate required data storage lists
 	NPos,NNeg = list(),list()
 	Sx,SymSx = list(),list()
 
@@ -4568,7 +4671,6 @@ if savefig_trendphaseaveraged == True or print_DCbias == True:
 #====================================================================#
 
 
-
 if savefig_trendphaseaveraged == True or print_totalpower == True:
 
 	#Create Trend folder to keep output plots.
@@ -4664,68 +4766,129 @@ if savefig_trendphaseaveraged == True or print_totalpower == True:
 				  	#ION/NEUTRAL THRUST ANALYSIS#
 #====================================================================#
 
+#ABORT DIAGNOSTIC UNLESS ARGON IS SUPPLIED, WILL FIX LATER!!!
+if 'AR3S' in list(set(FluidSpecies).intersection(Variables)):
+	if savefig_trendphaseaveraged == True or print_thrust == True:
 
-if savefig_trendphaseaveraged == True or print_thrust == True:
+		#Create Trend folder to keep output plots.
+		TrendVariable = filter(lambda x: x.isalpha(), FolderNameTrimmer(Dirlist[0]))
+		DirTrends = CreateNewFolder(os.getcwd()+'/',TrendVariable+' Trends')
 
-	#Create Trend folder to keep output plots.
-	TrendVariable = filter(lambda x: x.isalpha(), FolderNameTrimmer(Dirlist[0]))
-	DirTrends = CreateNewFolder(os.getcwd()+'/',TrendVariable+' Trends')
+		#Initiate lists required for storing data.
+		NeutralThrustlist,IonThrustlist,Thrustlist = list(),list(),list()
+		NeutralIsplist,IonIsplist,ThrustIsplist = list(),list(),list()
+		Xaxis = list()
+	
+		#Extract Positive, Negative and Neutral species names (Excluding electrons)
+		NeutralSpecies = list(set(FluidSpecies).intersection(Variables))
+		PositiveIons = PosSpecies
+		NegativeIons = NegSpecies[:-1]
 
-	#Initiate lists required for storing data.
-	NeutralThrustlist,IonThrustlist,Thrustlist = list(),list(),list()
-	NeutralIsplist,IonIsplist,ThrustIsplist = list(),list(),list()
-	Xaxis = list()
+		#For all folders.
+		for l in range(0,numfolders):
 
-	#For all folders.
-	for l in range(0,numfolders):
+			#Update X-axis with folder information.
+			Xaxis.append( FolderNameTrimmer(Dirlist[l]) )
 
-		#Update X-axis with folder information.
-		Xaxis.append( FolderNameTrimmer(Dirlist[l]) )
+			#Extract data required for Thrust calculations, discharge plane (Z) = ThrustLoc.
+			processlist,variablelist = VariableEnumerator(['VZ-NEUTRAL'],rawdata_2D[l],header_2Dlist[l])
+			NeutralVelocity = PlotRadialProfile(Data[l],processlist[0],variablelist[0],ThrustLoc)
+			processlist,variablelist = VariableEnumerator(['VZ-ION+'],rawdata_2D[l],header_2Dlist[l])
+			IonVelocity = PlotRadialProfile(Data[l],processlist[0],variablelist[0],ThrustLoc)
+			processlist,variablelist = VariableEnumerator(['FZ-AR3S'],rawdata_2D[l],header_2Dlist[l])
+			NeutralAxialFlux = PlotRadialProfile(Data[l],processlist[0],variablelist[0],ThrustLoc)
+			processlist,variablelist = VariableEnumerator(['FZ-AR+'],rawdata_2D[l],header_2Dlist[l])
+			IonAxialFlux = PlotRadialProfile(Data[l],processlist[0],variablelist[0],ThrustLoc)
+			processlist,variablelist = VariableEnumerator(['TG-AVE'],rawdata_2D[l],header_2Dlist[l])
+			NeutGasTemp = PlotRadialProfile(Data[l],processlist[0],variablelist[0],ThrustLoc)
+			processlist,variablelist = VariableEnumerator(['PRESSURE'],rawdata_2D[l],header_2Dlist[l])
+			try: 
+				Pressure = PlotRadialProfile(Data[l],processlist[0],variablelist[0],ThrustLoc)
+				PressureDown = PlotRadialProfile(Data[l],processlist[0],variablelist[0],ThrustLoc+1)
+			except: 
+				Pressure = np.zeros(R_mesh[l]*2)
+				PressureDown = np.zeros(R_mesh[l]*2)
+			#endtry
 
-		#Extract data required for Thrust calculations, discharge plane (Z) = ThrustLoc.
-		processlist,variablelist = VariableEnumerator(['VZ-NEUTRAL'],rawdata_2D[l],header_2Dlist[l])
-		NeutralVelocity = PlotRadialProfile(Data[l],processlist[0],variablelist[0],ThrustLoc)
-		processlist,variablelist = VariableEnumerator(['VZ-ION+'],rawdata_2D[l],header_2Dlist[l])
-		IonVelocity = PlotRadialProfile(Data[l],processlist[0],variablelist[0],ThrustLoc)
-		processlist,variablelist = VariableEnumerator(['FZ-AR3S'],rawdata_2D[l],header_2Dlist[l])
-		NeutralAxialFlux = PlotRadialProfile(Data[l],processlist[0],variablelist[0],ThrustLoc)
-		processlist,variablelist = VariableEnumerator(['FZ-AR+'],rawdata_2D[l],header_2Dlist[l])
-		IonAxialFlux = PlotRadialProfile(Data[l],processlist[0],variablelist[0],ThrustLoc)
-		processlist,variablelist = VariableEnumerator(['TG-AVE'],rawdata_2D[l],header_2Dlist[l])
-		NeutGasTemp = PlotRadialProfile(Data[l],processlist[0],variablelist[0],ThrustLoc)
-		processlist,variablelist = VariableEnumerator(['PRESSURE'],rawdata_2D[l],header_2Dlist[l])
-		try: 
-			Pressure = PlotRadialProfile(Data[l],processlist[0],variablelist[0],ThrustLoc)
-			PressureDown = PlotRadialProfile(Data[l],processlist[0],variablelist[0],ThrustLoc+1)
-		except: 
-			Pressure = np.zeros(R_mesh[l]*2)
-			PressureDown = np.zeros(R_mesh[l]*2)
-		#endtry
+			#Define which gas is used and calculate neutral mass per atom.
+			NeutralIsp,IonIsp = list(),list()
+			Argon,Xenon = 39.948,131.29			 #amu
+			NeutralMass = Argon*1.67E-27		 #Kg
 
-		#Define which gas is used and calculate neutral mass per atom.
-		NeutralIsp,IonIsp = list(),list()
-		Argon,Xenon = 39.948,131.29			 #amu
-		NeutralMass = Argon*1.67E-27		 #Kg
+			#Choose which method to solve for thrust: 'ThermalVelocity','AxialMomentum'
+			if GlobThrustMethod == 'ThermalVelocity':
+				#Technique assumes cylindrical geometry, cartesian geometry will be overestimated.
+				#Integrates neutral momentum loss rate based on neutral gas temperature.
+				#Assumes angularly symmetric temperature and Maxwellian velocity distribution.
+				NeutralThrust = 0
+				for i in range(0,R_mesh[l]):
+					#Calculate radial plane area of a ring at radius [i], correcting for central r=0.
+					Circumference = 2*np.pi*(i*(dr[l]/100))		#m
+					CellArea = Circumference*(dr[l]/100)		#m^2
+					if CellArea == 0:
+						CellArea = np.pi*(dr[l]/100)**2			#m^2
+					#endif  
 
-		#Choose which method to solve for thrust: 'ThermalVelocity','AxialMomentum'
-		if GlobThrustMethod == 'ThermalVelocity':
-			#Technique assumes cylindrical geometry, cartesian geometry will be overestimated.
-			#Integrates neutral momentum loss rate based on neutral gas temperature.
-			#Assumes angularly symmetric temperature and Maxwellian velocity distribution.
-			NeutralThrust = 0
-			for i in range(0,R_mesh[l]):
-				#Calculate radial plane area of a ring at radius [i], correcting for central r=0.
-				Circumference = 2*np.pi*(i*(dr[l]/100))		#m
-				CellArea = Circumference*(dr[l]/100)		#m^2
-				if CellArea == 0:
-					CellArea = np.pi*(dr[l]/100)**2			#m^2
-				#endif  
+					#Calculate most probable neutral velocity based on temperature
+					MeanVelocity = np.sqrt( (2*1.38E-23*NeutGasTemp[i])/(NeutralMass) )  	#m/s
 
-				#Calculate most probable neutral velocity based on temperature
-				MeanVelocity = np.sqrt( (2*1.38E-23*NeutGasTemp[i])/(NeutralMass) )  	#m/s
+					#If current cell is gas phase (Pressure > 0.0), calculate thrust
+					if Pressure[i] > 0.0:
+						#Calculate Neutral mass flow rate and integrate thrust via F = (dm/dt)Ve.
+						NeutralMassFlowRate = NeutralAxialFlux[i]*NeutralMass*CellArea	#Kg/s
+						NeutralExitVelocity = NeutralVelocity[i]						#m/s
+						NeutralThrust += NeutralMassFlowRate * NeutralExitVelocity 		#N
+						if NeutralExitVelocity > 0:
+							NeutralIsp.append(NeutralExitVelocity)
+						#endif
+					#endif
+				#endfor
 
-				#If current cell is gas phase (Pressure > 0.0), calculate thrust
-				if Pressure[i] > 0.0:
+				#Add neutral thrust and Isp to arrays (dummy variables not calculated)
+				NeutralThrustlist.append( round(NeutralThrust*1000,5) )		#mN
+				Thrustlist.append( round( NeutralThrust*1000,5) )			#mN
+				NeutralIsp = (sum(NeutralIsp)/len(NeutralIsp))/9.81			#s
+				Thrust,ThrustIsp = NeutralThrust,NeutralIsp					#N,s
+				IonThrust,IonIsp = 1E-30,1E-30								#'Not Calculated'
+				DiffForce = 1E-30											#'Not Calculated'
+			#endif
+
+			#====================#
+
+			elif GlobThrustMethod == 'AxialMomentum':
+				#Technique assumes cylindrical geometry, cartesian geometry will be overestimated.
+				#Integrates ion/neutral momentum loss rate and differental pressure for concentric rings.
+				#Assumes pressure differential, ion/neutral flux equal for all angles at given radii.
+
+				#CellArea increases from central R=0.
+				#Correct extracted profiles to agree with this orientation.
+				#ONLY WORKS WHEN SYMMETRY OPTION IS ON, NEED A MORE ROBUST METHOD!
+				Pressure,PressureDown = Pressure[0:R_mesh[l]][::-1],PressureDown[0:R_mesh[l]][::-1]
+				NeutralVelocity = NeutralVelocity[0:R_mesh[l]][::-1]
+				NeutralAxialFlux = NeutralAxialFlux[0:R_mesh[l]][::-1]
+				IonVelocity = IonVelocity[0:R_mesh[l]][::-1]
+				IonAxialFlux = IonAxialFlux[0:R_mesh[l]][::-1]
+				#ONLY WORKS WHEN SYMMETRY OPTION IS ON, NEED A MORE ROBUST METHOD!
+
+				DiffForce,NeutralThrust,IonThrust = 0,0,0
+				for i in range(0,R_mesh[l]):
+					#Calculate radial plane area of a ring at radius [i], correcting for central r=0.
+					Circumference = 2*np.pi*(i*(dr[l]/100))		#m
+					CellArea = Circumference*(dr[l]/100)		#m^2
+					if CellArea == 0:
+						CellArea = np.pi*((dr[l]/100)**2)		#m^2
+					#endif
+
+					#Calculate differential pressure between ThrustLoc-(ThrustLoc+1)
+					#Ensure pressure index aligns with radial index for correct cell area.
+					if Pressure[i] > 0.0:
+						DiffPressure = (Pressure[i]-PRESOUT[l])*133.33			#N/m^2
+#						DiffPressure = (Pressure[i]-PressureDown[i])*133.33		#N/m^2
+						DiffForce += DiffPressure*CellArea						#N
+					else:
+						DiffForce += 0.0
+					#endif
+
 					#Calculate Neutral mass flow rate and integrate thrust via F = (dm/dt)Ve.
 					NeutralMassFlowRate = NeutralAxialFlux[i]*NeutralMass*CellArea	#Kg/s
 					NeutralExitVelocity = NeutralVelocity[i]						#m/s
@@ -4733,144 +4896,89 @@ if savefig_trendphaseaveraged == True or print_thrust == True:
 					if NeutralExitVelocity > 0:
 						NeutralIsp.append(NeutralExitVelocity)
 					#endif
-				#endif
-			#endfor
 
-			#Add neutral thrust and Isp to arrays (dummy variables not calculated)
-			NeutralThrustlist.append( round(NeutralThrust*1000,5) )		#mN
-			Thrustlist.append( round( NeutralThrust*1000,5) )			#mN
-			NeutralIsp = (sum(NeutralIsp)/len(NeutralIsp))/9.81			#s
-			Thrust,ThrustIsp = NeutralThrust,NeutralIsp					#N,s
-			IonThrust,IonIsp = 1E-30,1E-30								#'Not Calculated'
-			DiffForce = 1E-30											#'Not Calculated'
+					#Calculate Ion mass flow rate and integrate thrust via F = (dm/dt)Ve.
+					IonMassFlowRate = IonAxialFlux[i]*NeutralMass*CellArea	#Kg/s
+					IonExitVelocity = IonVelocity[i]*1000					#m/s
+					IonThrust += IonMassFlowRate * IonExitVelocity 			#N
+					if IonExitVelocity > 0: 
+						IonIsp.append(IonExitVelocity)
+					#endif
+				#endfor
+				if len(IonIsp) == 0: IonIsp.append(np.nan)
+				if len(NeutralIsp) == 0: NeutralIsp.append(np.nan)
+
+				#Add total thrust and calculate Isp of each component
+				Thrust = DiffForce + NeutralThrust + IonThrust				#N
+				NeutralFraction = NeutralThrust/(Thrust-DiffForce)			#Ignore dP/dz
+				IonFraction = IonThrust/(Thrust-DiffForce)					#Ignore dP/dz
+
+				IonIsp = (sum(IonIsp)/len(IonIsp))/9.81						#s
+				NeutralIsp = (sum(NeutralIsp)/len(NeutralIsp))/9.81			#s
+				ThrustIsp = NeutralFraction*NeutralIsp+IonFraction*IonIsp 	#s
+
+				NeutralThrustlist.append( round(NeutralThrust*1000,5) )		#mN
+				IonThrustlist.append( round(IonThrust*1000,5) )				#mN
+				Thrustlist.append( round(Thrust*1000,5) )					#mN
+				NeutralIsplist.append( round(NeutralIsp,5) )				#s
+				IonIsplist.append( round(IonIsp,5) )						#s
+				ThrustIsplist.append( round(ThrustIsp,5) )					#s
+			#endif
+
+			#====================#
+
+			#Display thrust to terminal if requested.
+			if print_thrust == True:
+				print Dirlist[l], '@ Z=',round(ThrustLoc*dz[l],2),'cm'
+				print 'NeutralThrust', round(NeutralThrust*1000,2), 'mN @ ', round(NeutralIsp,2),'s'
+				print 'IonThrust:', round(IonThrust*1000,4), 'mN @ ', round(IonIsp,2),'s'
+				print 'D-Pressure:', round(DiffForce*1000,4), 'mN'
+				print 'Thrust:',round(Thrust*1000,4),'mN @ ', round(ThrustIsp,2),'s'
+				print ''
+			#endif
+		#endfor
+
+		#Write data to ASCII format datafile if requested.
+		if write_ASCII == True:
+			DirASCII = CreateNewFolder(DirTrends,'Trend_Data')
+			WriteDataToFile(Xaxis+['\n'], DirASCII+'Thrust_Trends','w')
+			WriteDataToFile(Thrustlist+['\n'], DirASCII+'Thrust_Trends','a')
+			WriteDataToFile(ThrustIsplist, DirASCII+'Thrust_Trends','a')
 		#endif
 
-		#====================#
 
-		elif GlobThrustMethod == 'AxialMomentum':
-			#Technique assumes cylindrical geometry, cartesian geometry will be overestimated.
-			#Integrates ion/neutral momentum loss rate and differental pressure for concentric rings.
-			#Assumes pressure differential, ion/neutral flux equal for all angles at given radii.
+		#Plot total thrust and ion/neutral components.
+		fig,ax1 = figure(image_aspectratio,1)
+		TrendPlotter(ax1,Thrustlist,Xaxis,Marker='ko-',NormFactor=0)
+		TrendPlotter(ax1,NeutralThrustlist,Xaxis,Marker='r^-',NormFactor=0)
+#		TrendPlotter(ax1,IonThrustlist,Xaxis,Marker='bs-',NormFactor=0)
 
-			#CellArea increases from central R=0.
-			#Correct extracted profiles to agree with this orientation.
-			#ONLY WORKS WHEN SYMMETRY OPTION IS ON, NEED A MORE ROBUST METHOD!
-			Pressure,PressureDown = Pressure[0:R_mesh[l]][::-1],PressureDown[0:R_mesh[l]][::-1]
-			NeutralVelocity = NeutralVelocity[0:R_mesh[l]][::-1]
-			NeutralAxialFlux = NeutralAxialFlux[0:R_mesh[l]][::-1]
-			IonVelocity = IonVelocity[0:R_mesh[l]][::-1]
-			IonAxialFlux = IonAxialFlux[0:R_mesh[l]][::-1]
-			#ONLY WORKS WHEN SYMMETRY OPTION IS ON, NEED A MORE ROBUST METHOD!
+		#Apply image options and save figure.
+		Title='Thrust at Z='+str(round(ThrustLoc*dz[0],2))+'cm with varying '+TrendVariable+' \n'+Dirlist[l][2:-1]
+		Xlabel,Ylabel = 'Varied Property','Thrust F$_{T}$ [mN]'
+		ax1.legend(['Total Thrust','Neutral Component','Ion Component'], fontsize=18, frameon=False)
+		ImageOptions(fig,ax1,Xlabel,Ylabel,Title,Crop=False)
 
-			DiffForce,NeutralThrust,IonThrust = 0,0,0
-			for i in range(0,R_mesh[l]):
-				#Calculate radial plane area of a ring at radius [i], correcting for central r=0.
-				Circumference = 2*np.pi*(i*(dr[l]/100))		#m
-				CellArea = Circumference*(dr[l]/100)		#m^2
-				if CellArea == 0:
-					CellArea = np.pi*((dr[l]/100)**2)		#m^2
-				#endif
+		plt.savefig(DirTrends+'Thrust Trends'+ext)
+		plt.close('all')
 
-				#Calculate differential pressure between ThrustLoc-(ThrustLoc+1)
-				#Ensure pressure index aligns with radial index for correct cell area.
-				if Pressure[i] > 0.0:
-					DiffPressure = (Pressure[i]-PRESOUT[l])*133.33			#N/m^2
-#					DiffPressure = (Pressure[i]-PressureDown[i])*133.33		#N/m^2
-					DiffForce += DiffPressure*CellArea						#N
-				else:
-					DiffForce += 0.0
-				#endif
 
-				#Calculate Neutral mass flow rate and integrate thrust via F = (dm/dt)Ve.
-				NeutralMassFlowRate = NeutralAxialFlux[i]*NeutralMass*CellArea	#Kg/s
-				NeutralExitVelocity = NeutralVelocity[i]						#m/s
-				NeutralThrust += NeutralMassFlowRate * NeutralExitVelocity 		#N
-				if NeutralExitVelocity > 0:
-					NeutralIsp.append(NeutralExitVelocity)
-				#endif
+		#Plot Specific Impulse for total thrust and ion/neutral components.
+		fig,ax1 = figure(image_aspectratio,1)
+		TrendPlotter(ax1,ThrustIsplist,Xaxis,Marker='ko-',NormFactor=0)
+		TrendPlotter(ax1,NeutralIsplist,Xaxis,Marker='r^-',NormFactor=0)
+#		TrendPlotter(ax1,IonIsplist,Xaxis,Marker='bs-',NormFactor=0)
 
-				#Calculate Ion mass flow rate and integrate thrust via F = (dm/dt)Ve.
-				IonMassFlowRate = IonAxialFlux[i]*NeutralMass*CellArea	#Kg/s
-				IonExitVelocity = IonVelocity[i]*1000					#m/s
-				IonThrust += IonMassFlowRate * IonExitVelocity 			#N
-				if IonExitVelocity > 0: 
-					IonIsp.append(IonExitVelocity)
-				#endif
-			#endfor
-			if len(IonIsp) == 0: IonIsp.append(np.nan)
-			if len(NeutralIsp) == 0: NeutralIsp.append(np.nan)
+		#Apply image options and save figure.
+		Title = 'Specific Impulse at Z='+str(round(ThrustLoc*dz[0],2))+'cm with varying '+TrendVariable+' \n'+Dirlist[l][2:-1]
+		Xlabel,Ylabel = 'Varied Property','Specific Impulse I$_{sp}$ [s]'
+		ax1.legend(['Total I$_{sp}$','Neutral Component','Ion Component'], fontsize=18, frameon=False)
+		ImageOptions(fig,ax1,Xlabel,Ylabel,Title,Crop=False)
 
-			#Add total thrust and calculate Isp of each component
-			Thrust = DiffForce + NeutralThrust + IonThrust				#N
-			NeutralFraction = NeutralThrust/(Thrust-DiffForce)			#Ignore dP/dz
-			IonFraction = IonThrust/(Thrust-DiffForce)					#Ignore dP/dz
-
-			IonIsp = (sum(IonIsp)/len(IonIsp))/9.81						#s
-			NeutralIsp = (sum(NeutralIsp)/len(NeutralIsp))/9.81			#s
-			ThrustIsp = NeutralFraction*NeutralIsp+IonFraction*IonIsp 	#s
-
-			NeutralThrustlist.append( round(NeutralThrust*1000,5) )		#mN
-			IonThrustlist.append( round(IonThrust*1000,5) )				#mN
-			Thrustlist.append( round(Thrust*1000,5) )					#mN
-			NeutralIsplist.append( round(NeutralIsp,5) )				#s
-			IonIsplist.append( round(IonIsp,5) )						#s
-			ThrustIsplist.append( round(ThrustIsp,5) )					#s
-		#endif
-
-		#====================#
-
-		#Display thrust to terminal if requested.
-		if print_thrust == True:
-			print Dirlist[l], '@ Z=',round(ThrustLoc*dz[l],2),'cm'
-			print 'NeutralThrust', round(NeutralThrust*1000,2), 'mN @ ', round(NeutralIsp,2),'s'
-			print 'IonThrust:', round(IonThrust*1000,4), 'mN @ ', round(IonIsp,2),'s'
-			print 'D-Pressure:', round(DiffForce*1000,4), 'mN'
-			print 'Thrust:',round(Thrust*1000,4),'mN @ ', round(ThrustIsp,2),'s'
-			print ''
-		#endif
-	#endfor
-
-	#Write data to ASCII format datafile if requested.
-	if write_ASCII == True:
-		DirASCII = CreateNewFolder(DirTrends,'Trend_Data')
-		WriteDataToFile(Xaxis+['\n'], DirASCII+'Thrust_Trends','w')
-		WriteDataToFile(Thrustlist+['\n'], DirASCII+'Thrust_Trends','a')
-		WriteDataToFile(ThrustIsplist, DirASCII+'Thrust_Trends','a')
+		plt.savefig(DirTrends+'Isp Trends'+ext)
+		plt.close('all')
 	#endif
-
-
-	#Plot total thrust and ion/neutral components.
-	fig,ax1 = figure(image_aspectratio,1)
-	TrendPlotter(ax1,Thrustlist,Xaxis,Marker='ko-',NormFactor=0)
-	TrendPlotter(ax1,NeutralThrustlist,Xaxis,Marker='r^-',NormFactor=0)
-#	TrendPlotter(ax1,IonThrustlist,Xaxis,Marker='bs-',NormFactor=0)
-
-	#Apply image options and save figure.
-	Title='Thrust at Z='+str(round(ThrustLoc*dz[0],2))+'cm with varying '+TrendVariable+' \n'+Dirlist[l][2:-1]
-	Xlabel,Ylabel = 'Varied Property','Thrust F$_{T}$ [mN]'
-	ax1.legend(['Total Thrust','Neutral Component','Ion Component'], fontsize=18, frameon=False)
-	ImageOptions(fig,ax1,Xlabel,Ylabel,Title,Crop=False)
-
-	plt.savefig(DirTrends+'Thrust Trends'+ext)
-	plt.close('all')
-
-
-	#Plot Specific Impulse for total thrust and ion/neutral components.
-	fig,ax1 = figure(image_aspectratio,1)
-	TrendPlotter(ax1,ThrustIsplist,Xaxis,Marker='ko-',NormFactor=0)
-	TrendPlotter(ax1,NeutralIsplist,Xaxis,Marker='r^-',NormFactor=0)
-#	TrendPlotter(ax1,IonIsplist,Xaxis,Marker='bs-',NormFactor=0)
-
-	#Apply image options and save figure.
-	Title = 'Specific Impulse at Z='+str(round(ThrustLoc*dz[0],2))+'cm with varying '+TrendVariable+' \n'+Dirlist[l][2:-1]
-	Xlabel,Ylabel = 'Varied Property','Specific Impulse I$_{sp}$ [s]'
-	ax1.legend(['Total I$_{sp}$','Neutral Component','Ion Component'], fontsize=18, frameon=False)
-	ImageOptions(fig,ax1,Xlabel,Ylabel,Title,Crop=False)
-
-	plt.savefig(DirTrends+'Isp Trends'+ext)
-	plt.close('all')
 #endif
-
 
 
 #====================================================================#
@@ -5051,9 +5159,9 @@ if bool(set(FluidSpecies).intersection(Variables)) == True:
 				  #LOCAL/GLOBAL SOUND SPEED ANALYSIS#
 #====================================================================#
 
-
+PERFORMSOUNDSPEED = False
 #Only perform on bulk fluid dynamics relevent species.
-if bool(set(FluidSpecies).intersection(Variables)) == True:
+if bool(set(FluidSpecies).intersection(Variables)) == True and PERFORMSOUNDSPEED == True:
 	if savefig_trendphaseaveraged == True or print_soundspeed == True:
 
 		#Create Trend folder to keep output plots.
@@ -5423,7 +5531,6 @@ if savefig_phaseresolve2D == True:
 		Raxis = GenerateAxis('Radial',Isymlist[l])
 		Zaxis = GenerateAxis('Axial',Isymlist[l])
 
-
 		#=============#
 
 		#Extract waveforms from desired electrode locations.
@@ -5486,8 +5593,11 @@ if savefig_phaseresolve2D == True:
 				#Extract full 2D image for further processing.
 				Image = ImageExtractor2D(PhaseData[j][proclist[i]],varlist[i])
 				#Extract Ni and Ne variables for sheath processing.
-				Ne = SxData[j][Sxproc[Sxvar.index('E')]]
-				Ni = SxData[j][Sxproc[Sxvar.index('AR+')]]
+				if image_sheath == True:
+					Ne = SxData[j][Sxproc[Sxvar.index('E')]]
+					Ni = SxData[j][Sxproc[Sxvar.index('AR+')]]
+				else: Ne,Ni = np.nan, np.nan
+				#endif
 
 				#Obtain image extent and axis labels based on image symmetry and rotation.
 				Xlabel,Ylabel = 'Radial Distance R [cm]','Axial Distance Z [cm]'
@@ -5598,8 +5708,11 @@ if savefig_trendphaseresolved == True:
 		#For all phases, process data and record for plotting.
 		for k in range(0,len(Phaselist)):
 			#Extract Ni and Ne variables for sheath processing.
-			Ne = PhaseData[k][proclist[varlist.index('E')]]
-			Ni = PhaseData[k][proclist[varlist.index('AR+')]]
+			if image_sheath == True:
+				Ne = SxData[j][Sxproc[Sxvar.index('E')]]
+				Ni = SxData[j][Sxproc[Sxvar.index('AR+')]]
+			else: Ne,Ni = np.nan, np.nan
+			#endif
 
 			#Calculate sheath width and record sheath width at electrodeloc
 			Sx = SheathThickness(folder=l,Phase=k,Ne=Ne,Ni=Ni)[0]
