@@ -106,12 +106,13 @@ GlobMeanCalculation = 'MeanFraction'	#Definition of 'mean' EDF value
 #Overrides or 'fudge factors' for diagnostics
 DCbiasaxis = 'Auto'						#Force Direction Over Which DCBias is Calculated
 #Choices:('Axial','Radial','Auto')
-SheathIonSpeciesOverride = []			#Force Sheath Calculation Chemistry (blank for auto)
+SheathIonSpecies = ['AR+']					#Force Sheath Ion Species (blank for auto)
 #['AR+'] #['O+']
 
 #Data Filtering and Smoothing Methods:
 KineticFiltering = True						#Pre-fit kinetic data employing a SavGol filter
-Glob_SavWindow, Glob_SavPolyOrder = 101, 6	#Window > FeatureSize, Polyorder ~= Smoothness
+PlotKineticFiltering = False				#Plot Filtered Profiles, or employ only in trends.
+Glob_SavWindow, Glob_SavPolyOrder = 25, 3	#Window > FeatureSize, Polyorder ~= Smoothness
 
 #Define units for particular variables
 PressureType = 'Pa'							#'Torr','mTorr','Pa'
@@ -133,14 +134,13 @@ PRCCPO2_PCMC = ['O^0.35','EB-0.35','ION-TOT0.35']
 TSHC_PCMC = ['AR^2.0S','EB-2.0S','ION-TOT2.0S','AR^0.2B','EB-0.2B','ION-TOT0.2B','AR^2.2C','EB-2.2C','ION-TOT2.2C','AR^4.2D','EB-4.2D','ION-TOT4.2D','AR^6.2E','EB-6.2E','ION-TOT6.2E','AR^8.2F','EB-8.2F','ION-TOT8.2F']
 
 EVgeny_PCMC = ['AR^0.1P','EB-0.1P','ION-TOT0.1P','AR^1.6Q','EB-1.6Q','ION-TOT1.6Q']
-HYPI_PCMC = []
+HYP_PCMC = ['O^0.2P','EB-0.2P','ION-TOT0.2P','O^4.1Q','EB-4.1Q','ION-TOT4.1Q','O^4.15','EB-4.15','ION-TOT4.15']
 
 #Archived variable sets
 TSHCOI2019_PCMC = ['AR^0.2S','ION-TOT0.2S','AR^4.4T','ION-TOT4.4T','AR^8.9U','ION-TOT8.9U']
 MSHC2017_PCMC = ['AR^0.5S','EB-0.5S','ION-TOT0.5S','AR^1.1B','EB-1.1B','ION-TOT1.1B']
 SCCP2018_PCMC = ['AR^7.7J','ION-TOT7.7J','AR^5.1B','ION-TOT5.1B']
 ESCT2018_PCMC = ['AR^0.3S','EB-0.3S','ION-TOT0.3S']
-
 
 
 ####################
@@ -198,8 +198,8 @@ ESCT2018_PCMC = ['AR^0.3S','EB-0.3S','ION-TOT0.3S']
 #Crop = 			R[0,12];Z[4,7]
 
 ### HYPERION-I Mk1 ###
-#electrodeloc = 	[51,24]							#Middle ICP Coil
-#waveformlocs = 	[[51,14][51,34]]				#Upper(Positive), Lower(Negative) coils
+#electrodeloc = 	[51,14]							#Upper(Positive) ICP coil
+#waveformlocs = 	[[51,24][51,34]]				#Middle ICP Coil, Lower(Negative) coil
 #DOFWidth = 		R;??,Z;??
 #TrendLoc =  		H[];R[24]						#R,Z = 0.2cm/cell,0.1cm/cell
 #ThrustLoc = 		[]
@@ -208,8 +208,8 @@ ESCT2018_PCMC = ['AR^0.3S','EB-0.3S','ION-TOT0.3S']
 #Crop = 			R[];Z[]
 
 ### EVgeny Mk1 ###
-#electrodeloc = 	[]
-#waveformlocs = 	[]
+#electrodeloc = 	[21,15]
+#waveformlocs = 	[[12,15]]						#Dielectric Surface
 #DOFWidth = 		R;??,Z;??
 #TrendLoc =  		H[];R[]							#R,Z = 0.2cm/cell,0.1cm/cell
 #ThrustLoc = 		[]
@@ -228,25 +228,25 @@ ESCT2018_PCMC = ['AR^0.3S','EB-0.3S','ION-TOT0.3S']
 #====================================================================#
 
 #Requested IEDF/NEDF Variables.
-IEDFVariables = EVgeny_PCMC					#Requested iprofile_2d variables (no spaces)
+IEDFVariables = HYP_PCMC#EVgeny_PCMC					#Requested iprofile_2d variables (no spaces)
 NEDFVariables = []							#Requested nprofile_2d variables (no spaces)
 
 #Requested movie1/movie_icp Variables.
-IterVariables = ['E','S-E','PPOT','TE']		#Requested Movie_icp (iteration) Variables.		
-PhaseVariables = O2_Phase#Ar_Phase					#Requested Movie1 (phase) Variables. +['E','AR+']
-electrodeloc = [51,24]#[29,44]						#Cell location of powered electrode [R,Z].
+IterVariables = ['E','S-E','PPOT','TE']				#Requested Movie_icp (iteration) Variables.		
+PhaseVariables = Ar_Phase#O2_Phase					#Requested Movie1 (phase) Variables. +['E','AR+']
+electrodeloc = [29,44]#[51,14]#[12,15]						#Cell location of powered electrode [R,Z].
 waveformlocs = []#[[16,29],[16,44],[16,64],[0,44]]		#Cell locations of additional waveforms [R,Z].
 
 #Requested TECPLOT Variables and plotting locations.
-Variables = Ar
+Variables = Ar#O2#
 MultiVar = []							#Additional variables plotted ontop of [Variables]
-radialineouts = []#[24]#[29,44,64,75] 			#Radial 1D-Profiles to be plotted (fixed Z-mesh) --
-heightlineouts = [0]					#Axial 1D-Profiles to be plotted (fixed R-mesh) |
+radialineouts = [44]#[24]#[29,44,64,75] 			#Radial 1D-Profiles to be plotted (fixed Z-mesh) --
+heightlineouts = []						#Axial 1D-Profiles to be plotted (fixed R-mesh) |
 TrendLocation = [] 						#Cell location For Trend Analysis [R,Z], ([] = min/max)
 
 
 #Various Diagnostic Settings.
-phasecycles = 2.0						#Number of waveform phase cycles to be plotted. (float)
+phasecycles = 1.0						#Number of waveform phase cycles to be plotted. (float)
 DoFWidth = 21							#PROES Depth of Field (symmetric about image plane) (cells)
 ThrustLoc = 75							#Z-axis cell for thrust calculation  (cells)
 SheathROI = [34,72]						#Sheath Region of Interest, (Start,End) [cells]
@@ -256,13 +256,13 @@ EDF_Threshold = 0.01					#Upper Recognised EEDF/IEDF energy fraction (Plot all: 
 
 #Requested diagnostics and plotting routines.
 savefig_convergence = False				#Requires movie_icp.pdt
-savefig_plot2D = True					#Requires TECPLOT2D.PDT
+savefig_plot2D = False					#Requires TECPLOT2D.PDT
 
 savefig_monoprofiles = False			#Single-Variables; fixed height/radius
 savefig_multiprofiles = False			#Multi-Variables; same folder
-savefig_comparelineouts = True			#Multi-Variables; all folders
+savefig_comparelineouts = False			#Multi-Variables; all folders
 savefig_trendphaseaveraged = False		#Single-Variables; fixed cell location (or max/min)
-savefig_trendphaseresolved = False		#Single-Variables; Phase-resolved data.
+savefig_trendphaseresolved = True		#Single-Variables; Phase-resolved data.
 savefig_pulseprofiles = False			#Single-Variables; plotted against real-time axis
 
 savefig_phaseresolve1D = False			#1D Phase Resolved Images
@@ -299,13 +299,12 @@ image_numericaxis = False				#### NOT IMPLIMENTED ####
 image_contourplot = True				#Toggle contour Lines in images
 image_1Doverlay = False					#Overlay location(s) of radialineouts/heightlineouts
 image_plotgrid = False					#Plot major/minor gridlines on profiles
-image_plotmesh = 'EVgeny'#'PRCCP'				#Plot material mesh outlines ('Auto','PRCCP','PRuICP')
+image_plotmesh = False#'EVgeny'#'PRCCP'				#Plot material mesh outlines ('Auto','PRCCP','PRuICP')
 image_rotate = True						#Rotate image 90 degrees to the right.
-
 
 image_normalize = False					#Normalize image/profiles to local max
 image_logplot = False					#Plot ln(Data), against linear axis.
-image_sheath = False					#Plot sheath width onto 2D images.
+image_sheath = True					#Plot sheath width onto 2D images.
 
 
 #Overrides the automatic image labelling.
@@ -781,12 +780,13 @@ for l in range(0,numfolders):
 
 	#clean up variables and assign required types.
 	try:
-		for i in range(0,len(CMETALS[l])): CMETALS[l][i] = CMETALS[i].strip(',\'') <-Broken
+#		for i in range(0,len(CMETALS[l])): CMETALS[l][i] = CMETALS[i].strip(',\'') #!!!BROKEN!!!
 		VRFM[l] = float( VRFM[l][IETRODEM[l].index(1)].strip(',') )
 		VRFM2[l] = float( VRFM2[l][IETRODEM[l].index(1)].strip(',') )
 		FREQM[l] = float( FREQM[l][IETRODEM[l].index(1)].strip(',') )
 		FREQM2[l] = float( FREQM2[l][IETRODEM[l].index(1)].strip(',') )
-		FREQC[l] = float( FREQMC[l][IETRODEM[l].index(1)].strip(',') )
+		try: FREQC[l] = float( FREQMC[l][IETRODEM[l].index(1)].strip(',') )
+		except: ICP_Material_Not_Found=1
 
 		MINFREQ.append( min([FREQM[l],FREQM2[l],FREQC[l],FREQGLOB[l]]) )
 		MAXFREQ.append( max([FREQM[l],FREQM2[l],FREQC[l],FREQGLOB[l]]) )
@@ -1482,10 +1482,70 @@ def ManualPRCCPMesh(Ax=plt.gca()):
 
 def ManualEVgenyMesh(Ax=plt.gca()):
 	#Plot upstream ICP material dimensions.
-	Ax.plot((1*dz[l],1*dz[l]),     (0*dr[l],10*dr[l]), '-', color='dimgrey', linewidth=4)
-	Ax.plot((1*dz[l],1*dz[l]),     (-10*dr[l],0*dr[l]), '-', color='dimgrey', linewidth=4)
-	Ax.plot((1*dz[l],39*dz[l]),    (10*dr[l],10*dr[l]), '-', color='dimgrey', linewidth=4)
-	Ax.plot((1*dz[l],39*dz[l]),    (-10*dr[l],-10*dr[l]), '-', color='dimgrey', linewidth=4)
+	Ax.plot((2.5*dz[l],2.5*dz[l]), (0*dr[l],20*dr[l]), '-', color='dimgrey', linewidth=4)
+	Ax.plot((2.5*dz[l],2.5*dz[l]), (-20*dr[l],0*dr[l]), '-', color='dimgrey', linewidth=4)
+	Ax.plot((2.5*dz[l],41*dz[l]),  (20*dr[l],20*dr[l]), '-', color='dimgrey', linewidth=4)
+	Ax.plot((2.5*dz[l],41*dz[l]),  (-20*dr[l],-20*dr[l]), '-', color='dimgrey', linewidth=4)
+	Ax.plot((41*dz[l],41*dz[l]),   (20*dr[l],90*dr[l]), '-', color='dimgrey', linewidth=4)
+	Ax.plot((41*dz[l],41*dz[l]),   (-20*dr[l],-90*dr[l]), '-', color='dimgrey', linewidth=4)
+	Ax.plot((41*dz[l],87*dz[l]),   (90*dr[l],90*dr[l]), '-', color='dimgrey', linewidth=4)
+	Ax.plot((41*dz[l],87*dz[l]),   (-90*dr[l],-90*dr[l]), '-', color='dimgrey', linewidth=4)
+	Ax.plot((87*dz[l],87*dz[l]),   (0*dr[l],90*dr[l]), '-', color='dimgrey', linewidth=4)
+	Ax.plot((87*dz[l],87*dz[l]),   (-90*dr[l],0*dr[l]), '-', color='dimgrey', linewidth=4)
+
+	#Macor Dielectric
+	Ax.plot((3*dz[l],6*dz[l]),    (20*dr[l],20*dr[l]), 'c-', linewidth=4)
+	Ax.plot((3*dz[l],6*dz[l]),    (-20*dr[l],-20*dr[l]), 'c-', linewidth=4)
+	Ax.plot((23*dz[l],41*dz[l]),  (20*dr[l],20*dr[l]), 'c-', linewidth=4)
+	Ax.plot((23*dz[l],41*dz[l]),  (-20*dr[l],-20*dr[l]), 'c-', linewidth=4)
+
+	#Powered Electrode - LaB6 Cathode
+	Ax.plot((6*dz[l],23*dz[l]),   (20*dr[l],20*dr[l]), '-', color='orange', linewidth=5)
+	Ax.plot((6*dz[l],23*dz[l]),   (-20*dr[l],-20*dr[l]), '-', color='orange', linewidth=5)
+
+	#Powered Electrode - 'Metal' Anode
+	Ax.plot((42*dz[l],86*dz[l]),   (91*dr[l],91*dr[l]), '-', color='red', linewidth=5)
+	Ax.plot((42*dz[l],86*dz[l]),   (-91*dr[l],-91*dr[l]), '-', color='red', linewidth=5)
+
+	#Powered ICP Coils - 'Metal'
+	Ax.plot((6*dz[l],8*dz[l]),   (25*dr[l],25*dr[l]), '-', color='red', linewidth=5)		#Inboard
+	Ax.plot((6*dz[l],8*dz[l]),   (-25*dr[l],-25*dr[l]), '-', color='red', linewidth=5)		#Inboard
+	Ax.plot((6*dz[l],8*dz[l]),   (35*dr[l],35*dr[l]), '-', color='red', linewidth=5)		#Outboard
+	Ax.plot((6*dz[l],8*dz[l]),   (-35*dr[l],-35*dr[l]), '-', color='red', linewidth=5)		#Outboard
+	Ax.plot((6*dz[l],6*dz[l]),   (25*dr[l],35*dr[l]), '-', color='red', linewidth=5)		#Upstream
+	Ax.plot((6*dz[l],6*dz[l]),   (-25*dr[l],-35*dr[l]), '-', color='red', linewidth=5)		#Upstream
+	Ax.plot((8*dz[l],8*dz[l]),   (25*dr[l],35*dr[l]), '-', color='red', linewidth=5)		#Downstream
+	Ax.plot((8*dz[l],8*dz[l]),   (-25*dr[l],-35*dr[l]), '-', color='red', linewidth=5)		#Downstream
+
+	Ax.plot((13.5*dz[l],15.5*dz[l]),   (25*dr[l],25*dr[l]), '-', color='red', linewidth=5)	#Inboard
+	Ax.plot((13.5*dz[l],15.5*dz[l]),   (-25*dr[l],-25*dr[l]), '-', color='red', linewidth=5)#Inboard
+	Ax.plot((13.5*dz[l],15.5*dz[l]),   (35*dr[l],35*dr[l]), '-', color='red', linewidth=5)	#Outboard
+	Ax.plot((13.5*dz[l],15.5*dz[l]),   (-35*dr[l],-35*dr[l]), '-', color='red', linewidth=5)#Outboard
+	Ax.plot((13.5*dz[l],13.5*dz[l]),   (25*dr[l],35*dr[l]), '-', color='red', linewidth=5)	#Upstream
+	Ax.plot((15.5*dz[l],15.5*dz[l]),   (25*dr[l],35*dr[l]), '-', color='red', linewidth=5)	#Downtream
+	Ax.plot((13.5*dz[l],13.5*dz[l]),   (-25*dr[l],-35*dr[l]), '-', color='red', linewidth=5)#Upstream
+	Ax.plot((15.5*dz[l],15.5*dz[l]),   (-25*dr[l],-35*dr[l]), '-', color='red', linewidth=5)#Downstream
+
+	Ax.plot((21*dz[l],23*dz[l]),   (25*dr[l],25*dr[l]), '-', color='red', linewidth=5)		#Inboard
+	Ax.plot((21*dz[l],23*dz[l]),   (-25*dr[l],-25*dr[l]), '-', color='red', linewidth=5)	#Inboard
+	Ax.plot((21*dz[l],23*dz[l]),   (35*dr[l],35*dr[l]), '-', color='red', linewidth=5)		#Outboard
+	Ax.plot((21*dz[l],23*dz[l]),   (-35*dr[l],-35*dr[l]), '-', color='red', linewidth=5)	#Outboard
+	Ax.plot((21*dz[l],21*dz[l]),   (25*dr[l],35*dr[l]), '-', color='red', linewidth=5)		#Upstream
+	Ax.plot((23*dz[l],23*dz[l]),   (25*dr[l],35*dr[l]), '-', color='red', linewidth=5)		#Downstream
+	Ax.plot((21*dz[l],21*dz[l]),   (-25*dr[l],-35*dr[l]), '-', color='red', linewidth=5)	#Upstream
+	Ax.plot((23*dz[l],23*dz[l]),   (-25*dr[l],-35*dr[l]), '-', color='red', linewidth=5)	#Downstream
+
+	#Solenoid
+	Ax.plot((42*dz[l],86*dz[l]),   (93*dr[l],93*dr[l]), '-', color='lightgreen', linewidth=5)
+	Ax.plot((42*dz[l],86*dz[l]),   (-93*dr[l],-93*dr[l]), '-', color='lightgreen', linewidth=5)
+#enddef
+
+def ManualEVgenyMeshOLD(Ax=plt.gca()):
+	#Plot upstream ICP material dimensions.
+	Ax.plot((0.5*dz[l],0.5*dz[l]), (0*dr[l],10*dr[l]), '-', color='dimgrey', linewidth=4)
+	Ax.plot((0.5*dz[l],0.5*dz[l]), (-10*dr[l],0*dr[l]), '-', color='dimgrey', linewidth=4)
+	Ax.plot((0.5*dz[l],39*dz[l]),  (10*dr[l],10*dr[l]), '-', color='dimgrey', linewidth=4)
+	Ax.plot((0.5*dz[l],39*dz[l]),  (-10*dr[l],-10*dr[l]), '-', color='dimgrey', linewidth=4)
 	Ax.plot((39*dz[l],39*dz[l]),   (10*dr[l], 80*dr[l]), '-', color='dimgrey', linewidth=4)
 	Ax.plot((39*dz[l],39*dz[l]),   (-10*dr[l], -80*dr[l]), '-', color='dimgrey', linewidth=4)
 	Ax.plot((39*dz[l],85*dz[l]),   (80*dr[l],80*dr[l]), '-', color='dimgrey', linewidth=4)
@@ -1493,19 +1553,47 @@ def ManualEVgenyMesh(Ax=plt.gca()):
 	Ax.plot((85*dz[l],85*dz[l]),   (0*dr[l],80*dr[l]), '-', color='dimgrey', linewidth=4)
 	Ax.plot((85*dz[l],85*dz[l]),   (-80*dr[l],0*dr[l]), '-', color='dimgrey', linewidth=4)
 
-	#Alumina Dielectric
+	#Macor Dielectric
 	Ax.plot((1*dz[l],4*dz[l]),    (10*dr[l],10*dr[l]), 'c-', linewidth=4)
 	Ax.plot((1*dz[l],4*dz[l]),    (-10*dr[l],-10*dr[l]), 'c-', linewidth=4)
 	Ax.plot((21*dz[l],39*dz[l]),  (10*dr[l],10*dr[l]), 'c-', linewidth=4)
 	Ax.plot((21*dz[l],39*dz[l]),  (-10*dr[l],-10*dr[l]), 'c-', linewidth=4)
 
-	#Powered Electrode - Cathode
-	Ax.plot((5*dz[l],20*dz[l]),   (10*dr[l],10*dr[l]), '-', color='orange', linewidth=5)
-	Ax.plot((5*dz[l],20*dz[l]),   (-10*dr[l],-10*dr[l]), '-', color='orange', linewidth=5)
+	#Powered Electrode - LaB6 Cathode
+	Ax.plot((4*dz[l],21*dz[l]),   (10*dr[l],10*dr[l]), '-', color='orange', linewidth=5)
+	Ax.plot((4*dz[l],21*dz[l]),   (-10*dr[l],-10*dr[l]), '-', color='orange', linewidth=5)
 
-	#Powered Electrode - Anode
+	#Powered Electrode - 'Metal' Anode
 	Ax.plot((40*dz[l],84*dz[l]),   (81*dr[l],81*dr[l]), '-', color='red', linewidth=5)
 	Ax.plot((40*dz[l],84*dz[l]),   (-81*dr[l],-81*dr[l]), '-', color='red', linewidth=5)
+
+	#Powered ICP Coils - 'Metal'
+	Ax.plot((4*dz[l],6*dz[l]),   (15*dr[l],15*dr[l]), '-', color='red', linewidth=5)		#Inboard
+	Ax.plot((4*dz[l],6*dz[l]),   (-15*dr[l],-15*dr[l]), '-', color='red', linewidth=5)		#Inboard
+	Ax.plot((4*dz[l],6*dz[l]),   (25*dr[l],25*dr[l]), '-', color='red', linewidth=5)		#Outboard
+	Ax.plot((4*dz[l],6*dz[l]),   (-25*dr[l],-25*dr[l]), '-', color='red', linewidth=5)		#Outboard
+	Ax.plot((4*dz[l],4*dz[l]),   (15*dr[l],25*dr[l]), '-', color='red', linewidth=5)		#Upstream
+	Ax.plot((4*dz[l],4*dz[l]),   (-15*dr[l],-25*dr[l]), '-', color='red', linewidth=5)		#Upstream
+	Ax.plot((6*dz[l],6*dz[l]),   (15*dr[l],25*dr[l]), '-', color='red', linewidth=5)		#Downstream
+	Ax.plot((6*dz[l],6*dz[l]),   (-15*dr[l],-25*dr[l]), '-', color='red', linewidth=5)		#Downstream
+
+	Ax.plot((11.5*dz[l],13.5*dz[l]),   (15*dr[l],15*dr[l]), '-', color='red', linewidth=5)	#Inboard
+	Ax.plot((11.5*dz[l],13.5*dz[l]),   (-15*dr[l],-15*dr[l]), '-', color='red', linewidth=5)#Inboard
+	Ax.plot((11.5*dz[l],13.5*dz[l]),   (25*dr[l],25*dr[l]), '-', color='red', linewidth=5)	#Outboard
+	Ax.plot((11.5*dz[l],13.5*dz[l]),   (-25*dr[l],-25*dr[l]), '-', color='red', linewidth=5)#Outboard
+	Ax.plot((11.5*dz[l],11.5*dz[l]),   (15*dr[l],25*dr[l]), '-', color='red', linewidth=5)	#Upstream
+	Ax.plot((13.5*dz[l],13.5*dz[l]),   (15*dr[l],25*dr[l]), '-', color='red', linewidth=5)	#Downtream
+	Ax.plot((11.5*dz[l],11.5*dz[l]),   (-15*dr[l],-25*dr[l]), '-', color='red', linewidth=5)#Upstream
+	Ax.plot((13.5*dz[l],13.5*dz[l]),   (-15*dr[l],-25*dr[l]), '-', color='red', linewidth=5)#Downstream
+
+	Ax.plot((19*dz[l],21*dz[l]),   (15*dr[l],15*dr[l]), '-', color='red', linewidth=5)		#Inboard
+	Ax.plot((19*dz[l],21*dz[l]),   (-15*dr[l],-15*dr[l]), '-', color='red', linewidth=5)	#Inboard
+	Ax.plot((19*dz[l],21*dz[l]),   (25*dr[l],25*dr[l]), '-', color='red', linewidth=5)		#Outboard
+	Ax.plot((19*dz[l],21*dz[l]),   (-25*dr[l],-25*dr[l]), '-', color='red', linewidth=5)	#Outboard
+	Ax.plot((19*dz[l],19*dz[l]),   (15*dr[l],25*dr[l]), '-', color='red', linewidth=5)		#Upstream
+	Ax.plot((21*dz[l],21*dz[l]),   (15*dr[l],25*dr[l]), '-', color='red', linewidth=5)		#Downstream
+	Ax.plot((19*dz[l],19*dz[l]),   (-15*dr[l],-25*dr[l]), '-', color='red', linewidth=5)	#Upstream
+	Ax.plot((21*dz[l],21*dz[l]),   (-15*dr[l],-25*dr[l]), '-', color='red', linewidth=5)	#Downstream
 
 	#Solenoid
 	Ax.plot((40*dz[l],84*dz[l]),   (83*dr[l],83*dr[l]), '-', color='lightgreen', linewidth=5)
@@ -3000,177 +3088,212 @@ def SheathThickness(folder=l,ax='NaN',Orientation='Axial',Phase='NaN',Ne=list(),
 	#Return null array if sheath plotting is not required:
 	if image_sheath == False: return([np.nan],[np.nan])
 
-	#Import global sheath calculation method and charged particle species names
-	SheathMethod=GlobSheathMethod
-	global PosSpecies
-	global NegSpecies
 	#Initiate required data storage lists
 	NPos,NNeg = list(),list()
-	Sx,SymSx = list(),list()
+	Sx,SymSx = list(),list()	
 
+	#Import global sheath calculation method and charged particle species names
+	SheathMethod=GlobSheathMethod
+	if len(SheathIonSpecies) == 0:
+		global PosSpecies
+		global NegSpecies
 	#Force single sheath species - Legacy Code or for testing purposes
-	if len(SheathIonSpeciesOverride) == 1: 
-		PosSpecies = SheathIonSpeciesOverride
+	elif len(SheathIonSpecies) > 0:
+		PosSpecies = SheathIonSpecies
 		NegSpecies = []
-	#endif	
+	#endif
 
 	#Identify charged species and alter names to suit TECPLOT2D nomenclature
 	for i in range(0,len(PosSpecies)): PosSpecies[i] = PosSpecies[i] = PosSpecies[i].replace('^','+')
 	for i in range(0,len(NegSpecies)): NegSpecies[i] = NegSpecies[i] = NegSpecies[i].replace('^','-')
 	if 'E' in NegSpecies: NegSpecies.remove('E')			#Might Cause An Issue With Global!!!
 
-
 	#Obtain current folder ion and electron densities if not already supplied.
 	#Default to 2D data format.
-	if Phase == 'NaN' and len(Ne) == 0:
+#	if Phase == 'NaN' and len(Ne) == 0:
 		#Obtain electron density and extract 2D image for further processing.
-		Eproc = VariableEnumerator(['E'],rawdata_2D[folder],header_2Dlist[folder])[0][0]
-		Ne = ImageExtractor2D( Data[folder][Eproc] )
+#		Eproc = VariableEnumerator(['E'],rawdata_2D[folder],header_2Dlist[folder])[0][0]
+#		Ne = ImageExtractor2D( Data[folder][Eproc] )
 
 		#Obtain all positive and negative ion densities and extract 2D images for further processing
-		PosSpeciesproc = VariableEnumerator(PosSpecies,rawdata_2D[folder],header_2Dlist[folder])[0]
-		for i in range(0,len(PosSpeciesproc)): 
-			NPos.append( ImageExtractor2D(Data[folder][PosSpeciesproc[i]]) )
+#		PosSpeciesproc = VariableEnumerator(PosSpecies,rawdata_2D[folder],header_2Dlist[folder])[0]
+#		for i in range(0,len(PosSpeciesproc)): 
+#			NPos.append( ImageExtractor2D(Data[folder][PosSpeciesproc[i]]) )
 		#endfor
-		NegSpeciesproc = VariableEnumerator(NegSpecies,rawdata_2D[folder],header_2Dlist[folder])[0]
-		for i in range(0,len(NegSpeciesproc)): 
-			NNeg.append( ImageExtractor2D(Data[folder][NegSpeciesproc[i]]) )	
+#		NegSpeciesproc = VariableEnumerator(NegSpecies,rawdata_2D[folder],header_2Dlist[folder])[0]
+#		for i in range(0,len(NegSpeciesproc)): 
+#			NNeg.append( ImageExtractor2D(Data[folder][NegSpeciesproc[i]]) )	
 		#endfor
 
 	#If phase is supplied, use phase data format.  (Proc=Proc-2 to skip R,Z data in phase data)
-	elif Phase != 'NaN' and len(Ne) == 0:
-		Eproc = VariableEnumerator(['E'],rawdata_phasemovie[folder],header_phasemovie[folder])[0][0]
-		Ne = ImageExtractor2D( PhaseMovieData[folder][Phase][Eproc-2] ) 
+#	elif Phase != 'NaN' and len(Ne) == 0:
+#		Eproc = VariableEnumerator(['E'],rawdata_phasemovie[folder],header_phasemovie[folder])[0][0]
+#		Ne = ImageExtractor2D( PhaseMovieData[folder][Phase][Eproc-2] ) 
 
 		#Obtain all positive and negative ion densities and extract 2D images for further processing
-		PosSpeciesproc=VariableEnumerator(PosSpecies,rawdata_phasemovie[folder],header_phasemovie[folder])[0]
-		for i in range(0,len(PosSpeciesproc)): 
-			NPos.append( ImageExtractor2D(PhaseMovieData[folder][Phase][PosSpeciesproc[i]-2]) )
+#		PosSpeciesproc=VariableEnumerator(PosSpecies,rawdata_phasemovie[folder],header_phasemovie[folder])[0]
+#		for i in range(0,len(PosSpeciesproc)): 
+#			NPos.append( ImageExtractor2D(PhaseMovieData[folder][Phase][PosSpeciesproc[i]-2]) )
 		#endfor
-		NegSpeciesproc=VariableEnumerator(NegSpecies,rawdata_phasemovie[folder],header_phasemovie[folder])[0]
-		for i in range(0,len(NegSpeciesproc)): 
-			NNeg.append( ImageExtractor2D(PhaseMovieData[folder][Phase][NegSpeciesproc[i]-2]) )
+#		NegSpeciesproc=VariableEnumerator(NegSpecies,rawdata_phasemovie[folder],header_phasemovie[folder])[0]
+#		for i in range(0,len(NegSpeciesproc)): 
+#			NNeg.append( ImageExtractor2D(PhaseMovieData[folder][Phase][NegSpeciesproc[i]-2]) )
 		#endfor
 
 	#If specific electron and ion species densities are supplied, use those
-	elif len(Ne) > 0 or len(Ni) > 0:
-		Ne = ImageExtractor2D( Ne ) 		#Ne[i][j]
-		NPos = [ ImageExtractor2D( Ni ) ]	#Put in array []    (NPos[k][i][j])
-		PosSpeciesproc = ['Dummy']			#Set length to 1
-		NegSpeciesproc = []					#Set length to 0
+#	elif len(Ne) > 0 or len(Ni) > 0:
+#		Ne = ImageExtractor2D( Ne ) 		#Ne[i][j]
+#		NPos = [ ImageExtractor2D( Ni ) ]	#Put in array []    (NPos[k][i][j])
+#		PosSpeciesproc = ['Ion+']			#Set length to 1
+#		NegSpeciesproc = []					#Set length to 0
 	#endif
-
 
 	#Combine 2D images of all positive ion species densities and all negative ion species densitiies
 #	NPos = [[sum(x) for x in zip(NPos[0][i],NPos[1][i])] for i in range(len(NPos[0]))]
+#	NNeg = [[sum(x) for x in zip(NNeg[0][i],NNeg[1][i])] for i in range(len(NNeg[0]))]
 #							HOW TO ZIP ARBITARY NUMBER OF ARRAYS?
-	TotNPos = np.zeros( (len(Ne),len(Ne[0])) ).tolist()
-	for i in range(0,len(TotNPos)):
-		for j in range(0,len(TotNPos[0])):
-			for k in range(0,len(PosSpeciesproc)): TotNPos[i][j] += NPos[k][i][j]
+#	TotNPos = np.zeros( (len(Ne),len(Ne[0])) ).tolist()
+#	for i in range(0,len(TotNPos)):
+#		for j in range(0,len(TotNPos[0])):
+#			for k in range(0,len(PosSpeciesproc)): TotNPos[i][j] += NPos[k][i][j]
 			#endfor
 		#endfor
 	#endfor
-	TotNNeg = np.zeros( (len(Ne),len(Ne[0])) ).tolist()
-	for i in range(0,len(TotNNeg)):
-		for j in range(0,len(TotNNeg[0])):
-			for k in range(0,len(NegSpeciesproc)): TotNNeg[i][j] -= NNeg[k][i][j]
+#	TotNNeg = np.zeros( (len(Ne),len(Ne[0])) ).tolist()
+#	for i in range(0,len(TotNNeg)):
+#		for j in range(0,len(TotNNeg[0])):
+#			for k in range(0,len(NegSpeciesproc)): TotNNeg[i][j] += NNeg[k][i][j]
 			#endfor
 		#endfor
 	#endfor
 
 	#Determine effective positive ion density as: Neff = sum(Total NPos)-sum(Total NNeg)
-	Neff = np.zeros( (len(Ne),len(Ne[0])) ).tolist()
-	for i in range(0,len(Neff)):
-		for j in range(0,len(Neff[0])):
-			Neff[i][j] = TotNPos[i][j] - TotNNeg[i][j]
+#	Neff = np.zeros( (len(Ne),len(Ne[0])) ).tolist()
+#	for i in range(0,len(Neff)):
+#		for j in range(0,len(Neff[0])):
+#			Neff[i][j] = TotNPos[i][j] - TotNNeg[i][j]
 		#endfor
 	#endfor
 
-	#=======#
+
+
+	#!!! OLD METHOD !!!
+	#Obtain current folder ion and electron densities if not already supplied.
+	#Default to 2D data format.
+	if Phase == 'NaN' and len(Ne) == 0:
+		IONproc = VariableEnumerator(PosSpecies,rawdata_2D[folder],header_2Dlist[folder])[0][0]
+		Eproc = VariableEnumerator(['E'],rawdata_2D[folder],header_2Dlist[folder])[0][0]
+		Ne,Ni = Data[folder][Eproc], Data[folder][IONproc]
+	#If phase is supplied, use phase data format.
+	elif Phase != 'NaN' and len(Ne) == 0:
+		IONproc = VariableEnumerator(PosSpecies,rawdata_phasemovie[folder],header_phasemovie[folder])[0][0]
+		Eproc = VariableEnumerator(['E'],rawdata_phasemovie[folder],header_phasemovie[folder])[0][0]
+		IONproc,Eproc = IONproc-2, Eproc-2		#Skip R,Z data inputs in phase data.
+		Ne,Ni = PhaseMovieData[folder][Phase][Eproc], PhaseMovieData[folder][Phase][IONproc]
+	#endif
+	#Extract 2D image for further processing.
+	Ne,Neff = ImageExtractor2D(Ne),ImageExtractor2D(Ni)
+	#!!! OLD METHOD !!!
+
+	#=======#	#=======#	#=======#
+	#=======#	#=======#	#=======#
 
 	### CURRENTLY ONLY AXIAL METHOD IS EMPLOYED ###
-	#Axial sheath array (Sx) is calculated using radial integrations.
-	#Radial sheath array (Sx) is calculated using axial integrations.
-	if Orientation == 'Axial': loc = electrodeloc[0]		#Radial point of interest
-	elif Orientation == 'Radial': loc = electrodeloc[1]		#Axial point of interest
+	#Axial sheath array (Sx) is calculated exmploying radial integrations for all axial locations
+	#Radial sheath array (Sx) is calculated employing axial integrations for all radial locations
 	### CURRENTLY ONLY AXIAL METHOD IS EMPLOYED ###
+	if Orientation == 'Axial':
 
-	#Determine sheath edge through integration of charge density:
-	if SheathMethod == 'IntDensity':
-		#Sheath extension: integral_(R0->Rwall) ne dR == integral_(Rwall->R0) ni dR (Gibson 2015)
-		for i in range(0,len(Neff)):
-			#Define wall radius to integrate ions into bulk from.
-			for j in range(0,len(Neff[i])):
+		#Determine sheath edge through integration of charge density:
+		if SheathMethod == 'IntDensity':
+			#Sheath extension: integral_(R0->Rwall) ne dR == integral_(Rwall->R0) ni dR
+			for i in range(0,len(Neff)):
+				#Define wall radius to integrate ions into bulk from.
+				for j in range(0,len(Neff[i])):
 
-				#if ion density drops to zero, we've hit a material surface.
-				if Neff[i][j] == 0.0 and j == 0:		
-					RadialWallLoc = 0
-					break
-				elif Neff[i][j] == 0.0 and j > 0:
-					RadialWallLoc = j-1
-					break
-				#endif
+					#if ion density drops to zero, we've hit a material surface.
+					if Neff[i][j] == 0.0 and j == 0:		
+						RadialWallLoc = 0
+						break
+					elif Neff[i][j] == 0.0 and j > 0:
+						RadialWallLoc = j-1
+						break
+					#endif
+				#endfor
+				RadialWallLoc = len(Neff[i])				####FUDGED####
+				
+				#Refresh sums after every radial profile.
+				Neff_sum,Ne_sum = 0.0,0.0
+				for j in range(0,RadialWallLoc):
+					#Sum density radially for ions and electrons.
+					anti_j = RadialWallLoc-j-1
+					Neff_sum += Neff[i][j]		#Sum from R=wall to R=0	[anti_j] 	####FUDGED####
+					Ne_sum += Ne[i][j]			#Sum from R=0 to R=wall [j] 	 	####FUDGED####
+
+					#If ion sum is greater than electron, sheath has begun.
+					if Neff_sum/Ne_sum >= 1.0: 										####FUDGED####
+						Sx.append(j*dr[l])		#[cm]								
+						break
+					#If no sheath found, append 'NaN' to avoid plotting.
+					if j == (len(Neff[i])-1):
+#						Sx.append(0.0)			#[cm]
+						Sx.append(np.nan)		#[cm]
+					#endif
+				#endfor
 			#endfor
-			RadialWallLoc = len(Neff[i])				####FUDGED####
-			
-			#Refresh sums after every radial profile.
-			Neff_sum,Ne_sum = 0.0,0.0
-			for j in range(0,RadialWallLoc):
-				#Sum density radially for ions and electrons.
-				anti_j = RadialWallLoc-j-1
-				Neff_sum += Neff[i][j]		#Sum from R=wall to R=0	[anti_j] 	####FUDGED####
-				Ne_sum += Ne[i][j]			#Sum from R=0 to R=wall [j] 	 	####FUDGED####
 
-				#If ion sum is greater than electron, sheath has begun.
-				if Neff_sum/Ne_sum >= 1.005: 									####FUDGED####
-					Sx.append(j*dr[l])		#[cm]								
-					break
-				#If no sheath found, append 'NaN' to avoid plotting.
-				if j == (len(Neff[i])-1):
-#					Sx.append(0.0)			#[cm]
-					Sx.append(np.nan)		#[cm]
-				#endif
+		#==========#
+
+		#Determine sheath edge by 'instantaneous' charge density:
+		elif SheathMethod == 'AbsDensity':
+			#Sheath extension: ni @R >= ne @R, simplified model.
+			for Z in range(0,len(Neff)):
+				for R in range(0,len(Neff[Z])):
+					#Sheath starts when ion density exceeds electron density.
+					if Neff[Z][R]/Ne[Z][R] >= 1.0:
+						Sx.append(R*dr[l])
+						break
+					#If no sheath found, append 'NaN' to avoid plotting.
+					if R == (len(Neff[Z])-1):
+#						Sx.append(0.0)
+						Sx.append(np.nan)
+					#endif
+				#endfor
 			#endfor
-		#endfor
+		#endif
 
-	#==========#
-
-	#Determine sheath edge by 'instantaneous' charge density:
-	elif SheathMethod == 'AbsDensity':
-		#Sheath extension: ni @R >= ne @R, simplified model.
-		for i in range(0,len(Neff)):
-			for j in range(0,len(Neff[i])):
-				#Sheath starts when ion density exceeds electron density.
-				if Neff[i][j]/Ne[i][j] >= 1.005:
-					Sx.append(j*dr[l])
-					break
-				#If no sheath found, append 'NaN' to avoid plotting.
-				if j == (len(Neff[j])-1):
-#					Sx.append(0.0)
-					Sx.append(np.nan)
-				#endif
-			#endfor
+		#Create symmetric sheath boundary
+		for i in range(0,len(Sx)): 
+			try: SymSx.append(-Sx[i])
+			except: SymSx.append(np.nan)
 		#endfor
 	#endif
+
+	#=======#	#=======#	#=======#
+	#=======#	#=======#	#=======#
 
 	#NEED TO APPLY RADIAL METHOD!!! FOR NOW THIS IS SET TO ZERO EVERYWHERE#
 	if Orientation == 'Radial':
 		for i in range(0,len(Sx)):
 			Sx[i] = np.nan
 		#endfor
+
+		#Create symmetric sheath boundary
+		for i in range(0,len(Sx)): 
+			try: SymSx.append(-Sx[i])
+			except: SymSx.append(np.nan)
+		#endfor
 	#endif
 
-	#Create symmetric sheath boundary
-	for i in range(0,len(Sx)): 
-		try: SymSx.append(-Sx[i])
-		except: SymSx.append(np.nan)
-	#endfor
-
-	#=======#
+	#=======#	#=======#	#=======#
+	#=======#	#=======#	#=======#
 
 	#Print sheath characteristics if requested.
 	if print_sheath == True:
+		#Determine point of interest for diagnostic
+		if Orientation == 'Axial': loc = electrodeloc[0]		#Radial point of interest
+		if Orientation == 'Radial': loc = electrodeloc[1]		#Axial point of interest
+
 		#Obtain SheathWidth at electrodeloc
 		try: SheathWidth = round(Sx[loc],3)
 		except: SheathWidth = 0.0
@@ -3178,9 +3301,6 @@ def SheathThickness(folder=l,ax='NaN',Orientation='Axial',Phase='NaN',Ne=list(),
 		print 'Sheath Location:',SheathWidth*10, 'mm'
 		print 'Sheath Extent:',((SourceWidth[0]*dr[l])-SheathWidth)*10, 'mm'
 	#endif
-
-	#=======#
-
 
 	#THIS SHOULD PROBABLY BE A SEPERATE FUNCTION
 	if ax != 'NaN':
@@ -4067,6 +4187,13 @@ if savefig_IEDFangular == True:
 			Image = ImageExtractor2D(DataIEDF[l][processlist[i]],Rmesh=EDFangle,Zmesh=EDFbins)
 			for j in range(0,len(Image)): EDFprofile.append(sum(Image[j]))
 
+			#Smooth kinetic data prior to analysis if requested (Savitzk-Golay filter)
+			if PlotKineticFiltering == True:
+				WindowSize, PolyOrder = Glob_SavWindow, Glob_SavPolyOrder
+				EDFprofile = (savgol_filter(EDFprofile, WindowSize, PolyOrder)).tolist()
+				#endfor
+			#endif
+
 			#Obtain conversion from energy-bin axis to eV axis and construct energy axis
 			deV, eVaxis = (EMAXIPCMC/IEBINSPCMC), list()
 			for j in range (0,int(IEBINSPCMC)): eVaxis.append(j*deV)
@@ -4136,6 +4263,7 @@ if savefig_IEDFtrends == True:
 		Legendlist,EDFprofiles,EDFEnergyProfile = list(),list(),list()
 		Mode_eV,Mean_eV,Median_eV = list(),list(),list()
 		Total_eV,Range_eV,FWHM_eV = list(),list(),list()
+		GlobRange_eV = [0,0]
 		fig,ax = figure()
 
 		#Create new global trend folder if it doesn't exist already.
@@ -4184,6 +4312,9 @@ if savefig_IEDFtrends == True:
 			#endfor
 			IndexRange = [min(ThresholdArray),max(ThresholdArray)]
 			Range_eV = [IndexRange[0]*deV,IndexRange[1]*deV]
+			#Save global extrema between folders for plotting range.
+			if Range_eV[0] < GlobRange_eV[0]: GlobRange_eV[0] = Range_eV[0]
+			if Range_eV[1] > GlobRange_eV[1]: GlobRange_eV[1] = Range_eV[1]
 
 			#Total energy analysis: Returns total energy contained within EDF profile
 			EDFEnergyProfile = list()
@@ -4348,7 +4479,7 @@ if savefig_IEDFtrends == True:
 		#Apply image options to IEDF plot generated in the above loop.
 		Title = Dirlist[l][2::]+'\n'+variablelist[i]+' Angular Energy Distribution Function Profiles'
 		Xlabel,Ylabel = 'Energy [eV]',variablelist[i]+' EDF [$\\theta$ Integrated]'
-		ImageCrop = [ [0,Range_eV[1]],[] ]		#[[X1,X2],[Y1,Y2]]
+		ImageCrop = [ [0,GlobRange_eV[1]],[] ]		#[[X1,X2],[Y1,Y2]]
 		ImageOptions(fig,ax,Xlabel,Ylabel,Title,Legendlist,Crop=ImageCrop,Rotate=False)
 
 		plt.savefig(DirIEDFTrends+variablelist[i]+'_EDFprofiles'+ext)
@@ -5683,16 +5814,16 @@ if savefig_trendphaseresolved == True:
 		DirSheath = CreateNewFolder(DirTrends,'Sheath Trends')
 
 		#Create processlist for each folder as required. (Always get 'E','AR+','PPOT')
-		PhaseData,Phaselist,proclist,varlist = ExtractPhaseData(folder=l,Variables=PhaseVariables+['E','AR+','PPOT'])
+		SxData,SxPhase,Sxproc,Sxvar = ExtractPhaseData(folder=l,Variables=PhaseVariables+['E','AR+','PPOT'])
 		VariedValuelist.append( FolderNameTrimmer(Dirlist[l]) )
 
 		#Extract waveforms from desired electrode locations.
-		PPOT = proclist[varlist.index('PPOT')]
+		PPOT = Sxproc[Sxvar.index('PPOT')]
 		for j in range(0,len(waveformlocs)):
-			VoltageWaveforms.append(WaveformExtractor(PhaseData,PPOT,waveformlocs[j])[0])
-			WaveformBiases.append(WaveformExtractor(PhaseData,PPOT,waveformlocs[j])[1])
+			VoltageWaveforms.append(WaveformExtractor(SxData,PPOT,waveformlocs[j])[0])
+			WaveformBiases.append(WaveformExtractor(SxData,PPOT,waveformlocs[j])[1])
 		#endfor
-		ElectrodeWaveform,ElectrodeBias = WaveformExtractor(PhaseData,PPOT)
+		ElectrodeWaveform,ElectrodeBias = WaveformExtractor(SxData,PPOT)
 
 		### CURRENTLY ONLY AXIAL METHOD IS EMPLOYED ###
 		#Axial sheath array (Sx) is calculated using radial integrations.
@@ -5705,16 +5836,13 @@ if savefig_trendphaseresolved == True:
 		#=============#
 
 		SxLoc = list()
-		#For all phases, process data and record for plotting.
-		for k in range(0,len(Phaselist)):
+		#For all phases, calculate sheath width and record sheath width at electrodeloc
+		for k in range(0,len(SxPhase)):
 			#Extract Ni and Ne variables for sheath processing.
-			if image_sheath == True:
-				Ne = SxData[j][Sxproc[Sxvar.index('E')]]
-				Ni = SxData[j][Sxproc[Sxvar.index('AR+')]]
-			else: Ne,Ni = np.nan, np.nan
-			#endif
+			Ne = SxData[k][Sxproc[Sxvar.index('E')]]
+			Ni = SxData[k][Sxproc[Sxvar.index('AR+')]]
 
-			#Calculate sheath width and record sheath width at electrodeloc
+			#calculate sheath width employing 'E' and 'AR+'
 			Sx = SheathThickness(folder=l,Phase=k,Ne=Ne,Ni=Ni)[0]
 			for j in range(0,len(Sx)): 
 				Sx[j] = ((SourceWidth[0]*dr[l])-Sx[j])*10	#Convert to mm
@@ -5736,7 +5864,7 @@ if savefig_trendphaseresolved == True:
 
 		#Calculate phase-averaged (mean) sheath velocity.
 		#Assumes one sheath collapse and one sheath expansion per rf-cycle.
-		RFPeriod = 1.0/FREQM[l]											#[s]
+		RFPeriod = 1.0/MINFREQ[l]										#[s]
 		SheathExtent = (sum(SxLoc)/len(SxLoc))/1E6						#[km]
 		MeanSheathVelocity = (2*SheathExtent)/RFPeriod					#[km/s]
 		SxMeanVelTrend.append( MeanSheathVelocity )						#[km/s]		
@@ -5747,7 +5875,7 @@ if savefig_trendphaseresolved == True:
 		Extended,ExtendedPhase = max(SxLoc),SxLoc.index(max(SxLoc))
 
 		SheathExtension = (Extended-Collapsed)/1000.0  					#[m]
-		PhaseResolution = 1.0/(FREQM[l]*len(Phaseaxis))					#[s]
+		PhaseResolution = 1.0/(MINFREQ[l]*len(Phaseaxis))				#[s]
 		SheathTime = (ExtendedPhase-CollapsedPhase)*PhaseResolution		#[s]
 		try:
 			MaxSheathVelocity = SheathExtension/SheathTime				#[m/s]
@@ -5980,7 +6108,7 @@ if savefig_PROES == True:
 							break
 						#endif
 
-						#Collect lineouts from DOF region and transpose to allow easy integration.
+						#Collect profiles from DOF region and transpose to allow easy integration.
 						for LineoutLoc in range(DOFRegion[0],DOFRegion[1]):
 							if LineoutsOrientation[k] == 'Radial': DoFArrays.append(PlotRadialProfile(PhaseData[j],proclist[i],varlist[i],LineoutLoc)[::-1])
 							elif LineoutsOrientation[k] == 'Axial': DoFArrays.append(PlotAxialProfile(PhaseData[j],proclist[i],varlist[i],LineoutLoc)[::-1])
@@ -5988,9 +6116,9 @@ if savefig_PROES == True:
 						#endfor
 						DoFArrays = np.asarray(DoFArrays).transpose().tolist()
 
-						#Integrate DoF lineouts to form a single phase point PROES lineout.
-						for m in range(0,len(DoFArrays)):
-							IntegratedDoFArray.append( sum(DoFArrays[m])/(DoFWidth*2+1) )
+						#Integrate DoF profiles spatially, obtaining PROES profile for phase 'j'
+						for n in range(0,len(DoFArrays)):
+							IntegratedDoFArray.append( sum(DoFArrays[n])/(DoFWidth*2+1) )
 						#endif
 						PROES.append(IntegratedDoFArray)
 
@@ -6025,7 +6153,7 @@ if savefig_PROES == True:
 						ScaledSymPhaseSx.append(SymPhaseSx[Index])
 					#endif
 				#endfor
-				try: PROES,PhaseSx,SymPhaseSx=ScaledPROES,ScaledPhaseSx,ScaledSymPhaseSx
+				try: PROES,PhaseSx,SymPhaseSx = ScaledPROES,ScaledPhaseSx,ScaledSymPhaseSx
 				except: PROES = ScaledPROES
 
 				#Create figure and rotate PROES such that phaseaxis aligns with waveform.
