@@ -104,7 +104,7 @@ GlobMeanCalculation = 'MeanFraction'	#Definition of 'mean' EDF value
 #Choices: ('MeanEnergy','MeanFraction')
 
 #Overrides or 'fudge factors' for diagnostics
-DCbiasaxis = 'Auto'						#Force Direction Over Which DCBias is Calculated
+DCbiasaxis = 'Auto'							#Force Direction Over Which DCBias is Calculated
 #Choices:('Axial','Radial','Auto')
 SheathIonSpecies = ['AR+']					#Force Sheath Ion Species (blank for auto)
 #['AR+'] #['O+']
@@ -115,16 +115,16 @@ PlotKineticFiltering = False				#Plot Filtered Profiles, or employ only in trend
 Glob_SavWindow, Glob_SavPolyOrder = 25, 3	#Window > FeatureSize, Polyorder ~= Smoothness
 
 #Define units for particular variables
-PressureType = 'Torr'#'Pa'							#'Torr','mTorr','Pa'
-BfieldType	=  'Gauss'						#'Gauss','Tesla'
+PressureUnit = 'Torr'#'Pa'							#'Torr','mTorr','Pa'
+BFieldUnit	=  'Gauss'						#'Gauss','Tesla'
 
 
 ####################
 
 #Commonly used variable sets.
-Phys = ['P-POT','TE','EF-TOT','EAMB-Z','EAMB-R','RHO','BRS','BZS','BT','VR-NEUTRAL','VZ-NEUTRAL','VR-ION+','VZ-ION+','EFLUX-R','EFLUX-Z','JZ-NET','JR-NET','TG-AVE','PRESSURE','POW-RF','POW-RF-E','POW-ICP','EB-ESORC','COLF']
+Phys = ['P-POT','TE','EF-TOT','EAMB-Z','EAMB-R','RHO','BR','BRS','BZ','BZS','BT','VR-NEUTRAL','VZ-NEUTRAL','VR-ION+','VZ-ION+','EFLUX-R','EFLUX-Z','JZ-NET','JR-NET','TG-AVE','PRESSURE','POW-RF','POW-RF-E','POW-ICP','EB-ESORC','COLF']
 Ar = ['AR3S','AR4SM','AR4SR','AR4SPM','AR4SPR','AR4P','AR4D','AR','AR+','AR2+','AR2*','E','S-AR+','S-AR4P','SEB-AR+','SEB-AR4P','FZ-AR3S','FR-AR3S','FR-AR+','FZ-AR+','FZ-AR3S','FR-AR3S']+Phys
-O2 = ['O3','O2','O2+','O','O+','O-','E','S-O2+','S-O+','S-O-','SEB-O+','SEB-O2+','SEB-O-','FR-O-','FZ-O-']+['O3P3P','O***','S-O3P3P','S-O***','SEB-O3P3P','SEB-O***']+Phys
+O2 = ['O3','O2','O2+','O','O+','O-','E','S-O3','S-O2+','S-O+','S-O-','SEB-O3','SEB-O+','SEB-O2+','SEB-O-','FR-O-','FZ-O-']+['O3P3P','O***','S-O3P3P','S-O***','SEB-O3P3P','SEB-O***']+Phys
 
 Ar_Phase = ['S-E','S-AR+','S-AR4P','SEB-AR+','SEB-AR4P','SRCE-2437','TE','PPOT','FR-E','FZ-E']
 O2_Phase = ['S-E','S-O+','S-O-','S-O2+','SEB-O+','SEB-O-','SEB-O2+','TE','PPOT','FR-E','FZ-E']+['S-O3P3P','SEB-O3P3P']
@@ -166,6 +166,17 @@ ESCT2018_PCMC = ['AR^0.3S','EB-0.3S','ION-TOT0.3S']
 #SourceWidth = 		[]
 #Crop = 			R[0.0,1.0];Z[1.5,10]
 #Plotmesh = 		'PRCCP'
+
+#### SERPENT ####	
+#electrodeloc = 	[33,33]			#Coil V
+#waveformlocs = 	[]
+#DOFWidth = 		[]
+#TrendLoc = 		H[0];R[36,50]
+#ThrustLoc = 		[79]
+#SheathROI = 		[]
+#SourceWidth = 		[]
+#Crop = 			R[1.4];Z[1,9]
+#Plotmesh = 		False
 
 #### PP-SCCP ####
 #electrodeloc = 	[0,3]
@@ -211,10 +222,10 @@ ESCT2018_PCMC = ['AR^0.3S','EB-0.3S','ION-TOT0.3S']
 #electrodeloc = 	[31,14]							#Middle ICP Coil
 #waveformlocs = 	[[31,6],[31,23],[20,6]]			#[UpstreamCoil],[DownstreamCoil],[DielectricSurface]
 #DOFWidth = 		R;??,Z;??
-#TrendLoc =  		H[0,41];R[]						#R,Z = 0.2cm/cell,0.1cm/cell
+#TrendLoc =  		H[0,21,41];R[]					#R,Z = 0.2cm/cell,0.1cm/cell
 #ThrustLoc = 		[]
-#SheathROI = 		[]
-#SourceWidth = 		[]
+#SheathROI = 		[45,85]							#Downstream
+#SourceWidth = 		[90]							#Downstream
 #Crop = 			R[];Z[]
 #Plotmesh = 		'EVgeny'
 
@@ -228,25 +239,25 @@ ESCT2018_PCMC = ['AR^0.3S','EB-0.3S','ION-TOT0.3S']
 #====================================================================#
 
 #Requested IEDF/NEDF Variables.
-IEDFVariables = PRCCPAr_PCMC#EVgeny_PCMC#HYP_PCMC#			#Requested iprofile_2d variables (no spaces)
+IEDFVariables = HYP_PCMC#PRCCPAr_PCMC#EVgeny_PCMC#			#Requested iprofile_2d variables (no spaces)
 NEDFVariables = []							#Requested nprofile_2d variables (no spaces)
 
 #Requested movie1/movie_icp Variables.
 IterVariables = ['E','S-E','PPOT','TE']				#Requested Movie_icp (iteration) Variables.		
-PhaseVariables = Ar_Phase#O2_Phase					#Requested Movie1 (phase) Variables. +['E','AR+']
-electrodeloc = [29,44]#[31,14]#[51,14]#				#Cell location of powered electrode [R,Z].
-waveformlocs = [[16,29],[16,44],[16,64],[0,44]]		#Cell locations of additional waveforms [R,Z].
+PhaseVariables = O2_Phase#Ar_Phase#					#Requested Movie1 (phase) Variables. +['E','AR+']
+electrodeloc = [51,14]#[29,44]#[31,14]#				#Cell location of powered electrode [R,Z].
+waveformlocs = []#[[16,29],[16,44],[16,64],[0,44]]		#Cell locations of additional waveforms [R,Z].
 
 #Requested TECPLOT Variables and plotting locations.
-Variables = Ar#O2#
+Variables = O2#Ar#
 MultiVar = []							#Additional variables plotted ontop of [Variables]
-radialineouts = [29,44,64,75] 			#Radial 1D-Profiles to be plotted (fixed Z-mesh) --
-heightlineouts = [0]#[0,41]						#Axial 1D-Profiles to be plotted (fixed R-mesh) |
+radialineouts = [50]#[29,44,64,75] 			#Radial 1D-Profiles to be plotted (fixed Z-mesh) --
+heightlineouts = [0]					#Axial 1D-Profiles to be plotted (fixed R-mesh) |
 TrendLocation = [] 						#Cell location For Trend Analysis [R,Z], ([] = min/max)
 
 
 #Various Diagnostic Settings.
-phasecycles = 1.01						#Number of waveform phase cycles to be plotted. (float)
+phasecycles = 1.00						#Number of waveform phase cycles to be plotted. (float)
 DoFWidth = 21							#PROES Depth of Field (symmetric about image plane) (cells)
 ThrustLoc = 75							#Z-axis cell for thrust calculation  (cells)
 SheathROI = [34,72]						#Sheath Region of Interest, (Start,End) [cells]
@@ -256,7 +267,7 @@ EDF_Threshold = 0.01					#Upper Recognised EEDF/IEDF energy fraction (Plot all: 
 
 #Requested diagnostics and plotting routines.
 savefig_convergence = False				#Requires movie_icp.pdt
-savefig_plot2D = False					#Requires TECPLOT2D.PDT
+savefig_plot2D = True					#Requires TECPLOT2D.PDT
 
 savefig_monoprofiles = False			#Single-Variables; fixed height/radius
 savefig_multiprofiles = False			#Multi-Variables; same folder
@@ -283,15 +294,15 @@ print_Knudsennumber = False				#Print cell averaged Knudsen Number
 print_soundspeed = False				#Print cell averaged sound speed
 print_totalpower = False				#Print all requested total powers
 print_DCbias = False					#Print DC bias at electrodeloc
-print_thrust = True						#Print neutral, ion and total thrust
+print_thrust = False					#Print neutral, ion and total thrust
 print_sheath = False					#Print sheath width at electrodeloc
 
 
 #Image plotting options.
 image_extension = '.png'				#Extensions ('.png', '.jpg', '.eps')
 image_aspectratio = [10,10]				#[x,y] in cm [Doesn't rotate dynamically]
-image_radialcrop = [0.5]#[]				#[R1,R2] in cm
-image_axialcrop = [1,4.5]#[]			#[Z1,Z2] in cm
+image_radialcrop = []#[0.5]				#[R1,R2] in cm
+image_axialcrop = []#[1,4.5]				#[Z1,Z2] in cm
 image_cbarlimit = []					#[min,max] colourbar limits	
 
 image_plotsymmetry = True				#Toggle radial symmetry
@@ -299,12 +310,12 @@ image_numericaxis = False				#### NOT IMPLIMENTED ####
 image_contourplot = True				#Toggle contour Lines in images
 image_1Doverlay = False					#Overlay location(s) of radialineouts/heightlineouts
 image_plotgrid = False					#Plot major/minor gridlines on profiles
-image_plotmesh = 'PRCCP'#'EVgeny'#'Hyperion'#	#Plot material mesh outlines ('Auto','PRCCP','PRuICP')
+image_plotmesh = False#'Hyperion'#'PRCCP'#'EVgeny'#	#Plot material mesh outlines ('Auto','PRCCP','PRuICP')
 image_rotate = True						#Rotate image 90 degrees to the right.
 
 image_normalize = False					#Normalize image/profiles to local max
 image_logplot = False					#Plot ln(Data), against linear axis.
-image_sheath = True						#Plot sheath width onto 2D images.
+image_sheath = False#True						#Plot sheath width onto 2D images.
 
 
 #Overrides the automatic image labelling.
@@ -1214,7 +1225,7 @@ def VariableLabelMaker(variablelist):
 		#Explicit Species Velocities and Resulting Pressure.
 		elif variablelist[i] == 'PRESSURE':
 			Variable = 'Pressure'
-			VariableUnit = '['+str(PressureType)+']'			#Default: '[Torr]'
+			VariableUnit = '['+str(PressureUnit)+']'			#Default: '[Torr]'
 		elif variablelist[i] == 'VZ-NEUTRAL':
 			Variable = 'Neutral Axial Velocity'
 			VariableUnit = '[ms$^{-1}$]'
@@ -1275,13 +1286,19 @@ def VariableLabelMaker(variablelist):
 			VariableUnit = '[Vcm$^{-1}$]'
 		elif variablelist[i] == 'BT':
 			Variable = 'B-field Strength'
-			VariableUnit = '['+str(BfieldType)+']'			#Default: '[G]'
+			VariableUnit = '['+str(BFieldUnit)+']'			#Default: '[G]'
+		elif variablelist[i] == 'BR':
+			Variable = 'Radial B-field Strength'
+			VariableUnit = '['+str(BFieldUnit)+']'			#Default: '[G]'
 		elif variablelist[i] == 'BRS':
 			Variable = 'Radial B-field Strength'
-			VariableUnit = '['+str(BfieldType)+']'			#Default: '[G]'
+			VariableUnit = '['+str(BFieldUnit)+']'			#Default: '[G]'
+		elif variablelist[i] == 'BZ':
+			Variable = 'Axial B-field Strength'
+			VariableUnit = '['+str(BFieldUnit)+']'			#Default: '[G]'
 		elif variablelist[i] == 'BZS':
 			Variable = 'Axial B-field Strength'
-			VariableUnit = '['+str(BfieldType)+']'			#Default: '[G]'
+			VariableUnit = '['+str(BFieldUnit)+']'			#Default: '[G]'
 		elif variablelist[i] == 'JZ-NET':
 			Variable = 'Axial Current Density'
 			VariableUnit = '[mA cm$^{-2}$]'
@@ -1351,11 +1368,11 @@ def VariableLabelMaker(variablelist):
 def VariableUnitConversion(profile,variable):
 
 	#For Pressures, convert to mTorr or Pa as requested, or retain as default Torr.
-	if IsStringInVariable(variable,['PRESSURE']) == True and PressureType == 'Pa':
+	if IsStringInVariable(variable,['PRESSURE']) == True and PressureUnit == 'Pa':
 		for i in range(0,len(profile)):
 			profile[i] = profile[i]*133.333333333
 		#endfor
-	if IsStringInVariable(variable,['PRESSURE']) == True and PressureType == 'mTorr':
+	if IsStringInVariable(variable,['PRESSURE']) == True and PressureUnit == 'mTorr':
 		for i in range(0,len(profile)):
 			profile[i] = profile[i]*1000.0
 		#endfor
@@ -1396,11 +1413,11 @@ def VariableUnitConversion(profile,variable):
 	#endif
 
 	#For B-field strengths, convert to Tesla or retain as default Gauss. (also reverse axial field)
-	if IsStringInVariable(variable,['BT','BRS']) == True and BfieldType == 'Tesla':
+	if IsStringInVariable(variable,['BT','BRS']) == True and BFieldUnit == 'Tesla':
 		for i in range(0,len(profile)):
 			profile[i] = profile[i]/10000
 		#endfor
-	if IsStringInVariable(variable,['BZS']) == True and BfieldType == 'Tesla':
+	if IsStringInVariable(variable,['BZS']) == True and BFieldUnit == 'Tesla':
 		for i in range(0,len(profile)):
 			profile[i] = (profile[i]/10000)*(-1)
 		#endfor
@@ -1452,12 +1469,12 @@ def VariableUnitConversion(profile,variable):
 
 def ManualPRCCPMesh(Ax=plt.gca()):
 	#Plot pocket rocket material dimensions.
-	Ax.plot((1.32,1.32),   (-1.0,-0.21), '-', color='dimgrey', linewidth=2)
-	Ax.plot((3.7,3.7),     (-1.0,-0.21), '-', color='dimgrey', linewidth=2)
-	Ax.plot((1.32,1.32),   ( 1.0, 0.21), '-', color='dimgrey', linewidth=2)
-	Ax.plot((3.7,3.7),     ( 1.0, 0.21), '-', color='dimgrey', linewidth=2)
-	Ax.plot((1.32,3.7),    ( 0.21, 0.21), '-', color='dimgrey', linewidth=2)
-	Ax.plot((1.32,3.7),    (-0.21,-0.21), '-', color='dimgrey', linewidth=2)
+	Ax.plot((27*dz[l],27*dz[l]),   (-1.0,-0.21), '-', color='dimgrey', linewidth=2)
+	Ax.plot((75*dz[l],75*dz[l]),   (-1.0,-0.21), '-', color='dimgrey', linewidth=2)
+	Ax.plot((27*dz[l],27*dz[l]),   ( 1.0, 0.21), '-', color='dimgrey', linewidth=2)
+	Ax.plot((75*dz[l],75*dz[l]),   ( 1.0, 0.21), '-', color='dimgrey', linewidth=2)
+	Ax.plot((27*dz[l],75*dz[l]),   ( 0.21, 0.21), '-', color='dimgrey', linewidth=2)
+	Ax.plot((27*dz[l],75*dz[l]),   (-0.21,-0.21), '-', color='dimgrey', linewidth=2)
 
 	#Alumina Dielectric
 	Ax.plot((34.2*dz[l],73.8*dz[l]),  ( 0.21,  0.21), 'c-', linewidth=2)
@@ -1466,12 +1483,12 @@ def ManualPRCCPMesh(Ax=plt.gca()):
 	Ax.plot((34.2*dz[l],73.8*dz[l]),  (-0.31, -0.31), 'c-', linewidth=2)
 
 	#Powered Electrode
-	Ax.plot((40*dz[l],50*dz[l]),  ( 0.31, 0.31), 'r-', linewidth=2)
-	Ax.plot((40*dz[l],50*dz[l]),  (-0.31,-0.31), 'r-', linewidth=2)
-	Ax.plot((40*dz[l],40*dz[l]),  ( 0.31, 0.60), 'r-', linewidth=2)
-	Ax.plot((40*dz[l],40*dz[l]),  (-0.31,-0.60), 'r-', linewidth=2)
-	Ax.plot((50*dz[l],50*dz[l]),  ( 0.31, 0.60), 'r-', linewidth=2)
-	Ax.plot((50*dz[l],50*dz[l]),  (-0.31,-0.60), 'r-', linewidth=2)
+	Ax.plot((39*dz[l],49*dz[l]),  ( 0.31, 0.31), 'r-', linewidth=2)
+	Ax.plot((39*dz[l],49*dz[l]),  (-0.31,-0.31), 'r-', linewidth=2)
+	Ax.plot((39*dz[l],39*dz[l]),  ( 0.31, 0.60), 'r-', linewidth=2)
+	Ax.plot((39*dz[l],39*dz[l]),  (-0.31,-0.60), 'r-', linewidth=2)
+	Ax.plot((49*dz[l],49*dz[l]),  ( 0.31, 0.60), 'r-', linewidth=2)
+	Ax.plot((49*dz[l],49*dz[l]),  (-0.31,-0.60), 'r-', linewidth=2)
 
 	#Grounded electrodes
 	Ax.plot((34*dz[l],34*dz[l]),  (-1.0,-0.21), '-', color='dimgrey', linewidth=2)
@@ -1490,10 +1507,11 @@ def ManualHyperionMesh(Ax=plt.gca()):
 	Ax.plot((5*dz[l],51*dz[l]),    (-40*dr[l],-40*dr[l]), '-', color='lightgrey', linewidth=4)
 	Ax.plot((51*dz[l],51*dz[l]),   (40*dr[l], 65*dr[l]), '-', color='lightgrey', linewidth=4)
 	Ax.plot((51*dz[l],51*dz[l]),   (-40*dr[l], -65*dr[l]), '-', color='lightgrey', linewidth=4)
-	Ax.plot((51*dz[l],71*dz[l]),   (65*dr[l],65*dr[l]), '-', color='lightgrey', linewidth=4)
-	Ax.plot((51*dz[l],71*dz[l]),   (-65*dr[l],-65*dr[l]), '-', color='lightgrey', linewidth=4)
-	Ax.plot((71*dz[l],71*dz[l]),   (0*dr[l],65*dr[l]), '-', color='lightgrey', linewidth=4)
-	Ax.plot((71*dz[l],71*dz[l]),   (0*dr[l],-65*dr[l]), '-', color='lightgrey', linewidth=4)
+	Ax.plot((51*dz[l],111*dz[l]),  (65*dr[l],65*dr[l]), '-', color='lightgrey', linewidth=4)
+	Ax.plot((51*dz[l],111*dz[l]),  (-65*dr[l],-65*dr[l]), '-', color='lightgrey', linewidth=4)
+	Ax.plot((111*dz[l],111*dz[l]), (0*dr[l],65*dr[l]), '-', color='lightgrey', linewidth=4)
+	Ax.plot((111*dz[l],111*dz[l]), (0*dr[l],-65*dr[l]), '-', color='lightgrey', linewidth=4)
+	#4cm = 74*dz[l], 12cm=111*dz[l]
 
 	#Macor Dielectric
 	Ax.plot((5*dz[l],5*dz[l]),     (00*dr[l],40*dr[l]), '-', color='c', linewidth=4)
@@ -1544,7 +1562,6 @@ def ManualHyperionMesh(Ax=plt.gca()):
 	Ax.plot((48*dz[l],48*dz[l]),   (56*dr[l],68*dr[l]), '-', color='lightgreen', linewidth=5)	#Downstream
 	Ax.plot((44*dz[l],44*dz[l]),   (-56*dr[l],-68*dr[l]), '-', color='lightgreen', linewidth=5)	#Upstream
 	Ax.plot((48*dz[l],48*dz[l]),   (-56*dr[l],-68*dr[l]), '-', color='lightgreen', linewidth=5)	#Downstream
-
 #enddef
 
 #=============#
@@ -2263,8 +2280,8 @@ def CbarMinMax(Image,PROES=False,Symmetry=image_plotsymmetry):
 	#endif
 
 	#Ensure limits are in line with any requested mathematical constraints
-	if image_logplot == True: Image = np.log(Image)
-	if image_normalize == True: Image = normalize(Image)
+#	if image_logplot == True: Image = np.log(Image)
+#	if image_normalize == True: Image = Normalize(Image)
 
 	#Extract min/max from cropped region if a region is supplied.
 	if any( [len(image_radialcrop),len(image_axialcrop)] ) > 0:
@@ -2334,6 +2351,11 @@ def CbarMinMax(Image,PROES=False,Symmetry=image_plotsymmetry):
 		print 'IMAGE CROPPING OUTSIDE MESH BOUNDARIES: CHECK IMAGE_RADIALCROP,IMAGE_AXIALCROP'
 		exit()
 	#endtry
+
+	#Remove any nan's or infs from image limits (potentially caused by normalisation or logging)
+	if np.isinf(cropmin) == True and cropmax < 0.0: cropmin = cropmax		#Cropmin > Cropmax
+	elif np.isinf(cropmin) == True: cropmin = 0.0
+	if np.isinf(cropmax) == True: cropmax = 0.0	
 
 	#Return cropped values in list [min,max], as required by colourbar.
 	return([cropmin,cropmax])
@@ -3158,8 +3180,8 @@ def DCbiasMagnitude(PPOTlineout):
 #Calculation Methods: 'AbsDensity', 'IntDensity'
 #Takes current folder, current axis, movie1 Phase and sheath calc method.
 #Returns array of sheath distances from origin and can plot this if requested.
-#Sx = SheathThickness(folder=l,Phase=moviephaselist[k])
-def SheathThickness(folder=l,ax='NaN',Orientation='Axial',Phase='NaN',Ne=list(),Ni=list()):
+#Sx = SheathExtent(folder=l,Phase=moviephaselist[k])
+def SheathExtent(folder=l,ax='NaN',Orientation='Axial',Phase='NaN',Ne=list(),Ni=list()):
 	#Return null array if sheath plotting is not required:
 	if image_sheath == False: return([np.nan],[np.nan])
 
@@ -3363,8 +3385,9 @@ def SheathThickness(folder=l,ax='NaN',Orientation='Axial',Phase='NaN',Ne=list(),
 
 	#NEED TO APPLY RADIAL METHOD!!! FOR NOW THIS IS SET TO ZERO EVERYWHERE#
 	if Orientation == 'Radial':
-		for i in range(0,len(Sx)):
-			Sx[i] = np.nan
+		#Sheath extension: integral_(R0->Rwall) ne dR == integral_(Rwall->R0) ni dR
+		for i in range(0,len(Neff)):
+			Sx.append(np.nan)
 		#endfor
 
 		#Create symmetric sheath boundary
@@ -3379,7 +3402,7 @@ def SheathThickness(folder=l,ax='NaN',Orientation='Axial',Phase='NaN',Ne=list(),
 
 	#Print sheath characteristics if requested.
 	if print_sheath == True:
-		#Determine point of interest for diagnostic
+		#Determine location of interest (loc) for diagnostic
 		if Orientation == 'Axial': loc = electrodeloc[0]		#Radial point of interest
 		if Orientation == 'Radial': loc = electrodeloc[1]		#Axial point of interest
 
@@ -3473,7 +3496,7 @@ if savefig_plot2D == True:
 			extent,aspectratio = DataExtent(l)
 			fig,ax,im,Image = ImagePlotter2D(Image,extent,aspectratio,variablelist[k])
 			#Add sheath thickness to figure if requested.
-			if image_sheath == True: Sx = SheathThickness(folder=l,ax=ax)[0]
+			if image_sheath == True: Sx = SheathExtent(folder=l,ax=ax)[0]
 
 			#Overlay location of 1D profiles if requested, adjusting for image rotation.
 			if image_1Doverlay == True:
@@ -3585,7 +3608,7 @@ if savefig_convergence == True:
 					extent,aspectratio = DataExtent(l)
 					fig,ax,im,Image = ImagePlotter2D(Image,extent,aspectratio,variablelist[i])
 					#Add sheath thickness to figure if requested. (CURRENTLY USES TECPLOT2D DATA)
-					Sx = SheathThickness(folder=l,ax=ax)[0]
+					Sx = SheathExtent(folder=l,ax=ax)[0]
 
 					#Define image axis labels.
 					if image_rotate == True:
@@ -5036,10 +5059,10 @@ if 'AR3S' in list(set(FluidSpecies).intersection(Variables)):
 			#endtry
 
 			#Convert pressure to Torr if required (delta pressure in thrust calculations expect Torr)
-			if PressureType == 'Pa':
+			if PressureUnit == 'Pa':
 				for i in range(0,len(Pressure)): Pressure[i] = Pressure[i]/133.33
 				for i in range(0,len(PressureDown)): PressureDown[i] = PressureDown[i]/133.33
-			elif PressureType == 'mTorr':
+			elif PressureUnit == 'mTorr':
 				for i in range(0,len(Pressure)): Pressure[i] = Pressure[i]/1000.0
 				for i in range(0,len(PressureDown)): PressureDown[i] = PressureDown[i]/1000.0
 			#endif
@@ -5243,32 +5266,40 @@ if savefig_trendphaseaveraged == True or print_sheath == True:
 		#Convert to SI [cm], set to automatic width.
 		SourceWidth = [0.21]			#AUTOMATIC ROUTINE REQUIRED#
 	#endif
-	#loc = electrodeloc[0]		#Radial
-	loc = electrodeloc[1] 		#Axial
 
+	SxMeanExtent,SxMeanExtentArray = list(),list()
 	#For all selected simulations, obtain Xaxis, sheath value and save to array.
 	for l in range(0,numfolders):
 		Xaxis.append( FolderNameTrimmer(Dirlist[l]) )
 
 		#Obtain sheath thickness array for current folder 
-		Sx = SheathThickness(folder=l)[0]
+		Sx = SheathExtent(folder=l)[0]
 
-		#Extract maximum sheath thickness from region of interest and width at electrodeloc [Loc].
-		#If this fails, provide null point for sheath thickness.
-		try: 
-			SxMaxExtent.append( ((SourceWidth[0]*dr[l])-max(Sx[SheathROI[0]:SheathROI[1]]))*10 )
-			SxLocExtent.append( ((SourceWidth[0]*dr[l])-Sx[loc])*10 )
+		#Calculate mean sheath extent across ROI. On failure provide null point for sheath thickness.
+		try:
+			SxMeanExtentArray = list()
+			for i in range(SheathROI[0],SheathROI[1]):	SxMeanExtentArray.append(Sx[i])
+			SxMeanExtent.append(sum(SxMeanExtentArray)/len(SxMeanExtentArray))
 		except:
-			SxMaxExtent.append( np.nan )
-			SxLocExtent.append( np.nan )
+			SxMeanExtent.append( np.nan )
 		#endtry
+
+		#Extract maximum sheath thickness from within region of interest
+		try: SxMaxExtent.append( ((SourceWidth[0]*dr[l])-max(Sx[SheathROI[0]:SheathROI[1]]))*10 )
+		except: SxMaxExtent.append( np.nan )
+
+		#Extract sheath width adjacent to powered electrode
+		#loc = electrodeloc[0]		#Radial
+		loc = electrodeloc[1] 		#Axial
+		try: SxLocExtent.append( ((SourceWidth[0]*dr[l])-Sx[loc])*10 )
+		except:	SxLocExtent.append( np.nan )
 	#endfor
 
 	#===============================#
 
 	#Generate figure and plot trends.	
 	fig,ax = figure(image_aspectratio,1)
-	TrendPlotter(ax,SxLocExtent,Xaxis,NormFactor=0)
+	TrendPlotter(ax,SxMaxExtent,Xaxis,NormFactor=0)
 
 	#Apply image options and axis labels.
 	Title = 'Maximum Sheath Extension With Varying '+TrendVariable+' \n'+Dirlist[l][2:-1]
@@ -5349,7 +5380,7 @@ if bool(set(FluidSpecies).intersection(Variables)) == True:
 			extent,aspectratio = DataExtent(l)
 			fig,ax,im,Image = ImagePlotter2D(Image,extent,aspectratio)
 			#Add sheath thickness to figure if requested.
-			Sx = SheathThickness(folder=l,ax=ax)[0]
+			Sx = SheathExtent(folder=l,ax=ax)[0]
 
 			#Image plotting details, invert Y-axis to fit 1D profiles.
 			Title = 'Knudsen Number Image for \n'+Dirlist[l][2:-1]
@@ -5460,7 +5491,7 @@ if bool(set(FluidSpecies).intersection(Variables)) == True and PERFORMSOUNDSPEED
 			extent,aspectratio = DataExtent(l)
 			fig,ax,im,Image = ImagePlotter2D(Image,extent,aspectratio)
 			#Add sheath thickness to figure if requested.
-			Sx = SheathThickness(folder=l,ax=ax)[0]
+			Sx = SheathExtent(folder=l,ax=ax)[0]
 
 			#Image plotting details, invert Y-axis to fit 1D profiles.
 			#ERROR WITH IMAGE LIMIT - LIKELY DUE TO NANS - #Lim=CbarMinMax(Image)
@@ -5844,7 +5875,7 @@ if savefig_phaseresolve2D == True:
 
 				#Plot 2D image, applying image options and cropping as required.
 				fig,ax[0],im,Image = ImagePlotter2D(Image,extent,aspectratio,varlist[i],fig,ax[0])
-				Sx = SheathThickness(folder=l,ax=ax[0],Phase=j,Ne=Ne,Ni=Ni)[0]
+				Sx = SheathExtent(folder=l,ax=ax[0],Phase=j,Ne=Ne,Ni=Ni)[0]
 				ImageOptions(fig,ax[0],Xlabel,Ylabel,Crop=True)
 				#Add Colourbar (Axis, Label, Bins)
 				Ylabel = VariableLabelMaker(varlist)
@@ -5945,7 +5976,7 @@ if savefig_trendphaseresolved == True:
 			Ni = SxData[k][Sxproc[Sxvar.index('AR+')]]
 
 			#calculate sheath width employing 'E' and 'AR+'
-			Sx = SheathThickness(folder=l,Phase=k,Ne=Ne,Ni=Ni)[0]
+			Sx = SheathExtent(folder=l,Phase=k,Ne=Ne,Ni=Ni)[0]
 			for j in range(0,len(Sx)): 
 				Sx[j] = ((SourceWidth[0]*dr[l])-Sx[j])*10	#Convert to mm
 			#endfor
@@ -6239,7 +6270,7 @@ if savefig_PROES == True:
 						Ne = SxData[j][Sxproc[Sxvar.index('E')]]
 						Ni = SxData[j][Sxproc[Sxvar.index('AR+')]]
 						#Extract the full spatial sheath extent for phase 'j', save location for PROES.
-						Sx = SheathThickness(folder=l,Orientation=LineoutsOrientation[k],Phase=j,Ne=Ne,Ni=Ni)
+						Sx = SheathExtent(folder=l,Orientation=LineoutsOrientation[k],Phase=j,Ne=Ne,Ni=Ni)
 						PhaseSx.append(Sx[0][Lineouts[k]])
 						SymPhaseSx.append(Sx[1][Lineouts[k]])
 					#endif
