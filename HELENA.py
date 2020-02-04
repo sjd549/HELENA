@@ -96,7 +96,7 @@ np.seterr(divide='ignore', invalid='ignore')		#Suppresses divide by zero errors
 FileExtensions = ['.PDT','.pdt','.nam','.dat','.out']
 
 #Numerical Calculation Methods:
-GlobSheathMethod = 'IntDensity'			#Set Global Sheath Calculation Method.
+GlobSheathMethod = 'AbsDensity'			#Set Global Sheath Calculation Method.
 #Choices: ('AbsDensity','IntDensity')
 GlobThrustMethod = 'AxialMomentum'		#Set Global Thrust Calculation Method. 
 #Choices:('ThermalVelocity','AxialMomentum')
@@ -134,7 +134,9 @@ PRCCPO2_PCMC = ['O^0.35','EB-0.35','ION-TOT0.35']
 TSHC_PCMC = ['AR^2.0S','EB-2.0S','ION-TOT2.0S','AR^0.2B','EB-0.2B','ION-TOT0.2B','AR^2.2C','EB-2.2C','ION-TOT2.2C','AR^4.2D','EB-4.2D','ION-TOT4.2D','AR^6.2E','EB-6.2E','ION-TOT6.2E','AR^8.2F','EB-8.2F','ION-TOT8.2F']
 
 EVgeny_PCMC = ['AR^0.1P','EB-0.1P','ION-TOT0.1P','AR^2.1Q','EB-2.1Q','ION-TOT2.1Q']
-HYP_PCMC = ['O^0.2P','EB-0.2P','ION-TOT0.2P','O^4.1Q','EB-4.1Q','ION-TOT4.1Q','O^4.15','EB-4.15','ION-TOT4.15']
+HYPI_PCMC = ['O^0.2P','EB-0.2P','ION-TOT0.2P','O^4.1Q','EB-4.1Q','ION-TOT4.1Q','O^4.15','EB-4.15','ION-TOT4.15']
+HYPII_PCMC = ['O^2.8P','EB-2.8P','ION-TOT2.8P','O^3.5Q','EB-3.5Q','ION-TOT3.5Q']
+
 
 #Archived variable sets
 TSHCOI2019_PCMC = ['AR^0.2S','ION-TOT0.2S','AR^4.4T','ION-TOT4.4T','AR^8.9U','ION-TOT8.9U']
@@ -154,7 +156,7 @@ ESCT2018_PCMC = ['AR^0.3S','EB-0.3S','ION-TOT0.3S']
 #ThrustLoc =		75, 						#stdESCT=76, smlESCT=48/54
 #SheathROI =		[34,72]
 #SourceWidth =		[0.21]						
-#Crop =				R[0.6];Z[1,4.5] 
+#Crop =				R[0.65];Z[1.0,4.0] 
 
 #### PRuICP ####	
 #electrodeloc = 	[33,33]			#Coil V
@@ -167,6 +169,16 @@ ESCT2018_PCMC = ['AR^0.3S','EB-0.3S','ION-TOT0.3S']
 #Crop = 			R[0.0,1.0];Z[1.5,10]
 #Plotmesh = 		'PRCCP'
 
+#### TSHC-Ar ####
+#electrodeloc = 	[20,40]
+#waveformlocs = 	[]
+#DOFWidth = 		R;5,Z;10
+#TrendLoc =  		H[0,20];R[50,55,60]
+#ThrustLoc = 		[60]
+#SheathROI = 		[]
+#SourceWidth = 		[]
+#Crop = 			R[12];Z[8,18]
+
 #### SERPENT ####	
 #electrodeloc = 	[33,33]			#Coil V
 #waveformlocs = 	[]
@@ -177,46 +189,6 @@ ESCT2018_PCMC = ['AR^0.3S','EB-0.3S','ION-TOT0.3S']
 #SourceWidth = 		[]
 #Crop = 			R[1.4];Z[1,9]
 #Plotmesh = 		False
-
-#### PP-SCCP ####
-#electrodeloc = 	[0,3]
-#waveformlocs = 	[]
-#DOFWidth = 		R;??,Z;??
-#TrendLoc =  		H[0];R[]
-#ThrustLoc = 		[]
-#SheathROI = 		[]
-#SourceWidth = 		[]
-#Crop = 			R[];Z[]
-
-#### TSHC ####
-#electrodeloc = 	[0,15]
-#waveformlocs = 	[]
-#DOFWidth = 		R;5,Z;10
-#TrendLoc =  		H[0,20];R[30,60,90]
-#ThrustLoc = 		[]
-#SheathROI = 		[]
-#SourceWidth = 		[]
-#Crop = 			R[0.0,1.0];Z[0.5,2.5]
-
-### TSHC-OI Mk3 ###
-#electrodeloc = 	[58,15]
-#waveformlocs = 	[]
-#DOFWidth = 		R;??,Z;??
-#TrendLoc =  		H[0,23,45];R[46,55,64]			#R,Z = 0.2cm/cell,0.1cm/cell
-#ThrustLoc = 		[]
-#SheathROI = 		[]
-#SourceWidth = 		[]
-#Crop = 			R[0,12];Z[4,7]
-
-### HYPERION-I Mk1 ###
-#electrodeloc = 	[51,14]							#Upper(Positive) ICP coil
-#waveformlocs = 	[[51,24][51,34]]				#Middle ICP Coil, Lower(Negative) coil
-#DOFWidth = 		R;??,Z;??
-#TrendLoc =  		H[0];R[50]						#R,Z = 0.2cm/cell,0.1cm/cell
-#ThrustLoc = 		[]
-#SheathROI = 		[]
-#SourceWidth = 		[]
-#Crop = 			R[];Z[]
 
 ### EVgeny Mk1 ###
 #electrodeloc = 	[31,14]							#Middle ICP Coil
@@ -239,25 +211,25 @@ ESCT2018_PCMC = ['AR^0.3S','EB-0.3S','ION-TOT0.3S']
 #====================================================================#
 
 #Requested IEDF/NEDF Variables.
-IEDFVariables = HYP_PCMC#PRCCPAr_PCMC#EVgeny_PCMC#			#Requested iprofile_2d variables (no spaces)
+IEDFVariables = PRCCPAr_PCMC#EVgeny_PCMC#			#Requested iprofile_2d variables (no spaces)
 NEDFVariables = []							#Requested nprofile_2d variables (no spaces)
 
 #Requested movie1/movie_icp Variables.
 IterVariables = ['E','S-E','PPOT','TE']				#Requested Movie_icp (iteration) Variables.		
-PhaseVariables = O2_Phase#Ar_Phase#					#Requested Movie1 (phase) Variables. +['E','AR+']
-electrodeloc = [51,14]#[29,44]#[31,14]#				#Cell location of powered electrode [R,Z].
-waveformlocs = []#[[16,29],[16,44],[16,64],[0,44]]		#Cell locations of additional waveforms [R,Z].
+PhaseVariables = Ar_Phase							#Requested Movie1 (phase) Variables. +['E','AR+']
+electrodeloc = [29,44]#[31,14]#						#Cell location of powered electrode [R,Z].
+waveformlocs = [[16,29],[16,44],[16,64],[0,44]]		#Cell locations of additional waveforms [R,Z].
 
 #Requested TECPLOT Variables and plotting locations.
-Variables = O2#Ar#
+Variables = Ar
 MultiVar = []							#Additional variables plotted ontop of [Variables]
-radialineouts = [50]#[29,44,64,75] 			#Radial 1D-Profiles to be plotted (fixed Z-mesh) --
-heightlineouts = [0]					#Axial 1D-Profiles to be plotted (fixed R-mesh) |
+radialineouts = [44]#[29,44,64,75]# 			#Radial 1D-Profiles to be plotted (fixed Z-mesh) --
+heightlineouts = []#[0]#					#Axial 1D-Profiles to be plotted (fixed R-mesh) |
 TrendLocation = [] 						#Cell location For Trend Analysis [R,Z], ([] = min/max)
 
 
 #Various Diagnostic Settings.
-phasecycles = 1.00						#Number of waveform phase cycles to be plotted. (float)
+phasecycles = 1.01						#Number of waveform phase cycles to be plotted. (float)
 DoFWidth = 21							#PROES Depth of Field (symmetric about image plane) (cells)
 ThrustLoc = 75							#Z-axis cell for thrust calculation  (cells)
 SheathROI = [34,72]						#Sheath Region of Interest, (Start,End) [cells]
@@ -267,7 +239,7 @@ EDF_Threshold = 0.01					#Upper Recognised EEDF/IEDF energy fraction (Plot all: 
 
 #Requested diagnostics and plotting routines.
 savefig_convergence = False				#Requires movie_icp.pdt
-savefig_plot2D = True					#Requires TECPLOT2D.PDT
+savefig_plot2D = False					#Requires TECPLOT2D.PDT
 
 savefig_monoprofiles = False			#Single-Variables; fixed height/radius
 savefig_multiprofiles = False			#Multi-Variables; same folder
@@ -278,7 +250,7 @@ savefig_pulseprofiles = False			#Single-Variables; plotted against real-time axi
 
 savefig_phaseresolve1D = False			#1D Phase Resolved Images
 savefig_phaseresolve2D = False			#2D Phase Resolved Images
-savefig_PROES =	False					#Simulated PROES Diagnostic
+savefig_PROES =	True					#Simulated PROES Diagnostic
 
 savefig_IEDFangular = False				#2D images of angular IEDF; single folders.
 savefig_IEDFtrends = False				#1D IEDF trends; all folders.
@@ -301,8 +273,8 @@ print_sheath = False					#Print sheath width at electrodeloc
 #Image plotting options.
 image_extension = '.png'				#Extensions ('.png', '.jpg', '.eps')
 image_aspectratio = [10,10]				#[x,y] in cm [Doesn't rotate dynamically]
-image_radialcrop = []#[0.5]				#[R1,R2] in cm
-image_axialcrop = []#[1,4.5]				#[Z1,Z2] in cm
+image_radialcrop = [0.65]				#[R1,R2] in cm
+image_axialcrop = [1.0,4.0]				#[Z1,Z2] in cm
 image_cbarlimit = []					#[min,max] colourbar limits	
 
 image_plotsymmetry = True				#Toggle radial symmetry
@@ -310,12 +282,12 @@ image_numericaxis = False				#### NOT IMPLIMENTED ####
 image_contourplot = True				#Toggle contour Lines in images
 image_1Doverlay = False					#Overlay location(s) of radialineouts/heightlineouts
 image_plotgrid = False					#Plot major/minor gridlines on profiles
-image_plotmesh = False#'Hyperion'#'PRCCP'#'EVgeny'#	#Plot material mesh outlines ('Auto','PRCCP','PRuICP')
+image_plotmesh = 'PRCCP'				#Plot material mesh outlines ('Auto','PRCCP','HyperionII','EVgeny')
 image_rotate = True						#Rotate image 90 degrees to the right.
 
 image_normalize = False					#Normalize image/profiles to local max
 image_logplot = False					#Plot ln(Data), against linear axis.
-image_sheath = False#True						#Plot sheath width onto 2D images.
+image_sheath = True						#Plot sheath width onto 2D images.
 
 
 #Overrides the automatic image labelling.
@@ -740,7 +712,9 @@ for l in range(0,numfolders):
 		#Determine end of chemistry set species definition
 		for i in range(0,len(ChemistryData)):
 
-			#Atomic Species Defined In Header, len(Header.split()) = 13
+			#Atomic Species Defined In Header, read in data line by line from icp.dat
+			#len(Header.split()) = 13 for atomic or molecular species definition
+			#len(Header.split()) = 8 for material surface interaction definition 
 			if len(ChemistryData[i].split()) == 13:
 				SpeciesName     = ChemistryData[i].split()[0]
 				Charge          = int(ChemistryData[i].split()[2])
@@ -764,8 +738,8 @@ for l in range(0,numfolders):
 			#####
 
 			#End of Chemistry Header Denoted By '*', as soon as this is reached, stop reading in.
-			elif len(ChemistryData[i].split()) != 13:
-				break
+			elif len(ChemistryData[i].split()) != 13 and len(ChemistryData[i].split()) !=8:
+				if ChemistryData[i].split()[0] == '*': break
 			#endif
 		#endfor
 	except:
@@ -785,9 +759,9 @@ for l in range(0,numfolders):
 		FluidSpecies = ['AR','AR3S','O2','O']
 	#endtry 
 
+	#==========##========================##==========#
+	#==========##========================##==========#
 
-	#==========##========================##==========#
-	#==========##========================##==========#
 
 	#clean up variables and assign required types.
 	try:
@@ -1477,18 +1451,39 @@ def ManualPRCCPMesh(Ax=plt.gca()):
 	Ax.plot((27*dz[l],75*dz[l]),   (-0.21,-0.21), '-', color='dimgrey', linewidth=2)
 
 	#Alumina Dielectric
-	Ax.plot((34.2*dz[l],73.8*dz[l]),  ( 0.21,  0.21), 'c-', linewidth=2)
-	Ax.plot((34.2*dz[l],73.8*dz[l]),  (-0.21, -0.21), 'c-', linewidth=2)
-	Ax.plot((34.2*dz[l],73.8*dz[l]),  ( 0.31,  0.31), 'c-', linewidth=2)
-	Ax.plot((34.2*dz[l],73.8*dz[l]),  (-0.31, -0.31), 'c-', linewidth=2)
+	Ax.plot((34*dz[l],74*dz[l]),  ( 0.21,  0.21), 'c-', linewidth=2)
+	Ax.plot((34*dz[l],74*dz[l]),  (-0.21, -0.21), 'c-', linewidth=2)
+	Ax.plot((34*dz[l],74*dz[l]),  ( 0.31,  0.31), 'c-', linewidth=2)
+	Ax.plot((34*dz[l],74*dz[l]),  (-0.31, -0.31), 'c-', linewidth=2)
+
+	#Macor Dielectric
+	Ax.plot((34*dz[l],34*dz[l]),  ( 25*dr[l], 47*dr[l]), 'b-', linewidth=2)
+	Ax.plot((34*dz[l],34*dz[l]),  (-25*dr[l],-47*dr[l]), 'b-', linewidth=2)
+	Ax.plot((58*dz[l],58*dz[l]),  ( 25*dr[l], 47*dr[l]), 'b-', linewidth=2)
+	Ax.plot((58*dz[l],58*dz[l]),  (-25*dr[l],-47*dr[l]), 'b-', linewidth=2)
+	Ax.plot((34*dz[l],58*dz[l]),  ( 47*dr[l], 47*dr[l]), 'b-', linewidth=2)
+	Ax.plot((34*dz[l],58*dz[l]),  (-47*dr[l],-47*dr[l]), 'b-', linewidth=2)
 
 	#Powered Electrode
-	Ax.plot((39*dz[l],49*dz[l]),  ( 0.31, 0.31), 'r-', linewidth=2)
-	Ax.plot((39*dz[l],49*dz[l]),  (-0.31,-0.31), 'r-', linewidth=2)
-	Ax.plot((39*dz[l],39*dz[l]),  ( 0.31, 0.60), 'r-', linewidth=2)
-	Ax.plot((39*dz[l],39*dz[l]),  (-0.31,-0.60), 'r-', linewidth=2)
-	Ax.plot((49*dz[l],49*dz[l]),  ( 0.31, 0.60), 'r-', linewidth=2)
-	Ax.plot((49*dz[l],49*dz[l]),  (-0.31,-0.60), 'r-', linewidth=2)
+	Ax.plot((39*dz[l],49*dz[l]),  ( 25*dr[l], 25*dr[l]), 'r-', linewidth=2)
+	Ax.plot((39*dz[l],49*dz[l]),  (-25*dr[l],-25*dr[l]), 'r-', linewidth=2)
+	Ax.plot((39*dz[l],39*dz[l]),  ( 25*dr[l], 43*dr[l]), 'r-', linewidth=2)
+	Ax.plot((39*dz[l],39*dz[l]),  (-25*dr[l],-43*dr[l]), 'r-', linewidth=2)
+	Ax.plot((49*dz[l],49*dz[l]),  ( 25*dr[l], 43*dr[l]), 'r-', linewidth=2)
+	Ax.plot((49*dz[l],49*dz[l]),  (-25*dr[l],-43*dr[l]), 'r-', linewidth=2)
+	Ax.plot((39*dz[l],49*dz[l]),  (-25*dr[l],-25*dr[l]), 'r-', linewidth=2)
+	Ax.plot((39*dz[l],49*dz[l]),  ( 43*dr[l], 43*dr[l]), 'r-', linewidth=2)
+	Ax.plot((39*dz[l],49*dz[l]),  (-43*dr[l],-43*dr[l]), 'r-', linewidth=2)
+
+	#Co-axial magnetic ring
+	Ax.plot((39*dz[l],49*dz[l]),  ( 48*dr[l], 48*dr[l]), 'g-', linewidth=2)
+	Ax.plot((39*dz[l],49*dz[l]),  (-48*dr[l],-48*dr[l]), 'g-', linewidth=2)
+	Ax.plot((39*dz[l],39*dz[l]),  ( 48*dr[l], 62*dr[l]), 'g-', linewidth=2)
+	Ax.plot((39*dz[l],39*dz[l]),  (-48*dr[l],-62*dr[l]), 'g-', linewidth=2)
+	Ax.plot((49*dz[l],49*dz[l]),  ( 48*dr[l], 62*dr[l]), 'g-', linewidth=2)
+	Ax.plot((49*dz[l],49*dz[l]),  (-48*dr[l],-62*dr[l]), 'g-', linewidth=2)
+	Ax.plot((39*dz[l],49*dz[l]),  (-48*dr[l],-48*dr[l]), 'g-', linewidth=2)
+	Ax.plot((39*dz[l],49*dz[l]),  (-48*dr[l],-62*dr[l]), 'g-', linewidth=2)
 
 	#Grounded electrodes
 	Ax.plot((34*dz[l],34*dz[l]),  (-1.0,-0.21), '-', color='dimgrey', linewidth=2)
@@ -1499,69 +1494,158 @@ def ManualPRCCPMesh(Ax=plt.gca()):
 
 #=============#
 
-def ManualHyperionMesh(Ax=plt.gca()):
+def ManualHyperionIMesh(Ax=plt.gca()):
 	#Plot upstream ICP material dimensions.
-	Ax.plot((5*dz[l],5*dz[l]),     (00*dr[l],40*dr[l]), '-', color='lightgrey', linewidth=4)
-	Ax.plot((5*dz[l],5*dz[l]),     (00*dr[l],-40*dr[l]), '-', color='lightgrey', linewidth=4)
-	Ax.plot((5*dz[l],51*dz[l]),    (40*dr[l],40*dr[l]), '-', color='lightgrey', linewidth=4)
-	Ax.plot((5*dz[l],51*dz[l]),    (-40*dr[l],-40*dr[l]), '-', color='lightgrey', linewidth=4)
-	Ax.plot((51*dz[l],51*dz[l]),   (40*dr[l], 65*dr[l]), '-', color='lightgrey', linewidth=4)
-	Ax.plot((51*dz[l],51*dz[l]),   (-40*dr[l], -65*dr[l]), '-', color='lightgrey', linewidth=4)
-	Ax.plot((51*dz[l],111*dz[l]),  (65*dr[l],65*dr[l]), '-', color='lightgrey', linewidth=4)
-	Ax.plot((51*dz[l],111*dz[l]),  (-65*dr[l],-65*dr[l]), '-', color='lightgrey', linewidth=4)
-	Ax.plot((111*dz[l],111*dz[l]), (0*dr[l],65*dr[l]), '-', color='lightgrey', linewidth=4)
-	Ax.plot((111*dz[l],111*dz[l]), (0*dr[l],-65*dr[l]), '-', color='lightgrey', linewidth=4)
+	Ax.plot((5*dz[l],5*dz[l]),     (68*dr[l],(68+40)*dr[l]), '-', color='lightgrey', linewidth=4)
+	Ax.plot((5*dz[l],5*dz[l]),     (68*dr[l],(68-39)*dr[l]), '-', color='lightgrey', linewidth=4)
+	Ax.plot((5*dz[l],51*dz[l]),    ((68+40)*dr[l],(68+40)*dr[l]), '-', color='lightgrey', linewidth=4)
+	Ax.plot((5*dz[l],51*dz[l]),    ((68-39)*dr[l],(68-39)*dr[l]), '-', color='lightgrey', linewidth=4)
+	Ax.plot((51*dz[l],51*dz[l]),   ((68+40)*dr[l],(68+65)*dr[l]), '-', color='lightgrey', linewidth=4)
+	Ax.plot((51*dz[l],51*dz[l]),   ((68-39)*dr[l],(68-64)*dr[l]), '-', color='lightgrey', linewidth=4)
+	Ax.plot((51*dz[l],111*dz[l]),  ((68+65)*dr[l],(68+65)*dr[l]), '-', color='lightgrey', linewidth=4)
+	Ax.plot((51*dz[l],111*dz[l]),  ((68-64)*dr[l],(68-64)*dr[l]), '-', color='lightgrey', linewidth=4)
+	Ax.plot((111*dz[l],111*dz[l]), (68*dr[l],(68+65)*dr[l]), '-', color='lightgrey', linewidth=4)
+	Ax.plot((111*dz[l],111*dz[l]), (68*dr[l],(68-64)*dr[l]), '-', color='lightgrey', linewidth=4)
 	#4cm = 74*dz[l], 12cm=111*dz[l]
 
 	#Macor Dielectric
-	Ax.plot((5*dz[l],5*dz[l]),     (00*dr[l],40*dr[l]), '-', color='c', linewidth=4)
-	Ax.plot((5*dz[l],5*dz[l]),     (00*dr[l],-40*dr[l]), '-', color='c', linewidth=4)
-	Ax.plot((5*dz[l],51*dz[l]),    (40*dr[l],40*dr[l]), '-', color='c', linewidth=4)
-	Ax.plot((5*dz[l],51*dz[l]),    (-40*dr[l],-40*dr[l]), '-', color='c', linewidth=4)
-	Ax.plot((51*dz[l],51*dz[l]),   (40*dr[l], 65*dr[l]), '-', color='c', linewidth=4)
-	Ax.plot((51*dz[l],51*dz[l]),   (-40*dr[l], -65*dr[l]), '-', color='c', linewidth=4)
+	Ax.plot((5*dz[l],5*dz[l]),     (68*dr[l],(68+40)*dr[l]), '-', color='c', linewidth=4)
+	Ax.plot((5*dz[l],5*dz[l]),     (68*dr[l],(68-39)*dr[l]), '-', color='c', linewidth=4)
+	Ax.plot((5*dz[l],51*dz[l]),    ((68+40)*dr[l],(68+40)*dr[l]), '-', color='c', linewidth=4)
+	Ax.plot((5*dz[l],51*dz[l]),    ((68-39)*dr[l],(68-39)*dr[l]), '-', color='c', linewidth=4)
+	Ax.plot((51*dz[l],51*dz[l]),   ((68+40)*dr[l],(68+65)*dr[l]), '-', color='c', linewidth=4)
+	Ax.plot((51*dz[l],51*dz[l]),   ((68-39)*dr[l],(68-64)*dr[l]), '-', color='c', linewidth=4)
 
 	#Powered Electrode - 'Metal' Anode
 #	Ax.plot((65*dz[l],65*dz[l]),   (2*dr[l],70*dr[l]), '-', color='red', linewidth=4)
 #	Ax.plot((65*dz[l],65*dz[l]),   (-2*dr[l],-70*dr[l]), '-', color='red', linewidth=4)
 
 	#Powered ICP Coils - 'Metal'
-	Ax.plot((13*dz[l],17*dz[l]),   (46*dr[l],46*dr[l]), '-', color='red', linewidth=5)		#Inboard
-	Ax.plot((13*dz[l],17*dz[l]),   (-46*dr[l],-46*dr[l]), '-', color='red', linewidth=5)	#Inboard
-	Ax.plot((13*dz[l],17*dz[l]),   (55*dr[l],55*dr[l]), '-', color='red', linewidth=5)		#Outboard
-	Ax.plot((13*dz[l],17*dz[l]),   (-55*dr[l],-55*dr[l]), '-', color='red', linewidth=5)	#Outboard
-	Ax.plot((13*dz[l],13*dz[l]),   (46*dr[l],55*dr[l]), '-', color='red', linewidth=5)		#Upstream
-	Ax.plot((13*dz[l],13*dz[l]),   (-46*dr[l],-55*dr[l]), '-', color='red', linewidth=5)	#Upstream
-	Ax.plot((17*dz[l],17*dz[l]),   (46*dr[l],55*dr[l]), '-', color='red', linewidth=5)		#Downstream
-	Ax.plot((17*dz[l],17*dz[l]),   (-46*dr[l],-55*dr[l]), '-', color='red', linewidth=5)	#Downstream
+	Ax.plot((12*dz[l],16*dz[l]),   (114*dr[l],114*dr[l]), '-', color='red', linewidth=5)	#Inboard
+	Ax.plot((12*dz[l],16*dz[l]),   (122*dr[l],122*dr[l]), '-', color='red', linewidth=5)	#Outboard
+	Ax.plot((12*dz[l],12*dz[l]),   (114*dr[l],122*dr[l]), '-', color='red', linewidth=5)	#Upstream
+	Ax.plot((16*dz[l],16*dz[l]),   (114*dr[l],122*dr[l]), '-', color='red', linewidth=5)	#Downstream
+	Ax.plot((7*dz[l],11*dz[l]),    (23*dr[l],23*dr[l]), '-', color='red', linewidth=5)		#Inboard
+	Ax.plot((7*dz[l],11*dz[l]),    (15*dr[l],15*dr[l]), '-', color='red', linewidth=5)		#Outboard
+	Ax.plot((7*dz[l],7*dz[l]),     (23*dr[l],15*dr[l]), '-', color='red', linewidth=5)		#Upstream
+	Ax.plot((11*dz[l],11*dz[l]),   (23*dr[l],15*dr[l]), '-', color='red', linewidth=5)		#Downstream
 
-	Ax.plot((23*dz[l],27*dz[l]),   (46*dr[l],46*dr[l]), '-', color='red', linewidth=5)		#Inboard
-	Ax.plot((23*dz[l],27*dz[l]),   (-46*dr[l],-46*dr[l]), '-', color='red', linewidth=5)	#Inboard
-	Ax.plot((23*dz[l],27*dz[l]),   (55*dr[l],55*dr[l]), '-', color='red', linewidth=5)		#Outboard
-	Ax.plot((23*dz[l],27*dz[l]),   (-55*dr[l],-55*dr[l]), '-', color='red', linewidth=5)	#Outboard
-	Ax.plot((23*dz[l],23*dz[l]),   (46*dr[l],55*dr[l]), '-', color='red', linewidth=5)		#Upstream
-	Ax.plot((27*dz[l],27*dz[l]),   (46*dr[l],55*dr[l]), '-', color='red', linewidth=5)		#Downtream
-	Ax.plot((23*dz[l],23*dz[l]),   (-46*dr[l],-55*dr[l]), '-', color='red', linewidth=5)	#Upstream
-	Ax.plot((27*dz[l],27*dz[l]),   (-46*dr[l],-55*dr[l]), '-', color='red', linewidth=5)	#Downstream
+	Ax.plot((22*dz[l],26*dz[l]),   (114*dr[l],114*dr[l]), '-', color='red', linewidth=5)	#Inboard
+	Ax.plot((22*dz[l],26*dz[l]),   (122*dr[l],122*dr[l]), '-', color='red', linewidth=5)	#Outboard
+	Ax.plot((22*dz[l],22*dz[l]),   (114*dr[l],122*dr[l]), '-', color='red', linewidth=5)	#Upstream
+	Ax.plot((26*dz[l],26*dz[l]),   (114*dr[l],122*dr[l]), '-', color='red', linewidth=5)	#Downtream
+	Ax.plot((17*dz[l],21*dz[l]),   (23*dr[l],23*dr[l]), '-', color='red', linewidth=5)		#Inboard
+	Ax.plot((17*dz[l],21*dz[l]),   (15*dr[l],15*dr[l]), '-', color='red', linewidth=5)		#Outboard
+	Ax.plot((17*dz[l],17*dz[l]),   (23*dr[l],15*dr[l]), '-', color='red', linewidth=5)		#Upstream
+	Ax.plot((21*dz[l],21*dz[l]),   (23*dr[l],15*dr[l]), '-', color='red', linewidth=5)		#Downstream
 
-	Ax.plot((33*dz[l],37*dz[l]),   (46*dr[l],46*dr[l]), '-', color='red', linewidth=5)		#Inboard
-	Ax.plot((33*dz[l],37*dz[l]),   (-46*dr[l],-46*dr[l]), '-', color='red', linewidth=5)	#Inboard
-	Ax.plot((33*dz[l],37*dz[l]),   (55*dr[l],55*dr[l]), '-', color='red', linewidth=5)		#Outboard
-	Ax.plot((33*dz[l],37*dz[l]),   (-55*dr[l],-55*dr[l]), '-', color='red', linewidth=5)	#Outboard
-	Ax.plot((33*dz[l],33*dz[l]),   (46*dr[l],55*dr[l]), '-', color='red', linewidth=5)		#Upstream
-	Ax.plot((37*dz[l],37*dz[l]),   (46*dr[l],55*dr[l]), '-', color='red', linewidth=5)		#Downstream
-	Ax.plot((33*dz[l],33*dz[l]),   (-46*dr[l],-55*dr[l]), '-', color='red', linewidth=5)	#Upstream
-	Ax.plot((37*dz[l],37*dz[l]),   (-46*dr[l],-55*dr[l]), '-', color='red', linewidth=5)	#Downstream
+	Ax.plot((32*dz[l],36*dz[l]),   (114*dr[l],114*dr[l]), '-', color='red', linewidth=5)	#Inboard
+	Ax.plot((32*dz[l],36*dz[l]),   (122*dr[l],122*dr[l]), '-', color='red', linewidth=5)	#Outboard
+	Ax.plot((32*dz[l],32*dz[l]),   (114*dr[l],122*dr[l]), '-', color='red', linewidth=5)	#Upstream
+	Ax.plot((36*dz[l],36*dz[l]),   (114*dr[l],122*dr[l]), '-', color='red', linewidth=5)	#Downstream
+	Ax.plot((27*dz[l],31*dz[l]),   (23*dr[l],23*dr[l]), '-', color='red', linewidth=5)		#Inboard
+	Ax.plot((27*dz[l],31*dz[l]),   (15*dr[l],15*dr[l]), '-', color='red', linewidth=5)		#Outboard
+	Ax.plot((31*dz[l],31*dz[l]),   (23*dr[l],15*dr[l]), '-', color='red', linewidth=5)		#Upstream
+	Ax.plot((27*dz[l],27*dz[l]),   (23*dr[l],15*dr[l]), '-', color='red', linewidth=5)		#Downstream
 
-	#Solenoid
-	Ax.plot((44*dz[l],48*dz[l]),   (56*dr[l],56*dr[l]), '-', color='lightgreen', linewidth=5)	#Inboard
-	Ax.plot((44*dz[l],48*dz[l]),   (-56*dr[l],-56*dr[l]), '-', color='lightgreen', linewidth=5)	#Inboard
-	Ax.plot((44*dz[l],48*dz[l]),   (68*dr[l],68*dr[l]), '-', color='lightgreen', linewidth=5)	#Outboard
-	Ax.plot((44*dz[l],48*dz[l]),   (-68*dr[l],-68*dr[l]), '-', color='lightgreen', linewidth=5)	#Outboard
-	Ax.plot((44*dz[l],44*dz[l]),   (56*dr[l],68*dr[l]), '-', color='lightgreen', linewidth=5)	#Upstream
-	Ax.plot((48*dz[l],48*dz[l]),   (56*dr[l],68*dr[l]), '-', color='lightgreen', linewidth=5)	#Downstream
-	Ax.plot((44*dz[l],44*dz[l]),   (-56*dr[l],-68*dr[l]), '-', color='lightgreen', linewidth=5)	#Upstream
-	Ax.plot((48*dz[l],48*dz[l]),   (-56*dr[l],-68*dr[l]), '-', color='lightgreen', linewidth=5)	#Downstream
+	#Horseshoe Solenoid
+	Ax.plot((44*dz[l],48*dz[l]),   (124*dr[l],124*dr[l]), '-', color='lightgreen', linewidth=5)	#Inboard
+	Ax.plot((44*dz[l],48*dz[l]),   (13*dr[l],13*dr[l]), '-', color='lightgreen', linewidth=5)	#Inboard
+	Ax.plot((44*dz[l],48*dz[l]),   (132*dr[l],132*dr[l]), '-', color='lightgreen', linewidth=5)	#Outboard
+	Ax.plot((44*dz[l],48*dz[l]),   (5*dr[l],5*dr[l]), '-', color='lightgreen', linewidth=5)		#Outboard
+	Ax.plot((44*dz[l],44*dz[l]),   (124*dr[l],132*dr[l]), '-', color='lightgreen', linewidth=5)	#Upstream
+	Ax.plot((48*dz[l],48*dz[l]),   (124*dr[l],132*dr[l]), '-', color='lightgreen', linewidth=5)	#Downstream
+	Ax.plot((44*dz[l],44*dz[l]),   (13*dr[l],5*dr[l]), '-', color='lightgreen', linewidth=5)	#Upstream
+	Ax.plot((48*dz[l],48*dz[l]),   (13*dr[l],5*dr[l]), '-', color='lightgreen', linewidth=5)	#Downstream
+#enddef
+
+def ManualHyperionIIMesh(Ax=plt.gca()):
+	#Plot upstream ICP material dimensions.
+	Ax.plot((1*dz[l],1*dz[l]),       (3*dr[l],109*dr[l]), '-', color='lightgrey', linewidth=4)
+	Ax.plot((1*dz[l],84*dz[l]),      (3*dr[l],3*dr[l]), '-', color='lightgrey', linewidth=4)
+	Ax.plot((1*dz[l],84*dz[l]),      (109*dr[l],109*dr[l]), '-', color='lightgrey', linewidth=4)
+	Ax.plot((84*dz[l],84*dz[l]),     (3*dr[l],109*dr[l]), '-', color='lightgrey', linewidth=4)
+
+	#Alumina Dielectric
+	Ax.plot((2*dz[l],2*dz[l]),     (25*dr[l],87*dr[l]), '-', color='c', linewidth=4)
+	Ax.plot((2*dz[l],84*dz[l]),    (25*dr[l],25*dr[l]), '-', color='c', linewidth=4)
+	Ax.plot((2*dz[l],84*dz[l]),    (87*dr[l],87*dr[l]), '-', color='c', linewidth=4)
+	Ax.plot((14*dz[l],14*dz[l]),   (37*dr[l],75*dr[l]), '-', color='c', linewidth=4)
+	Ax.plot((14*dz[l],84*dz[l]),   (37*dr[l],37*dr[l]), '-', color='c', linewidth=4)
+	Ax.plot((14*dz[l],84*dz[l]),   (75*dr[l],75*dr[l]), '-', color='c', linewidth=4)
+
+	#Moly Extraction Aperture
+	Ax.plot((71*dz[l],84*dz[l]),   (38*dr[l],38*dr[l]), '-', color='m', linewidth=4)
+	Ax.plot((71*dz[l],84*dz[l]),   (41*dr[l],41*dr[l]), '-', color='m', linewidth=4)
+	Ax.plot((71*dz[l],71*dz[l]),   (38*dr[l],41*dr[l]), '-', color='m', linewidth=4)
+	Ax.plot((73*dz[l],73*dz[l]),   (42*dr[l],53*dr[l]), '-', color='m', linewidth=4)
+	Ax.plot((74*dz[l],74*dz[l]),   (42*dr[l],53*dr[l]), '-', color='m', linewidth=4)
+	Ax.plot((73*dz[l],74*dz[l]),   (53*dr[l],53*dr[l]), '-', color='m', linewidth=4)
+
+	Ax.plot((71*dz[l],84*dz[l]),   (74*dr[l],74*dr[l]), '-', color='m', linewidth=4)
+	Ax.plot((71*dz[l],84*dz[l]),   (70*dr[l],70*dr[l]), '-', color='m', linewidth=4)
+	Ax.plot((71*dz[l],71*dz[l]),   (70*dr[l],74*dr[l]), '-', color='m', linewidth=4)
+	Ax.plot((73*dz[l],73*dz[l]),   (58*dr[l],70*dr[l]), '-', color='m', linewidth=4)
+	Ax.plot((74*dz[l],74*dz[l]),   (58*dr[l],70*dr[l]), '-', color='m', linewidth=4)
+	Ax.plot((73*dz[l],74*dz[l]),   (58*dr[l],58*dr[l]), '-', color='m', linewidth=4)
+
+	#Powered Electrode - 'Metal' Anode
+#	Ax.plot((65*dz[l],65*dz[l]),   (2*dr[l],70*dr[l]), '-', color='red', linewidth=4)
+#	Ax.plot((65*dz[l],65*dz[l]),   (-2*dr[l],-70*dr[l]), '-', color='red', linewidth=4)
+
+	#Powered ICP Coils - 'Metal'
+	Ax.plot((27*dz[l],27*dz[l]),   (9*dr[l],14*dr[l]), '-', color='red', linewidth=5)	
+	Ax.plot((29*dz[l],29*dz[l]),   (9*dr[l],14*dr[l]), '-', color='red', linewidth=5)	
+	Ax.plot((27*dz[l],29*dz[l]),   (9*dr[l],9*dr[l]), '-', color='red', linewidth=5)	
+	Ax.plot((27*dz[l],29*dz[l]),   (14*dr[l],14*dr[l]), '-', color='red', linewidth=5)	
+
+	Ax.plot((33*dz[l],33*dz[l]),   (9*dr[l],14*dr[l]), '-', color='red', linewidth=5)	
+	Ax.plot((35*dz[l],35*dz[l]),   (9*dr[l],14*dr[l]), '-', color='red', linewidth=5)	
+	Ax.plot((33*dz[l],35*dz[l]),   (9*dr[l],9*dr[l]), '-', color='red', linewidth=5)	
+	Ax.plot((33*dz[l],35*dz[l]),   (14*dr[l],14*dr[l]), '-', color='red', linewidth=5)	
+
+	Ax.plot((39*dz[l],39*dz[l]),   (9*dr[l],14*dr[l]), '-', color='red', linewidth=5)	
+	Ax.plot((41*dz[l],41*dz[l]),   (9*dr[l],14*dr[l]), '-', color='red', linewidth=5)	
+	Ax.plot((39*dz[l],41*dz[l]),   (9*dr[l],9*dr[l]), '-', color='red', linewidth=5)	
+	Ax.plot((39*dz[l],41*dz[l]),   (14*dr[l],14*dr[l]), '-', color='red', linewidth=5)	
+
+	Ax.plot((30*dz[l],30*dz[l]),   (98*dr[l],103*dr[l]), '-', color='red', linewidth=5)	
+	Ax.plot((32*dz[l],32*dz[l]),   (98*dr[l],103*dr[l]), '-', color='red', linewidth=5)	
+	Ax.plot((30*dz[l],32*dz[l]),   (98*dr[l],98*dr[l]), '-', color='red', linewidth=5)	
+	Ax.plot((30*dz[l],32*dz[l]),   (103*dr[l],103*dr[l]), '-', color='red', linewidth=5)
+
+	Ax.plot((36*dz[l],36*dz[l]),   (98*dr[l],103*dr[l]), '-', color='red', linewidth=5)	
+	Ax.plot((38*dz[l],38*dz[l]),   (98*dr[l],103*dr[l]), '-', color='red', linewidth=5)	
+	Ax.plot((36*dz[l],38*dz[l]),   (98*dr[l],98*dr[l]), '-', color='red', linewidth=5)	
+	Ax.plot((36*dz[l],38*dz[l]),   (103*dr[l],103*dr[l]), '-', color='red', linewidth=5)
+
+	Ax.plot((42*dz[l],42*dz[l]),   (98*dr[l],103*dr[l]), '-', color='red', linewidth=5)	
+	Ax.plot((44*dz[l],44*dz[l]),   (98*dr[l],103*dr[l]), '-', color='red', linewidth=5)	
+	Ax.plot((42*dz[l],44*dz[l]),   (98*dr[l],98*dr[l]), '-', color='red', linewidth=5)	
+	Ax.plot((42*dz[l],44*dz[l]),   (103*dr[l],103*dr[l]), '-', color='red', linewidth=5)
+	Ax.plot((42*dz[l],44*dz[l]),   (103*dr[l],103*dr[l]), '-', color='red', linewidth=5)
+
+	#Horseshoe Solenoid
+	Ax.plot((68*dz[l],68*dz[l]),   (4*dr[l],18*dr[l]), '-', color='lightgreen', linewidth=5)
+	Ax.plot((70*dz[l],70*dz[l]),   (4*dr[l],15*dr[l]), '-', color='lightgreen', linewidth=5)
+	Ax.plot((68*dz[l],70*dz[l]),   (18*dr[l],22*dr[l]), '-', color='lightgreen', linewidth=5)
+	Ax.plot((70*dz[l],72*dz[l]),   (15*dr[l],18*dr[l]), '-', color='lightgreen', linewidth=5)
+	Ax.plot((72*dz[l],72*dz[l]),   (18*dr[l],22*dr[l]), '-', color='lightgreen', linewidth=5)
+	Ax.plot((70*dz[l],72*dz[l]),   (22*dr[l],22*dr[l]), '-', color='lightgreen', linewidth=5)
+
+	Ax.plot((68*dz[l],68*dz[l]),   (4*dr[l],18*dr[l]), '-', color='lightgreen', linewidth=5)
+	Ax.plot((70*dz[l],70*dz[l]),   (4*dr[l],15*dr[l]), '-', color='lightgreen', linewidth=5)
+	Ax.plot((68*dz[l],70*dz[l]),   (18*dr[l],22*dr[l]), '-', color='lightgreen', linewidth=5)
+	Ax.plot((70*dz[l],72*dz[l]),   (15*dr[l],18*dr[l]), '-', color='lightgreen', linewidth=5)
+	Ax.plot((72*dz[l],72*dz[l]),   (18*dr[l],22*dr[l]), '-', color='lightgreen', linewidth=5)
+	Ax.plot((70*dz[l],72*dz[l]),   (22*dr[l],22*dr[l]), '-', color='lightgreen', linewidth=5)
+
+	#Iron Magnetic Focus
+	Ax.plot((71*dz[l],71*dz[l]),   (43*dr[l],46*dr[l]), '-', color='g', linewidth=6.5)
+	Ax.plot((72*dz[l],72*dz[l]),   (43*dr[l],53*dr[l]), '-', color='g', linewidth=6.5)
+
+	Ax.plot((71*dz[l],71*dz[l]),   (65*dr[l],68*dr[l]), '-', color='g', linewidth=6.5)
+	Ax.plot((72*dz[l],72*dz[l]),   (58*dr[l],68*dr[l]), '-', color='g', linewidth=6.5)
 #enddef
 
 #=============#
@@ -2417,8 +2501,10 @@ def ImageOptions(fig,ax=plt.gca(),Xlabel='',Ylabel='',Title='',Legend=[],Crop=Tr
 		ManualPRCCPMesh(ax)
 	elif image_plotmesh == 'EVgeny' and Crop == True:
 		ManualEVgenyMesh(ax)
-	elif image_plotmesh == 'Hyperion' and Crop == True:
-		ManualHyperionMesh(ax)
+	elif image_plotmesh == 'HyperionI' and Crop == True:
+		ManualHyperionIMesh(ax)
+	elif image_plotmesh == 'HyperionII' and Crop == True:
+		ManualHyperionIIMesh(ax)
 	#endif
 
 	#Crop image dimensions, use provided dimensions or default if not provided.
@@ -5297,6 +5383,14 @@ if savefig_trendphaseaveraged == True or print_sheath == True:
 
 	#===============================#
 
+	#Write trend data to ASCII format datafile if requested.
+	if write_ASCII == True:
+		DirASCII = CreateNewFolder(DirTrends,'Trend_Data')
+		WriteDataToFile(Xaxis, DirASCII+'Sx-Avg_Trends','w')
+		WriteDataToFile('\n', DirASCII+'Sx-Avg_Trends','w')
+		WriteDataToFile(SxMaxExtent, DirASCII+'Sx-Avg_Trends','a')
+	#endif
+
 	#Generate figure and plot trends.	
 	fig,ax = figure(image_aspectratio,1)
 	TrendPlotter(ax,SxMaxExtent,Xaxis,NormFactor=0)
@@ -5998,8 +6092,8 @@ if savefig_trendphaseresolved == True:
 		#Calculate phase-averaged (mean) sheath velocity.
 		#Assumes one sheath collapse and one sheath expansion per rf-cycle.
 		RFPeriod = 1.0/MINFREQ[l]										#[s]
-		SheathExtent = (sum(SxLoc)/len(SxLoc))/1E6						#[km]
-		MeanSheathVelocity = (2*SheathExtent)/RFPeriod					#[km/s]
+		MeanSheathExtent = (sum(SxLoc)/len(SxLoc))/1E6					#[km]
+		MeanSheathVelocity = (2*MeanSheathExtent)/RFPeriod				#[km/s]
 		SxMeanVelTrend.append( MeanSheathVelocity )						#[km/s]		
 
 		#Calculate maximum instantaneous sheath velocity.
@@ -6498,6 +6592,49 @@ if any([savefig_trendphaseresolved, savefig_phaseresolve1D, savefig_phaseresolve
 #PROES, (Z=14.2, 21.0, 31.0) radialineouts = [29,44,64]
 #Dielectric locations: [16,29],[16,44],[16,64]
 
+#===============================#
+# Archived Switchboard Settings #
+#===============================#
+
+#### PP-SCCP ####
+#electrodeloc = 	[0,3]
+#waveformlocs = 	[]
+#DOFWidth = 		R;??,Z;??
+#TrendLoc =  		H[0];R[]
+#ThrustLoc = 		[]
+#SheathROI = 		[]
+#SourceWidth = 		[]
+#Crop = 			R[];Z[]
+
+#### TSHC-2017 ####
+#electrodeloc = 	[0,15]
+#waveformlocs = 	[]
+#DOFWidth = 		R;5,Z;10
+#TrendLoc =  		H[0,20];R[30,60,90]
+#ThrustLoc = 		[]
+#SheathROI = 		[]
+#SourceWidth = 		[]
+#Crop = 			R[0.0,1.0];Z[0.5,2.5]
+
+### TSHC-OI Mk3 ###
+#electrodeloc = 	[58,15]
+#waveformlocs = 	[]
+#DOFWidth = 		R;??,Z;??
+#TrendLoc =  		H[0,23,45];R[46,55,64]			#R,Z = 0.2cm/cell,0.1cm/cell
+#ThrustLoc = 		[]
+#SheathROI = 		[]
+#SourceWidth = 		[]
+#Crop = 			R[0,12];Z[4,7]
+
+### HYPERION-I Mk1 ###
+#electrodeloc = 	[51,14]HYPI OR [12,28]HYPII			#Upper(Positive) ICP coil
+#waveformlocs = 	[[51,24][51,34]]					#Middle ICP Coil, Lower(Negative) coil
+#DOFWidth = 		R;??,Z;??
+#TrendLoc =  		H[0];R[50]HYPI OR H[56];R[50]HYPII	#R,Z = 0.2cm/cell,0.1cm/cell
+#ThrustLoc = 		[]
+#SheathROI = 		[]
+#SourceWidth = 		[]
+#Crop = 			R[];Z[]
 
 #===============================#
 #             Notes             #
