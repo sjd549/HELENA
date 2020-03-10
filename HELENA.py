@@ -3,7 +3,7 @@
 #################################
 #		Point of Contact		#
 #								#
-#	   Mr. Scott J. Doyle		#
+#	   Dr. Scott J. Doyle		#
 #	   University of York		#
 #	   York Plasma Institute	#
 #	   1&2 Genesis Building		#
@@ -124,14 +124,14 @@ BFieldUnit	=  'Gauss'						#'Gauss','Tesla'
 #Commonly used variable sets.
 Phys = ['P-POT','TE','EF-TOT','EAMB-Z','EAMB-R','RHO','BR','BRS','BZ','BZS','BT','VR-NEUTRAL','VZ-NEUTRAL','VR-ION+','VZ-ION+','EFLUX-R','EFLUX-Z','JZ-NET','JR-NET','TG-AVE','PRESSURE','POW-RF','POW-RF-E','POW-ICP','EB-ESORC','COLF']
 Ar = ['AR3S','AR4SM','AR4SR','AR4SPM','AR4SPR','AR4P','AR4D','AR','AR+','AR2+','AR2*','E','S-AR+','S-AR4P','SEB-AR+','SEB-AR4P','FZ-AR3S','FR-AR3S','FR-AR+','FZ-AR+','FZ-AR3S','FR-AR3S']+Phys
-O2 = ['O3','O2','O2+','O','O+','O-','E','S-O3','S-O2+','S-O+','S-O-','SEB-O3','SEB-O+','SEB-O2+','SEB-O-','FR-O-','FZ-O-']+['O3P3P','O***','S-O3P3P','S-O***','SEB-O3P3P','SEB-O***']+Phys
+O2 = ['O3','O2','O2+','O','O+','O-','E','S-O3','S-O2+','S-O+','S-O-','SEB-O3','SEB-O+','SEB-O2+','SEB-O-','FR-O+','FZ-O+','FR-O-','FZ-O-']+['O3P3P','O***','S-O3P3P','S-O***','SEB-O3P3P','SEB-O***']+Phys
 
 Ar_Phase = ['S-E','S-AR+','S-AR4P','SEB-AR+','SEB-AR4P','SRCE-2437','TE','PPOT','FR-E','FZ-E']
 O2_Phase = ['S-E','S-O+','S-O-','S-O2+','SEB-O+','SEB-O-','SEB-O2+','TE','PPOT','FR-E','FZ-E']+['S-O3P3P','SEB-O3P3P']
 
 PRCCPAr_PCMC = ['AR^0.35','EB-0.35','ION-TOT0.35']
 PRCCPO2_PCMC = ['O^0.35','EB-0.35','ION-TOT0.35']
-TSHC_PCMC = ['AR^2.0S','EB-2.0S','ION-TOT2.0S','AR^0.2B','EB-0.2B','ION-TOT0.2B','AR^2.2C','EB-2.2C','ION-TOT2.2C','AR^4.2D','EB-4.2D','ION-TOT4.2D','AR^6.2E','EB-6.2E','ION-TOT6.2E','AR^8.2F','EB-8.2F','ION-TOT8.2F']
+TSHCMk4_PCMC = ['AR^0.2S','EB-0.2S','ION-TOT0.2S','AR^0.2T','EB-0.2T','ION-TOT0.2T','AR^4.9U','EB-4.9U','ION-TOT4.9U','AR^9.8V','EB-9.8V','ION-TOT9.8V']
 
 EVgeny_PCMC = ['AR^0.1P','EB-0.1P','ION-TOT0.1P','AR^2.1Q','EB-2.1Q','ION-TOT2.1Q']
 HYPI_PCMC = ['O^0.2P','EB-0.2P','ION-TOT0.2P','O^4.1Q','EB-4.1Q','ION-TOT4.1Q','O^4.15','EB-4.15','ION-TOT4.15']
@@ -140,19 +140,19 @@ HYPII_PCMC = ['O^2.8P','EB-2.8P','ION-TOT2.8P','O^3.5Q','EB-3.5Q','ION-TOT3.5Q']
 
 #Archived variable sets
 TSHCOI2019_PCMC = ['AR^0.2S','ION-TOT0.2S','AR^4.4T','ION-TOT4.4T','AR^8.9U','ION-TOT8.9U']
-MSHC2017_PCMC = ['AR^0.5S','EB-0.5S','ION-TOT0.5S','AR^1.1B','EB-1.1B','ION-TOT1.1B']
-SCCP2018_PCMC = ['AR^7.7J','ION-TOT7.7J','AR^5.1B','ION-TOT5.1B']
-ESCT2018_PCMC = ['AR^0.3S','EB-0.3S','ION-TOT0.3S']
-
+TSHCOI2020_PCMC = ['AR^0.2S','ION-TOT0.2S','AR^4.9T','ION-TOT4.9T','AR^9.8U','ION-TOT9.8U']
+MSHC2017Mk0_PCMC = ['AR^0.5S','EB-0.5S','ION-TOT0.5S','AR^1.1B','EB-1.1B','ION-TOT1.1B']
+SCCP2018Mk0_PCMC = ['AR^7.7J','ION-TOT7.7J','AR^5.1B','ION-TOT5.1B']
+ESCT2018Mk0_PCMC = ['AR^0.3S','EB-0.3S','ION-TOT0.3S']
 
 ####################
 
 #Commonly Used Diagnostic Settings:
 #### PRCCP ####
 #electrodeloc =		[29,44] 					#Reverse [29,62]
-#waveformlocs =		[[16,29],[16,44],[16,64],[0,44]]
+#waveformlocs =		[[16,29],[16,44],[16,64],[0,29],[0,44],[0,64]]
 #DOFWidth =			R;16,Z;21
-#TrendLoc =			H[0];R[29,44,64,75]
+#TrendLoc =			H[0,16];R[29,44,64,75]
 #ThrustLoc =		75, 						#stdESCT=76, smlESCT=48/54
 #SheathROI =		[34,72]
 #SourceWidth =		[0.21]						
@@ -172,12 +172,12 @@ ESCT2018_PCMC = ['AR^0.3S','EB-0.3S','ION-TOT0.3S']
 #### TSHC-Ar ####
 #electrodeloc = 	[20,40]
 #waveformlocs = 	[]
-#DOFWidth = 		R;5,Z;10
-#TrendLoc =  		H[0,20];R[50,55,60]
+#DOFWidth = 		R;20,Z;6
+#TrendLoc =  		H[0,20,40,60];R[50,55,60,64]	#[49] For PROES
 #ThrustLoc = 		[60]
 #SheathROI = 		[]
 #SourceWidth = 		[]
-#Crop = 			R[12];Z[8,18]
+#Crop = 			R[0,15];Z[10,15]			#Mk3: R[0,15];Z[10,17.5]
 
 #### SERPENT ####	
 #electrodeloc = 	[33,33]			#Coil V
@@ -190,17 +190,6 @@ ESCT2018_PCMC = ['AR^0.3S','EB-0.3S','ION-TOT0.3S']
 #Crop = 			R[1.4];Z[1,9]
 #Plotmesh = 		False
 
-### EVgeny Mk1 ###
-#electrodeloc = 	[31,14]							#Middle ICP Coil
-#waveformlocs = 	[[31,6],[31,23],[20,6]]			#[UpstreamCoil],[DownstreamCoil],[DielectricSurface]
-#DOFWidth = 		R;??,Z;??
-#TrendLoc =  		H[0,21,41];R[]					#R,Z = 0.2cm/cell,0.1cm/cell
-#ThrustLoc = 		[]
-#SheathROI = 		[45,85]							#Downstream
-#SourceWidth = 		[90]							#Downstream
-#Crop = 			R[];Z[]
-#Plotmesh = 		'EVgeny'
-
 ####################
 
 
@@ -211,20 +200,20 @@ ESCT2018_PCMC = ['AR^0.3S','EB-0.3S','ION-TOT0.3S']
 #====================================================================#
 
 #Requested IEDF/NEDF Variables.
-IEDFVariables = PRCCPAr_PCMC#EVgeny_PCMC#			#Requested iprofile_2d variables (no spaces)
+IEDFVariables = PRCCPAr_PCMC				#Requested iprofile_2d variables (no spaces)
 NEDFVariables = []							#Requested nprofile_2d variables (no spaces)
 
 #Requested movie1/movie_icp Variables.
 IterVariables = ['E','S-E','PPOT','TE']				#Requested Movie_icp (iteration) Variables.		
 PhaseVariables = Ar_Phase							#Requested Movie1 (phase) Variables. +['E','AR+']
-electrodeloc = [29,44]#[31,14]#						#Cell location of powered electrode [R,Z].
-waveformlocs = [[16,29],[16,44],[16,64],[0,44]]		#Cell locations of additional waveforms [R,Z].
+electrodeloc = [29,44]								#Cell location of powered electrode [R,Z].
+waveformlocs = [[16,29],[16,44],[16,64],[0,29],[0,44],[0,64]]	#Cell locations of additional waveforms [R,Z].
 
 #Requested TECPLOT Variables and plotting locations.
 Variables = Ar
 MultiVar = []							#Additional variables plotted ontop of [Variables]
-radialineouts = [44]#[29,44,64,75]# 			#Radial 1D-Profiles to be plotted (fixed Z-mesh) --
-heightlineouts = []#[0]#					#Axial 1D-Profiles to be plotted (fixed R-mesh) |
+radialineouts = [29,44,64,75] 			#Radial 1D-Profiles to be plotted (fixed Z-mesh) --
+heightlineouts = [0,16]					#Axial 1D-Profiles to be plotted (fixed R-mesh) |
 TrendLocation = [] 						#Cell location For Trend Analysis [R,Z], ([] = min/max)
 
 
@@ -239,7 +228,7 @@ EDF_Threshold = 0.01					#Upper Recognised EEDF/IEDF energy fraction (Plot all: 
 
 #Requested diagnostics and plotting routines.
 savefig_convergence = False				#Requires movie_icp.pdt
-savefig_plot2D = False					#Requires TECPLOT2D.PDT
+savefig_plot2D = True					#Requires TECPLOT2D.PDT
 
 savefig_monoprofiles = False			#Single-Variables; fixed height/radius
 savefig_multiprofiles = False			#Multi-Variables; same folder
@@ -250,7 +239,7 @@ savefig_pulseprofiles = False			#Single-Variables; plotted against real-time axi
 
 savefig_phaseresolve1D = False			#1D Phase Resolved Images
 savefig_phaseresolve2D = False			#2D Phase Resolved Images
-savefig_PROES =	True					#Simulated PROES Diagnostic
+savefig_PROES =	False					#Simulated PROES Diagnostic
 
 savefig_IEDFangular = False				#2D images of angular IEDF; single folders.
 savefig_IEDFtrends = False				#1D IEDF trends; all folders.
@@ -536,6 +525,9 @@ for i in range(0,len(HomeDir)):
 		#endif
 	#endfor
 #endfor
+#Maintain alphabetic folder order in-sync with data extraction.
+Dir,Dirlist = sorted(Dir),sorted(Dirlist)
+
 #If no folders detected, end analysis script.
 if numfolders == 0:
 	print '-------------------------------------------'
@@ -865,6 +857,7 @@ def VariableInterpolator(processlist,Variablelist,Comparisonlist):
 def ExtractRawData(Dirlist,NameString,ListIndex=l):
 	try:
 		DataFileDir = filter(lambda x: NameString in x, Dirlist)
+		DataFileDir = sorted(DataFileDir)
 		Rawdata = open(DataFileDir[ListIndex]).readlines()
 		nn_data = len(Rawdata)
 	except:
@@ -6635,6 +6628,17 @@ if any([savefig_trendphaseresolved, savefig_phaseresolve1D, savefig_phaseresolve
 #SheathROI = 		[]
 #SourceWidth = 		[]
 #Crop = 			R[];Z[]
+
+### EVgeny Mk1 ###
+#electrodeloc = 	[31,14]							#Middle ICP Coil
+#waveformlocs = 	[[31,6],[31,23],[20,6]]			#[UpstreamCoil],[DownstreamCoil],[DielectricSurface]
+#DOFWidth = 		R;??,Z;??
+#TrendLoc =  		H[0,21,41];R[]					#R,Z = 0.2cm/cell,0.1cm/cell
+#ThrustLoc = 		[]
+#SheathROI = 		[45,85]							#Downstream
+#SourceWidth = 		[90]							#Downstream
+#Crop = 			R[];Z[]
+#Plotmesh = 		'EVgeny'
 
 #===============================#
 #             Notes             #
