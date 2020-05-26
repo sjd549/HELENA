@@ -212,8 +212,8 @@ waveformlocs = [[16,29],[16,44],[16,64],[0,29],[0,44],[0,64]]	#Cell locations of
 #Requested TECPLOT Variables and plotting locations.
 Variables = Ar
 MultiVar = []							#Additional variables plotted ontop of [Variables]
-radialineouts = [29,44,64,75] 			#Radial 1D-Profiles to be plotted (fixed Z-mesh) --
-heightlineouts = [0,16]					#Axial 1D-Profiles to be plotted (fixed R-mesh) |
+radialineouts = []#[29,44,64,75] 			#Radial 1D-Profiles to be plotted (fixed Z-mesh) --
+heightlineouts = [0]#[0,16]					#Axial 1D-Profiles to be plotted (fixed R-mesh) |
 TrendLocation = [] 						#Cell location For Trend Analysis [R,Z], ([] = min/max)
 
 
@@ -232,7 +232,7 @@ savefig_plot2D = True					#Requires TECPLOT2D.PDT
 
 savefig_monoprofiles = False			#Single-Variables; fixed height/radius
 savefig_multiprofiles = False			#Multi-Variables; same folder
-savefig_comparelineouts = False			#Multi-Variables; all folders
+savefig_comparelineouts = True			#Multi-Variables; all folders
 savefig_trendphaseaveraged = False		#Single-Variables; fixed cell location (or max/min)
 savefig_trendphaseresolved = False		#Single-Variables; Phase-resolved data.
 savefig_pulseprofiles = False			#Single-Variables; plotted against real-time axis
@@ -262,8 +262,8 @@ print_sheath = False					#Print sheath width at electrodeloc
 #Image plotting options.
 image_extension = '.png'				#Extensions ('.png', '.jpg', '.eps')
 image_aspectratio = [10,10]				#[x,y] in cm [Doesn't rotate dynamically]
-image_radialcrop = [0.65]				#[R1,R2] in cm
-image_axialcrop = [1.0,4.0]				#[Z1,Z2] in cm
+image_radialcrop = []#[0.65]				#[R1,R2] in cm
+image_axialcrop = []#[1.0,4.0]				#[Z1,Z2] in cm
 image_cbarlimit = []					#[min,max] colourbar limits	
 
 image_plotsymmetry = True				#Toggle radial symmetry
@@ -271,7 +271,7 @@ image_numericaxis = False				#### NOT IMPLIMENTED ####
 image_contourplot = True				#Toggle contour Lines in images
 image_1Doverlay = False					#Overlay location(s) of radialineouts/heightlineouts
 image_plotgrid = False					#Plot major/minor gridlines on profiles
-image_plotmesh = 'PRCCP'				#Plot material mesh outlines ('Auto','PRCCP','HyperionII','EVgeny')
+image_plotmesh = False#'PRCCP'				#Plot material mesh outlines ('Auto','PRCCP','HyperionII','EVgeny')
 image_rotate = True						#Rotate image 90 degrees to the right.
 
 image_normalize = False					#Normalize image/profiles to local max
@@ -365,26 +365,26 @@ cbaroverride = ['NotImplimented']
 #====================================================================#
 
 #Create lists for basic processing
-Dir = list()
-Dirlist = list()
-IEDFVariablelist = list()
-Geometrylist = list()
+Dir = list()					#List of all datafile directories inside folders
+Dirlist = list()				#List of all folder directories (not including filenames)
+IEDFVariablelist = list()		#List of all variable names in pcmc.prof in header order
+Geometrylist = list()			#List containing commonly used geometries [LEGACY: NOT USED]
 
-Globalvarlist = list()
-Globalnumvars = list()
+Globalvarlist = list()			#List of all commonly shared variable names between all folders
+Globalnumvars = list()			#Number of commonly shared variables between all folders.
 
 #Create mesh_size lists and SI conversion
-Isymlist = list()
-R_mesh = list()
-Z_mesh = list()
-Raxis = list()
-Zaxis = list()
+Isymlist = list()				#Boolian list of ISYM values in folder order in in Dirlist
+R_mesh = list()					#List of radial mesh cells for initmesh.out in folder order in Dirlist
+Z_mesh = list()					#List of axial mesh cells for initmesh.out in folder order in Dirlist
+Raxis = list()					#Radial SI [cm] axis for plotting
+Zaxis = list()					#Axial SI [cm] axis for plotting
 
-Depth = list()
-Radius = list()
-Height = list()
-dr = list()
-dz = list()
+Depth = list()					#icp.nam Depth input [cm] in folder order in Dirlist
+Radius = list()					#icp.nam Radius input [cm] in folder order in Dirlist
+Height = list()					#icp.nam Height input [cm] in folder order in Dirlist
+dr = list()						#Radial mesh resolution [cm/cell] in folder order in Dirlist
+dz = list()						#Axial mesh resolution [cm/cell] in folder order in Dirlist
 
 #Lists for icp.nam variables
 VRFM,VRFM2 = list(),list()
@@ -406,18 +406,19 @@ PosSpecies = list()				#All positive ion species
 NegSpecies = list()				#All negative ion species
 
 #Lists to store raw data
-rawdata_2D = list()
-rawdata_kin = list()
-rawdata_phasemovie = list()
-rawdata_itermovie = list()
-rawdata_IEDF = list()
-rawdata_mcs = list()
+rawdata_2D = list()				#ASCII format TECPLOT2D data string list 		  - Variable,Radius,Axis
+rawdata_kin = list()			#ASCII format kin.pdt data string list 			  - Variable,Radius,Axis
+rawdata_phasemovie = list()		#ASCII format movie1.pdt data string list 		  - Variable,Radius,Axis
+rawdata_itermovie = list()		#ASCII format movie_icp.pdt data string list 	  - Variable,Radius,Axis
+rawdata_IEDF = list()			#ASCII format iprofile_tec2d.pdt data string list - Variable,Radius,Axis
+rawdata_mcs = list()			#ASCII format mcs.pdt data string list 			  - Variable,Radius,Axis
 
-Data = list()					#Data[folder][Variable][Datapoint]
-DataIEDF = list()				#Data[folder][Variable][Datapoint]
-DataEEDF = list()				#Data[folder][Variable][Datapoint]
-IterMovieData = list()			#ITERMovieData[folder][timestep][variable][datapoints]
-PhaseMovieData = list()			#PhaseMovieData[folder][timestep][variable][datapoints]
+Data = list()					#Data[folder][Variable][Datapoint]						-2D Data
+DataKin = list()				#Data[folder][Variable][Datapoint]						-1D Data
+DataIEDF = list()				#Data[folder][Variable][Datapoint]						-2D Data
+DataEEDF = list()				#Data[folder][Variable][Datapoint]						-2D Data
+IterMovieData = list()			#ITERMovieData[folder][timestep][variable][datapoints]	-3D Data
+PhaseMovieData = list()			#PhaseMovieData[folder][timestep][variable][datapoints]	-3D Data
 
 Moviephaselist = list()			#'CYCL = n'
 MovieIterlist = list()			#'ITER = n'
@@ -426,6 +427,7 @@ EEDF_TDlist = list()			#'???'
 header_itermovie = list()
 header_phasemovie = list()
 header_IEDFlist = list()
+header_kinlist = list()
 header_2Dlist = list()
 
 
@@ -490,7 +492,7 @@ ext = image_extension
 #Create Directory lists and initialise numfolders to zero.
 Dirlist = list() 		#List of all folders
 Dir = list() 			#Directory of files within folders
-numfolders = 0
+numfolders = 0			#Initiate folder number to zero
 
 #Obtain home directory and contents
 HomeDir = list() 		#List of all folders in home.
@@ -525,7 +527,7 @@ for i in range(0,len(HomeDir)):
 		#endif
 	#endfor
 #endfor
-#Maintain alphabetic folder order in-sync with data extraction.
+#Maintain alphanumerical foldername structure (Dirlist) in-sync with dataname structure (Dir)
 Dir,Dirlist = sorted(Dir),sorted(Dirlist)
 
 #If no folders detected, end analysis script.
@@ -851,12 +853,12 @@ def VariableInterpolator(processlist,Variablelist,Comparisonlist):
 #enddef
 
 
-#Takes directory list and data filename type (e.g. .png, .txt)
-#Returns datalist of contents and length of datalist.
+#Takes full directory list (Dir) and data filename type (e.g. .png, .txt)
+#Returns row-wise list of data and length of datafile.
 #rawdata, datalength = ExtractRawData(Dir,'.dat',l)
-def ExtractRawData(Dirlist,NameString,ListIndex=l):
+def ExtractRawData(Dir,NameString,ListIndex=l):
 	try:
-		DataFileDir = filter(lambda x: NameString in x, Dirlist)
+		DataFileDir = filter(lambda x: NameString in x, Dir)
 		DataFileDir = sorted(DataFileDir)
 		Rawdata = open(DataFileDir[ListIndex]).readlines()
 		nn_data = len(Rawdata)
@@ -873,10 +875,10 @@ def ExtractRawData(Dirlist,NameString,ListIndex=l):
 #Allows for an optional offset in 'starting' variable number.
 #Returns 2D array of form [Variables,datapoint(R,Z)]
 #CurrentFolderData = SDFileFormatConvertorHPEM(rawdata_2D[l],header_2D,numvariables_2D)
-def SDFileFormatConvertorHPEM(Rawdata,header,numvariables,offset=0,Zmesh=0,Rmesh=0):
+def SDFileFormatConvertorHPEM(Rawdata,header,numvariables,offset=0,Zmesh=0,Rmesh=0,Dimension='2D'):
 
 	#If no mesh sizes supplied, collect sizes for current global folder.
-	if Rmesh == 0 or Zmesh == 0:
+	if Rmesh == 0 and Zmesh == 0:
 		Rmesh,Zmesh = R_mesh[l],Z_mesh[l]
 	#endif
 
@@ -896,15 +898,27 @@ def SDFileFormatConvertorHPEM(Rawdata,header,numvariables,offset=0,Zmesh=0,Rmesh
 		#endfor
 	#endfor
 
-	#Seperate total 1D array into 2D array with data for each variable.
-	#Offset data by a certain number of variable 'chunks' if requested.
-	for i in range(offset,numvariables):
-		numstart = (Zmesh*Rmesh)*(i)
-		numend = (Zmesh*Rmesh)*(i+1)
-		CurrentFolderData.append(list(DataArray1D[numstart:numend]))
-	#endfor
+	#If data is 1D, seperate into 1D chunks using Zmesh as the chunk size
+	if Dimension == '1D': 
+		#Seperate total 1D array into further 1D sub-arrays with data for each variable.
+		for i in range(offset,numvariables):
+			numstart = Zmesh*(i)
+			numend = Zmesh*(i+1)
+			CurrentFolderData.append(list(DataArray1D[numstart:numend]))
+		#endfor
+		return(CurrentFolderData)
 
-	return(CurrentFolderData)
+	#If data is 2D, return array in 2D chunks using Zmesh*Rmesh as the chunk size
+	elif Dimension == '2D':
+		#Seperate total 1D array into 2D array with data for each variable.
+		#Offset data by a certain number of variable 'chunks' if requested.
+		for i in range(offset,numvariables):
+			numstart = (Zmesh*Rmesh)*(i)
+			numend = (Zmesh*Rmesh)*(i+1)
+			CurrentFolderData.append(list(DataArray1D[numstart:numend]))
+		#endfor
+		return(CurrentFolderData)
+	#endif
 #enddef
 
 
@@ -1838,12 +1852,31 @@ for l in tqdm(range(0,numfolders)):
 #===================##===================#
 #===================##===================#
 
-	#Kinetics data readin - NOT CURRENTLY USED
-	if True == False:
+	#Kinetics data readin - NOT CURRENTLY EMPLOYED IN ANY DIAGNOSTICS
+	if True == True:
 
 		#Load data from TECPLOT_KIN file and unpack into 1D array.
 		rawdata, nn_kin = ExtractRawData(Dir,'TECPLOT_KIN.PDT',l)
 		rawdata_kin.append(rawdata)
+
+		#Read through all variables for each file and stop when list ends.
+		KinVariablelist,KinHeaderEndMarker = [],'ZONE'
+		for i in range(2,nn_2D):
+			if KinHeaderEndMarker in str(rawdata_kin[l][i]): 
+				I = int(filter(lambda x: x.isdigit(), rawdata_kin[l][i].split(',')[0]))
+				break
+			else: KinVariablelist.append(str(rawdata_kin[l][i][:-2].strip(' \t\n\r\"')))
+			#endif
+		#endfor
+		numvariables_kin,header_kin = len(KinVariablelist),len(KinVariablelist)+2
+		header_kinlist.append(header_kin)
+
+		#Seperate total 1D data array into sets of data for each variable.
+		CurrentFolderData = SDFileFormatConvertorHPEM(rawdata_kin[l],header_kin,numvariables_kin, Zmesh=I,Dimension='1D')
+
+		#Save all variables for folder[l] to Data.
+		#Data is now 3D array of form [folder,variable,datapoint(R,Z)]
+		DataKin.append(CurrentFolderData)
 	#endif
 
 
