@@ -213,7 +213,7 @@ waveformlocs = [[16,29],[16,44],[16,64],[0,29],[0,44],[0,64]]	#Cell locations of
 Variables = Ar
 MultiVar = []							#Additional variables plotted ontop of [Variables]
 radialineouts = []#[29,44,64,75] 			#Radial 1D-Profiles to be plotted (fixed Z-mesh) --
-heightlineouts = [0]#[0,16]					#Axial 1D-Profiles to be plotted (fixed R-mesh) |
+heightlineouts = []#[0,16]					#Axial 1D-Profiles to be plotted (fixed R-mesh) |
 TrendLocation = [] 						#Cell location For Trend Analysis [R,Z], ([] = min/max)
 
 
@@ -228,18 +228,18 @@ EDF_Threshold = 0.01					#Upper Recognised EEDF/IEDF energy fraction (Plot all: 
 
 #Requested diagnostics and plotting routines.
 savefig_convergence = False				#Requires movie_icp.pdt
-savefig_plot2D = True					#Requires TECPLOT2D.PDT
+savefig_plot2D = False					#Requires TECPLOT2D.PDT
 
 savefig_monoprofiles = False			#Single-Variables; fixed height/radius
 savefig_multiprofiles = False			#Multi-Variables; same folder
-savefig_comparelineouts = True			#Multi-Variables; all folders
+savefig_comparelineouts = False			#Multi-Variables; all folders
 savefig_trendphaseaveraged = False		#Single-Variables; fixed cell location (or max/min)
 savefig_trendphaseresolved = False		#Single-Variables; Phase-resolved data.
 savefig_pulseprofiles = False			#Single-Variables; plotted against real-time axis
 
 savefig_phaseresolve1D = False			#1D Phase Resolved Images
 savefig_phaseresolve2D = False			#2D Phase Resolved Images
-savefig_PROES =	False					#Simulated PROES Diagnostic
+savefig_PROES =	True					#Simulated PROES Diagnostic
 
 savefig_IEDFangular = False				#2D images of angular IEDF; single folders.
 savefig_IEDFtrends = False				#1D IEDF trends; all folders.
@@ -1860,7 +1860,7 @@ for l in tqdm(range(0,numfolders)):
 		rawdata_kin.append(rawdata)
 
 		#Read through all variables for each file and stop when list ends.
-		KinVariablelist,KinHeaderEndMarker = [],'ZONE'
+		KinVariablelist,KinHeaderEndMarker = ['T (S)'],'ZONE'
 		for i in range(2,nn_2D):
 			if KinHeaderEndMarker in str(rawdata_kin[l][i]): 
 				I = int(filter(lambda x: x.isdigit(), rawdata_kin[l][i].split(',')[0]))
