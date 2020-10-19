@@ -63,8 +63,7 @@ import os.path
 
 #Enforce matplotlib to avoid instancing undisplayed windows
 #matplotlib-tcl-asyncdelete-async-handler-deleted-by-the-wrong-thread
-import matplotlib
-matplotlib.use('Agg')
+import matplotlib			#matplotlib.use('Agg')
 
 #Import additional modules
 from mpl_toolkits.axes_grid1 import make_axes_locatable
@@ -171,14 +170,14 @@ ESCT2018Mk0_PCMC = ['AR^0.3S','EB-0.3S','ION-TOT0.3S']
 #Plotmesh = 		'PRCCP'
 
 #### TSHC-Ar ####
-#electrodeloc = 	[20,40]
+#electrodeloc = 	[5,20]
 #waveformlocs = 	[]
 #DOFWidth = 		R;20,Z;6
-#TrendLoc =  		H[0,20,40,60];R[50,55,60,64]	#[49] For PROES
+#TrendLoc =  		H[1,22,44,60];R[35,40,44]	#[40] For PROES
 #ThrustLoc = 		[60]
 #SheathROI = 		[]
-#SourceWidth = 		[]
-#Crop = 			R[0,15];Z[10,15]			#Mk3: R[0,15];Z[10,17.5]
+#SourceWidth = 		[5]
+#Crop = 			R[0,15];Z[7,14]					#Mk3: R[0,15];Z[10,17.5]
 
 #### SERPENT ####	
 #electrodeloc = 	[33,33]			#Coil V
@@ -228,8 +227,8 @@ EDF_Threshold = 0.01					#Upper Recognised EEDF/IEDF energy fraction (Plot all: 
 
 
 #Requested diagnostics and plotting routines.
-savefig_convergence = True				#Requires movie_icp.pdt
-savefig_plot2D = True					#Requires TECPLOT2D.PDT
+savefig_convergence = False				#Requires movie_icp.pdt
+savefig_plot2D = False					#Requires TECPLOT2D.PDT
 
 savefig_monoprofiles = False			#Single-Variables; fixed height/radius
 savefig_multiprofiles = False			#Multi-Variables; same folder
@@ -243,7 +242,7 @@ savefig_phaseresolve2D = False			#2D Phase Resolved Images
 savefig_PROES =	False					#Simulated PROES Diagnostic
 
 savefig_IEDFangular = False				#2D images of angular IEDF; single folders.
-savefig_IEDFtrends = False				#1D IEDF trends; all folders.
+savefig_IEDFtrends = True				#1D IEDF trends; all folders.
 savefig_EEDF = False					#NO PLOTTING ROUTINE		#IN DEVELOPMENT#
 
 #Write processed data to ASCII files.
@@ -1010,36 +1009,84 @@ def WriteDataToFile(data,filename,structure='w'):
 #enddef
 
 
-#Reads 1D or 2D data from textfile in ASCII format.
-#One input, filename string, returns data array.
-def ReadDataFromFile(Filename,Dimension='1D'):
-	datafile = open(Filename)
-	OutputData = list()
+#Reads 1D or 2D data from textfile in ASCII format, returns data and header.
+#Input filename, header length, data dimension and orientation (CSV or RSV).
+#Example: OutputData,Header = ReadDataFromFile('/Data.txt', 1, '2D', CSV)
+def ReadDataFromFile(Filename,HeaderIdx=0,Dimension='2D',Orientation='CSV'):
+	OutputData,Header = list(),list()
 
-	#Determine dimensionality of profile.
-	if Dimension == '2D':
-		#Read in 2D data from ASCII formatted file.	
-		RawData = datafile.readlines()
-		for m in range(0,len(RawData)):
-			Row = RawData[m].split()
-			for n in range(0,len(Row)):
-				#Convert to float if possible.
-				try: Row[n] = float(Row[n])
-				except: Row[n] = Row[n]
+	#If data is saved 'Row-wise', use default readin routine.
+	if Orientation == 'RSV':
+		#Determine dimensionality of profile.
+		if Dimension in ['1D','2D']:
+			#Read in 2D data from ASCII formatted file.
+			datafile = open(Filename)
+			RawData = datafile.readlines()
+
+			#Extract header and raw data
+			for m in range(0,HeaderIdx): Header.append(RawData[m])
+			RawData = RawData[HeaderIdx::]
+
+			#Read each row, split it (space delimited) and save.
+			for m in range(HeaderIdx,len(RawData)):
+				Row = RawData[m].split()
+				for n in range(0,len(Row)):
+					try: Row[n] = float(Row[n])
+					except: Row[n] = str(Row[n])
+				#endfor
+				OutputData.append(Row)
 			#endfor
-			OutputData.append(Row)
-		#endfor
+		#endif
 
-	#Lowest dimention is scalar: ==> 1D array.
-	elif Dimension == '1D':
-		#Read in 1D data from ASCII formatted file.
-		Row = datafile.readline().split()
+	#=====#
+
+	#If data is saved 'column-wise', transpose the arrays to correct.
+	elif Orientation == 'CSV':
+		#Determine dimensionality of profile.
+		if Dimension in ['1D','2D']:
+			#Read in 2D data from ASCII formatted file.
+			datafile = open(Filename)
+			RawData = datafile.readlines()
+
+			#Extract header and raw data
+			for m in range(0,HeaderIdx): Header.append(RawData[m])
+			RawData = RawData[HeaderIdx::]
+
+			#Enlarge output data array by number of columns
+			NumColumns = len(RawData[HeaderIdx+1].split())
+			for m in range(0,NumColumns):
+				OutputData.append(list())
+			#endfor
+
+			#Read each row, split it and save into relevant column of output data.
+			for i in range(HeaderIdx,len(RawData)):
+				Row = RawData[i].split()
+				for j in range(0,len(Row)):
+					try: Row[j] = float(Row[j])
+					except: Row[j] = str(Row[j])
+				#endfor
+				for k in range(0,NumColumns):
+					OutputData[k].append(Row[k])
+				#endfor
+			#endfor
+		#endif
+	#endif
+
+	#Orientation doesn't matter if 0D (scalar data).
+	elif Dimension == '0D':
+		#Read in 0D data from ASCII formatted file.
+		datafile = open(Filename)
+
+		for m in range(0,HeaderIdx): Header.append(RawData[m])
+		RawData = datafile.readlines()[HeaderIdx::]
+		Row = RawData.split()
+
 		for m in range(0,len(Row)):
 			OutputData.append(float(Row[m]))
 		#endfor
 	#endif
 
-	return(OutputData)
+	return(OutputData,Header)
 #enddef
 
 
@@ -3001,7 +3048,11 @@ def WaveformExtractor(PhaseData,PPOT,waveformlocation=electrodeloc):
 		WaveformBias.append(sum(VoltageWaveform)/len(VoltageWaveform))
 	#endfor
 	
-	return(VoltageWaveform,WaveformBias)
+	#Calculate maximum positive and negative waveform amplitudes and compute average Vpp
+	PositiveAmp,NegativeAmp = max(VoltageWaveform),min(VoltageWaveform
+	PeakToPeakVoltage = abs(PositiveAmp)+abs(NegativeAmp)
+	
+	return(VoltageWaveform,WaveformBias,[PositiveAmp,NegativeAmp,PeakToPeakVoltage])
 #enddef
 
 
@@ -5746,7 +5797,7 @@ if savefig_phaseresolve1D == True:
 			VoltageWaveforms.append(WaveformExtractor(PhaseData,PPOT,waveformlocs[j])[0])
 			WaveformBiases.append(WaveformExtractor(PhaseData,PPOT,waveformlocs[j])[1])
 		#endfor
-		ElectrodeWaveform,ElectrodeBias = WaveformExtractor(PhaseData,PPOT)
+		ElectrodeWaveform,ElectrodeBias,ElectrodeVpp = WaveformExtractor(PhaseData,PPOT)
 
 		#Plot the phase-resolved waveform.
 		fig,ax = figure(image_aspectratio,1)
@@ -5759,7 +5810,7 @@ if savefig_phaseresolve1D == True:
 		#ax.plot(Phaseaxis,ElectrodeBias, 'k--', lw=2)
 
 		Title = 'Phase-Resolved Voltage Waveforms for '+FolderNameTrimmer(Dirlist[l])
-		Legend = ['rf self-bias: '+str(round(ElectrodeBias[0],2))+'V']
+		Legend = ['Waveform Vpp: '+str(round(ElectrodeVpp[2],2))+'V']
 		Xlabel,Ylabel = 'Phase [$\omega$t/2$\pi$]','Electrode Potential [V]'
 		ImageOptions(fig,ax,Xlabel,Ylabel,Title,Legend,Crop=False)
 		ax.xaxis.set_major_locator(ticker.MultipleLocator(0.25))
@@ -5923,7 +5974,7 @@ if savefig_phaseresolve2D == True:
 			VoltageWaveforms.append(WaveformExtractor(PhaseData,PPOT,waveformlocs[j])[0])
 			WaveformBiases.append(WaveformExtractor(PhaseData,PPOT,waveformlocs[j])[1])
 		#endfor
-		ElectrodeWaveform,ElectrodeBias = WaveformExtractor(PhaseData,PPOT)
+		ElectrodeWaveform,ElectrodeBias,ElectrodeVpp = WaveformExtractor(PhaseData,PPOT)
 
 		#Plot the phase-resolved waveform.
 		fig,ax = figure(image_aspectratio,1)
@@ -5936,7 +5987,7 @@ if savefig_phaseresolve2D == True:
 		#ax.plot(Phaseaxis,ElectrodeBias, 'k--', lw=2)
 
 		Title = 'Phase-Resolved Voltage Waveforms for '+FolderNameTrimmer(Dirlist[l])
-		Legend = ['rf self-bias: '+str(round(ElectrodeBias[0],2))+'V']
+		Legend = ['Waveform Vpp: '+str(round(ElectrodeVpp[2],2))+'V']
 		Xlabel,Ylabel = 'Phase [$\omega$t/2$\pi$]','Electrode Potential [V]'
 		ImageOptions(fig,ax,Xlabel,Ylabel,Title,Legend,Crop=False)
 		ax.xaxis.set_major_locator(ticker.MultipleLocator(0.25))
@@ -6077,7 +6128,7 @@ if savefig_trendphaseresolved == True:
 			VoltageWaveforms.append(WaveformExtractor(SxData,PPOT,waveformlocs[j])[0])
 			WaveformBiases.append(WaveformExtractor(SxData,PPOT,waveformlocs[j])[1])
 		#endfor
-		ElectrodeWaveform,ElectrodeBias = WaveformExtractor(SxData,PPOT)
+		ElectrodeWaveform,ElectrodeBias,ElectrodeVpp = WaveformExtractor(SxData,PPOT)
 
 		### CURRENTLY ONLY AXIAL METHOD IS EMPLOYED ###
 		#Axial sheath array (Sx) is calculated using radial integrations.
@@ -6291,7 +6342,7 @@ if savefig_PROES == True:
 			VoltageWaveforms.append(WaveformExtractor(PhaseData,PPOT,waveformlocs[j])[0])
 			WaveformBiases.append(WaveformExtractor(PhaseData,PPOT,waveformlocs[j])[1])
 		#endfor
-		ElectrodeWaveform,ElectrodeBias = WaveformExtractor(PhaseData,PPOT)
+		ElectrodeWaveform,ElectrodeBias,ElectrodeVpp = WaveformExtractor(PhaseData,PPOT)
 
 		#Plot the phase-resolved waveform.
 		fig,ax = figure(image_aspectratio,1)
@@ -6304,7 +6355,7 @@ if savefig_PROES == True:
 		#ax.plot(Phaseaxis,ElectrodeBias, 'k--', lw=2)
 
 		Title = 'Phase-Resolved Voltage Waveforms for '+FolderNameTrimmer(Dirlist[l])
-		Legend = ['rf self-bias: '+str(round(ElectrodeBias[0],2))+'V']
+		Legend = ['Waveform Vpp: '+str(round(ElectrodeVpp[2],2))+'V']
 		Xlabel,Ylabel = 'Phase [$\omega$t/2$\pi$]','Electrode Potential [V]'
 		ImageOptions(fig,ax,Xlabel,Ylabel,Title,Legend,Crop=False)
 		ax.xaxis.set_major_locator(ticker.MultipleLocator(0.25))
