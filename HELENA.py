@@ -131,7 +131,7 @@ O2_Phase = ['S-E','S-O+','S-O-','S-O2+','SEB-O+','SEB-O-','SEB-O2+','TE','PPOT',
 PRCCPAr_PCMC = ['AR^0.35','EB-0.35','ION-TOT0.35']
 PRCCPO2_PCMC = ['O^0.35','EB-0.35','ION-TOT0.35']
 ESCTAr_PCMC = ['TO BE COMPLETED']
-TSHCMk4_PCMC = ['AR^0.2S','EB-0.2S','ION-TOT0.2S','AR^0.2T','EB-0.2T','ION-TOT0.2T','AR^4.9U','EB-4.9U','ION-TOT4.9U','AR^9.8V','EB-9.8V','ION-TOT9.8V']
+TSHCMk4a_PCMC = ['AR^1.1T','EB-1.1T','ION-TOT1.1T','AR^5.4U','EB-5.4U','ION-TOT5.4U','AR^9.8V','EB-9.8V','ION-TOT9.8V']
 
 EVgeny_PCMC = ['AR^0.1P','EB-0.1P','ION-TOT0.1P','AR^2.1Q','EB-2.1Q','ION-TOT2.1Q']
 HYPI_PCMC = ['O^0.2P','EB-0.2P','ION-TOT0.2P','O^4.1Q','EB-4.1Q','ION-TOT4.1Q','O^4.15','EB-4.15','ION-TOT4.15']
@@ -142,21 +142,25 @@ HYPII_PCMC = ['O^2.8P','EB-2.8P','ION-TOT2.8P','O^3.5Q','EB-3.5Q','ION-TOT3.5Q']
 TSHCOI2019_PCMC = ['AR^0.2S','ION-TOT0.2S','AR^4.4T','ION-TOT4.4T','AR^8.9U','ION-TOT8.9U']
 TSHCOI2020_PCMC = ['AR^0.2S','ION-TOT0.2S','AR^4.9T','ION-TOT4.9T','AR^9.8U','ION-TOT9.8U']
 MSHC2017Mk0_PCMC = ['AR^0.5S','EB-0.5S','ION-TOT0.5S','AR^1.1B','EB-1.1B','ION-TOT1.1B']
+MSHC2021Mk4_PCMC = ['AR^0.2S','EB-0.2S','ION-TOT0.2S','AR^0.2T','EB-0.2T','ION-TOT0.2T']
 SCCP2018Mk0_PCMC = ['AR^7.7J','ION-TOT7.7J','AR^5.1B','ION-TOT5.1B']
 ESCT2018Mk0_PCMC = ['AR^0.3S','EB-0.3S','ION-TOT0.3S']
 
 ####################
 
+
+
 #Commonly Used Diagnostic Settings:
 #### PRCCP ####
 #electrodeloc =		[29,44] 					#Reverse [29,62]
-#waveformlocs =		[[16,29],[16,44],[16,64],[0,29],[0,44],[0,64]]
+#waveformlocs =		[16,29],[16,44],[16,64],[0,29],[0,44],[0,64]]
 #DOFWidth =			R;16,Z;21
-#TrendLoc =			H[0,16];R[29,44,64,75]
+#TrendLoc =			H[0];R[29,44,64,75]			#R[44] for PROES
 #ThrustLoc =		75, 						#stdESCT=76, smlESCT=48/54
 #SheathROI =		[34,72]
 #SourceWidth =		[0.21]						
-#Crop =				R[0.65];Z[1.0,4.0] 
+#image_radialcrop = [0.65]						#[R1,R2] in cm
+#image_axialcrop = 	[1.0,4.0]					#[Z1,Z2] in cm
 
 #### PRuICP ####	
 #electrodeloc = 	[33,33]			#Coil V
@@ -173,16 +177,26 @@ ESCT2018Mk0_PCMC = ['AR^0.3S','EB-0.3S','ION-TOT0.3S']
 #electrodeloc = 	[5,20]
 #waveformlocs = 	[]
 #DOFWidth = 		R;20,Z;6
-#TrendLoc =  		H[1,22,44,60];R[35,40,44]	#[40] For PROES
-#ThrustLoc = 		[60]
+#TrendLoc =  		H[1,22,44,60];R[35,40,44]		#R[39] for PROES
+#ThrustLoc = 		[45]
 #SheathROI = 		[]
 #SourceWidth = 		[5]
-#Crop = 			R[0,15];Z[7,14]					#Mk3: R[0,15];Z[10,17.5]
+#Crop = 			R[0,14];Z[7,13]					#Mk3: R[0,15];Z[10,17.5]
+
+#### TSHC-Mk4PPa ####
+#electrodeloc = 	[5,30]
+#waveformlocs = 	[]
+#DOFWidth = 		R;20,Z;5
+#TrendLoc =  		H[0,24,48];R[34,39,44,46]		#R[40] for PROES
+#ThrustLoc = 		[45]
+#SheathROI = 		[]
+#SourceWidth = 		[5]
+#Crop = 			R[0,14];Z[5,10]					#R[2,14] to avoid on-axis craziness
 
 #### SERPENT ####	
 #electrodeloc = 	[33,33]			#Coil V
 #waveformlocs = 	[]
-#DOFWidth = 		[]
+#DOFWidth = 		R;60,Z;5
 #TrendLoc = 		H[0];R[36,50]
 #ThrustLoc = 		[79]
 #SheathROI = 		[]
@@ -200,35 +214,35 @@ ESCT2018Mk0_PCMC = ['AR^0.3S','EB-0.3S','ION-TOT0.3S']
 #====================================================================#
 
 #Requested IEDF/NEDF Variables.
-IEDFVariables = PRCCPAr_PCMC				#Requested iprofile_2d variables (no spaces)
+IEDFVariables = TSHCMk4a_PCMC				#Requested iprofile_2d variables (no spaces)
 NEDFVariables = []							#Requested nprofile_2d variables (no spaces)
 
 #Requested movie1/movie_icp Variables.
 IterVariables = ['E','S-E','PPOT','TE']				#Requested Movie_icp (iteration) Variables.		
 PhaseVariables = Ar_Phase							#Requested Movie1 (phase) Variables. +['E','AR+']
-electrodeloc = [29,44]								#Cell location of powered electrode [R,Z].
-waveformlocs = [[16,29],[16,44],[16,64],[0,29],[0,44],[0,64]]	#Cell locations of additional waveforms [R,Z].
+electrodeloc = [30,15]								#Cell location of powered electrode [R,Z].
+waveformlocs = []									#Cell locations of additional waveforms [R,Z].
 
 #Requested TECPLOT Variables and plotting locations.
 Variables = Ar
 MultiVar = []							#Additional variables plotted ontop of [Variables]
-radialineouts = []#[29,44,64,75] 			#Radial 1D-Profiles to be plotted (fixed Z-mesh) --
-heightlineouts = []#[0,16]					#Axial 1D-Profiles to be plotted (fixed R-mesh) |
+radialineouts = []#[85]		 			#Radial 1D-Profiles to be plotted (fixed Z-mesh) --
+heightlineouts = [33]#[33] 	#[66]?		#Axial 1D-Profiles to be plotted (fixed R-mesh) |
 TrendLocation = [] 						#Cell location For Trend Analysis [R,Z], ([] = min/max)
 
 
 #Various Diagnostic Settings.
-phasecycles = 2.00						#Number of waveform phase cycles to be plotted. (float)
-DoFWidth = 21							#PROES Depth of Field (symmetric about image plane) (cells)
-ThrustLoc = 75							#Z-axis cell for thrust calculation  (cells)
+phasecycles = 1.00						#Number of waveform phase cycles to be plotted. (float)
+DoFWidth = 10 				#20?		#PROES Depth of Field (symmetric about image plane) (cells)
+ThrustLoc = 45							#Z-axis cell for thrust calculation  (cells)
 SheathROI = [34,72]						#Sheath Region of Interest, (Start,End) [cells]
-SourceWidth = [16]						#Source Dimension at ROI, leave empty for auto. [cells]
-EDF_Threshold = 0.01					#Upper Recognised EEDF/IEDF energy fraction (Plot all: 0.0)
+SourceWidth = [12]						#Source Dimension at ROI, leave empty for auto. [cells]
+EDF_Threshold = 0.01					#Maximum Recognised EEDF/IEDF energy fraction (Plot all: 0.0)
 
 
 #Requested diagnostics and plotting routines.
 savefig_convergence = False				#Requires movie_icp.pdt
-savefig_plot2D = False					#Requires TECPLOT2D.PDT
+savefig_plot2D = True					#Requires TECPLOT2D.PDT
 
 savefig_monoprofiles = False			#Single-Variables; fixed height/radius
 savefig_multiprofiles = False			#Multi-Variables; same folder
@@ -239,10 +253,10 @@ savefig_pulseprofiles = False			#Single-Variables; plotted against real-time axi
 
 savefig_phaseresolve1D = False			#1D Phase Resolved Images
 savefig_phaseresolve2D = False			#2D Phase Resolved Images
-savefig_PROES =	False					#Simulated PROES Diagnostic
+savefig_PROES = False					#Simulated PROES Diagnostic
 
-savefig_IEDFangular = False				#2D images of angular IEDF; single folders.
-savefig_IEDFtrends = True				#1D IEDF trends; all folders.
+savefig_IEDFangular = False				#2D images of angular IEDF; Single simulation directory
+savefig_IEDFtrends = False				#1D IEDF trends; 			All simulation directories
 savefig_EEDF = False					#NO PLOTTING ROUTINE		#IN DEVELOPMENT#
 
 #Write processed data to ASCII files.
@@ -262,21 +276,21 @@ print_sheath = False					#Print sheath width at electrodeloc
 #Image plotting options.
 image_extension = '.png'				#Extensions ('.png', '.jpg', '.eps')
 image_aspectratio = [10,10]				#[x,y] in cm [Doesn't rotate dynamically]
-image_radialcrop = []#[0.65]				#[R1,R2] in cm
-image_axialcrop = []#[1.0,4.0]				#[Z1,Z2] in cm
+image_radialcrop = []#[0,12.5]			#[R1,R2] in cm								CROPPING IS TOTALLY FUCKED
+image_axialcrop = []#[5,10]				#[Z1,Z2] in cm								CROPPING IS TOTALLY FUCKED
 image_cbarlimit = []					#[min,max] colourbar limits	
 
-image_plotsymmetry = True				#Toggle radial symmetry
+image_plotsymmetry = False#True			#Toggle radial symmetry
 image_numericaxis = False				#### NOT IMPLIMENTED ####
-image_contourplot = True				#Toggle contour Lines in images
+image_contourplot = False#True			#Toggle contour Lines in images
 image_1Doverlay = False					#Overlay location(s) of radialineouts/heightlineouts
 image_plotgrid = False					#Plot major/minor gridlines on profiles
-image_plotmesh = False#'PRCCP'				#Plot material mesh outlines ('Auto','PRCCP','ESCT')
-image_rotate = True						#Rotate image 90 degrees to the right.
+image_plotmesh = False					#Plot material mesh outlines ('Auto','PRCCP','ESCT')
+image_rotate = False#True				#Rotate image 90 degrees to the right.
 
 image_normalize = False					#Normalize image/profiles to local max
 image_logplot = False					#Plot ln(Data), against linear axis.
-image_sheath = True						#Plot sheath width onto 2D images.
+image_sheath = False#True				#Plot sheath width onto 2D images.
 
 
 #Overrides the automatic image labelling.
@@ -2581,11 +2595,12 @@ def ImageOptions(fig,ax=plt.gca(),Xlabel='',Ylabel='',Title='',Legend=[],Crop=Tr
 		ManualHyperionIIMesh(ax)
 	#endif
 
-	#Crop image dimensions, use provided dimensions or default if not provided.
+	#Crop image dimensions:	If Crop is a list, use cropping dimensions provided to this function
 	if isinstance(Crop, (list, np.ndarray) ) == True:
 		CropImage(ax,Extent=Crop,Rotate=Rotate)
-	elif any( [len(image_radialcrop),len(image_axialcrop)] ) > 0:
-		if Crop == True:
+	#Else if crop is a boolian, use default cropping dimensions from switchboard
+	elif Crop == True:
+		if any( [len(image_radialcrop),len(image_axialcrop)] ) > 0:
 			CropImage(ax,Rotate=Rotate)
 		#endif
 	#endif
@@ -2764,7 +2779,7 @@ def Normalize(profile,NormFactor=0):
 #Takes current image datails and returns extent and rotated aspectratio
 #If mesh uses symmetry, will double radius extent centered on zero.
 #extent,aspectratio = DataExtent(l)
-def DataExtent(folder=l,aspectratio=image_aspectratio):
+def DataExtent(folder=l,aspectratio=image_aspectratio,rotate=image_rotate):
 
 	#Obtain global variables for current folder.
 	Isym = Isymlist[folder]
@@ -2778,7 +2793,7 @@ def DataExtent(folder=l,aspectratio=image_aspectratio):
 		#endif
 
 	#Default mesh orientation: [X,Y] = [Radius,Height]
-	elif image_rotate == False:
+	elif rotate == False:
 		if Isym == 1: extent = [-radius,radius, 0,height]
 		elif Isym == 0: extent=[0,radius, 0,height]
 		#endif
@@ -2831,7 +2846,7 @@ def ImagePlotter1D(profile,axis,aspectratio,fig=111,ax=111):
 #Create figure and plot a 2D image with associated image plotting requirements.
 #Returns plotted image, axes and figure after applying basic data restructuring.
 #fig,ax,im,Image = ImagePlotter2D(Image,extent,image_aspectratio,variablelist[l],fig,ax[0])
-def ImagePlotter2D(Image,extent,aspectratio=image_aspectratio,variable='N/A',fig=111,ax=111):
+def ImagePlotter2D(Image,extent,aspectratio=image_aspectratio,variable='N/A',fig=111,ax=111,Origin="lower"):
 
 	#Generate new figure if required. {kinda hacky...}
 	if fig == 111 and ax == 111:
@@ -2859,11 +2874,11 @@ def ImagePlotter2D(Image,extent,aspectratio=image_aspectratio,variable='N/A',fig
 
 	#Plot image with or without contour plots, (contour scale = 90% of cbar scale)
 	if image_contourplot == True:
-		im = ax.contour(Image,extent=extent,origin="lower")
+		im = ax.contour(Image,extent=extent,origin=Origin)
 		im.set_clim(CbarMinMax(Image)[0]*0.90,CbarMinMax(Image)[1]*0.90)
-		im = ax.imshow(Image,extent=extent,origin="lower")
+		im = ax.imshow(Image,extent=extent,origin=Origin)
 	else:
-		im = ax.imshow(Image,extent=extent,origin="lower")
+		im = ax.imshow(Image,extent=extent,origin=Origin)
 	#endif
 	return(fig,ax,im,Image)
 #enddef
@@ -3049,7 +3064,7 @@ def WaveformExtractor(PhaseData,PPOT,waveformlocation=electrodeloc):
 	#endfor
 	
 	#Calculate maximum positive and negative waveform amplitudes and compute average Vpp
-	PositiveAmp,NegativeAmp = max(VoltageWaveform),min(VoltageWaveform
+	PositiveAmp,NegativeAmp = max(VoltageWaveform),min(VoltageWaveform)
 	PeakToPeakVoltage = abs(PositiveAmp)+abs(NegativeAmp)
 	
 	return(VoltageWaveform,WaveformBias,[PositiveAmp,NegativeAmp,PeakToPeakVoltage])
@@ -6046,7 +6061,7 @@ if savefig_phaseresolve2D == True:
 				fig.suptitle(Title, y=0.97, fontsize=18)
 
 				#Plot 2D image, applying image options and cropping as required.
-				fig,ax[0],im,Image = ImagePlotter2D(Image,extent,aspectratio,varlist[i],fig,ax[0])
+				fig,ax[0],im,Image = ImagePlotter2D(Image,extent,aspectratio,varlist[i],fig,ax[0],"upper")
 				Sx = SheathExtent(folder=l,ax=ax[0],Phase=j,Ne=Ne,Ni=Ni)[0]
 				ImageOptions(fig,ax[0],Xlabel,Ylabel,Crop=True)
 				#Add Colourbar (Axis, Label, Bins)
@@ -6464,32 +6479,43 @@ if savefig_PROES == True:
 				#Create figure and rotate PROES such that phaseaxis aligns with waveform.
 				fig,ax = figure(image_aspectratio,2,shareX=True)
 				PROES = ndimage.rotate(PROES, 90)
-				#Choose correct axial or radial distance axis and create associated folder.
-				x1,x2 = Phaseaxis[0],Phaseaxis[-1]
+
+				#Choose correct axial or radial axis and set image dimensions and labels
+				#IF PROES image plane is axial:
 				if LineoutsOrientation[k] == 'Axial':
 					lineoutstring = ' @ R='+str(round(Lineouts[k]*dr[l],2))+'cm'
 					NameString = varlist[i]+'_'+lineoutstring[2::]
 					Ylabel = 'Axial Distance Z [cm]'
-					Crop = [image_axialcrop[::-1],image_radialcrop] #Reversed accounting for rotation.
-					y1,y2 = Zaxis[-1],Zaxis[0]						#Reversed accounting for top origin.
+					x1,x2 = Phaseaxis[0],Phaseaxis[-1]
+					y1,y2 = Zaxis[-1],Zaxis[0] 						#Y1,Y2 Reversed 	- see below
+					Crop = [image_radialcrop,image_axialcrop[::-1]]	#AxialCrop Reversed - see below
+					origins = ['upper','top']						#HPEM uses upper origin (Z=0.0cm at top of mesh)
+
+				#IF PROES image plane is radial, with symmetry:
 				elif LineoutsOrientation[k] == 'Radial' and Isymlist[l] == 1:
 					lineoutstring = ' @ Z='+str(round(Lineouts[k]*dz[l],2))+'cm'
 					NameString = varlist[i]+lineoutstring[2::]
 					Ylabel = 'Radial Distance R [cm]'
-					Crop = [image_radialcrop,image_axialcrop]
+					Crop = [image_radialcrop,image_axialcrop]		#Crop is not reversed !!this is how PhD was set!!
+					x1,x2 = Phaseaxis[0],Phaseaxis[-1]
 					y1,y2 = Raxis[-1],-Raxis[-1]
+					origins = ['lower','bottom']					#HPEM has R=0.0 on-axis, increasing outwards
+
+				#IF PROES image plane is radial, without symmetry:
 				elif LineoutsOrientation[k] == 'Radial' and Isymlist[l] == 0:
 					lineoutstring = ' @ Z='+str(round(Lineouts[k]*dz[l],2))+'cm'
 					NameString = varlist[i]+lineoutstring[2::]
 					Ylabel = 'Radial Distance R [cm]'
-					Crop = [image_radialcrop,image_axialcrop]
+					x1,x2 = Phaseaxis[0],Phaseaxis[-1]
 					y1,y2 = Raxis[-1],0
+					Crop = [image_axialcrop,image_radialcrop]		#Crop is reversed as Y-axis represents R for PROES
+					origins = ['lower','bottom']					#HPEM has R=0.0 on-axis, increasing outwards
 				#endif
 				DirPROESloc = CreateNewFolder(DirPROES,lineoutstring[3::])
 
 				#Create PROES image along line of sight with phase-locked waveform.
 				fig.suptitle( 'Simulated '+varlist[i]+' PROES for '+VariedValuelist[l]+lineoutstring+'\n DoF = '+str(round(((2*DoFWidth)+1)*dz[l],2))+' cm', y=0.95, fontsize=18)
-				im = ax[0].contour(PROES,extent=[x1,x2,y1,y2],origin='lower',aspect='auto')
+				if image_contourplot == True: im = ax[0].contour(PROES,extent=[x1,x2,y1,y2],origin='lower')
 				im = ax[0].imshow(PROES,extent=[x1,x2,y1,y2],origin='bottom',aspect='auto')
 				if image_sheath == True:
 					ax[0].plot(Phaseaxis,PhaseSx,'w--',lw=1.0)
