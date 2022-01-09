@@ -455,7 +455,7 @@ print( '   |  |__|  | |  |__   |  |     |  |__   |   \|  |   /  ^  \        ')
 print( '   |   __   | |   __|  |  |     |   __|  |  . `  |  /  /_\  \       ')
 print( '   |  |  |  | |  |____ |  `----.|  |____ |  |\   | /  _____  \      ')
 print( '   |__|  |__| |_______||_______||_______||__| \__|/__/     \__\     ')
-print( '                                                              v1.1.0')
+print( '                                                              v3.1.1')
 print( '--------------------------------------------------------------------')
 print( '')
 print( 'The following diagnostics were requested:')
@@ -3896,7 +3896,6 @@ if savefig_convergence == True:
 				break
 			#endtry
 			
-			QuickConverge = True
 			#Reshape specific part of 1D Data array into 2D image for plotting.
 			if QuickConverge == False:
 				for k in range(0,len(MovieIterlist[l])):
