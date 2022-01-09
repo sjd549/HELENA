@@ -215,7 +215,7 @@ waveformlocs = []									#Cell locations of additional waveforms [R,Z].
 Variables = Ar
 MultiVar = []							#Additional variables plotted ontop of [Variables]
 radialineouts = []	#[85]		 		#Radial 1D-Profiles to be plotted (fixed Z-mesh) --
-heightlineouts = [] #[33]#?[66]?			#Axial 1D-Profiles to be plotted (fixed R-mesh) |
+heightlineouts = [] #[33]#?[66]?		#Axial 1D-Profiles to be plotted (fixed R-mesh) |
 TrendLocation = [] 						#Cell location For Trend Analysis [R,Z], ([] = min/max)
 
 
@@ -229,25 +229,24 @@ EDF_Threshold = 0.01					#Maximum Recognised EEDF/IEDF energy fraction (Plot all
 
 
 #Requested diagnostics and plotting routines.
-savefig_convergence = True				#Requires movie_icp.pdt
+savefig_convergence = False				#Requires movie_icp.pdt
 savefig_plot2D = False					#Requires TECPLOT2D.PDT
 
 savefig_monoprofiles = False			#Single-Variables; fixed height/radius
-savefig_multiprofiles = False			#Multi-Variables; same folder
-savefig_comparelineouts = False			#Multi-Variables; all folders	
+savefig_multiprofiles = False			#Multi-Variables; same folder					TO BE REFACTORED
+savefig_comparelineouts = False			#Multi-Variables; all folders					TO BE REFACTORED
+					
+savefig_trendphaseaveraged = False		#Single-Variables; fixed cell location (or max/min) 	TO BE REFACTORED
+savefig_trendphaseresolved = False		#Single-Variables; Phase-resolved data. 				TO BE REFACTORED
+savefig_pulseprofiles = False			#Single-Variables; plotted against real-time axis 		TO BE REFACTORED
 
-##########################################after this doesn't work						
-savefig_trendphaseaveraged = False		#Single-Variables; fixed cell location (or max/min)
-savefig_trendphaseresolved = False		#Single-Variables; Phase-resolved data.
-savefig_pulseprofiles = False			#Single-Variables; plotted against real-time axis
+savefig_phaseresolve1D = False			#1D Phase Resolved Images						TO BE REFACTORED
+savefig_phaseresolve2D = False			#2D Phase Resolved Images						TO BE REFACTORED
+savefig_PROES =	False					#Simulated PROES Diagnostic						TO BE REFACTORED
 
-savefig_phaseresolve1D = False			#1D Phase Resolved Images
-savefig_phaseresolve2D = False			#2D Phase Resolved Images
-savefig_PROES =	False					#Simulated PROES Diagnostic
-
-savefig_IEDFangular = False				#2D images of angular IEDF; single folders.
-savefig_IEDFtrends = False				#1D IEDF trends; all folders.
-savefig_EEDF = False					#NO PLOTTING ROUTINE		#IN DEVELOPMENT#
+savefig_IEDFangular = False				#2D images of angular IEDF; single folders.		TO BE REFACTORED
+savefig_IEDFtrends = False				#1D IEDF trends; all folders.					TO BE REFACTORED
+savefig_EEDF = False					#NO PLOTTING ROUTINE							#IN DEVELOPMENT#
 
 #Write processed data to ASCII files.
 write_ASCII = True						#All diagnostic output written to ASCII.
@@ -261,8 +260,6 @@ print_totalpower = False				#Print all requested total powers
 print_DCbias = False					#Print DC bias at electrodeloc
 print_thrust = False					#Print neutral, ion and total thrust
 print_sheath = False					#Print sheath width at electrodeloc						
-############################################upto here doesn't work (plotting production)
-
 
 
 #Image plotting options.
@@ -2837,11 +2834,11 @@ def GenerateAxis(Orientation,Isym=Isymlist[l],PhaseFrames=range(0,IMOVIE_FRAMES[
 	PhaseResolution = len(PhaseFrames)
 	axis = list()
 	if Orientation == 'Radial':
-		if Isym == 1:
+		if int(Isym) == 1:
 			for i in range(-int(R_mesh[l]),int(R_mesh[l])):
 				axis.append(i*dr[l])
 		#endfor
-		elif Isym != 1:
+		elif int(Isym) != 1:
 			for i in range(0,int(R_mesh[l])):
 				axis.append(i*dr[l])
 			#endfor
@@ -2946,11 +2943,11 @@ def DataExtent(folder=l,aspectratio=image_aspectratio):
 #=========================#
 
 
-def ImagePlotter1D(profile,axis,aspectratio,fig=111,ax=111):
+def ImagePlotter1D(axis,profile,aspectratio,fig=111,ax=111):
 #Create figure and plot a 1D graph with associated image plotting requirements.
 #Returns plotted axes and figure if new ones were created.
 #Else plots to existing figure and returns the image object.
-#ImagePlotter1D(Zlineout,Zaxis,image_aspectratio,fig,ax[0]):
+#ImagePlotter1D(Zaxis,Zprofile,image_aspectratio,fig,ax[0]):
 
 	#Generate new figure if required. {kinda hacky...}
 	if fig == 111 and ax == 111:
@@ -3062,48 +3059,49 @@ def TrendPlotter(ax=plt.gca(),TrendArray=[],Xaxis=[],Marker='o-',NormFactor=0):
 #=========================#
 
 
-def PlotRadialProfile(Data,process,variable,lineout,Rmesh=0,Isym=0):
+def PlotRadialProfile(Data,process,variable,Profile,Rmesh='NaN',Isym='NaN'):
 #Obtains a radial 1D profile at a requested axial location.
 #Returns a 1D array for plotting and performs unit conversion.
 
 	#If no mesh sizes supplied, collect sizes for current global folder.
-	if Rmesh == 0 or Isym == 0:
+	if Rmesh == 'NaN' or Isym == 'NaN':
 		Rmesh,Isym = R_mesh[l],Isymlist[l]
 	#endif
 
 	#Obtain start location for requested data and perform SI conversion.
-	ZStart = int(Rmesh*lineout)
-	ZEnd = int(Rmesh*(lineout+1))
+	ZStart = int(Rmesh*Profile)
+	ZEnd = int(Rmesh*(Profile+1))
+	
 	#Plot lines for each variable at each requested slice, ignoring ones that fail.
 	#If mesh is symmetric, copy the data over and make full plot.
-	if Isym == 1:
+	if int(Isym) == 1:
 		Zend = len(Data[process])-ZStart
 		Zstart = len(Data[process])-ZEnd
-		Rlineout = Data[process][Zstart:Zend][::-1]
+		RProfile = Data[process][Zstart:Zend][::-1]
 		#If variable is radially symmetric, add negative to symmetry
 		if IsRadialVariable(variable) == True:
-			for m in range(0,len(Rlineout)):
-				Rlineout.append(-Data[process][Zstart:Zend][m])
+			for m in range(0,len(RProfile)):
+				RProfile.append(-Data[process][Zstart:Zend][m])
 			#endfor
 		#If variable is axially symmetric, add positive.
 		elif IsRadialVariable(variable) == False:
-			for m in range(0,len(Rlineout)):
-				Rlineout.append(Data[process][Zstart:Zend][m])
+			for m in range(0,len(RProfile)):
+				RProfile.append(Data[process][Zstart:Zend][m])
 			#endfor
 		#endif
-		Rlineout = Rlineout[::-1]	#Reverse index, negative first then positive values.		
+		RProfile = RProfile[::-1]	#Reverse index, negative first then positive values.
 
 	#If the data isn't symmetric, just plot as is.
-	elif Isym == 0:
+	elif int(Isym) == 0:
 		Zend = len(Data[process])-ZStart
 		Zstart = len(Data[process])-ZEnd
-		Rlineout = Data[process][Zstart:Zend]
+		RProfile = Data[process][Zstart:Zend]
 		
 	#endif
 
 	#Convert units if required and plot.
-	Rlineout = VariableUnitConversion(Rlineout,variable)
-	return(Rlineout)
+	RProfile = VariableUnitConversion(RProfile,variable)
+	return(RProfile)
 #enddef
 
 
@@ -4086,7 +4084,7 @@ if savefig_monoprofiles == True:
 					#Plot all requested radial lines on single image per variable.
 					Rlineout=PlotRadialProfile(Data[l],processlist[i],Variablelist[i],radialineouts[j])
 					#Plot lines for each variable at each requested slice.
-					ImagePlotter1D(Rlineout,Raxis,image_aspectratio,fig,ax)
+					ImagePlotter1D(Raxis,Rlineout,image_aspectratio,fig,ax)
 
 					#Write data to ASCII files if requested.
 					if write_ASCII == True:
@@ -4130,7 +4128,7 @@ if savefig_monoprofiles == True:
 					#Plot all requested radial lines on single image per variable.
 					Zlineout=PlotAxialProfile(Data[l],processlist[i],Variablelist[i],heightlineouts[j])
 					#Plot lines for each variable at each requested slice.
-					ImagePlotter1D(Zlineout[::-1],Zaxis,image_aspectratio,fig,ax)
+					ImagePlotter1D(Zaxis,Zlineout[::-1],image_aspectratio,fig,ax)
 
 					#Write data to ASCII files if requested.
 					if write_ASCII == True:
@@ -4213,7 +4211,7 @@ if savefig_monoprofiles == True:
 #				Rlineout = PlotRadialProfile(Data[l],processlist[k],Variablelist[k],radialineouts[j],R_mesh[l],Isymlist[l])
 #
 #				#Plot radial profile and allow for log y-axis if requested.
-#				ImagePlotter1D(Rlineout,Raxis,image_aspectratio,fig,ax)
+#				ImagePlotter1D(Raxis,Rlineout,image_aspectratio,fig,ax)
 #
 #
 #				#Write data to ASCII files if requested.
@@ -4276,7 +4274,7 @@ if savefig_monoprofiles == True:
 #				Zlineout = PlotAxialProfile(Data[l],processlist[k],Variablelist[k],heightlineouts[j],R_mesh[l],Z_mesh[l],Isymlist[l])
 #
 #				#Plot axial profile and allow for log y-axis if requested.
-#				ImagePlotter1D(Zlineout[::-1],Zaxis,image_aspectratio,fig,ax)
+#				ImagePlotter1D(Zaxis,Zlineout[::-1],image_aspectratio,fig,ax)
 #
 #
 #				#Write data to ASCII files if requested.
@@ -4353,14 +4351,14 @@ if savefig_monoprofiles == True:
 #
 #					#Plot the initial variable in processlist first.
 #					Zlineout = PlotAxialProfile(Data[l],processlist[i],Variablelist[i],heightlineouts[j],R_mesh[l],Z_mesh[l],Isymlist[l])
-#					ImagePlotter1D(Zlineout[::-1],Zaxis,image_aspectratio,fig,ax)
+#					ImagePlotter1D(Zaxis,Zlineout[::-1],image_aspectratio,fig,ax)
 #
 #					#Plot all of the requested comparison variables for this plot.
 #					for m in range(0,len(multiprocesslist)):
 #
 #						#Plot profile for multiplot variables in compareprocesslist.
 #						Zlineout = PlotAxialProfile(Data[l],multiprocesslist[m],multiVariablelist[m],heightlineouts[j],R_mesh[l],Z_mesh[l],Isymlist[l])
-#						ImagePlotter1D(Zlineout[::-1],Zaxis,image_aspectratio,fig,ax)
+#						ImagePlotter1D(Zaxis,Zlineout[::-1],image_aspectratio,fig,ax)
 #
 #						#Update legendlist with each variable compared.
 #						Legendlist.append(VariableLabelMaker(multiVariablelist)[m])
@@ -4408,14 +4406,14 @@ if savefig_monoprofiles == True:
 #
 #					#Plot profile for initial variable in processlist.
 #					Rlineout = PlotRadialProfile(Data[l],processlist[i],Variablelist[i],radialineouts[j],R_mesh[l],Isymlist[l])
-#					ImagePlotter1D(Rlineout,Raxis,image_aspectratio,fig,ax)
+#					ImagePlotter1D(Raxis,Rlineout,image_aspectratio,fig,ax)
 #
 #					#Plot all of the requested comparison variables for this plot.
 #					for m in range(0,len(multiprocesslist)):
 #
 #						#Plot profile for multiplot variables in compareprocesslist.
 #						Rlineout = PlotRadialProfile(Data[l],multiprocesslist[m],multiVariablelist[m],radialineouts[j],R_mesh[l],Isymlist[l])
-#						ImagePlotter1D(Rlineout,Raxis,image_aspectratio,fig,ax)
+#						ImagePlotter1D(Raxis,Rlineout,image_aspectratio,fig,ax)
 #
 #						#Update legendlist with each variable compared.
 #						Legendlist.append(VariableLabelMaker(multiVariablelist)[m])
