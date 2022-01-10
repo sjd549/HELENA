@@ -213,10 +213,10 @@ waveformlocs = []									#Cell locations of additional waveforms [R,Z].
 
 #Requested TECPLOT Variables and plotting locations.
 Variables = Ar
-MultiVar = []							#Additional variables plotted ontop of [Variables]
-radialineouts = []	#[85]		 		#Radial 1D-Profiles to be plotted (fixed Z-mesh) --
-heightlineouts = [] #[33]#?[66]?		#Axial 1D-Profiles to be plotted (fixed R-mesh) |
-TrendLocation = [] 						#Cell location For Trend Analysis [R,Z], ([] = min/max)
+MultiVar = ['AR+']							#Additional variables plotted ontop of [Variables]
+radialineouts = [16]	#[85]		 		#Radial 1D-Profiles to be plotted (fixed Z-mesh) --
+heightlineouts = [45] #[33]#?[66]?		#Axial 1D-Profiles to be plotted (fixed R-mesh) |
+TrendLocation = [16,45] 						#Cell location For Trend Analysis [R,Z], ([] = min/max)
 
 
 #Various Diagnostic Settings.
@@ -229,16 +229,16 @@ EDF_Threshold = 0.01					#Maximum Recognised EEDF/IEDF energy fraction (Plot all
 
 
 #Requested diagnostics and plotting routines.
-savefig_convergence = False				#Requires movie_icp.pdt
-savefig_plot2D = False					#Requires TECPLOT2D.PDT
+savefig_convergence = False				#Single-Variables: iter-time axis			Requires movie_icp.pdt
+savefig_plot2D = False					#Single-Variables: converged				Requires TECPLOT2D.PDT
 
 savefig_monoprofiles = False			#Single-Variables; fixed height/radius
-savefig_multiprofiles = False			#Multi-Variables; same folder					TO BE REFACTORED
-savefig_comparelineouts = False			#Multi-Variables; all folders					TO BE REFACTORED
+savefig_multiprofiles = False			#Multi-Variables; same folder					- ASCII OUTPUT NEEDED
+savefig_compareprofiles = False			#Multi-Variables; all folders
+savefig_temporalprofiles = False		#Single-Variables; real-time axis 				TO BE REFACTORED
 					
-savefig_trendphaseaveraged = False		#Single-Variables; fixed cell location (or max/min) 	TO BE REFACTORED
+savefig_trendphaseaveraged = False		#Single-Variables; fixed cell location (or max/min)
 savefig_trendphaseresolved = False		#Single-Variables; Phase-resolved data. 				TO BE REFACTORED
-savefig_pulseprofiles = False			#Single-Variables; plotted against real-time axis 		TO BE REFACTORED
 
 savefig_phaseresolve1D = False			#1D Phase Resolved Images						TO BE REFACTORED
 savefig_phaseresolve2D = False			#2D Phase Resolved Images						TO BE REFACTORED
@@ -298,10 +298,12 @@ cbaroverride = ['NotImplimented']
 
 
 
-#V1.1.0 Release Version To Do list:
+#V3.2.0 Release Version To Do list:
 #Fix sound speed diagnostic - Current version has issue with NaNs and incorrect averaging
 
 #Clarified SheathWidth function Axial/Radial definition, also corrected this in the phase-resolved sheath trends diagnostic.
+
+#Multivar_profiles diagnostic overhaul - update coding structure and include an ASCII output option
 
 #Corrected 1DPhaseMovie, 2DPhaseMovie and PROES, however the radial direction is not consistent. 
 #1DPhaseMovie needs no reversal using plotradialprofile
@@ -465,7 +467,7 @@ if True in [savefig_phaseresolve2D,savefig_PROES]:
 	print('# 2D Phase-Resolved Movie Processing')
 if True in [savefig_phaseresolve1D]:
 	print('# 1D Phase-Resolved Profile Processing')
-if True in [savefig_monoprofiles,savefig_multiprofiles,savefig_comparelineouts,savefig_pulseprofiles]:
+if True in [savefig_monoprofiles,savefig_multiprofiles,savefig_compareprofiles,savefig_temporalprofiles]:
 	print('# 1D Steady-State Profile Processing')
 if True in [print_generaltrends,print_Knudsennumber,print_soundspeed, print_totalpower,print_DCbias,print_thrust]:
 	print('# 1D Specific Trend Analysis')
@@ -561,19 +563,16 @@ for l in range(0,numfolders):
 		meshdata = open(TEC2D[l]).readlines()
 
 		#Zone line holds data, split at comma, R&Z values are given by "I=,J=" respectively.
-		R = filter(lambda x: 'ZONE' in x, meshdata)#[0].split(",")[0].strip(' \t\n\r,=ZONE I')
-		Z = filter(lambda x: 'ZONE' in x, meshdata)#[0].split(",")[1].strip(' \t\n\r,=ZONE J')
-		R = (list(R))
-		Z = (list(Z))        
-		R = R[0].split(",")[0].strip(' \t\n\r,=ZONE I')
-		Z = Z[0].split(",")[1].strip(' \t\n\r,=ZONE J')        
-		R_py3_object = list(filter(lambda x: x.isdigit(), R))
-		Z_py3_object = list(filter(lambda x: x.isdigit(), Z))  
-		R_mesh = np.append( R_mesh, float(R) )
-		Z_mesh = np.append( Z_mesh, float(Z) )
-		
+#		R_py3_object = list(filter(lambda x: x.isdigit(), R))
+#		Z_py3_object = list(filter(lambda x: x.isdigit(), Z))  
+		R = list(filter(lambda x: 'ZONE' in x, meshdata))		#String: 'ZONE I=xxx, J=xxx, F=BLOCK"
+		Z = list(filter(lambda x: 'ZONE' in x, meshdata))		#String: 'ZONE I=xxx, J=xxx, F=BLOCK"      
+		R = R[0].split(",")[0].strip(' \t\n\r,=ZONE I')			#Split at commas, [0] gives "I=xxx"
+		Z = Z[0].split(",")[1].strip(' \t\n\r,=ZONE J') 		#Split at commas, [1] gives "J=xxx"       
+		R_mesh.append( int(R) )									#R_mesh (Cells) [int]
+		Z_mesh.append( int(Z) )									#Z_mesh (Cells) [int]
 	
-	#If extraction from TECPLOT2D fails, attempt to extract from initmesh.out header
+	#If extraction from TECPLOT2D file fails, attempt to extract from initmesh.out header
 	#This is an old method and causes issues with Q-VT meshes and magnified meshes
 	except ValueError:
 		#Identify mesh size from initmesh.out header:
@@ -666,36 +665,52 @@ for l in range(0,numfolders):
 		dz.append(Height[-1]/(Z_mesh[-1]-1))
 	#endtry
 
+	#=====#=====#
+
 	#Material Namelist Inputs (frequencies/voltages/powers)   [FREQGLOB ONLY READS 10 CHARACTERS]
 	try:
-		NUMMETALS = int(filter(lambda x: x.isdigit(),filter(lambda x:'IMETALS' in x,NamelistData)[0]))+1
-		CMETALS = filter(lambda x: 'CMETAL=' in x, NamelistData)[0].split()[1:NUMMETALS]
-		VRFM.append(filter(lambda x: 'VRFM=' in x, NamelistData)[0].split()[1:NUMMETALS])
-		VRFM2.append(filter(lambda x: 'VRFM_2=' in x, NamelistData)[0].split()[1:NUMMETALS])
-		FREQM.append(filter(lambda x: 'FREQM=' in x, NamelistData)[0].split()[1:NUMMETALS])
-		FREQM2.append(filter(lambda x: 'FREQM_2=' in x, NamelistData)[0].split()[1:NUMMETALS])
-		FREQC.append(filter(lambda x: 'FREQC=' in x, NamelistData)[0].split()[1:NUMMETALS])
-		FREQGLOB.append(float(filter(lambda x:'FREQ=' in x, NamelistData)[0].strip(' \t\n\r,=FREQ')[0:10]))
-		IRFPOW.append(float(filter(lambda x:'IRFPOW=' in x, NamelistData)[0].strip(' \t\n\r,=IRFPOW')))
-		IETRODEM.append(filter(lambda x:'IETRODEM=' in x, NamelistData)[0].split()[1:NUMMETALS])
+		NUMMETALS = list(filter(lambda x:'IMETALS' in x,NamelistData))[0].strip(' \t\n\r,=IMETALS')
+		NUMMETALS = int(NUMMETALS)+1
+		CMETALS = list(filter(lambda x: 'CMETAL=' in x, NamelistData))[0].strip(' \t\n\r,').split()[1:NUMMETALS]
+		for i in range(0,len(CMETALS)): CMETALS[i] = str(CMETALS[i].strip(','))
+		IETRODEM.append( list(filter(lambda x:'IETRODEM=' in x, NamelistData))[0].split()[1:NUMMETALS])
 		for i in range(0,len(IETRODEM[l])): IETRODEM[l][i] = int(IETRODEM[l][i].strip(','))
-		PRESOUT.append(  float(filter(lambda x:'PRESOUT=' in x, NamelistData)[0].strip(' \t\n\r,=PRESOUT')))
+		##
+		VRFM.append( list(filter(lambda x: 'VRFM=' in x, NamelistData))[0].split()[1:NUMMETALS] )
+		for i in range(0,len(VRFM[-1])): VRFM[-1][i] = float(VRFM[-1][i].strip(','))
+		VRFM2.append( list(filter(lambda x: 'VRFM_2=' in x, NamelistData))[0].split()[1:NUMMETALS] )
+		for i in range(0,len(VRFM2[-1])): VRFM2[-1][i] = float(VRFM2[-1][i].strip(','))
+		##
+		FREQM.append( list(filter(lambda x: 'FREQM=' in x, NamelistData))[0].split()[1:NUMMETALS])
+		for i in range(0,len(FREQM[-1])): FREQM[-1][i] = float(FREQM[-1][i].strip(','))
+		FREQM2.append( list(filter(lambda x: 'FREQM_2=' in x, NamelistData))[0].split()[1:NUMMETALS])
+		for i in range(0,len(FREQM2[-1])): FREQM2[-1][i] = float(FREQM2[-1][i].strip(','))
+		FREQC.append( list(filter(lambda x: 'FREQC=' in x, NamelistData))[0].split()[1:NUMMETALS])
+		FREQGLOB.append( float(list(filter(lambda x:'FREQ=' in x, NamelistData))[0].strip(' \t\n\r,=FREQ')[0:10]))
+		##
+		IRFPOW.append( float(list(filter(lambda x:'IRFPOW=' in x, NamelistData))[0].strip(' \t\n\r,=IRFPOW')))
+		##
+		PRESOUT.append( float(list(filter(lambda x:'PRESOUT=' in x, NamelistData))[0].strip(' \t\n\r,=PRESOUT')))
 	except:
 		print( 'ERR: ICP.NAM MATERIAL DEFINITIONS READIN, USING DEFAULT MATERIAL PROPERTIES')
-		FREQM.append(13.56E6)
-		FREQM2.append(13.56E6)
-		FREQC.append(13.56E6)
-		FREQGLOB.append(13.56E6)
-		VRFM.append(300.0)
-		VRFM2.append(150.0)
-		IRFPOW.append(100.0)
-		PRESOUT.append(0.85)
+		FREQM.append(13.56E6)		#Hz
+		FREQM2.append(13.56E6)		#Hz
+		FREQC.append(13.56E6)		#Hz
+		FREQGLOB.append(13.56E6)	#Hz
+		VRFM.append(300.0)			#Volts
+		VRFM2.append(150.0)			#Volts
+		IRFPOW.append(100.0)		#Watts
+		PRESOUT.append(0.85)		#Torr
 	#endtry
+	
+	#=====#=====#
 
 	#Plasma Chemistry Monte-Carlo (PCMC) Namelist Inputs
 	try:
-		IEBINSPCMC = float(filter(lambda x: 'IEBINSPCMC=' in x, NamelistData)[0].split()[0].strip(' \t\n\r,=IEBINSPCMC'))
-		EMAXIPCMC = float(filter(lambda x: 'EMAXIPCMC=' in x, NamelistData)[0].split()[0].strip(' \t\n\r,=EMAXIPCMC '))
+		IEBINSPCMC = list(filter(lambda x: 'IEBINSPCMC=' in x, NamelistData))[0]
+		IEBINSPCMC = float(IEBINSPCMC.split()[0].strip(' \t\n\r,=IEBINSPCMC'))
+		EMAXIPCMC = list(filter(lambda x: 'EMAXIPCMC=' in x, NamelistData))[0]
+		EMAXIPCMC = float(EMAXIPCMC.split()[0].strip(' \t\n\r,=EMAXIPCMC'))
 	except:
 		print( 'ERR: ICP.NAM PCMC READIN, USING DEFAULT PCMC PROPERTIES')
 		IEBINSPCMC = 1000
@@ -704,7 +719,8 @@ for l in range(0,numfolders):
 
 	#Phase-Resolved IMOVIE Namelist Inputs
 	try:
-		IMOVIE_FRAMES.append(int(filter(lambda x:'IMOVIE_FRAMES=' in x, NamelistData)[0].strip(' \t\n\r,=IMOVIE_FRAMES')))
+		imovie_frames = list(filter(lambda x:'IMOVIE_FRAMES=' in x, NamelistData))[0]
+		IMOVIE_FRAMES.append( int(imovie_frames.strip(' \t\n\r,=IMOVIE_FRAMES')) )
 	except:
 		print( 'ERR: ICP.NAM IMOVIE READIN, USING DEFAULT PHASE RESOLVED PROPERTIES')
 		IMOVIE_FRAMES.append(180)
@@ -2166,7 +2182,7 @@ for l in tqdm(range(0,numfolders)):
 #===================##===================#
 #===================##===================#
 
-	if True in [savefig_convergence,savefig_pulseprofiles]:
+	if True in [savefig_convergence,savefig_temporalprofiles]:
 
 		#Load data from movie_icp file and unpack into 1D array.
 		rawdata,nn_itermovie = ExtractRawData(Dir,'movie_icp.pdt',l)
@@ -2318,7 +2334,7 @@ del HomeDir,DirContents
 
 
 #Alert user that readin process has ended and continue with selected diagnostics.
-if any([savefig_plot2D, savefig_phaseresolve2D, savefig_convergence, savefig_monoprofiles, savefig_multiprofiles, savefig_comparelineouts, savefig_pulseprofiles, savefig_trendphaseresolved, savefig_phaseresolve1D, savefig_PROES, savefig_trendphaseaveraged, print_generaltrends, print_Knudsennumber, print_totalpower, print_DCbias, print_thrust, savefig_IEDFangular, savefig_IEDFtrends, savefig_EEDF]) == True:
+if any([savefig_plot2D, savefig_phaseresolve2D, savefig_convergence, savefig_monoprofiles, savefig_multiprofiles, savefig_compareprofiles, savefig_temporalprofiles, savefig_trendphaseresolved, savefig_phaseresolve1D, savefig_PROES, savefig_trendphaseaveraged, print_generaltrends, print_Knudsennumber, print_totalpower, print_DCbias, print_thrust, savefig_IEDFangular, savefig_IEDFtrends, savefig_EEDF]) == True:
 	print( '----------------------------------------')
 	print( 'Data Readin Complete, Starting Analysis:')
 	print( '----------------------------------------')
@@ -2415,6 +2431,7 @@ def ImageExtractor2D(Data,Variable=[],Rmesh=0,Zmesh=0):
 	if Rmesh == 0 or Zmesh == 0:
 		Rmesh,Zmesh = int(R_mesh[l]),int(Z_mesh[l])
 	#endif
+	
 	#Create empty 2D image of required size.
 	numrows = int(len(Data)/Rmesh)
 	Image = np.zeros([int(numrows),int(Rmesh)])
@@ -3211,7 +3228,7 @@ def TrendAtGivenLocation(TrendLocation,process,variable):
 
 	#For all simulation folders.
 	for l in range(0,numfolders):
-
+	
 		#Extract image with given process and variable name.
 		Image = ImageExtractor2D(Data[l][process],variable,R_mesh[l],Z_mesh[l])
 
@@ -4005,7 +4022,6 @@ if savefig_convergence == True:
 	print('------------------------------------')
 #endif
 
-
 #=====================================================================#
 #=====================================================================#
 #
@@ -4049,8 +4065,6 @@ if savefig_convergence == True:
 #====================================================================#
 			#AXIAL AND RADIAL PROFILES FROM SINGLE FOLDERS#
 #====================================================================#
-
-
 
 #Generate and save lineouts of requested variables for given location.
 if savefig_monoprofiles == True:
@@ -4155,300 +4169,290 @@ if savefig_monoprofiles == True:
 	print('# Single Profiles Complete')
 	print('--------------------------')
 #endif
-#
-#
-#
+
+
+
 ##====================================================================#
 #			#COMPARITIVE PROFILES FROM MULTI-FOLDERS#
 ##====================================================================#
-#
-#
-#
-##Plot comparitive profiles for each variable between folders.
-##Perform horizontal profile comparisons
-#if savefig_comparelineouts == True:
-#
-#	#Create folder to keep output plots.
-#	DirComparisons = CreateNewFolder(os.getcwd(),'/1D Comparisons')
-#
-#	#Generate SI scale axes for lineout plots.
-#	Raxis = GenerateAxis('Radial',Isymlist[l])
-#	Zaxis = GenerateAxis('Axial',Isymlist[l])
-#
-#	#Perform radial profile comparisons
-#	for j in range(0,len(radialineouts)):
-#
-#		#Create new folder for each axial or radial slice.
-#		ProfileFolder = 'Z='+str(round((radialineouts[j])*dz[l], 2))+'cm'
-#		DirProfile = CreateNewFolder(DirComparisons,ProfileFolder)
-#
-#		#For each requested comparison variable.
-#		for k in tqdm(range(0,len(Variables))):
-#
-#			#Loop escape if variables that do not exist have been requested.
-#			if k >= 1 and k > len(Variablelist)-1:
-#				break
-#			#endif
-#
-#			#Create fig of desired size and refresh legendlist.
-#			fig,ax = figure(image_aspectratio,1)
-#			Legendlist = list()
-#
-#			#For each folder in the directory.
-#			for l in range(0,numfolders):
-#
-#				#Create processlist for each folder as required.
-#				processlist,Variablelist = VariableEnumerator(Variables,rawdata_2D[l],header_2Dlist[l])
-#
-#				#Correct processlist for folders containing different icp.dat.
-#				processlist,Variablelist = VariableInterpolator(processlist,Variablelist,Comparisonlist)
-#
-#				#Update legend with folder information.
-#				Legendlist.append( FolderNameTrimmer(Dirlist[l]) )
-#				Ylabels = VariableLabelMaker(Variablelist)
-#
-#				#Plot all radial profiles for all variables in one folder.
-#				Rlineout = PlotRadialProfile(Data[l],processlist[k],Variablelist[k],radialineouts[j],R_mesh[l],Isymlist[l])
-#
-#				#Plot radial profile and allow for log y-axis if requested.
-#				ImagePlotter1D(Raxis,Rlineout,image_aspectratio,fig,ax)
-#
-#
-#				#Write data to ASCII files if requested.
-#				if write_ASCII == True:
-#					if l == 0:
-#						WriteFolder = 'Z='+str(round((radialineouts[j])*dz[l], 2))+'cm_Data'
-#						DirWrite = CreateNewFolder(DirComparisons, WriteFolder)
-#						WriteDataToFile(Raxis+['\n'], DirWrite+Variablelist[k], 'w')
-#					#endif
-#					WriteDataToFile(Rlineout+['\n'], DirWrite+Variablelist[k], 'a')
-#				#endif
-#
-#				#Apply image options and axis labels.
-#				Title = 'Comparison of '+Variablelist[k]+' Profiles at Z='+str(round((radialineouts[j])*dz[l], 2))+'cm for \n'+Dirlist[l][2:-1]
-#				Xlabel,Ylabel,Legend = 'Radial Distance R [cm]',Ylabels[k],Legendlist
-#				ImageOptions(fig,ax,Xlabel,Ylabel,Title,Legendlist,Crop=False)
-#			#endfor
-#
-#			#Save one image per variable with data from all simulations.
-#			plt.savefig(DirProfile+Variablelist[k]+'@ Z='+str(round((radialineouts[j])*dz[l], 2))+'cm profiles'+ext)
-#			plt.close('all')
-#		#endfor
-#	#endfor
-#
+
+#Plot comparitive profiles for each variable between folders.
+if savefig_compareprofiles == True:
+
+	#Create folder to keep output plots.
+	DirComparisons = CreateNewFolder(os.getcwd(),'/1D Comparisons')
+
+	#Generate SI scale axes for lineout plots.
+	Raxis = GenerateAxis('Radial',Isymlist[l])
+	Zaxis = GenerateAxis('Axial',Isymlist[l])
+
+	#Perform radial (horizontal) profile comparisons
+	for j in range(0,len(radialineouts)):
+
+		#Create new folder for each axial or radial slice.
+		ProfileFolder = 'Z='+str(round((radialineouts[j])*dz[l], 2))+'cm'
+		DirProfile = CreateNewFolder(DirComparisons,ProfileFolder)
+
+		#For each requested comparison variable.
+		for k in tqdm(range(0,len(Variables))):
+
+			#Loop escape if variables that do not exist have been requested.
+			if k >= 1 and k > len(Variablelist)-1:
+				break
+			#endif
+
+			#Create fig of desired size and refresh legendlist.
+			fig,ax = figure(image_aspectratio,1)
+			Legendlist = list()
+
+			#For each folder in the directory.
+			for l in range(0,numfolders):
+
+				#Create processlist for each folder as required.
+				processlist,Variablelist = VariableEnumerator(Variables,rawdata_2D[l],header_2Dlist[l])
+
+				#Correct processlist for folders containing different icp.dat.
+				processlist,Variablelist = VariableInterpolator(processlist,Variablelist,Comparisonlist)
+
+				#Update legend with folder information.
+				Legendlist.append( FolderNameTrimmer(Dirlist[l]) )
+				Ylabels = VariableLabelMaker(Variablelist)
+
+				#Plot all radial profiles for all variables in one folder.
+				RProfile = PlotRadialProfile(Data[l],processlist[k],Variablelist[k], radialineouts[j],R_mesh[l],Isymlist[l])
+
+				#Plot radial profile and allow for log y-axis if requested.
+				ImagePlotter1D(Raxis,RProfile,image_aspectratio,fig,ax)
+
+
+				#Write data to ASCII files if requested.
+				if write_ASCII == True:
+					if l == 0:
+						WriteFolder = 'Z='+str(round((radialineouts[j])*dz[l], 2))+'cm_Data'
+						DirWrite = CreateNewFolder(DirComparisons, WriteFolder)
+						WriteDataToFile(Raxis+['\n'], DirWrite+Variablelist[k], 'w')
+					#endif
+					WriteDataToFile(RProfile+['\n'], DirWrite+Variablelist[k], 'a')
+				#endif
+
+				#Apply image options and axis labels.
+				Title = 'Comparison of '+Variablelist[k]+' Profiles at Z='+str(round((radialineouts[j])*dz[l], 2))+'cm for \n'+Dirlist[l][2:-1]
+				Xlabel,Ylabel,Legend = 'Radial Distance R [cm]',Ylabels[k],Legendlist
+				ImageOptions(fig,ax,Xlabel,Ylabel,Title,Legendlist,Crop=False)
+			#endfor
+
+			#Save one image per variable with data from all simulations.
+			plt.savefig(DirProfile+Variablelist[k]+'@ Z='+str(round((radialineouts[j])*dz[l], 2))+'cm profiles'+ext)
+			plt.close('all')
+		#endfor
+	#endfor
+
 ##===================##===================#
-#
-#	#Perform vertical lineout comparisons
-#	for j in range(0,len(heightlineouts)):
-#
-#		#Create new folder for each axial or radial slice.
-#		ProfileFolder = 'R='+str(round((heightlineouts[j])*dr[l], 2))+'cm'
-#		DirProfile = CreateNewFolder(DirComparisons,ProfileFolder)
-#
-#		#For each requested comparison variable.
-#		for k in tqdm(range(0,len(Variables))):
-#
-#			#Loop escape if variables that do not exist have been requested.
-#			if k >= 1 and k > len(Variablelist)-1:
-#				break
-#			#endif
-#
-#			#Create fig of desired size and refresh legendlist.
-#			fig,ax = figure(image_aspectratio,1)
-#			Legendlist = list()
-#
-#			#For each folder in the directory.
-#			for l in range(0,numfolders):
-#
-#				#Create processlist for each folder as required.
-#				processlist,Variablelist = VariableEnumerator(Variables,rawdata_2D[l],header_2Dlist[l])
-#
-#				#Correct processlist for folders containing different icp.dat.
-#				processlist,Variablelist = VariableInterpolator(processlist,Variablelist,Comparisonlist)
-#
-#				#Update legend with folder information.
-#				Legendlist.append( FolderNameTrimmer(Dirlist[l]) )
-#				Ylabels = VariableLabelMaker(Variablelist)
-#
-#				#Obtain axial profile for each folder of the current variable.
-#				Zlineout = PlotAxialProfile(Data[l],processlist[k],Variablelist[k],heightlineouts[j],R_mesh[l],Z_mesh[l],Isymlist[l])
-#
-#				#Plot axial profile and allow for log y-axis if requested.
-#				ImagePlotter1D(Zaxis,Zlineout[::-1],image_aspectratio,fig,ax)
-#
-#
-#				#Write data to ASCII files if requested.
-#				if write_ASCII == True:
-#					if l == 0:
-#						WriteFolder = 'R='+str(round((heightlineouts[j])*dr[l], 2))+'cm_Data'
-#						DirWrite = CreateNewFolder(DirComparisons, WriteFolder)
-#						WriteDataToFile(Zaxis+['\n'], DirWrite+Variablelist[k], 'w')
-#					#endif
-#					WriteDataToFile(Zlineout[::-1]+['\n'], DirWrite+Variablelist[k], 'a')
-#				#endif
-#
-#				#Apply image options and axis labels.
-#				Title = 'Comparison of '+Variablelist[k]+' Profiles at R='+str(round((heightlineouts[j])*dr[l], 2))+'cm for \n'+Dirlist[l][2:-1]
-#				Xlabel,Ylabel,Legend = 'Axial Distance Z [cm]',Ylabels[k],Legendlist
-#				ImageOptions(fig,ax,Xlabel,Ylabel,Title,Legendlist,Crop=False)
-#			#endfor
-#
-#			#Save one image per variable with data from all simulations.
-#			plt.savefig(DirProfile+Variablelist[k]+'@ R='+str(round((heightlineouts[j])*dr[l], 2))+'cm profiles'+ext)
-#			plt.close('all')
-#		#endfor
-#	#endfor
-#
-#	print'-------------------------------'
-#	print'# Comparitive Profiles Complete'
-#	print'-------------------------------'
-##endif
-#
-#
-#
+
+	#Perform vertical (axial) profile comparisons
+	for j in range(0,len(heightlineouts)):
+
+		#Create new folder for each axial or radial slice.
+		ProfileFolder = 'R='+str(round((heightlineouts[j])*dr[l], 2))+'cm'
+		DirProfile = CreateNewFolder(DirComparisons,ProfileFolder)
+
+		#For each requested comparison variable.
+		for k in tqdm(range(0,len(Variables))):
+
+			#Loop escape if variables that do not exist have been requested.
+			if k >= 1 and k > len(Variablelist)-1:
+				break
+			#endif
+
+			#Create fig of desired size and refresh legendlist.
+			fig,ax = figure(image_aspectratio,1)
+			Legendlist = list()
+
+			#For each folder in the directory.
+			for l in range(0,numfolders):
+
+				#Create processlist for each folder as required.
+				processlist,Variablelist = VariableEnumerator(Variables,rawdata_2D[l],header_2Dlist[l])
+
+				#Correct processlist for folders containing different icp.dat.
+				processlist,Variablelist = VariableInterpolator(processlist,Variablelist,Comparisonlist)
+
+				#Update legend with folder information.
+				Legendlist.append( FolderNameTrimmer(Dirlist[l]) )
+				Ylabels = VariableLabelMaker(Variablelist)
+
+				#Obtain axial profile for each folder of the current variable.
+				ZProfile = PlotAxialProfile(Data[l],processlist[k],Variablelist[k], heightlineouts[j],R_mesh[l],Z_mesh[l],Isymlist[l])
+
+				#Plot axial profile and allow for log y-axis if requested.
+				ImagePlotter1D(Zaxis,ZProfile[::-1],image_aspectratio,fig,ax)
+
+
+				#Write data to ASCII files if requested.
+				if write_ASCII == True:
+					if l == 0:
+						WriteFolder = 'R='+str(round((heightlineouts[j])*dr[l], 2))+'cm_Data'
+						DirWrite = CreateNewFolder(DirComparisons, WriteFolder)
+						WriteDataToFile(Zaxis+['\n'], DirWrite+Variablelist[k], 'w')
+					#endif
+					WriteDataToFile(ZProfile[::-1]+['\n'], DirWrite+Variablelist[k], 'a')
+				#endif
+
+				#Apply image options and axis labels.
+				Title = 'Comparison of '+Variablelist[k]+' Profiles at R='+str(round((heightlineouts[j])*dr[l], 2))+'cm for \n'+Dirlist[l][2:-1]
+				Xlabel,Ylabel,Legend = 'Axial Distance Z [cm]',Ylabels[k],Legendlist
+				ImageOptions(fig,ax,Xlabel,Ylabel,Title,Legendlist,Crop=False)
+			#endfor
+
+			#Save one image per variable with data from all simulations.
+			plt.savefig(DirProfile+Variablelist[k]+'@ R='+str(round((heightlineouts[j])*dr[l], 2))+'cm profiles'+ext)
+			plt.close('all')
+		#endfor
+	#endfor
+
+	print('-------------------------------')
+	print('# Comparitive Profiles Complete')
+	print('-------------------------------')
+#endif
+
+
+
 ##====================================================================#
 #				  #MULTI-PROFILES FROM SAME FOLDER#
 ##====================================================================#
-#
-#
-#
-#if savefig_multiprofiles == True:
-#
-#	#For each folder in turn
-#	for l in range(0,numfolders):
-#		#Create global multivar folder.
-#		Dirlineouts = CreateNewFolder(Dirlist[l],'MultiVar_Profiles/')
-#
-#		#Create processlist for each folder as required.
-#		processlist,Variablelist = VariableEnumerator(Variables,rawdata_2D[l],header_2Dlist[l])
-#		multiprocesslist,multiVariablelist = VariableEnumerator(MultiVar,rawdata_2D[l],header_2Dlist[l])
-#
-#		#Create variable labels with SI unit conversions if required.
-#		Ylabel = VariableLabelMaker(Variablelist)
-#		multiYlabel = VariableLabelMaker(multiVariablelist)
-#
-#		#Generate the vertical (height) lineouts for a given radius.
-#		if len(heightlineouts) > 0:
-#
-#			#Generate SI scale axes for lineout plots.
-#			Zaxis = GenerateAxis('Axial',Isymlist[l])
-#
-#			#Perform the plotting for all requested variables.
-#			for i in tqdm(range(0,len(processlist))):
-#
-#				#Extract the lineout data from the main data array.
-#				for j in range(0,len(heightlineouts)):
-#					#Create fig of desired size.
-#					fig,ax = figure(image_aspectratio,1)
-#
-#					#Create folder to keep output plots.
-#					Slice = str(round((heightlineouts[j])*dr[l], 2))
-#					DirZlineouts = CreateNewFolder(Dirlineouts,'R='+Slice+'cm/')
-#
-#					#Create legendlist
-#					Legendlist = list()
-#					Legendlist.append(VariableLabelMaker(Variablelist)[i])
-#
-#					#Plot the initial variable in processlist first.
-#					Zlineout = PlotAxialProfile(Data[l],processlist[i],Variablelist[i],heightlineouts[j],R_mesh[l],Z_mesh[l],Isymlist[l])
-#					ImagePlotter1D(Zaxis,Zlineout[::-1],image_aspectratio,fig,ax)
-#
-#					#Plot all of the requested comparison variables for this plot.
-#					for m in range(0,len(multiprocesslist)):
-#
-#						#Plot profile for multiplot variables in compareprocesslist.
-#						Zlineout = PlotAxialProfile(Data[l],multiprocesslist[m],multiVariablelist[m],heightlineouts[j],R_mesh[l],Z_mesh[l],Isymlist[l])
-#						ImagePlotter1D(Zaxis,Zlineout[::-1],image_aspectratio,fig,ax)
-#
-#						#Update legendlist with each variable compared.
-#						Legendlist.append(VariableLabelMaker(multiVariablelist)[m])
-#					#endfor
-#
-#
-#					#Apply image options and axis labels.
-#					Title = str(round((heightlineouts[j])*dr[l], 2))+'cm Height profiles for '+Variablelist[i]+','' for \n'+Dirlist[l][2:-1]
-#					Xlabel,Ylabel = 'Axial Distance Z [cm]',VariableLabelMaker(Variablelist)[i]
-#					ImageOptions(fig,ax,Xlabel,Ylabel,Title,Legendlist,Crop=False)
-#
-#					#Save figures in original folder.
-#					R = 'R='+str(round((heightlineouts[j])*dr[l], 2))+'_'
-#					plt.savefig(DirZlineouts+R+Variablelist[i]+'_MultiProfiles'+ext)
-#					plt.close('all')
-#				#endfor
-#			#endfor
-#		#endif
-#
+
+if savefig_multiprofiles == True:
+
+	#For each folder in turn
+	for l in range(0,numfolders):
+		#Create global multivar folder.
+		Dirlineouts = CreateNewFolder(Dirlist[l],'MultiVar_Profiles/')
+
+		#Create processlist for each folder as required.
+		processlist,Variablelist = VariableEnumerator(Variables,rawdata_2D[l],header_2Dlist[l])
+		multiprocesslist,multiVariablelist = VariableEnumerator(MultiVar,rawdata_2D[l],header_2Dlist[l])
+
+		#Create variable labels with SI unit conversions if required.
+		Ylabel = VariableLabelMaker(Variablelist)
+		multiYlabel = VariableLabelMaker(multiVariablelist)
+
+		#Generate the vertical (height) lineouts for a given radius.
+		if len(heightlineouts) > 0:
+
+			#Generate SI scale axes for lineout plots.
+			Zaxis = GenerateAxis('Axial',Isymlist[l])
+
+			#Perform the plotting for all requested variables.
+			for i in tqdm(range(0,len(processlist))):
+
+				#Extract the lineout data from the main data array.
+				for j in range(0,len(heightlineouts)):
+					#Create fig of desired size.
+					fig,ax = figure(image_aspectratio,1)
+
+					#Create folder to keep output plots.
+					Slice = str(round((heightlineouts[j])*dr[l], 2))
+					DirZlineouts = CreateNewFolder(Dirlineouts,'R='+Slice+'cm/')
+
+					#Create legendlist
+					Legendlist = list()
+					Legendlist.append(VariableLabelMaker(Variablelist)[i])
+
+					#Plot the initial variable in processlist first.
+					ZProfile = PlotAxialProfile(Data[l],processlist[i],Variablelist[i], heightlineouts[j],R_mesh[l],Z_mesh[l],Isymlist[l])
+					ImagePlotter1D(Zaxis,ZProfile[::-1],image_aspectratio,fig,ax)
+
+					#Plot all of the requested comparison variables for this plot.
+					for m in range(0,len(multiprocesslist)):
+						#Plot profile for multiplot variables in compareprocesslist.
+						ZProfile = PlotAxialProfile(Data[l],multiprocesslist[m],multiVariablelist[m], heightlineouts[j],R_mesh[l],Z_mesh[l],Isymlist[l])
+						ImagePlotter1D(Zaxis,ZProfile[::-1],image_aspectratio,fig,ax)
+
+						#Update legendlist with each variable compared.
+						Legendlist.append(VariableLabelMaker(multiVariablelist)[m])
+					#endfor
+
+					#Apply image options and axis labels.
+					Title = str(round((heightlineouts[j])*dr[l], 2))+'cm Height profiles for '+Variablelist[i]+','' for \n'+Dirlist[l][2:-1]
+					Xlabel,Ylabel = 'Axial Distance Z [cm]',VariableLabelMaker(Variablelist)[i]
+					ImageOptions(fig,ax,Xlabel,Ylabel,Title,Legendlist,Crop=False)
+
+					#Save figures in original folder.
+					R = 'R='+str(round((heightlineouts[j])*dr[l], 2))+'_'
+					plt.savefig(DirZlineouts+R+Variablelist[i]+'_MultiProfiles'+ext)
+					plt.close('all')
+				#endfor
+			#endfor
+		#endif
+
 ##===================##===================#
-#
-#		#Generate the horizontal (Radial) lineouts for a given radius.
-#		if len(radialineouts) > 0:
-#			#Create global multivar folder.
-#			Dirlineouts = CreateNewFolder(Dirlist[l],'MultiVar_Profiles/')
-#
-#			#Generate SI scale axes for lineout plots.
-#			Raxis = GenerateAxis('Radial',Isymlist[l])
-#
-#			#Perform the plotting for all requested variables.
-#			for i in tqdm(range(0,len(processlist))):
-#
-#				#Perform the plotting for all requested variables.
-#				for j in range(0,len(radialineouts)):
-#					#Create fig of desired size.
-#					fig,ax = figure(image_aspectratio,1)
-#
-#					#Create folder to keep output plots.
-#					Slice = str(round((radialineouts[j])*dz[l], 2))
-#					DirRlineouts = CreateNewFolder(Dirlineouts,'Z='+Slice+'cm/')
-#
-#					#Create legendlist
-#					Legendlist = list()
-#					Legendlist.append(VariableLabelMaker(Variablelist)[i])
-#
-#					#Plot profile for initial variable in processlist.
-#					Rlineout = PlotRadialProfile(Data[l],processlist[i],Variablelist[i],radialineouts[j],R_mesh[l],Isymlist[l])
-#					ImagePlotter1D(Raxis,Rlineout,image_aspectratio,fig,ax)
-#
-#					#Plot all of the requested comparison variables for this plot.
-#					for m in range(0,len(multiprocesslist)):
-#
-#						#Plot profile for multiplot variables in compareprocesslist.
-#						Rlineout = PlotRadialProfile(Data[l],multiprocesslist[m],multiVariablelist[m],radialineouts[j],R_mesh[l],Isymlist[l])
-#						ImagePlotter1D(Raxis,Rlineout,image_aspectratio,fig,ax)
-#
-#						#Update legendlist with each variable compared.
-#						Legendlist.append(VariableLabelMaker(multiVariablelist)[m])
-#					#endfor
-#
-#
-#					#Apply image options and axis labels.
-#					Title = str(round((radialineouts[j])*dz[l], 2))+'cm Radial Profiles for '+Variablelist[i]+' for \n'+Dirlist[l][2:-1]
-#					Xlabel,Ylabel = 'Radial Distance R [cm]',VariableLabelMaker(Variablelist)[i]
-#					ImageOptions(fig,ax,Xlabel,Ylabel,Title,Legendlist,Crop=False)
-#
-#					#Save lines in previously created folder.
-#					Z = 'Z='+str(round((radialineouts[j])*dz[l], 2))+'_'
-#					plt.savefig(DirRlineouts+Z+Variablelist[i]+'_MultiProfiles'+ext)
-#					plt.close('all')
-#				#endfor
-#			#endfor
-#		#endif
-#	#endfor
-#
-#	print'-----------------------------'
-#	print'# Multiplot Profiles Complete'
-#	print'-----------------------------'
-##endif
-#
-#
-#
+
+		#Generate the horizontal (Radial) lineouts for a given radius.
+		if len(radialineouts) > 0:
+			#Create global multivar folder.
+			Dirlineouts = CreateNewFolder(Dirlist[l],'MultiVar_Profiles/')
+
+			#Generate SI scale axes for lineout plots.
+			Raxis = GenerateAxis('Radial',Isymlist[l])
+
+			#Perform the plotting for all requested variables.
+			for i in tqdm(range(0,len(processlist))):
+
+				#Perform the plotting for all requested variables.
+				for j in range(0,len(radialineouts)):
+					#Create fig of desired size.
+					fig,ax = figure(image_aspectratio,1)
+
+					#Create folder to keep output plots.
+					Slice = str(round((radialineouts[j])*dz[l], 2))
+					DirRlineouts = CreateNewFolder(Dirlineouts,'Z='+Slice+'cm/')
+
+					#Create legendlist
+					Legendlist = list()
+					Legendlist.append(VariableLabelMaker(Variablelist)[i])
+
+					#Plot profile for initial variable in processlist.
+					RProfile = PlotRadialProfile(Data[l],processlist[i],Variablelist[i], radialineouts[j],R_mesh[l],Isymlist[l])
+					ImagePlotter1D(Raxis,RProfile,image_aspectratio,fig,ax)
+
+					#Plot all of the requested comparison variables for this plot.
+					for m in range(0,len(multiprocesslist)):
+						#Plot profile for multiplot variables in compareprocesslist.
+						RProfile = PlotRadialProfile(Data[l],multiprocesslist[m], multiVariablelist[m],radialineouts[j],R_mesh[l],Isymlist[l])
+						ImagePlotter1D(Raxis,RProfile,image_aspectratio,fig,ax)
+
+						#Update legendlist with each variable compared.
+						Legendlist.append(VariableLabelMaker(multiVariablelist)[m])
+					#endfor
+
+
+					#Apply image options and axis labels.
+					Title = str(round((radialineouts[j])*dz[l], 2))+'cm Radial Profiles for '+Variablelist[i]+' for \n'+Dirlist[l][2:-1]
+					Xlabel,Ylabel = 'Radial Distance R [cm]',VariableLabelMaker(Variablelist)[i]
+					ImageOptions(fig,ax,Xlabel,Ylabel,Title,Legendlist,Crop=False)
+
+					#Save lines in previously created folder.
+					Z = 'Z='+str(round((radialineouts[j])*dz[l], 2))+'_'
+					plt.savefig(DirRlineouts+Z+Variablelist[i]+'_MultiProfiles'+ext)
+					plt.close('all')
+				#endfor
+			#endfor
+		#endif
+	#endfor
+
+	print('-----------------------------')
+	print('# Multiplot Profiles Complete')
+	print('-----------------------------')
+#endif
+
+
+
 ##====================================================================#
 #			  #ITERMOVIE PROFILES - PULSE ANALYSIS#
 ##====================================================================#
-#
-#
-#
+
 ##Plot 1D profile of itervariables at desired locations
-#if savefig_pulseprofiles == True:
+#if savefig_temporalprofiles == True:
 #
 #	#for all folders being processed.
 #	for l in range(0,numfolders):
@@ -4976,154 +4980,155 @@ if savefig_IEDFangular == True:
 ##====================================================================#
 #				#COMPARATIVE TRENDS -- MULTI-FOLDER#
 ##====================================================================#
-#
-#if savefig_trendphaseaveraged == True or print_generaltrends == True:
-#
-#	#Create Trend folder to keep output plots.
-#	TrendVariable = filter(lambda x: x.isalpha(), FolderNameTrimmer(Dirlist[0]))
-#	DirTrends = CreateNewFolder(os.getcwd()+'/',TrendVariable+' Trends')
-#
-#	#For each requested comparison variable.
-#	for k in tqdm(range(0,len(Variables))):
-#
-#		#Create processlist for largest output, only compare variables shared between all folders.
-#		processlist,Variablelist = VariableEnumerator(Variables,max(rawdata_2D),max(header_2Dlist))
-#		processlist,Variablelist = VariableInterpolator(processlist,Variablelist,Comparisonlist)
-#
-#		#Create Y-axis legend for each variable to be plotted.
-#		YaxisLegend = VariableLabelMaker(Variablelist)
-#
-#		#Loop escape if variables that do not exist have been requested.
-#		if k >= 1 and k > len(Variablelist)-1:
-#			break
-#		#endif
-#
-#		#Create fig of desired size and refresh legendlist.
-#		fig,ax = figure(image_aspectratio,1)
-#		Legendlist = list()
-#
-#
-#		##AXIAL TRENDS##
-#		#===============#
-#
-#		#Perform trend analysis on requested axial profiles.
-#		for j in range(0,len(heightlineouts)):
-#
-#			#Create folder for axial trends if needed.
-#			DirAxialTrends = CreateNewFolder(DirTrends,'Axial Trends')
-#
-#			#Take Trend at Given Location or Default to Min/Max Trends.
-#			if len(TrendLocation) == 2:
-#				#Append requested position to the legendlist.
-#				R,Z = TrendLocation[0],TrendLocation[1]
-#				Location = '(R'+str(round(R*dr[l],1))+'cm, Z'+str(round(Z*dz[l],1))+'cm)'
-#				Legendlist.append(Location)
-#				#Take trend at given location if specified.
-#				Xaxis,Trend = TrendAtGivenLocation([R,Z],processlist[k],Variablelist[k])
-#
-#			elif len(TrendLocation) == 1:
-#				#Append requested position to the legendlist.
-#				R,Z = TrendLocation[0],heightlineouts[j]
-#				Location = '(R'+str(round(R*dr[l],1))+'cm, Z'+str(round(Z*dz[l],1))+'cm)'
-#				Legendlist.append(Location)
-#				#Take trend at given location if specified.
-#				Xaxis,Trend = TrendAtGivenLocation([R,Z],processlist[k],Variablelist[k])
-#
-#			else:
-#				#Obtain min/max trend values for requested profile over all folders.
-#				Xaxis,MaxTrend,MinTrend = MinMaxTrends(heightlineouts[j],'Axial',k)
-#				Trend = MaxTrend
-#				#Append the radial position to the legendlist.
-#				Legendlist.append( 'R='+str(round((heightlineouts[j]*dr[l]), 2))+'cm' )
-#			#endif
-#
-#			#Plot trends for each variable over all folders, applying image options.
-#			TrendPlotter(ax,Trend,Xaxis,NormFactor=0)
-#			Title='Trend in max '+Variablelist[k]+' with changing '+TrendVariable+' \n'+Dirlist[l][2:-1]
-#			Xlabel,Ylabel = 'Varied Property','Max '+YaxisLegend[k]
-#			ImageOptions(fig,ax,Xlabel,Ylabel,Title,Legendlist,Crop=False)
-#
-#			#Write data to ASCII format datafile if requested.
-#			if write_ASCII == True:
-#				if j == 0:
-#					DirASCII = CreateNewFolder(DirTrends,'Trend_Data')
-#					DirASCIIAxial = CreateNewFolder(DirASCII,'Axial_Data')
-#					WriteDataToFile(Xaxis+['\n'], DirASCIIAxial+Variablelist[k]+'_Trends', 'w')
-#				#endif
-#				WriteDataToFile(Trend+['\n'], DirASCIIAxial+Variablelist[k]+'_Trends', 'a')
-#			#endif
-#
-#		#Save one image per variable with data from all simulations.
-#		if len(heightlineouts) > 0:
-#			plt.savefig(DirAxialTrends+'Axial Trends in '+Variablelist[k]+ext)
-#			plt.close('all')
-#		#endif
-#
-#
-#		##RADIAL TRENDS##
-#		#===============#
-#
-#		#Create fig of desired size and refresh legendlist.
-#		fig,ax = figure(image_aspectratio,1)
-#		Legendlist = list()
-#
-#		#Perform trend analysis on requested radial profiles.
-#		for j in range(0,len(radialineouts)):
-#
-#			#Create folder for axial trends if needed.
-#			DirRadialTrends = CreateNewFolder(DirTrends,'Radial Trends')
-#
-#			#Take Trend at Given Location or Default to Min/Max Trends.
-#			if len(TrendLocation) == 2:
-#				#Append requested position to the legendlist.
-#				R,Z = TrendLocation[0],TrendLocation[1]
-#				Location = '(R'+str(round(R*dr[l],1))+'cm, Z'+str(round(Z*dz[l],1))+'cm)'
-#				Legendlist.append(Location)
-#				#Take trend at given location if specified.
-#				Xaxis,Trend = TrendAtGivenLocation([R,Z],processlist[k],Variablelist[k])
-#
-#			elif len(TrendLocation) == 1:
-#				#Append requested position to the legendlist.
-#				R,Z = radialineouts[j],TrendLocation[0],
-#				Location = '(R'+str(round(R*dr[l],1))+'cm, Z'+str(round(Z*dz[l],1))+'cm)'
-#				Legendlist.append(Location)
-#				#Take trend at given location if specified.
-#				Xaxis,Trend = TrendAtGivenLocation([R,Z],processlist[k],Variablelist[k])
-#
-#			else:
-#				#Obtain min/max trend values for requested profile over all folders.
-#				Xaxis,MaxTrend,MinTrend = MinMaxTrends(radialineouts[j],'Radial',k)
-#				Trend = MaxTrend
-#				#Append the axial position to the legendlist.
-#				Legendlist.append( 'Z='+str(round((radialineouts[j]*dz[l]), 2))+'cm' )
-#			#endif
-#
-#			#Plot trends for each variable over all folders, applying image options.
-#			TrendPlotter(ax,Trend,Xaxis,NormFactor=0)
-#			Title='Trend in max '+Variablelist[k]+' with changing '+TrendVariable+' \n'+Dirlist[l][2:-1]
-#			Xlabel,Ylabel = 'Varied Property','Max '+YaxisLegend[k]
-#			ImageOptions(fig,ax,Xlabel,Ylabel,Title,Legendlist,Crop=False)
-#
-#			#Write data to ASCII format datafile if requested.
-#			if write_ASCII == True:
-#				if j == 0:
-#					DirASCII = CreateNewFolder(DirTrends,'Trend_Data')
-#					DirASCIIRadial = CreateNewFolder(DirASCII,'Radial_Data')
-#					WriteDataToFile(Xaxis+['\n'], DirASCIIRadial+Variablelist[k]+'_Trends', 'w')
-#				#endif
-#				WriteDataToFile(Trend+['\n'], DirASCIIRadial+Variablelist[k]+'_Trends', 'a')
-#			#endif
-#
-#		#Save one image per variable with data from all simulations.
-#		if len(radialineouts) > 0:
-#			plt.savefig(DirRadialTrends+'Radial Trends in '+Variablelist[k]+ext)
-#			plt.close('all')
-#		#endif
-#	#endfor
-##endif
-#
-#
-#
+
+if savefig_trendphaseaveraged == True or print_generaltrends == True:
+
+	#Create trend folder for outputs - Assumes that scanned variable is within trimmed foler name
+	TrendVariable = list(filter(lambda x: x.isalpha(), FolderNameTrimmer(Dirlist[0])))	#List of discrete chars
+	TrendVariable = ''.join(TrendVariable)												#Single string of chars
+	DirTrends = CreateNewFolder(os.getcwd()+'/',TrendVariable+' Trends')
+
+	#For each requested comparison variable.
+	for k in tqdm(range(0,len(Variables))):
+
+		#Create processlist for largest output, only compare variables shared between all folders.
+		processlist,Variablelist = VariableEnumerator(Variables,max(rawdata_2D),max(header_2Dlist))
+		processlist,Variablelist = VariableInterpolator(processlist,Variablelist,Comparisonlist)
+
+		#Create Y-axis legend for each variable to be plotted.
+		YaxisLegend = VariableLabelMaker(Variablelist)
+
+		#Loop escape if variables that do not exist have been requested.
+		if k >= 1 and k > len(Variablelist)-1:
+			break
+		#endif
+
+		#Create fig of desired size and refresh legendlist.
+		fig,ax = figure(image_aspectratio,1)
+		Legendlist = list()
+
+
+		##AXIAL TRENDS##
+		#===============#
+
+		#Perform trend analysis on requested axial profiles.
+		for j in range(0,len(heightlineouts)):
+
+			#Create folder for axial trends if needed.
+			DirAxialTrends = CreateNewFolder(DirTrends,'Axial Trends')
+
+			#Take Trend at Given Location or Default to Min/Max Trends.
+			if len(TrendLocation) == 2:
+				#Append requested position to the legendlist.
+				R,Z = TrendLocation[0],TrendLocation[1]
+				Location = '(R'+str(round(R*dr[l],1))+'cm, Z'+str(round(Z*dz[l],1))+'cm)'
+				Legendlist.append(Location)
+				#Take trend at given location if specified.
+				Xaxis,Trend = TrendAtGivenLocation([R,Z],processlist[k],Variablelist[k])
+
+			elif len(TrendLocation) == 1:
+				#Append requested position to the legendlist.
+				R,Z = TrendLocation[0],heightlineouts[j]
+				Location = '(R'+str(round(R*dr[l],1))+'cm, Z'+str(round(Z*dz[l],1))+'cm)'
+				Legendlist.append(Location)
+				#Take trend at given location if specified.
+				Xaxis,Trend = TrendAtGivenLocation([R,Z],processlist[k],Variablelist[k])
+
+			else:
+				#Obtain min/max trend values for requested profile over all folders.
+				Xaxis,MaxTrend,MinTrend = MinMaxTrends(heightlineouts[j],'Axial',k)
+				Trend = MaxTrend
+				#Append the radial position to the legendlist.
+				Legendlist.append( 'R='+str(round((heightlineouts[j]*dr[l]), 2))+'cm' )
+			#endif
+
+			#Plot trends for each variable over all folders, applying image options.
+			TrendPlotter(ax,Trend,Xaxis,NormFactor=0)
+			Title='Trend in max '+Variablelist[k]+' with changing '+TrendVariable+' \n'+Dirlist[l][2:-1]
+			Xlabel,Ylabel = 'Varied Property','Max '+YaxisLegend[k]
+			ImageOptions(fig,ax,Xlabel,Ylabel,Title,Legendlist,Crop=False)
+
+			#Write data to ASCII format datafile if requested.
+			if write_ASCII == True:
+				if j == 0:
+					DirASCII = CreateNewFolder(DirTrends,'Trend_Data')
+					DirASCIIAxial = CreateNewFolder(DirASCII,'Axial_Data')
+					WriteDataToFile(Xaxis+['\n'], DirASCIIAxial+Variablelist[k]+'_Trends', 'w')
+				#endif
+				WriteDataToFile(Trend+['\n'], DirASCIIAxial+Variablelist[k]+'_Trends', 'a')
+			#endif
+
+		#Save one image per variable with data from all simulations.
+		if len(heightlineouts) > 0:
+			plt.savefig(DirAxialTrends+'Axial Trends in '+Variablelist[k]+ext)
+			plt.close('all')
+		#endif
+
+
+		##RADIAL TRENDS##
+		#===============#
+
+		#Create fig of desired size and refresh legendlist.
+		fig,ax = figure(image_aspectratio,1)
+		Legendlist = list()
+
+		#Perform trend analysis on requested radial profiles.
+		for j in range(0,len(radialineouts)):
+
+			#Create folder for axial trends if needed.
+			DirRadialTrends = CreateNewFolder(DirTrends,'Radial Trends')
+
+			#Take Trend at Given Location or Default to Min/Max Trends.
+			if len(TrendLocation) == 2:
+				#Append requested position to the legendlist.
+				R,Z = TrendLocation[0],TrendLocation[1]
+				Location = '(R'+str(round(R*dr[l],1))+'cm, Z'+str(round(Z*dz[l],1))+'cm)'
+				Legendlist.append(Location)
+				#Take trend at given location if specified.
+				Xaxis,Trend = TrendAtGivenLocation([R,Z],processlist[k],Variablelist[k])
+
+			elif len(TrendLocation) == 1:
+				#Append requested position to the legendlist.
+				R,Z = radialineouts[j],TrendLocation[0],
+				Location = '(R'+str(round(R*dr[l],1))+'cm, Z'+str(round(Z*dz[l],1))+'cm)'
+				Legendlist.append(Location)
+				#Take trend at given location if specified.
+				Xaxis,Trend = TrendAtGivenLocation([R,Z],processlist[k],Variablelist[k])
+
+			else:
+				#Obtain min/max trend values for requested profile over all folders.
+				Xaxis,MaxTrend,MinTrend = MinMaxTrends(radialineouts[j],'Radial',k)
+				Trend = MaxTrend
+				#Append the axial position to the legendlist.
+				Legendlist.append( 'Z='+str(round((radialineouts[j]*dz[l]), 2))+'cm' )
+			#endif
+
+			#Plot trends for each variable over all folders, applying image options.
+			TrendPlotter(ax,Trend,Xaxis,NormFactor=0)
+			Title='Trend in max '+Variablelist[k]+' with changing '+TrendVariable+' \n'+Dirlist[l][2:-1]
+			Xlabel,Ylabel = 'Varied Property','Max '+YaxisLegend[k]
+			ImageOptions(fig,ax,Xlabel,Ylabel,Title,Legendlist,Crop=False)
+
+			#Write data to ASCII format datafile if requested.
+			if write_ASCII == True:
+				if j == 0:
+					DirASCII = CreateNewFolder(DirTrends,'Trend_Data')
+					DirASCIIRadial = CreateNewFolder(DirASCII,'Radial_Data')
+					WriteDataToFile(Xaxis+['\n'], DirASCIIRadial+Variablelist[k]+'_Trends', 'w')
+				#endif
+				WriteDataToFile(Trend+['\n'], DirASCIIRadial+Variablelist[k]+'_Trends', 'a')
+			#endif
+
+		#Save one image per variable with data from all simulations.
+		if len(radialineouts) > 0:
+			plt.savefig(DirRadialTrends+'Radial Trends in '+Variablelist[k]+ext)
+			plt.close('all')
+		#endif
+	#endfor
+#endif
+
+
+
 ##=====================================================================#
 #						# DC-BIAS CALCULATOR #
 ##=====================================================================#
