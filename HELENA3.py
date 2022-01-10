@@ -202,7 +202,7 @@ ParallelPlatePCMC = ['AR^2.67', 'ION-TOT2.67']				#RM-OUTDATED
 #====================================================================#
 
 #Requested IEDF/NEDF Variables.
-IEDFVariables = TSHCAr_PCMC				#Requested iprofile_2d variables (no spaces)
+IEDFVariables = PRCCPAr_PCMC				#Requested iprofile_2d variables (no spaces)
 NEDFVariables = []							#Requested nprofile_2d variables (no spaces)
 
 #Requested movie1/movie_icp Variables.
@@ -235,7 +235,7 @@ savefig_plot2D = False					#Single-Variables: converged				Requires TECPLOT2D.PD
 savefig_monoprofiles = False			#Single-Variables; fixed height/radius
 savefig_multiprofiles = False			#Multi-Variables; same folder					- ASCII OUTPUT NEEDED
 savefig_compareprofiles = False			#Multi-Variables; all folders
-savefig_temporalprofiles = False		#Single-Variables; real-time axis 				TO BE REFACTORED
+savefig_temporalprofiles = False		#Single-Variables; real-time axis
 					
 savefig_trendphaseaveraged = False		#Converged trends at 'TrendLoc' cell
 savefig_trendphaseresolved = False		#Temporal trends at 'TrendLoc' cell				#IN DEVELOPMENT#
@@ -246,7 +246,7 @@ savefig_sheathdynamics = False			#1D and 2D sheath dynamics images
 savefig_PROES =	False					#Simulated PROES Diagnostic						TO BE REFACTORED
 
 
-savefig_IEDFangular = False				#2D images of angular IEDF; single folders.		TO BE REFACTORED
+savefig_IEDFangular = False				#2D images of angular IEDF; single folders.		autoprofconv needs fixed
 savefig_IEDFtrends = False				#1D IEDF trends; all folders.					TO BE REFACTORED
 savefig_EEDF = False					#NO PLOTTING ROUTINE							#IN DEVELOPMENT#
 
@@ -303,7 +303,7 @@ cbaroverride = ['NotImplimented']
 #V3.2.0 Release Version To Do list:
 #Fix sound speed diagnostic - Current version has issue with NaNs and incorrect averaging
 
-#Clarified SheathWidth function Axial/Radial definition, also corrected this in the phase-resolved sheath trends diagnostic.
+#Add 'TrendLocation' option to savefig_temporal, where the meshavg is the default but if there are any supplied TrendLocation cells then those get saved into their own seperate folder.
 
 #Multivar_profiles diagnostic overhaul - update coding structure and include an ASCII output option
 
@@ -1176,35 +1176,40 @@ def MakeMovie(FolderDir,Output):
 	return()
 #enddef
 
+
 #Runs requested dataconversion script with pre-defined arguments.
 #Takes name of convert script, any predefined arguments and newly created files.
 #Returns nothing, runs script in each folder, expects to run over all folders.
 def AutoConvProfData(Convertexe,args=[],DirAdditions=[]):
-	print("1")
 	HomeDir = os.getcwd()
 	os.chdir(Dirlist[l])
-	print("2", HomeDir, Dirlist[l]) 
 
-	os.system("cp ../Modules/conv_prof.exe .")
-	os.system("chmod 775 conv_prof.exe") 
+	#[pcmc.prof, title, 1, 1, 1] are basic requirements
+	#Then add (surface*pcmc_species) number of '1's after that
+	#Not sure about the final - flux(energy), flux(angle) integration, maybe zero?
+	args = ['pcmc.prof', 'title', '1', '1', '1']+['1', '1', '1', '1', '1', '1', '1']
+#	print(args)					# UPDATE FEED ARGS IN NAM.READIN AND REMOVE THE ABOVE LINE ONCE FIXED.
+	args=[]						# <<<< UNCOMMENT THIS TO ALLOW MANUAL ENTRY OF NUMBERS
+
+	print(os.linesep.join(args))
 
 	#Remove old files to avoid any overwrite errors.
 	for i in range(0,len(DirAdditions)): os.system('rm -f '+DirAdditions[i])
-	print("3")
 
+	#THIS SECTION IS OUT OF DATE, SUBPROCESS.COMMUNICATE REQUIRES "bytes-like objects" NOT STRINGS
+	#TypeError: a bytes-like object is required, not 'str'
 	#Use predefined arguments if supplied, suppresses output to devnull.
-	#if len(args) > 0:
-#		print("4")
-#		with open(os.devnull, 'w') as fp:
-#			subprocess = Popen(Convertexe, stdin=PIPE, stdout=fp) #noshell=True
-#			subprocess.communicate(os.linesep.join(args))
+	if len(args) > 0:
+		with open(os.devnull, 'w') as fp:
+			subprocess = Popen(Convertexe, stdin=PIPE, stdout=fp) #noshell=True
+			subprocess.communicate(os.linesep.join(args))
 		#endwith
 
-	#If no arguments supplied, run script and allow user inputs.
-#	elif len(args) == 0:
-	os.system(Convertexe)
+	#If no arguments are supplied, run script and allow user inputs.
+	elif len(args) == 0:
+		os.system(Convertexe)
 	#endif
-	print("5")
+
 	#Update Dir with new filenames, must be supplied manually for now.
 	for i in range(0,len(DirAdditions)): Dir.append(Dirlist[l]+DirAdditions[i])
 
@@ -2102,13 +2107,13 @@ for l in tqdm(range(0,numfolders)):
 
 		#Define arguments and autorun conv_prof.exe if possible.
 		#### THIS IS HACKY, WON'T ALWAYS WORK, ARGS LIST NEEDS AUTOMATING ####
-		IEDFVarArgs = ['1','1','1','1','1'] 	#Works for 2 species 1 surface.
+		IEDFVarArgs = ['1','1','1','1','1'] 						#Works for 2 species 1 surface.
 		ExtraArgs = ['1','1','1','1','1','1','1','1','1','1']#[]	#Hack For Additional Species
 		Args = ['pcmc.prof','title','1','1','1'] + IEDFVarArgs + ExtraArgs + ['0','0']
 		DirAdditions = ['iprofile_tec2d.pdt','nprofile_tec2d.pdt','iprofile_tec1d.pdt', 'nprofile_tec1d.pdt','iprofile_zones_tec1d.pdt','nprofile_zones_tec1d.pdt']
-		print("6", Args, type(Args)) 
-		try: AutoConvProfData('./conv_prof.exe',Args,DirAdditions)
-		except: print( 'ConvProf Failure:'+Dirlist[l])
+		#try: AutoConvProfData('./conv_prof.exe',Args,DirAdditions)
+		#except: print('ConvProf Failure:'+Dirlist[l])
+		AutoConvProfData('./conv_prof.exe',Args,DirAdditions)
 
 		#Load data from IEDFprofile file and unpack into 1D array.
 		rawdata, nn_IEDF = ExtractRawData(Dir,'iprofile_tec2d.pdt',l)
@@ -2119,14 +2124,10 @@ for l in tqdm(range(0,numfolders)):
 		for i in range(2,nn_IEDF):
 			#Grab EDFangle(I),EDFbins(J) values from the ZONE line, these outline the datablock size.
 			if HeaderEndMarker in str(rawdata_IEDF[l][i]): 
-				I = list(filter(lambda x: x.isdigit(), rawdata_IEDF[l][i].split(',')[0]))
-		
-				
-				#print((filter(lambda x: x.isdigit(), rawdata_IEDF[l][i].split(',')[0]))	
-				I =float(I[0].strip(' \t\n\r')		)
-				J = list(filter(lambda x: x.isdigit(), rawdata_IEDF[l][i].split(',')[1]))
-				J =float(J[0].strip(' \t\n\r')		)				
-				EDFangle, EDFbins = I,J
+				I = list(filter(lambda x: x.isdigit(), rawdata_IEDF[l][i].split(',')[0]))	#discrete digits
+				I = int( ''.join(I) ); EDFangle = I					#Number of EDF angle bins [Integer]
+				J = list(filter(lambda x: x.isdigit(), rawdata_IEDF[l][i].split(',')[1]))	#discrete digits
+				J = int( ''.join(J) ); EDFbins = J					#Number of EDF energy bins [Integer]
 				break
 			else: IEDFVariablelist.append(str(rawdata_IEDF[l][i][:-2].strip(' \t\n\r\"')))
 			#endif
@@ -2135,6 +2136,7 @@ for l in tqdm(range(0,numfolders)):
 		header_IEDFlist.append(header_IEDF)
 
 		#Seperate total 1D data array into sets of data for each variable.
+		#Data is stored in 2D array of shape: [EDFangle,EDFbins] or [I,J]
 		CurrentFolderData = SDFileFormatConvertorHPEM(rawdata_IEDF[l],header_IEDF,numvariables_IEDF,0,I,J)
 
 		#Save all variables for folder[l] to Data.
@@ -4447,96 +4449,99 @@ if savefig_multiprofiles == True:
 
 
 ##====================================================================#
-#			  #ITERMOVIE PROFILES - PULSE ANALYSIS#
+#			  #ITERMOVIE PROFILES - TEMPORAL ANALYSIS#
 ##====================================================================#
 
-##Plot 1D profile of itervariables at desired locations
-#if savefig_temporalprofiles == True:
-#
-#	#for all folders being processed.
-#	for l in range(0,numfolders):
-#
-#		#Create new folder and initiate required lists.
-#		PulseTrends,Xaxis = list(),list()
-#		DirPulse = CreateNewFolder(Dirlist[l],'Pulse_Profiles/')
-#		DirMeshAve = CreateNewFolder(DirPulse,'Mesh_Averaged/')
-#
-#		#Create processlist for each folder as required.
-#		processlist,variablelist = VariableEnumerator(Variables,rawdata_itermovie[l],header_itermovie[l])
-#		#Skip over the R and Z processes as they are not saved properly in iterdata.
-#		for i in range(0,len(processlist)):
-#			processlist[i] = processlist[i]-2
-#		#endfor
-#
-#		#Create list and x-axis for convergence trend plotting.
-#		#DtActual is approximate, exact dt per iteration depends upon modules and solvers employed.
-#		DtActual = (1.0/FREQM[l])*100				#s	(~8 microseconds @ 13.56MHz)
-#		DtActual = DtActual*1000					#ms
-#		for i in range(0,len(MovieIterlist[l])):
-#			Xaxis.append( float(filter(lambda x: x.isdigit(), MovieIterlist[l][i]))*DtActual )
-#		#endfor
-#
-#		#for all variables requested by the user.
-#		for i in tqdm(range(0,len(processlist))):
-#
-#			#Extract 2D image and take mesh averaged value for iteration trend.
-#			PulseProfile = list()
-#			for k in range(0,len(MovieIterlist[l])):
-#				#for further processing.
-#				Image = ImageExtractor2D(IterMovieData[l][k][processlist[i]],variablelist[i])
-#				PulseProfile.append( sum(Image.flatten())/len(Image.flatten()) )
-#			#endfor
-#			PulseTrends.append(PulseProfile)
-#
-#			#Plot each variable against simulation real-time.
-#			fig, ax = plt.subplots(1, figsize=(10,10))
-#			ax.plot(Xaxis,PulseProfile, lw=2)
-#
-#			#Image plotting details.
-#			Title = 'Simulation Time Profile of '+str(variablelist[i])+' for \n'+Dirlist[l][2:-1]
-#			Xlabel,Ylabel = 'Simulation time [ms]',VariableLabelMaker(variablelist)[i]
-#			ImageOptions(fig,ax,Xlabel,Ylabel,Title,Legend=[],Crop=False)
-#
-#			#Save figure.
-#			savefig(DirMeshAve+FolderNameTrimmer(Dirlist[l])+'_'+variablelist[i]+ext)
-#			plt.close('all')
-#
-#			#Write data to ASCII files if requested.
-#			if write_ASCII == True:
-#				DirWrite = CreateNewFolder(DirPulse, 'Pulse_Data')
-#				DirWriteMeshAve = CreateNewFolder(DirWrite, 'MeshAveraged_Data')
-#				WriteDataToFile(Xaxis, DirWriteMeshAve+variablelist[i], 'w')
-#				WriteDataToFile(['\n']+PulseProfile, DirWriteMeshAve+variablelist[i], 'a')
-#			#endif
-#		#endfor
-#
-#		#=================#
-#
-#		#Plot mesh averaged value over 'real-time' in simulation.
-#		Legend = VariableLabelMaker(variablelist)
-#		fig, ax = plt.subplots(1, figsize=(10,10))
-#
-#		#Plot each variable in ConvergenceTrends to single figure.
-#		for i in range(0,len(PulseTrends)):
-#			PulseTrends[i] = Normalise(PulseTrends[i])[0]
-#			ax.plot(Xaxis,PulseTrends[i], lw=2)
-#		#endfor
-#
-#		#Image plotting details.
-#		Title = 'Simulation Time Profile of '+str(variablelist)+' for \n'+Dirlist[l][2:-1]
-#		Xlabel,Ylabel = 'Simulation time [ms]','Normalised Mesh-Average Value'
-#		ImageOptions(fig,ax,Xlabel,Ylabel,Title,Legend,Crop=False)
-#		ax.set_ylim(0,1.01+(len(Legend)*0.05))
-#
-#		#Save figure.
-#		savefig(DirMeshAve+'Normalised_'+FolderNameTrimmer(Dirlist[l])+ext)
-#		plt.close('all')
-#	#endfor
-#	print'-------------------------'
-#	print'# Pulse Profiles Complete'
-#	print'-------------------------'
-##endif
-#
+#Plot 1D profile of itervariables at desired locations
+if savefig_temporalprofiles == True:
+
+	#for all folders being processed.
+	for l in range(0,numfolders):
+
+		#Create new folder and initiate required lists.
+		TemporalTrends,Xaxis = list(),list()
+		DirTemporal = CreateNewFolder(Dirlist[l],'Temporal_Profiles/')
+		DirMeshAve = CreateNewFolder(DirTemporal,'Mesh_Averaged/')
+
+		#Create processlist for each folder as required.
+		processlist,variablelist = VariableEnumerator(Variables,rawdata_itermovie[l],header_itermovie[l])
+		#Skip over the R and Z processes as they are not saved properly in iterdata.
+		for i in range(0,len(processlist)):
+			processlist[i] = processlist[i]-2
+		#endfor
+
+		#Create list and x-axis for convergence trend plotting.
+		#DtActual is approximate, exact dt per iteration depends upon modules and solvers employed.
+		DtActual = (1.0/FREQGLOB[l])*100			#s	(~8 microseconds @ 13.56MHz)
+		DtActual = DtActual*1000					#ms
+		for i in range(0,len(MovieIterlist[l])):
+			IterDigits = list(filter(lambda x: x.isdigit(), MovieIterlist[l][i]))
+			IterDigits = float(''.join(IterDigits))
+			IterTime = IterDigits*DtActual
+			Xaxis.append(IterTime)
+		#endfor
+
+		#for all variables requested by the user.
+		for i in tqdm(range(0,len(processlist))):
+
+			#Extract 2D image and take mesh averaged value for iteration trend.
+			TemporalProfile = list()
+			for k in range(0,len(MovieIterlist[l])):
+				#for further processing.
+				Image = ImageExtractor2D(IterMovieData[l][k][processlist[i]],variablelist[i])
+				TemporalProfile.append( sum(Image.flatten())/len(Image.flatten()) )
+			#endfor
+			TemporalTrends.append(TemporalProfile)
+
+			#Plot each variable against simulation real-time.
+			fig, ax = plt.subplots(1, figsize=(10,10))
+			ax.plot(Xaxis,TemporalProfile, lw=2)
+
+			#Image plotting details.
+			Title = 'Temporal Profile of '+str(variablelist[i])+' for \n'+Dirlist[l][2:-1]
+			Xlabel,Ylabel = 'Simulation time [ms]',VariableLabelMaker(variablelist)[i]
+			ImageOptions(fig,ax,Xlabel,Ylabel,Title,Legend=[],Crop=False)
+
+			#Save figure.
+			savefig(DirMeshAve+FolderNameTrimmer(Dirlist[l])+'_'+variablelist[i]+ext)
+			plt.close('all')
+
+			#Write data to ASCII files if requested.
+			if write_ASCII == True:
+				DirWrite = CreateNewFolder(DirTemporal, 'Temporal_Data')
+				DirWriteMeshAve = CreateNewFolder(DirWrite, 'MeshAveraged_Data')
+				WriteDataToFile(Xaxis, DirWriteMeshAve+variablelist[i], 'w')
+				WriteDataToFile(['\n']+TemporalProfile, DirWriteMeshAve+variablelist[i], 'a')
+			#endif
+		#endfor
+
+		#=================#
+
+		#Plot mesh averaged value over 'real-time' in simulation.
+		Legend = VariableLabelMaker(variablelist)
+		fig, ax = plt.subplots(1, figsize=(10,10))
+
+		#Plot each variable in ConvergenceTrends to single figure.
+		for i in range(0,len(TemporalTrends)):
+			TemporalTrends[i] = Normalise(TemporalTrends[i])[0]
+			ax.plot(Xaxis,TemporalTrends[i], lw=2)
+		#endfor
+
+		#Image plotting details.
+		Title = 'Simulation Time Profile of '+str(variablelist)+' for \n'+Dirlist[l][2:-1]
+		Xlabel,Ylabel = 'Simulation time [ms]','Normalised Mesh-Average Value'
+		ImageOptions(fig,ax,Xlabel,Ylabel,Title,Legend,Crop=False)
+		ax.set_ylim(0,1.01+(len(Legend)*0.05))
+
+		#Save figure.
+		savefig(DirMeshAve+'Normalised_'+FolderNameTrimmer(Dirlist[l])+ext)
+		plt.close('all')
+	#endfor
+	print('-------------------------')
+	print('# Pulse Profiles Complete')
+	print('-------------------------')
+#endif
+
 ##=====================================================================#
 ##=====================================================================#
 #
@@ -4586,23 +4591,22 @@ if savefig_IEDFangular == True:
 	for l in range(0,numfolders):
 
 		#Create new folder for keeping EEDF/IEDF if required.
-		DirEDF = CreateNewFolder(Dirlist[l],'EDFplots')
+		DirIEDF = CreateNewFolder(Dirlist[l],'EDFplots')
 
 		#Create processlist for requested EDF species and extract images.
 		processlist,variablelist = VariableEnumerator(IEDFVariables,rawdata_IEDF[l],header_IEDFlist[l])
 		
 		#For all requested variables.
 		for i in tqdm(range(0,len(processlist))):
-			EDFprofile = list()
 
+			#Create any required arrays
+			EDFprofile = list()
+		
 			#Extract image from required variable and create required profile lists.
 			#Flatten angular distribution across all angles to produce energy distribution.
-			Image = ImageExtractor2D(DataIEDF[l][processlist[i]],Rmesh=int(EDFangle),Zmesh=int(EDFbins))
-			print(Image,len(Image),type(Image))
-			for j in range(0,len(Image)):
-				EDFprofile=np.append(EDFprofile, sum(Image[j]))
-				print(EDFprofile)
-			print(EDFprofile,len(EDFprofile),type(EDFprofile))
+			EDFImage = ImageExtractor2D(DataIEDF[l][processlist[i]],Rmesh=int(EDFangle),Zmesh=int(EDFbins))
+			for j in range(0,len(EDFImage)): EDFprofile.append(sum(EDFImage[j]))
+			
 			#Smooth kinetic data prior to analysis if requested (Savitzk-Golay filter)
 			if PlotKineticFiltering == True:
 				WindowSize, PolyOrder = Glob_SavWindow, Glob_SavPolyOrder
@@ -4611,12 +4615,11 @@ if savefig_IEDFangular == True:
 			#endif
 
 			#Obtain conversion from energy-bin axis to eV axis and construct energy axis
-			deV, eVaxis = float(EMAXIPCMC/IEBINSPCMC), list()
-			for j in range (0,int(IEBINSPCMC)):
-				eVaxis=np.append(eVaxis,(j*deV))
+			deV, eVaxis = (EMAXIPCMC/IEBINSPCMC), list()
+			for j in range (0,int(IEBINSPCMC)): eVaxis.append(j*deV)
 
 			#Transpose Image for plotting and reverse both lists to align with other data.
-			Image, EDFprofile = Image[::-1].transpose(), EDFprofile[::-1]
+			EDFImage, EDFprofile = EDFImage[::-1].transpose(), EDFprofile[::-1]
 
 			#Determine region of IEDF to plot based on threshold value from array maximum.
 			Threshold = EDF_Threshold*max(EDFprofile)
@@ -4635,10 +4638,10 @@ if savefig_IEDFangular == True:
 			fig,ax = figure([11,9], 2, shareX=True)
 
 			Title = Dirlist[l][2::]+'\n'+variablelist[i]+' Angular Energy Distribution Function'
-			Extent=[0,int(EMAXIPCMC), -len(Image)/2,len(Image)/2]
+			Extent=[0,int(EMAXIPCMC), -len(EDFImage)/2,len(EDFImage)/2]
 
 			#Angularly resolved IEDF Figure
-			im = ax[0].imshow(Image, extent=Extent, aspect='auto')
+			im = ax[0].imshow(EDFImage, extent=Extent, aspect='auto')
 			cax = Colourbar(ax[0],variablelist[i]+' EDF($\\theta$)',5)
 			Xlabel,Ylabel = '','Angular Dispersion [$\\theta^{\circ}$]'
 			ImageCrop = [[0,int(eVlimit)],[-45,45]]					#[[X1,X2],[Y1,Y2]]
@@ -4651,16 +4654,16 @@ if savefig_IEDFangular == True:
 			ImageCrop = [[0,int(eVlimit)],[0,max(EDFprofile)*1.05]]	#[[X1,X2],[Y1,Y2]]
 			ImageOptions(fig,ax[1],Xlabel,Ylabel,Crop=ImageCrop,Rotate=False)
 
-			plt.savefig(DirEDF+variablelist[i]+'_EDF'+ext)
+			plt.savefig(DirIEDF+variablelist[i]+'_EDF'+ext)
 			plt.close('all')
 
 			#Write data to ASCII files if requested.
 			if write_ASCII == True:
 				if i == 0:
-					DirASCII = CreateNewFolder(DirEDF, 'EDF_Data')
-#					WriteDataToFile(eVaxis, DirASCII+variablelist[i],'w')
+					DirASCII = CreateNewFolder(DirIEDF, 'EDF_Data')
+					WriteDataToFile(eVaxis, DirASCII+variablelist[i],'w')
 				#endif
-				WriteDataToFile(Image, DirASCII+variablelist[i]+'_IEDFAngular','w')
+				WriteDataToFile(EDFImage, DirASCII+variablelist[i]+'_IEDFAngular','w')
 				WriteDataToFile(EDFprofile, DirASCII+variablelist[i]+'_IEDFProfile','w')
 			#endif
 		#endfor
