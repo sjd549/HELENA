@@ -215,8 +215,8 @@ waveformlocs = []									#Cell locations of additional waveforms [R,Z].
 Variables = Ar
 MultiVar = ['AR+']							#Additional variables plotted ontop of [Variables]
 radialineouts = [16]	#[85]		 		#Radial 1D-Profiles to be plotted (fixed Z-mesh) --
-heightlineouts = [45] #[33]#?[66]?		#Axial 1D-Profiles to be plotted (fixed R-mesh) |
-TrendLocation = [16,45] 						#Cell location For Trend Analysis [R,Z], ([] = min/max)
+heightlineouts = [45] #[33]#?[66]?			#Axial 1D-Profiles to be plotted (fixed R-mesh) |
+TrendLocation = [16,45] 					#Cell location For Trend Analysis [R,Z], ([] = min/max)
 
 
 #Various Diagnostic Settings.
@@ -237,12 +237,14 @@ savefig_multiprofiles = False			#Multi-Variables; same folder					- ASCII OUTPUT
 savefig_compareprofiles = False			#Multi-Variables; all folders
 savefig_temporalprofiles = False		#Single-Variables; real-time axis 				TO BE REFACTORED
 					
-savefig_trendphaseaveraged = False		#Single-Variables; fixed cell location (or max/min)
-savefig_trendphaseresolved = False		#Single-Variables; Phase-resolved data. 				TO BE REFACTORED
+savefig_trendphaseaveraged = False		#Converged trends at 'TrendLoc' cell
+savefig_trendphaseresolved = False		#Temporal trends at 'TrendLoc' cell				#IN DEVELOPMENT#
 
 savefig_phaseresolve1D = False			#1D Phase Resolved Images						TO BE REFACTORED
 savefig_phaseresolve2D = False			#2D Phase Resolved Images						TO BE REFACTORED
+savefig_sheathdynamics = False			#1D and 2D sheath dynamics images
 savefig_PROES =	False					#Simulated PROES Diagnostic						TO BE REFACTORED
+
 
 savefig_IEDFangular = False				#2D images of angular IEDF; single folders.		TO BE REFACTORED
 savefig_IEDFtrends = False				#1D IEDF trends; all folders.					TO BE REFACTORED
@@ -279,7 +281,7 @@ image_rotate = True						#Rotate image 90 degrees to the right.
 
 image_Normalise = False					#Normalise image/profiles to local max
 image_logplot = False					#Plot ln(Data), against linear axis.
-image_sheath = False					#Plot sheath width onto 2D images.
+image_sheath = True						#Plot sheath width onto 2D images.
 
 #Overrides the automatic image labelling.
 titleoverride = []
@@ -395,7 +397,7 @@ VRFM,VRFM2 = list(),list()
 FREQM,FREQM2 = list(),list()
 FREQC        = list()
 FREQGLOB,IRFPOW = list(),list()
-MAXFREQ,MINFREQ = list(),list()
+FREQMAX,FREQMIN = list(),list()
 PRESOUT = list()
 IETRODEM = list()
 IMOVIE_FRAMES = list()
@@ -473,7 +475,7 @@ if True in [print_generaltrends,print_Knudsennumber,print_soundspeed, print_tota
 	print('# 1D Specific Trend Analysis')
 if savefig_trendphaseaveraged == True:
 	print('# 1D Steady-State Trend Processing')
-if savefig_trendphaseresolved == True:
+if savefig_sheathdynamics == True:
 	print('# 1D Phase-Resolved Trend Processing')
 if True in [savefig_IEDFangular,savefig_IEDFtrends,savefig_EEDF]:
 	print('# Angular Energy Distribution Processing')
@@ -666,7 +668,7 @@ for l in range(0,numfolders):
 	#endtry
 
 	#=====#=====#
-
+	
 	#Material Namelist Inputs (frequencies/voltages/powers)   [FREQGLOB ONLY READS 10 CHARACTERS]
 	try:
 		NUMMETALS = list(filter(lambda x:'IMETALS' in x,NamelistData))[0].strip(' \t\n\r,=IMETALS')
@@ -676,17 +678,24 @@ for l in range(0,numfolders):
 		IETRODEM.append( list(filter(lambda x:'IETRODEM=' in x, NamelistData))[0].split()[1:NUMMETALS])
 		for i in range(0,len(IETRODEM[l])): IETRODEM[l][i] = int(IETRODEM[l][i].strip(','))
 		##
+		NUMCOILS = list(filter(lambda x:'ICOILS' in x,NamelistData))[0].strip(' \t\n\r,=ICOILS')
+		NUMCOILS = int(NUMCOILS)
+		CCOILS = list(filter(lambda x: 'CCOIL=' in x, NamelistData))[0].strip(' \t\n\r,').split()[1:NUMCOILS]
+		for i in range(0,len(CCOILS)): CCOILS[i] = str(CCOILS[i].strip(','))
+		##
 		VRFM.append( list(filter(lambda x: 'VRFM=' in x, NamelistData))[0].split()[1:NUMMETALS] )
 		for i in range(0,len(VRFM[-1])): VRFM[-1][i] = float(VRFM[-1][i].strip(','))
 		VRFM2.append( list(filter(lambda x: 'VRFM_2=' in x, NamelistData))[0].split()[1:NUMMETALS] )
 		for i in range(0,len(VRFM2[-1])): VRFM2[-1][i] = float(VRFM2[-1][i].strip(','))
-		##
 		FREQM.append( list(filter(lambda x: 'FREQM=' in x, NamelistData))[0].split()[1:NUMMETALS])
 		for i in range(0,len(FREQM[-1])): FREQM[-1][i] = float(FREQM[-1][i].strip(','))
 		FREQM2.append( list(filter(lambda x: 'FREQM_2=' in x, NamelistData))[0].split()[1:NUMMETALS])
 		for i in range(0,len(FREQM2[-1])): FREQM2[-1][i] = float(FREQM2[-1][i].strip(','))
-		FREQC.append( list(filter(lambda x: 'FREQC=' in x, NamelistData))[0].split()[1:NUMMETALS])
-		FREQGLOB.append( float(list(filter(lambda x:'FREQ=' in x, NamelistData))[0].strip(' \t\n\r,=FREQ')[0:10]))
+		FREQGLOB.append( list(filter(lambda x:'FREQ=' in x, NamelistData))[0] )
+		FREQGLOB[l] = float( FREQGLOB[l].strip(' \t\n\r,=FREQ') )					#Assumes 1 entry for "FREQ="
+		##
+		FREQC.append( list(filter(lambda x: 'FREQC=' in x, NamelistData))[0].split(',')[0:-1] ) #[0:NUMCOILS]
+		for i in range(0,len(FREQC[-1])): FREQC[-1][i] = float(FREQC[-1][i].strip(' \t\n\r,=FREQC'))
 		##
 		IRFPOW.append( float(list(filter(lambda x:'IRFPOW=' in x, NamelistData))[0].strip(' \t\n\r,=IRFPOW')))
 		##
@@ -703,6 +712,18 @@ for l in range(0,numfolders):
 		PRESOUT.append(0.85)		#Torr
 	#endtry
 	
+	#No ICP coils are on - Ignore ICP frequencies in FREQALL
+	if NUMCOILS == 0: 
+		FREQALL = FREQM[l]+FREQM2[l]+FREQGLOB
+		FREQALL = [x for x in FREQALL if x > 0]				#Ignore any DC voltages (FREQ = 0)
+	#ICP coils are on - include ICP frequencies in FREQALL
+	elif NUMCOILS > 0: 
+		FREQALL = FREQM[l]+FREQM2[l]+FREQC[l]+FREQGLOB
+		FREQALL = [x for x in FREQALL if x > 0]				#Ignore any DC voltages (FREQ = 0)
+	#endif	
+	FREQMIN.append( min(FREQALL) )							#Minimum global frequency
+	FREQMAX.append( max(FREQALL) )							#Maximum global frequency
+		
 	#=====#=====#
 
 	#Plasma Chemistry Monte-Carlo (PCMC) Namelist Inputs
@@ -782,27 +803,6 @@ for l in range(0,numfolders):
 		#List of recognized ground-state neutral species for fluid analysis.
 		FluidSpecies = ['AR','AR3S','O2','O']
 	#endtry 
-
-	#==========##========================##==========#
-	#==========##========================##==========#
-
-
-	#clean up variables and assign required types.
-	try:
-#		for i in range(0,len(CMETALS[l])): CMETALS[l][i] = CMETALS[i].strip(',\'') 		#RE DOESN'T WORK!?
-		VRFM[l] = float( VRFM[l][IETRODEM[l].index(1)].strip(',') )
-		VRFM2[l] = float( VRFM2[l][IETRODEM[l].index(1)].strip(',') )
-		FREQM[l] = float( FREQM[l][IETRODEM[l].index(1)].strip(',') )
-		FREQM2[l] = float( FREQM2[l][IETRODEM[l].index(1)].strip(',') )
-		try: FREQC[l] = float( FREQMC[l][IETRODEM[l].index(1)].strip(',') )
-		except: ICP_Material_Not_Found=1
-
-		MINFREQ.append( min([FREQM[l],FREQM2[l],FREQC[l],FREQGLOB[l]]) )
-		MAXFREQ.append( max([FREQM[l],FREQM2[l],FREQC[l],FREQGLOB[l]]) )
-	except:
-		Material_Property_Conversion_Error=1
-	#endtry
-#endfor
 
 #==========##========================##==========#
 #==========##========================##==========#
@@ -2334,7 +2334,7 @@ del HomeDir,DirContents
 
 
 #Alert user that readin process has ended and continue with selected diagnostics.
-if any([savefig_plot2D, savefig_phaseresolve2D, savefig_convergence, savefig_monoprofiles, savefig_multiprofiles, savefig_compareprofiles, savefig_temporalprofiles, savefig_trendphaseresolved, savefig_phaseresolve1D, savefig_PROES, savefig_trendphaseaveraged, print_generaltrends, print_Knudsennumber, print_totalpower, print_DCbias, print_thrust, savefig_IEDFangular, savefig_IEDFtrends, savefig_EEDF]) == True:
+if any([savefig_plot2D, savefig_phaseresolve2D, savefig_convergence, savefig_monoprofiles, savefig_multiprofiles, savefig_compareprofiles, savefig_temporalprofiles, savefig_sheathdynamics, savefig_phaseresolve1D, savefig_PROES, savefig_trendphaseaveraged, print_generaltrends, print_Knudsennumber, print_totalpower, print_DCbias, print_thrust, savefig_IEDFangular, savefig_IEDFtrends, savefig_EEDF]) == True:
 	print( '----------------------------------------')
 	print( 'Data Readin Complete, Starting Analysis:')
 	print( '----------------------------------------')
@@ -3494,7 +3494,7 @@ def SheathExtent(folder=l,ax='NaN',Orientation='Axial',Phase='NaN',Ne=list(),Ni=
 #Sx = SheathExtent(folder=l,Phase=moviephaselist[k])
 
 	#Return null array if sheath plotting is not required:
-	if image_sheath == False: return([np.nan],[np.nan])
+#	if image_sheath == False: return([np.nan],[np.nan])
 
 	#Initiate required data storage lists
 	NPos,NNeg = list(),list()
@@ -3515,7 +3515,6 @@ def SheathExtent(folder=l,ax='NaN',Orientation='Axial',Phase='NaN',Ne=list(),Ni=
 	for i in range(0,len(PosSpecies)): PosSpecies[i] = PosSpecies[i] = PosSpecies[i].replace('^','+')
 	for i in range(0,len(NegSpecies)): NegSpecies[i] = NegSpecies[i] = NegSpecies[i].replace('^','-')
 	if 'E' in NegSpecies: NegSpecies.remove('E')			#Might Cause An Issue With Global!!!
-
 
 	#ISSUE WITH THIS REGARDING THE DATA READ-IN
 	#PREVIOUS VERSION SENDS Ne and Ni EXPLICITLY INTO FUNCTION, 
@@ -6241,215 +6240,216 @@ if savefig_trendphaseaveraged == True or print_generaltrends == True:
 ##====================================================================#
 #				#PHASE TRENDS & SHEATH DYNAMICS#
 ##====================================================================#
-#
-##Process phase resolved data from multiple folders to extract trends.
-#if savefig_trendphaseresolved == True:
-#
-#	#Initiate arrays between folders
-#	VoltageWaveforms,WaveformBiases = list(),list()
-#	SxMaxExtTrend,SxMeanExtTrend= list(),list()
-#	SxMaxVelTrend,SxMeanVelTrend = list(),list()
-#	SxDynRangeTrend = list()
-#	VariedValuelist = list()
-#
-#	#Read data from each simulation folder individually, saves on RAM.
-#	for l in tqdm(range(0,numfolders)):
-#
-#		#Create global folders to keep output plots.
-#		TrendVariable = filter(lambda x: x.isalpha(), FolderNameTrimmer(Dirlist[0]))
-#		DirPhaseResolved = CreateNewFolder(Dirlist[l],'2DPhase/')
-#		DirTrends = CreateNewFolder(os.getcwd()+'/',TrendVariable+' Trends')
-#		DirSheath = CreateNewFolder(DirTrends,'Sheath Trends')
-#
-#		#Create processlist for each folder as required. (Always get 'E','AR+','PPOT')
-#		SxData,SxPhase,Sxproc,Sxvar = ExtractPhaseData(folder=l,Variables=PhaseVariables+['E','AR+','PPOT'])
-#		VariedValuelist.append( FolderNameTrimmer(Dirlist[l]) )
-#
-#		#Extract waveforms from desired electrode locations.
-#		PPOT = Sxproc[Sxvar.index('PPOT')]
-#		for j in range(0,len(waveformlocs)):
-#			VoltageWaveforms.append(WaveformExtractor(SxData,PPOT,waveformlocs[j])[0])
-#			WaveformBiases.append(WaveformExtractor(SxData,PPOT,waveformlocs[j])[1])
-#		#endfor
-#		ElectrodeWaveform,ElectrodeBias,ElectrodeVpp = WaveformExtractor(SxData,PPOT)
-#
-#		### CURRENTLY ONLY AXIAL METHOD IS EMPLOYED ###
-#		#Axial sheath array (Sx) is calculated using radial integrations.
-#		#Radial sheath array (Sx) is calculated using axial integrations.
-#		Orientation = 'Axial'
-#		if Orientation == 'Axial': loc = electrodeloc[1]		#Axial depth where sheath plotted
-#		elif Orientation == 'Radial': loc = electrodeloc[0]		#Radial depth where sheath plotted
-#		Phaseaxis = GenerateAxis('Phase',Isym=Isymlist[l])
-#
-#		#=============#
-#
-#		SxLoc = list()
-#		#For all phases, calculate sheath width and record sheath width at electrodeloc
-#		for k in range(0,len(SxPhase)):
-#			#Extract Ni and Ne variables for sheath processing.
-#			Ne = SxData[k][Sxproc[Sxvar.index('E')]]
-#			Ni = SxData[k][Sxproc[Sxvar.index('AR+')]]
-#
-#			#calculate sheath width employing 'E' and 'AR+'
-#			Sx = SheathExtent(folder=l,Phase=k,Ne=Ne,Ni=Ni)[0]
-#			for j in range(0,len(Sx)): 
-#				Sx[j] = ((SourceWidth[0]*dr[l])-Sx[j])*10	#Convert to mm
-#			#endfor
-#			SxLoc.append(Sx[loc])
-#		#endfor
-#
-#		#Determine phase-averaged sheath proprties, removing 'nans' unless all data is 'nan'
-#		SxLocNoNaN = [x for x in SxLoc if np.isnan(x) == False]
-#		if len(SxLocNoNaN) > 0:
-#			SxDynRangeTrend.append(max(SxLocNoNaN)-min(SxLocNoNaN))		#Dynamic Range
-#			SxMeanExtTrend.append(sum(SxLocNoNaN)/len(SxLocNoNaN))		#Mean Extension
-#			SxMaxExtTrend.append(max(SxLocNoNaN))						#Max Extension
-#		else:
-#			SxDynRangeTrend.append( np.nan )
-#			SxMeanExtTrend.append( np.nan )
-#			SxMaxExtTrend.append( np.nan )
-#		#endif
-#
-#		#Calculate phase-averaged (mean) sheath velocity.
-#		#Assumes one sheath collapse and one sheath expansion per rf-cycle.
-#		RFPeriod = 1.0/MINFREQ[l]										#[s]
-#		MeanSheathExtent = (sum(SxLoc)/len(SxLoc))/1E6					#[km]
-#		MeanSheathVelocity = (2*MeanSheathExtent)/RFPeriod				#[km/s]
-#		SxMeanVelTrend.append( MeanSheathVelocity )						#[km/s]		
-#
-#		#Calculate maximum instantaneous sheath velocity.
-#		#Assumes sheath collapse velocity > sheath expansion velocity
-#		Collapsed,CollapsedPhase = min(SxLoc),SxLoc.index(min(SxLoc))
-#		Extended,ExtendedPhase = max(SxLoc),SxLoc.index(max(SxLoc))
-#
-#		SheathExtension = (Extended-Collapsed)/1000.0  					#[m]
-#		PhaseResolution = 1.0/(MINFREQ[l]*len(Phaseaxis))				#[s]
-#		SheathTime = (ExtendedPhase-CollapsedPhase)*PhaseResolution		#[s]
-#		try:
-#			MaxSheathVelocity = SheathExtension/SheathTime				#[m/s]
-#			SxMaxVelTrend.append(MaxSheathVelocity/1000.0)				#[km/s]
-#		except:
-#			SxMaxVelTrend.append(0.0)									#[km/s]
-#		#endtry
-#
-#		#=============#
-#
-#		#Scale sheath extension by required number of phasecycles.
-#		ScaledSxLoc = list()
-#		for n in range(0,int(phasecycles*len(SxLoc))):
-#			Index = n % len(SxLoc)		#Modulo index for multiple phasecycles
-#			ScaledSxLoc.append(SxLoc[Index])
-#		#endfor
-#		SxLoc=ScaledSxLoc
-#
-#		#Print results to terminal if requested.
-#		if print_sheath == True:
-#			print Dirlist[l][2:-1]
-#			print 'Sheath Extension:',round(SheathExtension*1E3,2),'[mm]'
-#			print 'Sheath Collapse Time:',round(SheathTime*1E9,2),'[ns]'
-#			print 'Mean Sheath Velocity:',round(MeanSheathVelocity/1E3,2),'[km/s]'
-#			print 'Max Sheath Velocity:',round(MaxSheathVelocity/1E3,2),'[km/s]'
-#			print ''
-#		#endif
-#
-#		#=============#
-#
-#		#Plot phase-resolved sheath extension for current folder
-#		fig,ax = figure(image_aspectratio,2,shareX=True)
-#		ax[0].plot(Phaseaxis,SxLoc, lw=2)
-#		Ylabel = 'Sheath Extension [mm]'
-#		ImageOptions(fig,ax[0],Ylabel=Ylabel,Crop=False)
-#		ax[0].set_xticks([])
-#
-#		#Plot Waveform onto Temporally collapsed PROES.
-#		ax[1].plot(Phaseaxis, ElectrodeWaveform, lw=2)
-#		ax[1].plot(Phaseaxis, ElectrodeBias, 'k--', lw=2)
-#		Xlabel,Ylabel = 'Phase [$\omega$t/2$\pi$]','Electrode Potential [V]'
-#		ImageOptions(fig,ax[1],Xlabel,Ylabel,Crop=False)
-#		ax[1].xaxis.set_major_locator(ticker.MultipleLocator(0.5))
-#
-#		plt.savefig(DirPhaseResolved+VariedValuelist[l]+' SheathDynamics'+ext)
-#		plt.close('all')
-#
-#		#Write phase-resolved sheath dynamics to ASCII format datafile if requested.
-#		if write_ASCII == True:
-#			DirASCII = CreateNewFolder(DirPhaseResolved,'2DPhase_Data')
-#			DirASCIISheath = CreateNewFolder(DirASCII,'SheathDynamics')
-#			WriteDataToFile(Phaseaxis+['\n']+SxLoc, DirASCIISheath+VariedValuelist[l]+'SheathDynamics')
-#		#endif
-#	#endfor
-#
-#	#Write sheath trends to ASCII format datafile if requested.
-#	if write_ASCII == True:
-#		DirASCII = CreateNewFolder(DirTrends,'Trend_Data')
-#		DirASCIISheath = CreateNewFolder(DirASCII,'Sheath_Data')
-#		WriteDataToFile(VariedValuelist+['\n']+SxMaxExtTrend, DirASCIISheath+'MaxExtent_Trends')
-#		WriteDataToFile(VariedValuelist+['\n']+SxMeanExtTrend, DirASCIISheath+'MeanExtent_Trends')
-#		WriteDataToFile(VariedValuelist+['\n']+SxDynRangeTrend, DirASCIISheath+'DynamicRange_Trends')
-#		WriteDataToFile(VariedValuelist+['\n']+SxMaxVelTrend, DirASCIISheath+'MaxVelocity_Trends')
-#		WriteDataToFile(VariedValuelist+['\n']+SxMeanVelTrend, DirASCIISheath+'MeanVelocity_Trends')
-#	#endif
-#
-#
-#	#Plot maximum sheath extension trend for all folders
-#	fig,ax = figure(image_aspectratio)
-#	TrendPlotter(ax,SxMaxExtTrend,VariedValuelist,NormFactor=0)
-#	Title='Maximum Sheath Extension W.R.T '+TrendVariable+' \n'+Dirlist[l][2:-1]
-#	Xlabel,Ylabel = 'Varied Property','Max Sheath Extension [mm]'
-#	ImageOptions(fig,ax,Xlabel,Ylabel,Title,Crop=False)
-#
-#	plt.savefig(DirSheath+'Max Sheath Extension Trends'+ext)
-#	plt.close('all')
-#
-#	#Plot mean sheath extension trend for all folders
-#	fig,ax = figure(image_aspectratio)
-#	TrendPlotter(ax,SxMeanExtTrend,VariedValuelist,NormFactor=0)
-#	Title='Mean Sheath Extension W.R.T '+TrendVariable+' \n'+Dirlist[l][2:-1]
-#	Xlabel,Ylabel = 'Varied Property','Mean Sheath Extension [mm]'
-#	ImageOptions(fig,ax,Xlabel,Ylabel,Title,Crop=False)
-#
-#	plt.savefig(DirSheath+'Mean Sheath Extension Trends'+ext)
-#	plt.close('all')
-#
-#	#Plot sheath dynamic range (max-min extension) trend for all folders
-#	fig,ax = figure(image_aspectratio)
-#	TrendPlotter(ax,SxDynRangeTrend,VariedValuelist,NormFactor=0)
-#	Title='Sheath Dynamic Range W.R.T '+TrendVariable+' \n'+Dirlist[l][2:-1]
-#	Xlabel,Ylabel = 'Varied Property','Sheath Dynamic Range [mm]'
-#	ImageOptions(fig,ax,Xlabel,Ylabel,Title,Crop=False)
-#
-#	plt.savefig(DirSheath+'Sheath Dynamic Range Trends'+ext)
-#	plt.close('all')
-#
-#	#Plot maximum sheath velocity trend for all folders
-#	fig,ax = figure(image_aspectratio)
-#	TrendPlotter(ax,SxMaxVelTrend,VariedValuelist,NormFactor=0)
-#	Title='Maximum Sheath Velocity W.R.T '+TrendVariable+' \n'+Dirlist[l][2:-1]
-#	Xlabel,Ylabel = 'Varied Property','Sheath Velocity [km/s]'
-#	ImageOptions(fig,ax,Xlabel,Ylabel,Title,Crop=False)
-#
-#	plt.savefig(DirSheath+'Max Sheath Velocity Trends'+ext)
-#	plt.close('all')
-#
-#	#Plot mean sheath velocity trend for all folders
-#	fig,ax = figure(image_aspectratio)
-#	TrendPlotter(ax,SxMeanVelTrend,VariedValuelist,NormFactor=0)
-#	Title='Phase-averaged Sheath Velocity W.R.T '+TrendVariable+' \n'+Dirlist[l][2:-1]
-#	Xlabel,Ylabel = 'Varied Property','Sheath Velocity [km/s]'
-#	ImageOptions(fig,ax,Xlabel,Ylabel,Title,Crop=False)
-#
-#	plt.savefig(DirSheath+'Mean Sheath Velocity Trends'+ext)
-#	plt.close('all')
-#
-#
-#	print'----------------------------------------'
-#	print'# Phase-Resolved Trend Analysis Complete'
-#	print'----------------------------------------'
-##endif
-#
-#
-#
-#
+
+#Process phase resolved data from multiple folders to extract trends.
+if savefig_sheathdynamics == True:
+
+	#Initiate arrays between folders
+	VoltageWaveforms,WaveformBiases = list(),list()
+	SxMaxExtTrend,SxMeanExtTrend= list(),list()
+	SxMaxVelTrend,SxMeanVelTrend = list(),list()
+	SxDynRangeTrend = list()
+	VariedValuelist = list()
+
+	#Read data from each simulation folder individually, saves on RAM.
+	for l in tqdm(range(0,numfolders)):
+
+		#Create global folders to keep output plots.
+		TrendVariable = list(filter(lambda x: x.isalpha(), FolderNameTrimmer(Dirlist[0])))	#List of discrete chars
+		TrendVariable = ''.join(TrendVariable)												#Single string of chars
+		DirPhaseResolved = CreateNewFolder(Dirlist[l],'2DPhase/')
+		DirTrends = CreateNewFolder(os.getcwd()+'/',TrendVariable+' Trends')
+		DirSheath = CreateNewFolder(DirTrends,'Sheath Trends')
+
+		#Create processlist for each folder as required. (Always get 'E','AR+','PPOT')
+		SxData,SxPhase,Sxproc,Sxvar = ExtractPhaseData(folder=l,Variables=PhaseVariables+['E','AR+','PPOT'])
+		VariedValuelist.append( FolderNameTrimmer(Dirlist[l]) )
+
+		#Extract waveforms from desired electrode locations.
+		PPOT = Sxproc[Sxvar.index('PPOT')]
+		for j in range(0,len(waveformlocs)):
+			VoltageWaveforms.append(WaveformExtractor(SxData,PPOT,waveformlocs[j])[0])
+			WaveformBiases.append(WaveformExtractor(SxData,PPOT,waveformlocs[j])[1])
+		#endfor
+		ElectrodeWaveform,ElectrodeBias,ElectrodeVpp = WaveformExtractor(SxData,PPOT)
+
+		### CURRENTLY ONLY AXIAL METHOD IS EMPLOYED ###
+		#Axial sheath array (Sx) is calculated using radial integrations.
+		#Radial sheath array (Sx) is calculated using axial integrations.
+		Orientation = 'Axial'
+		if Orientation == 'Axial': loc = electrodeloc[1]		#Axial depth where sheath plotted
+		elif Orientation == 'Radial': loc = electrodeloc[0]		#Radial depth where sheath plotted
+		Phaseaxis = GenerateAxis('Phase',Isym=Isymlist[l])
+
+		#=============#
+
+		SxLoc = list()
+		#For all phases, calculate sheath width and record sheath width at electrodeloc
+		for k in range(0,len(SxPhase)):
+			#Extract Ni and Ne variables for sheath processing.
+			Ne = SxData[k][Sxproc[Sxvar.index('E')]]
+			Ni = SxData[k][Sxproc[Sxvar.index('AR+')]]
+
+			#calculate sheath width employing 'E' and 'AR+'
+			Sx = SheathExtent(folder=l,Phase=k,Ne=Ne,Ni=Ni)[0]
+			for j in range(0,len(Sx)): 
+				Sx[j] = ((SourceWidth[0]*dr[l])-Sx[j])*10	#Convert to mm
+			#endfor
+			
+			SxLoc.append(Sx[loc])
+		#endfor
+
+		#Determine phase-averaged sheath proprties, removing 'nans' unless all data is 'nan'
+		SxLocNoNaN = [x for x in SxLoc if np.isnan(x) == False]
+		if len(SxLocNoNaN) > 0:
+			SxDynRangeTrend.append(max(SxLocNoNaN)-min(SxLocNoNaN))		#Dynamic Range
+			SxMeanExtTrend.append(sum(SxLocNoNaN)/len(SxLocNoNaN))		#Mean Extension
+			SxMaxExtTrend.append(max(SxLocNoNaN))						#Max Extension
+		else:
+			SxDynRangeTrend.append( np.nan )
+			SxMeanExtTrend.append( np.nan )
+			SxMaxExtTrend.append( np.nan )
+		#endif
+
+		#Calculate phase-averaged (mean) sheath velocity.
+		#Assumes one sheath collapse and one sheath expansion per rf-cycle.
+		RFPeriod = 1.0/FREQMIN[l]										#[s]
+		MeanSheathExtent = (sum(SxLoc)/len(SxLoc))/1E6					#[km]
+		MeanSheathVelocity = (2*MeanSheathExtent)/RFPeriod				#[km/s]
+		SxMeanVelTrend.append( MeanSheathVelocity )						#[km/s]		
+
+		#Calculate maximum instantaneous sheath velocity.
+		#Assumes sheath collapse velocity > sheath expansion velocity
+		Collapsed,CollapsedPhase = min(SxLoc),SxLoc.index(min(SxLoc))
+		Extended,ExtendedPhase = max(SxLoc),SxLoc.index(max(SxLoc))
+
+		SheathExtension = (Extended-Collapsed)/1000.0  					#[m]
+		PhaseResolution = 1.0/(FREQMIN[l]*len(Phaseaxis))				#[s]
+		SheathTime = (ExtendedPhase-CollapsedPhase)*PhaseResolution		#[s]
+		try:
+			MaxSheathVelocity = SheathExtension/SheathTime				#[m/s]
+			SxMaxVelTrend.append(MaxSheathVelocity/1000.0)				#[km/s]
+		except:
+			SxMaxVelTrend.append(0.0)									#[km/s]
+		#endtry
+
+		#=============#
+
+		#Scale sheath extension by required number of phasecycles.
+		ScaledSxLoc = list()
+		for n in range(0,int(phasecycles*len(SxLoc))):
+			Index = n % len(SxLoc)		#Modulo index for multiple phasecycles
+			ScaledSxLoc.append(SxLoc[Index])
+		#endfor
+		SxLoc=ScaledSxLoc
+
+		#Print results to terminal if requested.
+		if print_sheath == True:
+			print(Dirlist[l][2:-1])
+			print('Sheath Extension:',round(SheathExtension*1E3,2),'[mm]')
+			print('Sheath Collapse Time:',round(SheathTime*1E9,2),'[ns]')
+			print('Mean Sheath Velocity:',round(MeanSheathVelocity/1E3,2),'[km/s]')
+			print('Max Sheath Velocity:',round(MaxSheathVelocity/1E3,2),'[km/s]')
+			print('')
+		#endif
+
+		#=============#
+
+		#Plot phase-resolved sheath extension for current folder
+		fig,ax = figure(image_aspectratio,2,shareX=True)
+		ax[0].plot(Phaseaxis,SxLoc, lw=2)
+		Ylabel = 'Sheath Extension [mm]'
+		ImageOptions(fig,ax[0],Ylabel=Ylabel,Crop=False)
+		ax[0].set_xticks([])
+
+		#Plot Waveform onto Temporally collapsed PROES.
+		ax[1].plot(Phaseaxis, ElectrodeWaveform, lw=2)
+		ax[1].plot(Phaseaxis, ElectrodeBias, 'k--', lw=2)
+		Xlabel,Ylabel = 'Phase [$\omega$t/2$\pi$]','Electrode Potential [V]'
+		ImageOptions(fig,ax[1],Xlabel,Ylabel,Crop=False)
+		ax[1].xaxis.set_major_locator(ticker.MultipleLocator(0.5))
+
+		plt.savefig(DirPhaseResolved+VariedValuelist[l]+' SheathDynamics'+ext)
+		plt.close('all')
+
+		#Write phase-resolved sheath dynamics to ASCII format datafile if requested.
+		if write_ASCII == True:
+			DirASCII = CreateNewFolder(DirPhaseResolved,'2DPhase_Data')
+			DirASCIISheath = CreateNewFolder(DirASCII,'SheathDynamics')
+			WriteDataToFile(Phaseaxis+['\n']+SxLoc, DirASCIISheath+VariedValuelist[l]+'SheathDynamics')
+		#endif
+	#endfor
+
+	#Write sheath trends to ASCII format datafile if requested.
+	if write_ASCII == True:
+		DirASCII = CreateNewFolder(DirTrends,'Trend_Data')
+		DirASCIISheath = CreateNewFolder(DirASCII,'Sheath_Data')
+		WriteDataToFile(VariedValuelist+['\n']+SxMaxExtTrend, DirASCIISheath+'MaxExtent_Trends')
+		WriteDataToFile(VariedValuelist+['\n']+SxMeanExtTrend, DirASCIISheath+'MeanExtent_Trends')
+		WriteDataToFile(VariedValuelist+['\n']+SxDynRangeTrend, DirASCIISheath+'DynamicRange_Trends')
+		WriteDataToFile(VariedValuelist+['\n']+SxMaxVelTrend, DirASCIISheath+'MaxVelocity_Trends')
+		WriteDataToFile(VariedValuelist+['\n']+SxMeanVelTrend, DirASCIISheath+'MeanVelocity_Trends')
+	#endif
+
+
+	#Plot maximum sheath extension trend for all folders
+	fig,ax = figure(image_aspectratio)
+	TrendPlotter(ax,SxMaxExtTrend,VariedValuelist,NormFactor=0)
+	Title='Maximum Sheath Extension W.R.T '+TrendVariable+' \n'+Dirlist[l][2:-1]
+	Xlabel,Ylabel = 'Varied Property','Max Sheath Extension [mm]'
+	ImageOptions(fig,ax,Xlabel,Ylabel,Title,Crop=False)
+
+	plt.savefig(DirSheath+'Max Sheath Extension Trends'+ext)
+	plt.close('all')
+
+	#Plot mean sheath extension trend for all folders
+	fig,ax = figure(image_aspectratio)
+	TrendPlotter(ax,SxMeanExtTrend,VariedValuelist,NormFactor=0)
+	Title='Mean Sheath Extension W.R.T '+TrendVariable+' \n'+Dirlist[l][2:-1]
+	Xlabel,Ylabel = 'Varied Property','Mean Sheath Extension [mm]'
+	ImageOptions(fig,ax,Xlabel,Ylabel,Title,Crop=False)
+
+	plt.savefig(DirSheath+'Mean Sheath Extension Trends'+ext)
+	plt.close('all')
+
+	#Plot sheath dynamic range (max-min extension) trend for all folders
+	fig,ax = figure(image_aspectratio)
+	TrendPlotter(ax,SxDynRangeTrend,VariedValuelist,NormFactor=0)
+	Title='Sheath Dynamic Range W.R.T '+TrendVariable+' \n'+Dirlist[l][2:-1]
+	Xlabel,Ylabel = 'Varied Property','Sheath Dynamic Range [mm]'
+	ImageOptions(fig,ax,Xlabel,Ylabel,Title,Crop=False)
+
+	plt.savefig(DirSheath+'Sheath Dynamic Range Trends'+ext)
+	plt.close('all')
+
+	#Plot maximum sheath velocity trend for all folders
+	fig,ax = figure(image_aspectratio)
+	TrendPlotter(ax,SxMaxVelTrend,VariedValuelist,NormFactor=0)
+	Title='Maximum Sheath Velocity W.R.T '+TrendVariable+' \n'+Dirlist[l][2:-1]
+	Xlabel,Ylabel = 'Varied Property','Sheath Velocity [km/s]'
+	ImageOptions(fig,ax,Xlabel,Ylabel,Title,Crop=False)
+
+	plt.savefig(DirSheath+'Max Sheath Velocity Trends'+ext)
+	plt.close('all')
+
+	#Plot mean sheath velocity trend for all folders
+	fig,ax = figure(image_aspectratio)
+	TrendPlotter(ax,SxMeanVelTrend,VariedValuelist,NormFactor=0)
+	Title='Phase-averaged Sheath Velocity W.R.T '+TrendVariable+' \n'+Dirlist[l][2:-1]
+	Xlabel,Ylabel = 'Varied Property','Sheath Velocity [km/s]'
+	ImageOptions(fig,ax,Xlabel,Ylabel,Title,Crop=False)
+
+	plt.savefig(DirSheath+'Mean Sheath Velocity Trends'+ext)
+	plt.close('all')
+
+
+	print('----------------------------------------')
+	print('# Phase-Resolved Trend Analysis Complete')
+	print('----------------------------------------')
+#endif
+
+
+
 ##====================================================================#
 #					#SIMULATED PROES DIAGNOSTIC#
 ##====================================================================#
@@ -6734,7 +6734,7 @@ if savefig_trendphaseaveraged == True or print_generaltrends == True:
 #
 ##===============================#
 #
-#if any([savefig_trendphaseresolved, savefig_phaseresolve1D, savefig_phaseresolve2D, savefig_PROES]) == True:
+#if any([savefig_sheathdynamics, savefig_phaseresolve1D, savefig_phaseresolve2D, savefig_PROES]) == True:
 #	print'----------------------------------'
 #	print'# Phase Resolved Profiles Complete'
 #	print'----------------------------------'
