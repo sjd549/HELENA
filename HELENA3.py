@@ -233,7 +233,7 @@ savefig_convergence = False				#Single-Variables: iter-time axis			Requires movi
 savefig_plot2D = False					#Single-Variables: converged				Requires TECPLOT2D.PDT
 
 savefig_monoprofiles = False			#Single-Variables; fixed height/radius
-savefig_multiprofiles = False			#Multi-Variables; same folder					- ASCII OUTPUT NEEDED
+savefig_multiprofiles = True			#Multi-Variables; same folder					- ASCII OUTPUT NEEDED
 savefig_compareprofiles = False			#Multi-Variables; all folders
 savefig_temporalprofiles = False		#Single-Variables; real-time axis
 					
@@ -244,7 +244,6 @@ savefig_phaseresolve1D = False			#1D Phase Resolved Images						TO BE REFACTORED
 savefig_phaseresolve2D = False			#2D Phase Resolved Images						TO BE REFACTORED
 savefig_sheathdynamics = False			#1D and 2D sheath dynamics images
 savefig_PROES =	False					#Simulated PROES Diagnostic						TO BE REFACTORED
-
 
 savefig_IEDFangular = False				#2D images of angular IEDF; single folders.		autoprofconv needs fixed
 savefig_IEDFtrends = False				#1D IEDF trends; all folders.					TO BE REFACTORED
