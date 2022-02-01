@@ -240,8 +240,8 @@ savefig_temporalprofiles = False		#Single-Variables; real-time axis
 savefig_trendphaseaveraged = False		#Converged trends at 'TrendLoc' cell
 savefig_trendphaseresolved = False		#Temporal trends at 'TrendLoc' cell				#IN DEVELOPMENT#
 
-savefig_phaseresolve1D = False			#1D Phase Resolved Images						TO BE REFACTORED
-savefig_phaseresolve2D = False			#2D Phase Resolved Images						TO BE REFACTORED
+savefig_phaseresolve1D = False			#1D Phase Resolved Images
+savefig_phaseresolve2D = False			#2D Phase Resolved Images
 savefig_sheathdynamics = False			#1D and 2D sheath dynamics images
 savefig_PROES =	False					#Simulated PROES Diagnostic						TO BE REFACTORED
 
@@ -4518,7 +4518,7 @@ if savefig_temporalprofiles == True:
 
 		#Plot mesh averaged value over 'real-time' in simulation.
 		Legend = VariableLabelMaker(variablelist)
-		fig, ax = plt.subplots(1, figsize=(10,10))
+		fig, ax = plt.subplots(1, figsize=(14,10))
 
 		#Plot each variable in ConvergenceTrends to single figure.
 		for i in range(0,len(TemporalTrends)):
@@ -6242,9 +6242,9 @@ if savefig_phaseresolve2D == True:
 
 
 
-##====================================================================#
-#				#PHASE TRENDS & SHEATH DYNAMICS#
-##====================================================================#
+#====================================================================#
+				#PHASE TRENDS & SHEATH DYNAMICS#
+#====================================================================#
 
 #Process phase resolved data from multiple folders to extract trends.
 if savefig_sheathdynamics == True:
@@ -6360,19 +6360,17 @@ if savefig_sheathdynamics == True:
 
 		#=============#
 
-		#Plot phase-resolved sheath extension for current folder
+		#Plot phase-resolved sheath extension [ax0] and voltage waveform [ax1] for current folder
 		fig,ax = figure(image_aspectratio,2,shareX=True)
-		ax[0].plot(Phaseaxis,SxLoc, lw=2)
+		ax[0].plot(Phaseaxis,SxLoc, lw=2)		
+		Title = 'Phase-Resolved Sheath Extension for '+VariedValuelist[l]
 		Ylabel = 'Sheath Extension [mm]'
-		ImageOptions(fig,ax[0],Ylabel=Ylabel,Crop=False)
-		ax[0].set_xticks([])
-
-		#Plot Waveform onto Temporally collapsed PROES.
+		ImageOptions(fig,ax[0],Title=Title,Ylabel=Ylabel,Crop=False)
+		
 		ax[1].plot(Phaseaxis, ElectrodeWaveform, lw=2)
 		ax[1].plot(Phaseaxis, ElectrodeBias, 'k--', lw=2)
 		Xlabel,Ylabel = 'Phase [$\omega$t/2$\pi$]','Electrode Potential [V]'
 		ImageOptions(fig,ax[1],Xlabel,Ylabel,Crop=False)
-		ax[1].xaxis.set_major_locator(ticker.MultipleLocator(0.5))
 
 		plt.savefig(DirPhaseResolved+VariedValuelist[l]+' SheathDynamics'+ext)
 		plt.close('all')
