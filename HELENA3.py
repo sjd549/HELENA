@@ -243,7 +243,7 @@ savefig_trendphaseresolved = False		#Temporal trends at 'TrendLoc' cell				#IN D
 savefig_phaseresolve1D = False			#1D Phase Resolved Images
 savefig_phaseresolve2D = False			#2D Phase Resolved Images
 savefig_sheathdynamics = False			#1D and 2D sheath dynamics images
-savefig_PROES =	False					#Simulated PROES Diagnostic						TO BE REFACTORED
+savefig_PROES =	False					#Simulated PROES Diagnostic
 
 savefig_IEDFangular = False				#2D images of angular IEDF; single folders.		autoprofconv needs fixed
 savefig_IEDFtrends = False				#1D IEDF trends; all folders.					TO BE REFACTORED
@@ -455,7 +455,7 @@ print( '   |  |__|  | |  |__   |  |     |  |__   |   \|  |   /  ^  \        ')
 print( '   |   __   | |   __|  |  |     |   __|  |  . `  |  /  /_\  \       ')
 print( '   |  |  |  | |  |____ |  `----.|  |____ |  |\   | /  _____  \      ')
 print( '   |__|  |__| |_______||_______||_______||__| \__|/__/     \__\     ')
-print( '                                                              v3.1.1')
+print( '                                                              v3.1.2')
 print( '--------------------------------------------------------------------')
 print( '')
 print( 'The following diagnostics were requested:')
@@ -6031,19 +6031,19 @@ if savefig_phaseresolve1D == True:
 					if LineoutsOrientation[k] == 'Axial':
 						ZlineoutLoc,axis = Lineouts[k],Zaxis
 						PhaseResolvedProfile = PlotAxialProfile(PhaseData[j],proclist[i],varlist[i],ZlineoutLoc,R_mesh[l],Z_mesh[l],Isymlist[l])[::-1]
-						lineoutstring = ' @ R='+str(round(Lineouts[k]*dr[l],2))+'cm \n'
+						ProfileString = ' @ R='+str(round(Lineouts[k]*dr[l],2))+'cm \n'
 						Xlabel = 'Axial Distance Z [cm]'
 					elif LineoutsOrientation[k] == 'Radial':
 						RlineoutLoc,axis = Lineouts[k],Raxis
 						PhaseResolvedProfile = PlotRadialProfile(PhaseData[j],proclist[i],varlist[i],RlineoutLoc,R_mesh[l],Isymlist[l])
-						lineoutstring = ' @ Z='+str(round(Lineouts[k]*dz[l],2))+'cm \n'
+						ProfileString = ' @ Z='+str(round(Lineouts[k]*dz[l],2))+'cm \n'
 						Xlabel = 'Radial Distance R [cm]'
 					#endif
 
 					#Create figures and plot the 1D profiles. (ax[0]=variable, ax[1]=waveform)
 					fig,ax = figure(image_aspectratio,2)
 					Ylabel = VariableLabelMaker(varlist)
-					fig.suptitle('Phase-Resolved '+varlist[i]+' for '+VariedValuelist[l]+lineoutstring+str(Phaselist[j]), y=0.97, fontsize=16)
+					fig.suptitle('Phase-Resolved '+varlist[i]+' for '+VariedValuelist[l]+ProfileString+str(Phaselist[j]), y=0.97, fontsize=16)
 
 					#Plot profile and apply image options.
 					ax[0].plot(axis, PhaseResolvedProfile, lw=2)
@@ -6066,7 +6066,7 @@ if savefig_phaseresolve1D == True:
 					#Write Phase data in ASCII format if required.
 					if write_ASCII == True:
 						DirASCIIPhase = CreateNewFolder(DirPhaseResolved,'1DPhase_Data')
-						DirASCIIPhaseloc = CreateNewFolder(DirASCIIPhase,lineoutstring[3:-2])
+						DirASCIIPhaseloc = CreateNewFolder(DirASCIIPhase,ProfileString[3:-2])
 						Cycle = str( Phaselist[j].replace(" ", "") )
 						SaveString = DirASCIIPhaseloc+varlist[i]+'_'+Cycle
 						WriteDataToFile(PhaseResolvedProfile[::-1], SaveString)
@@ -6453,357 +6453,359 @@ if savefig_sheathdynamics == True:
 
 
 
-##====================================================================#
-#					#SIMULATED PROES DIAGNOSTIC#
-##====================================================================#
-#
-##Plot Phase-Resolved profiles with electrode voltage and requested variables.
-#if savefig_PROES == True:
-#	VariedValuelist = list()
-#
-#	#for all folders.
-#	for l in range(0,numfolders):
-#
-#		#Create global folders to keep output plots and collect graph title.
-#		VoltageWaveforms,WaveformBiases = list(),list()
-#		DirPROES = CreateNewFolder(Dirlist[l],'PROES')
-#
-#		#Update X-axis with folder information.
-#		VariedValuelist.append( FolderNameTrimmer(Dirlist[l]) )
-#
-#		#Create processlist for each folder as required. (Always get 'E','AR+','PPOT')
-#		PhaseData,Phaselist,proclist,varlist = ExtractPhaseData(folder=l,Variables=PhaseVariables)
-#		SxData,SxPhase,Sxproc,Sxvar = ExtractPhaseData(folder=l,Variables=['E','AR+'])
-#		PPOT = ExtractPhaseData(folder=l,Variables=['PPOT'])[2][0]
-#
-#		#Generate SI scale axes for lineout plots. ([omega*t/2pi] and [cm] respectively)
-#		Phaseaxis = GenerateAxis('Phase',Isymlist[l],Phaselist)
-#		Raxis = GenerateAxis('Radial',Isymlist[l])
-#		Zaxis = GenerateAxis('Axial',Isymlist[l])
-#
-#		#=============#
-#
-#		#Extract waveforms from desired electrode locations.
-#		for j in range(0,len(waveformlocs)):
-#			VoltageWaveforms.append(WaveformExtractor(PhaseData,PPOT,waveformlocs[j])[0])
-#			WaveformBiases.append(WaveformExtractor(PhaseData,PPOT,waveformlocs[j])[1])
-#		#endfor
-#		ElectrodeWaveform,ElectrodeBias,ElectrodeVpp = WaveformExtractor(PhaseData,PPOT)
-#
-#		#Plot the phase-resolved waveform.
-#		fig,ax = figure(image_aspectratio,1)
-#
-#		ax.plot(Phaseaxis,ElectrodeWaveform, lw=2)
-#		for j in range(0,len(waveformlocs)): 
-#			ax.plot(Phaseaxis,VoltageWaveforms[j], lw=2)
-#			#ax.plot(Phaseaxis,WaveformBiases[j], 'k--', lw=2)
-#		#endfor
-#		#ax.plot(Phaseaxis,ElectrodeBias, 'k--', lw=2)
-#
-#		Title = 'Phase-Resolved Voltage Waveforms for '+FolderNameTrimmer(Dirlist[l])
-#		Legend = ['Waveform Vpp: '+str(round(ElectrodeVpp[2],2))+'V']
-#		Xlabel,Ylabel = 'Phase [$\omega$t/2$\pi$]','Electrode Potential [V]'
-#		ImageOptions(fig,ax,Xlabel,Ylabel,Title,Legend,Crop=False)
-#		ax.xaxis.set_major_locator(ticker.MultipleLocator(0.25))
-#
-#		plt.savefig(DirPROES+VariedValuelist[l]+' Waveform'+ext)
-#		plt.close('all')
-#
-#		#Write PROES data in ASCII format if required.
-#		if write_ASCII == True:
-#			ASCIIWaveforms = [Phaseaxis,ElectrodeWaveform]
-#			for j in range(0,len(waveformlocs)):
-#				ASCIIWaveforms.append(VoltageWaveforms[j])
-#			#endfor
-#			DirASCIIPROES = CreateNewFolder(DirPROES,'PROES_Data')
-#			WriteDataToFile(ASCIIWaveforms, DirASCIIPROES+'VoltageWaveforms')
-#		#endif
-#
-#		#==============#
-#
-#
-#		#for all requested variables.
-#		for i in tqdm(range(0,len(proclist))):
-#			#Refresh lineout lists between variables.
-#			Lineouts,LineoutsOrientation = list(),list()
-#
-#			#Concatinate all requested lineouts together, keeping seperate orientation.
-#			for m in range(0,len(radialineouts)):
-#				Lineouts.append(radialineouts[m])
-#				LineoutsOrientation.append('Radial')
-#			for m in range(0,len(heightlineouts)):
-#				Lineouts.append(heightlineouts[m])
-#				LineoutsOrientation.append('Axial')
-#
-#			#For all requested lineouts and orientations.
-#			for k in range(0,len(Lineouts)):
-#				#Refresh required lists.
-#				VariableMax,VariableMin = list(),list()
-#				PhaseSx,SymPhaseSx = list(),list()
-#				PROES = list()
-#
-#				#for all recorded phases, plot spatially varying variable and waveform.
-#				for j in range(0,len(Phaselist)):
-#					#Refresh lists between each phasecycle.
-#					IntegratedDoFArray,DoFArrays = list(),list()
-#
-#					#Collect each profile for stitching into a PROES image if required.
-#					if DoFWidth > 0:
-#						#Determine range of lineouts within the depth of field.
-#						DOFRegion = [(Lineouts[k]-DoFWidth),(Lineouts[k]+DoFWidth)]
-#						#If DOF extends beyond mesh, alert user and abort diagnostic.
-#						if any(DOFRegion) < 0:
-#							print '----------------------------------'
-#							print 'Depth-of-Field Extends Beyond Mesh'
-#							print '----------------------------------'
-#							break
-#						#endif
-#
-#						#Collect profiles from DOF region and transpose to allow easy integration.
-#						for LineoutLoc in range(DOFRegion[0],DOFRegion[1]):
-#							if LineoutsOrientation[k] == 'Radial': DoFArrays.append(PlotRadialProfile(PhaseData[j],proclist[i],varlist[i],LineoutLoc)[::-1])
-#							elif LineoutsOrientation[k] == 'Axial': DoFArrays.append(PlotAxialProfile(PhaseData[j],proclist[i],varlist[i],LineoutLoc)[::-1])
-#							#endif
-#						#endfor
-#						DoFArrays = np.asarray(DoFArrays).transpose().tolist()
-#
-#						#Integrate DoF profiles spatially, obtaining PROES profile for phase 'j'
-#						for n in range(0,len(DoFArrays)):
-#							IntegratedDoFArray.append( sum(DoFArrays[n])/(DoFWidth*2+1) )
-#						#endif
-#						PROES.append(IntegratedDoFArray)
-#
-#					#If no DoF then simply collect lineout from required location.
-#					elif DoFWidth == 0:
-#						LineoutLoc = Lineouts[k]
-#						if LineoutsOrientation[k] == 'Radial':
-#							PROES.append(PlotRadialProfile(PhaseData[j],proclist[i],varlist[i],LineoutLoc))
-#						elif LineoutsOrientation[k] == 'Axial':
-#							PROES.append(PlotAxialProfile(PhaseData[j],proclist[i],varlist[i],LineoutLoc)[::-1])
-#						#endif
-#					#endif 
-#
-#					if image_sheath == True:
-#						#Extract Ni and Ne variables and perform sheath processing.
-#						Ne = SxData[j][Sxproc[Sxvar.index('E')]]
-#						Ni = SxData[j][Sxproc[Sxvar.index('AR+')]]
-#						#Extract the full spatial sheath extent for phase 'j', save location for PROES.
-#						Sx = SheathExtent(folder=l,Orientation=LineoutsOrientation[k],Phase=j,Ne=Ne,Ni=Ni)
-#						PhaseSx.append(Sx[0][Lineouts[k]])
-#						SymPhaseSx.append(Sx[1][Lineouts[k]])
-#					#endif
-#				#endfor
-#
-#				#Scale PROES image and Sx arrays by required number of phasecycles.
-#				ScaledPROES,ScaledPhaseSx,ScaledSymPhaseSx = list(),list(),list()
-#				for n in range(0,int(phasecycles*len(PROES))):
-#					Index = n % len(PROES)		#Modulo index for multiple phasecycles
-#					ScaledPROES.append(PROES[Index])
-#					if image_sheath == True:
-#						ScaledPhaseSx.append(PhaseSx[Index])
-#						ScaledSymPhaseSx.append(SymPhaseSx[Index])
-#					#endif
-#				#endfor
-#				try: PROES,PhaseSx,SymPhaseSx = ScaledPROES,ScaledPhaseSx,ScaledSymPhaseSx
-#				except: PROES = ScaledPROES
-#
-#				#Create figure and rotate PROES such that phaseaxis aligns with waveform.
-#				fig,ax = figure(image_aspectratio,2,shareX=True)
-#				PROES = ndimage.rotate(PROES, 90)
-#				#Choose correct axial or radial distance axis and create associated folder.
-#				x1,x2 = Phaseaxis[0],Phaseaxis[-1]
-#				if LineoutsOrientation[k] == 'Axial':
-#					lineoutstring = ' @ R='+str(round(Lineouts[k]*dr[l],2))+'cm'
-#					NameString = varlist[i]+'_'+lineoutstring[2::]
-#					Ylabel = 'Axial Distance Z [cm]'
-#					Crop = [image_axialcrop[::-1],image_radialcrop] #Reversed accounting for rotation.
-#					y1,y2 = Zaxis[-1],Zaxis[0]						#Reversed accounting for top origin.
-#				elif LineoutsOrientation[k] == 'Radial' and Isymlist[l] == 1:
-#					lineoutstring = ' @ Z='+str(round(Lineouts[k]*dz[l],2))+'cm'
-#					NameString = varlist[i]+lineoutstring[2::]
-#					Ylabel = 'Radial Distance R [cm]'
-#					Crop = [image_radialcrop,image_axialcrop]
-#					y1,y2 = Raxis[-1],-Raxis[-1]
-#				elif LineoutsOrientation[k] == 'Radial' and Isymlist[l] == 0:
-#					lineoutstring = ' @ Z='+str(round(Lineouts[k]*dz[l],2))+'cm'
-#					NameString = varlist[i]+lineoutstring[2::]
-#					Ylabel = 'Radial Distance R [cm]'
-#					Crop = [image_radialcrop,image_axialcrop]
-#					y1,y2 = Raxis[-1],0
-#				#endif
-#				DirPROESloc = CreateNewFolder(DirPROES,lineoutstring[3::])
-#
-#				#Create PROES image along line of sight with phase-locked waveform.
-#				fig.suptitle( 'Simulated '+varlist[i]+' PROES for '+VariedValuelist[l]+lineoutstring+'\n DoF = '+str(round(((2*DoFWidth)+1)*dz[l],2))+' cm', y=0.95, fontsize=18)
-#				im = ax[0].contour(PROES,extent=[x1,x2,y1,y2],origin='lower',aspect='auto')
-#				im = ax[0].imshow(PROES,extent=[x1,x2,y1,y2],origin='bottom',aspect='auto')
-#				if image_sheath == True:
-#					ax[0].plot(Phaseaxis,PhaseSx,'w--',lw=1.0)
-#					ax[0].plot(Phaseaxis,SymPhaseSx,'w--',lw=1.0)
-#				#endif
-#				ImageOptions(fig,ax[0],Xlabel='',Ylabel=Ylabel,Crop=Crop)
-#				ax[0].set_xticks([])
+
+#====================================================================#
+					#SIMULATED PROES DIAGNOSTIC#
+#====================================================================#
+
+#Plot Phase-Resolved profiles with electrode voltage and requested variables.
+if savefig_PROES == True:
+	VariedValuelist = list()
+
+	#for all folders.
+	for l in range(0,numfolders):
+
+		#Create global folders to keep output plots and collect graph title.
+		VoltageWaveforms,WaveformBiases = list(),list()
+		DirPROES = CreateNewFolder(Dirlist[l],'PROES')
+
+		#Update X-axis with folder information.
+		VariedValuelist.append( FolderNameTrimmer(Dirlist[l]) )
+
+		#Create processlist for each folder as required. (Always get 'E','AR+','PPOT')
+		PhaseData,Phaselist,proclist,varlist = ExtractPhaseData(folder=l,Variables=PhaseVariables)
+		SxData,SxPhase,Sxproc,Sxvar = ExtractPhaseData(folder=l,Variables=['E','AR+'])
+		PPOT = ExtractPhaseData(folder=l,Variables=['PPOT'])[2][0]
+
+		#Generate SI scale axes for lineout plots. ([omega*t/2pi] and [cm] respectively)
+		Phaseaxis = GenerateAxis('Phase',Isymlist[l],Phaselist)
+		Raxis = GenerateAxis('Radial',Isymlist[l])
+		Zaxis = GenerateAxis('Axial',Isymlist[l])
+
+		#=============#
+
+		#Extract waveforms from desired electrode locations.
+		for j in range(0,len(waveformlocs)):
+			VoltageWaveforms.append(WaveformExtractor(PhaseData,PPOT,waveformlocs[j])[0])
+			WaveformBiases.append(WaveformExtractor(PhaseData,PPOT,waveformlocs[j])[1])
+		#endfor
+		ElectrodeWaveform,ElectrodeBias,ElectrodeVpp = WaveformExtractor(PhaseData,PPOT)
+
+		#Plot the phase-resolved waveform.
+		fig,ax = figure(image_aspectratio,1)
+
+		ax.plot(Phaseaxis,ElectrodeWaveform, lw=2)
+		for j in range(0,len(waveformlocs)): 
+			ax.plot(Phaseaxis,VoltageWaveforms[j], lw=2)
+			#ax.plot(Phaseaxis,WaveformBiases[j], 'k--', lw=2)
+		#endfor
+		#ax.plot(Phaseaxis,ElectrodeBias, 'k--', lw=2)
+
+		Title = 'Phase-Resolved Voltage Waveforms for '+FolderNameTrimmer(Dirlist[l])
+		Legend = ['Waveform Vpp: '+str(round(ElectrodeVpp[2],2))+'V']
+		Xlabel,Ylabel = 'Phase [$\omega$t/2$\pi$]','Electrode Potential [V]'
+		ImageOptions(fig,ax,Xlabel,Ylabel,Title,Legend,Crop=False)
+		ax.xaxis.set_major_locator(ticker.MultipleLocator(0.25))
+
+		plt.savefig(DirPROES+VariedValuelist[l]+' Waveform'+ext)
+		plt.close('all')
+
+		#Write PROES data in ASCII format if required.
+		if write_ASCII == True:
+			ASCIIWaveforms = [Phaseaxis,ElectrodeWaveform]
+			for j in range(0,len(waveformlocs)):
+				ASCIIWaveforms.append(VoltageWaveforms[j])
+			#endfor
+			DirASCIIPROES = CreateNewFolder(DirPROES,'PROES_Data')
+			WriteDataToFile(ASCIIWaveforms, DirASCIIPROES+'VoltageWaveforms')
+		#endif
+
+		#==============#
+
+
+		#for all requested variables.
+		for i in tqdm(range(0,len(proclist))):
+			#Refresh lineout lists between variables.
+			Lineouts,LineoutsOrientation = list(),list()
+
+			#Concatinate all requested lineouts together, keeping seperate orientation.
+			for m in range(0,len(radialineouts)):
+				Lineouts.append(radialineouts[m])
+				LineoutsOrientation.append('Radial')
+			#endfor
+			for m in range(0,len(heightlineouts)):
+				Lineouts.append(heightlineouts[m])
+				LineoutsOrientation.append('Axial')
+			#endfor
+
+			#For all requested lineouts and orientations.
+			for k in range(0,len(Lineouts)):
+				#Refresh required lists.
+				VariableMax,VariableMin = list(),list()
+				PhaseSx,SymPhaseSx = list(),list()
+				PROES = list()
+
+				#for all recorded phases, plot spatially varying variable and waveform.
+				for j in range(0,len(Phaselist)):
+					#Refresh lists between each phasecycle.
+					IntegratedDoFArray,DoFArrays = list(),list()
+
+					#Collect each profile for stitching into a PROES image if required.
+					if DoFWidth > 0:
+						#Determine range of lineouts within the depth of field.
+						DOFRegion = [(Lineouts[k]-DoFWidth),(Lineouts[k]+DoFWidth)]
+						#If DOF extends beyond mesh, alert user and abort diagnostic.
+						if any(DOFRegion) < 0:
+							print('----------------------------------')
+							print('Depth-of-Field Extends Beyond Mesh')
+							print('----------------------------------')
+							break
+						#endif
+
+						#Collect profiles from DOF region and transpose to allow easy integration.
+						for LineoutLoc in range(DOFRegion[0],DOFRegion[1]):
+							if LineoutsOrientation[k] == 'Radial': DoFArrays.append(PlotRadialProfile(PhaseData[j],proclist[i],varlist[i],LineoutLoc)[::-1])
+							elif LineoutsOrientation[k] == 'Axial': DoFArrays.append(PlotAxialProfile(PhaseData[j],proclist[i],varlist[i],LineoutLoc)[::-1])
+							#endif
+						#endfor
+						DoFArrays = np.asarray(DoFArrays).transpose().tolist()
+
+						#Integrate DoF profiles spatially, obtaining PROES profile for phase 'j'
+						for n in range(0,len(DoFArrays)):
+							IntegratedDoFArray.append( sum(DoFArrays[n])/(DoFWidth*2+1) )
+						#endif
+						PROES.append(IntegratedDoFArray)
+
+					#If no DoF then simply collect lineout from required location.
+					elif DoFWidth == 0:
+						LineoutLoc = Lineouts[k]
+						if LineoutsOrientation[k] == 'Radial':
+							PROES.append(PlotRadialProfile(PhaseData[j],proclist[i],varlist[i],LineoutLoc))
+						elif LineoutsOrientation[k] == 'Axial':
+							PROES.append(PlotAxialProfile(PhaseData[j],proclist[i],varlist[i],LineoutLoc)[::-1])
+						#endif
+					#endif 
+
+					if image_sheath == True:
+						#Extract Ni and Ne variables and perform sheath processing.
+						Ne = SxData[j][Sxproc[Sxvar.index('E')]]
+						Ni = SxData[j][Sxproc[Sxvar.index('AR+')]]
+						#Extract the full spatial sheath extent for phase 'j', save location for PROES.
+						Sx = SheathExtent(folder=l,Orientation=LineoutsOrientation[k],Phase=j,Ne=Ne,Ni=Ni)
+						PhaseSx.append(Sx[0][Lineouts[k]])
+						SymPhaseSx.append(Sx[1][Lineouts[k]])
+					#endif
+				#endfor
+
+				#Scale PROES image and Sx arrays by required number of phasecycles.
+				ScaledPROES,ScaledPhaseSx,ScaledSymPhaseSx = list(),list(),list()
+				for n in range(0,int(phasecycles*len(PROES))):
+					Index = n % len(PROES)		#Modulo index for multiple phasecycles
+					ScaledPROES.append(PROES[Index])
+					if image_sheath == True:
+						ScaledPhaseSx.append(PhaseSx[Index])
+						ScaledSymPhaseSx.append(SymPhaseSx[Index])
+					#endif
+				#endfor
+				try: PROES,PhaseSx,SymPhaseSx = ScaledPROES,ScaledPhaseSx,ScaledSymPhaseSx
+				except: PROES = ScaledPROES
+
+				#Create figure and rotate PROES such that phaseaxis aligns with waveform.
+				fig,ax = figure(image_aspectratio,2,shareX=True)
+				PROES = ndimage.rotate(PROES, 90)
+				#Choose correct axial or radial distance axis and create associated folder.
+				x1,x2 = Phaseaxis[0],Phaseaxis[-1]
+				if LineoutsOrientation[k] == 'Axial':
+					ProfileString = ' @ R='+str(round(Lineouts[k]*dr[l],2))+'cm'
+					NameString = varlist[i]+'_'+ProfileString[2::]
+					Ylabel = 'Axial Distance Z [cm]'
+					Crop = [image_axialcrop[::-1],image_radialcrop] #Reversed accounting for rotation.
+					y1,y2 = Zaxis[-1],Zaxis[0]						#Reversed accounting for top origin.
+				elif LineoutsOrientation[k] == 'Radial' and int(Isymlist[l]) == 1:
+					ProfileString = ' @ Z='+str(round(Lineouts[k]*dz[l],2))+'cm'
+					NameString = varlist[i]+ProfileString[2::]
+					Ylabel = 'Radial Distance R [cm]'
+					Crop = [image_radialcrop,image_axialcrop]
+					y1,y2 = Raxis[-1],-Raxis[-1]
+				elif LineoutsOrientation[k] == 'Radial' and int(Isymlist[l]) == 0:
+					ProfileString = ' @ Z='+str(round(Lineouts[k]*dz[l],2))+'cm'
+					NameString = varlist[i]+ProfileString[2::]
+					Ylabel = 'Radial Distance R [cm]'
+					Crop = [image_radialcrop,image_axialcrop]
+					y1,y2 = Raxis[-1],0
+				#endif
+				DirPROESloc = CreateNewFolder(DirPROES,ProfileString[3::])
+
+				#Create PROES image along line of sight with phase-locked waveform.
+				fig.suptitle( 'Simulated '+varlist[i]+' PROES for '+VariedValuelist[l]+ProfileString+'\n DoF = '+str(round(((2*DoFWidth)+1)*dz[l],2))+' cm', y=0.95, fontsize=18)
+				im = ax[0].contour(PROES,extent=[x1,x2,y1,y2],origin='lower')
+				im = ax[0].imshow(PROES,extent=[x1,x2,y1,y2],origin='bottom',aspect='auto')
+				if image_sheath == True:
+					ax[0].plot(Phaseaxis,PhaseSx,'w--',lw=1.0)
+					ax[0].plot(Phaseaxis,SymPhaseSx,'w--',lw=1.0)
+				#endif
+				ImageOptions(fig,ax[0],Xlabel='',Ylabel=Ylabel,Crop=Crop)
+				ax[0].set_xticks([])
+				ax[0].set_xlim(x1,x2)
+				#Add Colourbar (Axis, Label, Bins)
+				label = VariableLabelMaker(varlist)
+				Colourbar(ax[0],label[i],5,Lim=CbarMinMax(PROES,LineoutsOrientation[k]))
+
+				#Plot Voltage Waveform.
+				ax[1].plot(Phaseaxis, ElectrodeWaveform, lw=2)
+				ax[1].plot(Phaseaxis, ElectrodeBias, 'k--', lw=2)
+				Xlabel,Ylabel = 'Phase [$\omega$t/2$\pi$]','Electrode Potential [V]'
+				ImageOptions(fig,ax[1],Xlabel,Ylabel,Crop=False)
+				ax[1].xaxis.set_major_locator(ticker.MultipleLocator(0.25))
+				ax[1].set_xlim(x1,x2)
+				#Add Invisible Colourbar to sync X-axis
+				InvisibleColourbar(ax[1])
+
+				#Cleanup layout and save images.
+				fig.tight_layout()
+				plt.subplots_adjust(top=0.85)
+				plt.savefig(DirPROESloc+VariedValuelist[l]+' '+NameString+' PROES'+ext)
+				plt.close('all')
+
+				#Write PROES data in ASCII format if required.
+				if write_ASCII == True:
+					DirASCIIPROES = CreateNewFolder(DirPROES,'PROES_Data')
+					DirASCIIPROESloc = CreateNewFolder(DirASCIIPROES,ProfileString[3::])
+					WriteDataToFile(PROES, DirASCIIPROESloc+varlist[i]+'_PROES')
+				#endif
+
+				#==============##==============#
+				#==============##==============#
+				
+				#Spatially Collapse 2D PROES image along the line of sight.
+				PROES,TemporalPROES = PROES.transpose().tolist(),list()
+				for m in range(0,len(PROES) ):
+					TemporalPROES.append( (sum(PROES[m][::]))/(len(PROES)/2) )
+				#endfor
+
+				#Plot Spatially Collapsed PROES with phase axis.
+				fig,ax = figure(image_aspectratio,2,shareX=True)
+				ax[0].plot(Phaseaxis,TemporalPROES, lw=2)
+				Title = 'Spatially Integrated '+varlist[i]+' for '+VariedValuelist[l]+ProfileString+'\n DoF = '+str(round(((2*DoFWidth)+1)*dz[l],2))+' cm'
+				Ylabel = 'Spatially Integrated '+varlist[i]
+				ImageOptions(fig,ax[0],Title=Title,Ylabel=Ylabel,Crop=False)
 #				ax[0].set_xlim(x1,x2)
-#				#Add Colourbar (Axis, Label, Bins)
-#				label = VariableLabelMaker(varlist)
-#				Colourbar(ax[0],label[i],5,Lim=CbarMinMax(PROES,LineoutsOrientation[k]))
-#
-#				#Plot Waveform.
-#				ax[1].plot(Phaseaxis, ElectrodeWaveform, lw=2)
-#				ax[1].plot(Phaseaxis, ElectrodeBias, 'k--', lw=2)
-#				Xlabel,Ylabel = 'Phase [$\omega$t/2$\pi$]','Electrode Potential [V]'
-#				ImageOptions(fig,ax[1],Xlabel,Ylabel,Crop=False)
-#				ax[1].xaxis.set_major_locator(ticker.MultipleLocator(0.25))
+
+				#Plot Waveform onto Temporally collapsed PROES.
+				ax[1].plot(Phaseaxis, ElectrodeWaveform, lw=2)
+				ax[1].plot(Phaseaxis, ElectrodeBias, 'k--', lw=2)
+				Xlabel,Ylabel = 'Phase [$\omega$t/2$\pi$]','Electrode Potential [V]'
+				ImageOptions(fig,ax[1],Xlabel,Ylabel,Crop=False)
 #				ax[1].set_xlim(x1,x2)
-#				#Add Invisible Colourbar to sync X-axis
-#				InvisibleColourbar(ax[1])
-#
-#				#Cleanup layout and save images.
-#				fig.tight_layout()
-#				plt.subplots_adjust(top=0.85)
-#				plt.savefig(DirPROESloc+VariedValuelist[l]+' '+NameString+' PROES'+ext)
-#				plt.close('all')
-#
-#				#Write PROES data in ASCII format if required.
-#				if write_ASCII == True:
-#					DirASCIIPROES = CreateNewFolder(DirPROES,'PROES_Data')
-#					DirASCIIPROESloc = CreateNewFolder(DirASCIIPROES,lineoutstring[3::])
-#					WriteDataToFile(PROES, DirASCIIPROESloc+varlist[i]+'_PROES')
-#				#endif
-#
-#
-#
-#				#==============##==============#
-#
-#				#Temporally collapse 2D PROES image through defined phase fraction.
+
+				plt.savefig(DirPROESloc+VariedValuelist[l]+' '+NameString+' TemporalPROES'+ext)
+				plt.close('all')
+			
+				#=====#=====#
+				
+				#					!!!NOTE!!!
+				#RM: 	SpatialPROES array length mismatch with R,Z Axes
+				#		try/except Hack no longer working as both axes are incorrect
+				#		Not sure why data axes is different length, something wrong with sum?
+				
+				#Temporally collapse 2D PROES image through defined phase fraction.
 #				SpatialPROES = list()
 #				for m in range(0,len(PROES)):
-#					SpatialPROES.append( (sum(PROES[m][::])) ) 	#NEEDS 'MATHS-ING'
-#				#endfor
-#
-#				#Spatially Collapse 2D PROES image along the line of sight.
-#				PROES,TemporalPROES = PROES.transpose().tolist(),list()
-#				for m in range(0,len(PROES) ):
-#					TemporalPROES.append( (sum(PROES[m][::]))/(len(PROES)/2) )
-#				#endfor
-#
-#				#Plot Spatially Collapsed PROES with phase axis.
+#					SpatialPROES.append( (sum(PROES[m][::])) ) 		#Needs 'maths'-ing
+				#endfor
+
+				#Plot Temporally Collapsed PROES with required axis.
 #				fig,ax = figure(image_aspectratio,2,shareX=True)
-#				ax[0].plot(Phaseaxis,TemporalPROES, lw=2)
-#				Ylabel = 'Spatially Integrated '+varlist[i]
-#				ImageOptions(fig,ax[0],Ylabel=Ylabel,Crop=False)
-#				ax[0].set_xticks([])
-#				ax[0].set_xlim(x1,x2)
-#
-#				#Plot Waveform onto Temporally collapsed PROES.
+#				try: ax[0].plot(Raxis,SpatialPROES, lw=2)		### HACKY ###
+#				except: ax[0].plot(Zaxis,SpatialPROES, lw=2)	### HACKY ###
+#				Xlabel = 'Phase [$\omega$t/2$\pi$]'
+#				Ylabel = 'Temporally Integrated '+varlist[i]
+#				ImageOptions(fig,ax[0],Xlabel,Ylabel,Crop=False)
+
+				#Plot Waveform onto Spatially collapsed PROES.
 #				ax[1].plot(Phaseaxis, ElectrodeWaveform, lw=2)
 #				ax[1].plot(Phaseaxis, ElectrodeBias, 'k--', lw=2)
 #				Xlabel,Ylabel = 'Phase [$\omega$t/2$\pi$]','Electrode Potential [V]'
 #				ImageOptions(fig,ax[1],Xlabel,Ylabel,Crop=False)
-#				ax[1].xaxis.set_major_locator(ticker.MultipleLocator(0.25))
-#				ax[1].set_xlim(x1,x2)
-#
-#				plt.savefig(DirPROESloc+VariedValuelist[l]+' '+NameString+' TemporalPROES'+ext)
+
+#				plt.savefig(DirPROESloc+VariedValuelist[l]+' '+NameString+' SpatialPROES'+ext)
 #				plt.close('all')
-#
-#				#Plot Temporally Collapsed PROES with required axis.
-##				fig,ax = figure(image_aspectratio,2,shareX=True)
-##				try: ax[0].plot(Raxis,SpatialPROES, lw=2)		### HACKY ###
-##				except: ax[0].plot(Zaxis,SpatialPROES, lw=2)	### HACKY ###
-##				Xlabel = 'Phase [$\omega$t/2$\pi$]'
-##				Ylabel = 'Temporally Integrated '+varlist[i]
-##				ImageOptions(fig,ax[0],Xlabel,Ylabel,Crop=False)
-#
-#				#Plot Waveform onto Spatially collapsed PROES.
-##				ax[1].plot(Phaseaxis, ElectrodeWaveform, lw=2)
-##				ax[1].plot(Phaseaxis, ElectrodeBias, 'k--', lw=2)
-##				Xlabel,Ylabel = 'Phase [$\omega$t/2$\pi$]','Electrode Potential [V]'
-##				ImageOptions(fig,ax[1],Xlabel,Ylabel,Crop=False)
-#
-#				#plt.savefig(DirPROESloc+VariedValuelist[l]+' '+NameString+' SpatialPROES'+ext)
-##				plt.close('all')
-#
-#				#==============##==============#
-#
-#			#endfor
-#			if l == numfolders and k == len(Lineouts):
-#				print'-------------------------------'
-#				print'# PROES Image analysis Complete'
-#				print'-------------------------------'
-#			#endif
-#		#endfor
-#	#endfor
-##endif
-#
-##===============================#
-#
-#if any([savefig_sheathdynamics, savefig_phaseresolve1D, savefig_phaseresolve2D, savefig_PROES]) == True:
-#	print'----------------------------------'
-#	print'# Phase Resolved Profiles Complete'
-#	print'----------------------------------'
-##endif
-#
-##=====================================================================#
-##=====================================================================#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-##====================================================================#
-#							  #CODE DUMP#
-##====================================================================#
+
+				#==============##==============#
+
+			if l == numfolders and k == len(Lineouts):
+				print('-------------------------------')
+				print('# PROES Image analysis Complete')
+				print('-------------------------------')
+			#endif
+		#endfor
+	#endfor
+#endif
+
+#===============================#
+
+if any([savefig_sheathdynamics, savefig_phaseresolve1D, savefig_phaseresolve2D, savefig_PROES]) == True:
+	print('----------------------------------')
+	print('# Phase Resolved Profiles Complete')
+	print('----------------------------------')
+#endif
+
+#=====================================================================#
+#=====================================================================#
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#====================================================================#
+							  #CODE DUMP#
+#====================================================================#
 #
 ##===============================#
 ##     Paper Trend Locations     #
@@ -6820,7 +6822,7 @@ if savefig_sheathdynamics == True:
 ## Archived Switchboard Settings #
 ##===============================#
 #
-##### PP-SCCP ####
+#### PP-SCCP ####
 ##electrodeloc = 	[0,3]
 ##waveformlocs = 	[]
 ##DOFWidth = 		R;??,Z;??
