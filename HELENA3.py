@@ -245,8 +245,8 @@ savefig_phaseresolve2D = False			#2D Phase Resolved Images
 savefig_sheathdynamics = False			#1D and 2D sheath dynamics images
 savefig_PROES =	False					#Simulated PROES Diagnostic
 
-savefig_IEDFangular = False				#2D images of angular IEDF; single folders.		autoprofconv needs fixed
-savefig_IEDFtrends = False				#1D IEDF trends; all folders.					TO BE REFACTORED
+savefig_IEDFangular = False				#2D images of angular IEDF; single folders		autoprofconv needs fixed
+savefig_IEDFtrends = False				#1D IEDF trends; all folders					autoprofconv needs fixed
 savefig_EEDF = False					#NO PLOTTING ROUTINE							#IN DEVELOPMENT#
 
 #Write processed data to ASCII files.
@@ -256,8 +256,8 @@ write_ASCII = True						#All diagnostic output written to ASCII.
 #Steady-State diagnostics terminal output toggles.
 print_generaltrends = False				#Verbose Min/Max Trend Outputs.
 print_Knudsennumber = False				#Print cell averaged Knudsen Number
-print_reynolds = False				#Print cell averaged sound speed
 print_totalpower = False				#Print all requested total powers
+print_Reynolds = False					#Print cell averaged sound speed
 print_DCbias = False					#Print DC bias at electrodeloc
 print_thrust = False					#Print neutral, ion and total thrust
 print_sheath = False					#Print sheath width at electrodeloc						
@@ -470,7 +470,7 @@ if True in [savefig_phaseresolve1D]:
 	print('# 1D Phase-Resolved Profile Processing')
 if True in [savefig_monoprofiles,savefig_multiprofiles,savefig_compareprofiles,savefig_temporalprofiles]:
 	print('# 1D Steady-State Profile Processing')
-if True in [print_generaltrends,print_Knudsennumber,print_reynolds, print_totalpower,print_DCbias,print_thrust]:
+if True in [print_generaltrends,print_Knudsennumber,print_Reynolds, print_totalpower,print_DCbias,print_thrust]:
 	print('# 1D Specific Trend Analysis')
 if savefig_trendphaseaveraged == True:
 	print('# 1D Steady-State Trend Processing')
@@ -4683,271 +4683,271 @@ if savefig_IEDFangular == True:
 
 
 
-##====================================================================#
-#				#ION-NEUTRAL ANGULAR ENERGY ANALYSIS#
-##====================================================================#
-#
-#if savefig_IEDFtrends == True:
-#
-#	#For all requested IEDF variables
-#	for i in tqdm(range(0,len(IEDFVariables))):
-#		#Initiate figure for current variable and any required lists.
-#		Legendlist,EDFprofiles,EDFEnergyProfile = list(),list(),list()
-#		Mode_eV,Mean_eV,Median_eV = list(),list(),list()
-#		Total_eV,Range_eV,FWHM_eV = list(),list(),list()
-#		GlobRange_eV = [0,0]
-#		fig,ax = figure()
-#
-#		#Create new global trend folder if it doesn't exist already.
-#		TrendVariable = filter(lambda x: x.isalpha(), FolderNameTrimmer(Dirlist[0]))
-#		DirTrends = CreateNewFolder(os.getcwd()+'/',TrendVariable+' Trends')
-#		#Create folder for IEDF trends if it doesn't exist already.
-#		DirIEDFTrends = CreateNewFolder(DirTrends,'IEDF Trends')
-#
-#		#For all simulation folders.
-#		for l in range(0,numfolders):
-#			EDFprofile = list()
-#
-#			#Create processlist for requested EDF species and extract images.
-#			processlist,variablelist=VariableEnumerator(IEDFVariables,rawdata_IEDF[l],header_IEDFlist[l])
-#			Legendlist.append(FolderNameTrimmer(Dirlist[l]))
-#
-#			#Extract image from required variable and flatten angular distribution profile.
-#			Image = ImageExtractor2D(DataIEDF[l][processlist[i]],Rmesh=EDFangle,Zmesh=EDFbins)
-#			for j in range(0,len(Image)): EDFprofile.append(sum(Image[j]))
-#			#Transpose Image for plotting and reverse both lists due to reading error.
-#			Image, EDFprofile = Image[::-1].transpose(), EDFprofile[::-1]
-#
-#			#Obtain conversion from energy-bin axis to eV axis and construct energy axis
-#			deV, eVaxis = (EMAXIPCMC/IEBINSPCMC), list()
-#			for j in range (0,int(IEBINSPCMC)): eVaxis.append(j*deV)
-#
-#			#Plot 1D EDF variable profile on open figure for each simulation folder.
-#			ax.plot(eVaxis,EDFprofile, lw=2)
-#
-#			#==========#
-#			#==========#
-#
-#			#Perform energy trend diagnostics on current folder (variable 'i') IEDF
-#			#Smooth kinetic data prior to analysis if requested (Savitzk-Golay filter)
-#			if KineticFiltering == True:
-#				WindowSize, PolyOrder = Glob_SavWindow, Glob_SavPolyOrder
-#				EDFprofile = (savgol_filter(EDFprofile, WindowSize, PolyOrder)).tolist()
-#				#endfor
-#			#endif
-#
-#			#Energy extrema analysis: Returns maximum energy where the fraction is above threshold.
-#			Threshold = EDF_Threshold*max(EDFprofile)
-#			ThresholdArray = list()
-#			for j in range(0,len(EDFprofile)):
-#				if EDFprofile[j] >= Threshold: ThresholdArray.append(j)
-#			#endfor
-#			IndexRange = [min(ThresholdArray),max(ThresholdArray)]
-#			Range_eV = [IndexRange[0]*deV,IndexRange[1]*deV]
-#			#Save global extrema between folders for plotting range.
-#			if Range_eV[0] < GlobRange_eV[0]: GlobRange_eV[0] = Range_eV[0]
-#			if Range_eV[1] > GlobRange_eV[1]: GlobRange_eV[1] = Range_eV[1]
-#
-#			#Total energy analysis: Returns total energy contained within EDF profile
-#			EDFEnergyProfile = list()
-#			for j in range(0,len(EDFprofile)):
-#				EDFEnergyProfile.append( EDFprofile[j]*(j*deV) )
-#			#endfor
-#			Total_eV.append(sum(EDFEnergyProfile))
-#
-#			#Average energy analysis: Returns mean/mode/median energies from IEDF.
-#			#Modal energy taken as most common energy fraction (disregarding EDF_threshold)
-#			Mode_eV.append( EDFprofile.index(max(EDFprofile))*deV )
-#
-#			#Mean energy obtained as integrated energy fraction most closely matching total energy
-#			#averaged over effective energy range determined from EDF_threshold. 
-#			if GlobMeanCalculation == 'MeanEnergy':
-#				BinAveragedEnergy = sum(EDFEnergyProfile)/len(EDFEnergyProfile)		#(Total Energy/Num Bins)
-#				ResidualArray = list()
-#				#Calculate Residuals using EDF_threshold as upper energy percentile
-#				for j in range(IndexRange[0],IndexRange[1]):						
-#					ResidualArray.append(abs(EDFEnergyProfile[j]-BinAveragedEnergy))
-#				#endfor
-#				#Capture mean/residual intersections, sort high energy intersection indices first
-#				NumIntersections = int(len(EDFprofile)/10)
-#				Intersections = np.argsort(ResidualArray)[:NumIntersections]			
-#				Intersections = sorted(Intersections,reverse=False)	
-#				#Single Intersection case
-##				Intersection = (np.abs(EDFEnergyProfile-BinAveragedEnergy)).argmin()
-#	
-#				#k defines region lower energy edge index
-#				IntersectionRegions,k = list(),0			
-#				for j in range(0,len(Intersections)-1):
-#					RegionThreshold = 0.05*len(EDFEnergyProfile)
-#					#If threshold jump observed, save current intersect region index (k)
-#					if Intersections[j]+RegionThreshold < Intersections[j+1]:
-#						IntersectionRegions.append(Intersections[k:j])
-#						k = j+1
-#					#Save final intersect region index
-#					elif j == len(Intersections)-2:
-#						IntersectionRegions.append(Intersections[k:j])
-#					#endif
-#				#endfor
-#				Intersections = list()
-#				#If odd number of intersections, likely that low energy one was missed
-#				if len(IntersectionRegions) % 2 == 1: Intersections.append(1.0)
-#				#For all intersection regions identify the central index
-#				for j in range(0,len(IntersectionRegions)):	
-#					try:	
-#						RegionCentralIndex = int(len(IntersectionRegions[j])/2.0)
-#						Intersections.append( IntersectionRegions[j][RegionCentralIndex] )
-#					except:
-#						#If no intersections, assume a single zero energy intersection
-#						if j == 0: Intersections.append(0.0)
-#					#endtry
-#				#endfor
-#				#Extrema represent FWHM of EDF, mean energy lies between extrema
-#				FWHM_eV.append([min(Intersections)*deV,max(Intersections)*deV])
-#				MeanEnergyIndex = (max(Intersections)+min(Intersections))/2
-#			#endif
-#
-#			#Mean energy obtained as ion energy with population fraction most closely matching IEDF average
-#			#OLD MEAN ENERGY DEFINITION - MEAN DEFINED BY FRACTION NOT BY ENERGY
-#			if GlobMeanCalculation == 'MeanFraction':
-#				BinAveragedFraction = sum(EDFprofile)/len(EDFprofile)
-#				ResidualArray = list()
-#				#Calculate Residuals using EDF_threshold as upper energy percentile
-#				for j in range(IndexRange[0],IndexRange[1]):						
-#					ResidualArray.append(abs(EDFprofile[j]-BinAveragedFraction))
-#				#endfor
-#				#Capture mean/residual intersections, sort high energy intersection indices first
-#				NumIntersections = int(len(EDFprofile)/8)
-#				Intersections = np.argsort(ResidualArray)[:NumIntersections]			
-#				Intersections = sorted(Intersections,reverse=False)	
-#
-#				#k defines region lower energy edge index
-#				IntersectionRegions,k = list(),0			
-#				for j in range(0,len(Intersections)-1):
-#					RegionThreshold = 0.05*len(EDFprofile)
-#					#If threshold jump observed, save current intersect region index (k)
-#					if Intersections[j]+RegionThreshold < Intersections[j+1]:
-#						IntersectionRegions.append(Intersections[k:j])
-#						k = j+1
-#					#Save final intersect region index
-#					elif j == len(Intersections)-2:
-#						IntersectionRegions.append(Intersections[k:j])
-#					#endif
-#				#endfor
-#
-#				Intersections = list()
-#				#If odd number of intersections, likely that low energy one was missed
-#				if len(IntersectionRegions) % 2 == 1: Intersections.append(1.0)
-#				#For all intersection regions identify the central index
-#				for j in range(0,len(IntersectionRegions)):	
-#					try:	
-#						RegionCentralIndex = int(len(IntersectionRegions[j])/2.0)
-#						Intersections.append( IntersectionRegions[j][RegionCentralIndex] )
-#					except:
-#						#If no intersections, assume a single zero energy intersection
-#						if j == 0: Intersections.append(0.0)
-#					#endtry
-#				#endfor
-#				#Extrema represent FWHM of EDF, mean energy lies between extrema
-#				FWHM_eV.append([min(Intersections)*deV,max(Intersections)*deV])
-#				MeanEnergyIndex = (max(Intersections)+min(Intersections))/2
-#			#endif
-#			Mean_eV.append( MeanEnergyIndex*deV )
-#
+#====================================================================#
+				#ION-NEUTRAL ANGULAR ENERGY ANALYSIS#
+#====================================================================#
+
+if savefig_IEDFtrends == True:
+
+	#For all requested IEDF variables
+	for i in tqdm(range(0,len(IEDFVariables))):
+		#Initiate figure for current variable and any required lists.
+		Legendlist,EDFprofiles,EDFEnergyProfile = list(),list(),list()
+		Mode_eV,Mean_eV,Median_eV = list(),list(),list()
+		Total_eV,Range_eV,FWHM_eV = list(),list(),list()
+		GlobRange_eV = [0,0]
+		fig,ax = figure()
+		
+		#Create new global trend folder if it doesn't exist already.
+		TrendVariable = list(filter(lambda x: x.isalpha(), FolderNameTrimmer(Dirlist[0])))	#List of discrete chars
+		TrendVariable = ''.join(TrendVariable)												#Single string of chars
+		DirTrends = CreateNewFolder(os.getcwd()+'/',TrendVariable+' Trends')
+		#Create folder for IEDF trends if it doesn't exist already.
+		DirIEDFTrends = CreateNewFolder(DirTrends,'IEDF Trends')
+
+		#For all simulation folders.
+		for l in range(0,numfolders):
+			EDFprofile = list()
+
+			#Create processlist for requested EDF species and extract images.
+			processlist,variablelist=VariableEnumerator(IEDFVariables,rawdata_IEDF[l],header_IEDFlist[l])
+			Legendlist.append(FolderNameTrimmer(Dirlist[l]))
+
+			#Extract image from required variable and flatten angular distribution profile.
+			Image = ImageExtractor2D(DataIEDF[l][processlist[i]],Rmesh=EDFangle,Zmesh=EDFbins)
+			for j in range(0,len(Image)): EDFprofile.append(sum(Image[j]))
+			#Transpose Image for plotting and reverse both lists due to reading error.
+			Image, EDFprofile = Image[::-1].transpose(), EDFprofile[::-1]
+
+			#Obtain conversion from energy-bin axis to eV axis and construct energy axis
+			deV, eVaxis = (EMAXIPCMC/IEBINSPCMC), list()
+			for j in range (0,int(IEBINSPCMC)): eVaxis.append(j*deV)
+
+			#Plot 1D EDF variable profile on open figure for each simulation folder.
+			ax.plot(eVaxis,EDFprofile, lw=2)
+
+			#==========#
+			#==========#
+
+			#Perform energy trend diagnostics on current folder (variable 'i') IEDF
+			#Smooth kinetic data prior to analysis if requested (Savitzk-Golay filter)
+			if KineticFiltering == True:
+				WindowSize, PolyOrder = Glob_SavWindow, Glob_SavPolyOrder
+				EDFprofile = (savgol_filter(EDFprofile, WindowSize, PolyOrder)).tolist()
+				#endfor
+			#endif
+
+			#Energy extrema analysis: Returns maximum energy where the fraction is above threshold.
+			Threshold = EDF_Threshold*max(EDFprofile)
+			ThresholdArray = list()
+			for j in range(0,len(EDFprofile)):
+				if EDFprofile[j] >= Threshold: ThresholdArray.append(j)
+			#endfor
+			IndexRange = [min(ThresholdArray),max(ThresholdArray)]
+			Range_eV = [IndexRange[0]*deV,IndexRange[1]*deV]
+			#Save global extrema between folders for plotting range.
+			if Range_eV[0] < GlobRange_eV[0]: GlobRange_eV[0] = Range_eV[0]
+			if Range_eV[1] > GlobRange_eV[1]: GlobRange_eV[1] = Range_eV[1]
+
+			#Total energy analysis: Returns total energy contained within EDF profile
+			EDFEnergyProfile = list()
+			for j in range(0,len(EDFprofile)):
+				EDFEnergyProfile.append( EDFprofile[j]*(j*deV) )
+			#endfor
+			Total_eV.append(sum(EDFEnergyProfile))
+
+			#Average energy analysis: Returns mean/mode/median energies from IEDF.
+			#Modal energy taken as most common energy fraction (disregarding EDF_threshold)
+			Mode_eV.append( EDFprofile.index(max(EDFprofile))*deV )
+
+			#Mean energy obtained as integrated energy fraction most closely matching total energy
+			#averaged over effective energy range determined from EDF_threshold. 
+			if GlobMeanCalculation == 'MeanEnergy':
+				BinAveragedEnergy = sum(EDFEnergyProfile)/len(EDFEnergyProfile)		#(Total Energy/Num Bins)
+				ResidualArray = list()
+				#Calculate Residuals using EDF_threshold as upper energy percentile
+				for j in range(IndexRange[0],IndexRange[1]):						
+					ResidualArray.append(abs(EDFEnergyProfile[j]-BinAveragedEnergy))
+				#endfor
+				#Capture mean/residual intersections, sort high energy intersection indices first
+				NumIntersections = int(len(EDFprofile)/10)
+				Intersections = np.argsort(ResidualArray)[:NumIntersections]			
+				Intersections = sorted(Intersections,reverse=False)
+#				#Single Intersection case - special case, maintained mostly for debugging purposes
+#				Intersection = (np.abs(EDFEnergyProfile-BinAveragedEnergy)).argmin()
+	
+				#Index k defines the IEDF array lower energy edge corresponding to the threshold
+				IntersectionRegions,k = list(),0			
+				for j in range(0,len(Intersections)-1):
+					RegionThreshold = 0.05*len(EDFEnergyProfile)
+					#If threshold jump observed, save current intersect region index (k)
+					if Intersections[j]+RegionThreshold < Intersections[j+1]:
+						IntersectionRegions.append(Intersections[k:j])
+						k = j+1
+					#Save final intersect region index
+					elif j == len(Intersections)-2:
+						IntersectionRegions.append(Intersections[k:j])
+					#endif
+				#endfor
+				Intersections = list()
+				#If odd number of intersections, likely that low energy one was missed
+				if len(IntersectionRegions) % 2 == 1: Intersections.append(1.0)
+				#For all intersection regions identify the central index
+				for j in range(0,len(IntersectionRegions)):	
+					try:	
+						RegionCentralIndex = int(len(IntersectionRegions[j])/2.0)
+						Intersections.append( IntersectionRegions[j][RegionCentralIndex] )
+					except:
+						#If no intersections, assume a single zero energy intersection
+						if j == 0: Intersections.append(0.0)
+					#endtry
+				#endfor
+				#Extrema represent FWHM of EDF, mean energy lies between extrema
+				FWHM_eV.append([min(Intersections)*deV,max(Intersections)*deV])
+				MeanEnergyIndex = (max(Intersections)+min(Intersections))/2
+			#endif
+
+			#Mean energy obtained as ion energy with population fraction most closely matching IEDF average
+			#OLD MEAN ENERGY DEFINITION - MEAN DEFINED BY FRACTION NOT BY ENERGY
+			if GlobMeanCalculation == 'MeanFraction':
+				BinAveragedFraction = sum(EDFprofile)/len(EDFprofile)
+				ResidualArray = list()
+				#Calculate Residuals using EDF_threshold as upper energy percentile
+				for j in range(IndexRange[0],IndexRange[1]):						
+					ResidualArray.append(abs(EDFprofile[j]-BinAveragedFraction))
+				#endfor
+				#Capture mean/residual intersections, sort high energy intersection indices first
+				NumIntersections = int(len(EDFprofile)/8)
+				Intersections = np.argsort(ResidualArray)[:NumIntersections]			
+				Intersections = sorted(Intersections,reverse=False)	
+
+				#Index k defines the IEDF array lower energy edge corresponding to the threshold
+				IntersectionRegions,k = list(),0			
+				for j in range(0,len(Intersections)-1):
+					RegionThreshold = 0.05*len(EDFprofile)
+					#If threshold jump observed, save current intersect region index (k)
+					if Intersections[j]+RegionThreshold < Intersections[j+1]:
+						IntersectionRegions.append(Intersections[k:j])
+						k = j+1
+					#Save final intersect region index
+					elif j == len(Intersections)-2:
+						IntersectionRegions.append(Intersections[k:j])
+					#endif
+				#endfor
+
+				Intersections = list()
+				#If odd number of intersections, likely that low energy one was missed
+				if len(IntersectionRegions) % 2 == 1: Intersections.append(1.0)
+				#For all intersection regions identify the central index
+				for j in range(0,len(IntersectionRegions)):	
+					try:	
+						RegionCentralIndex = int(len(IntersectionRegions[j])/2.0)
+						Intersections.append( IntersectionRegions[j][RegionCentralIndex] )
+					except:
+						#If no intersections, assume a single zero energy intersection
+						if j == 0: Intersections.append(0.0)
+					#endtry
+				#endfor
+				#Extrema represent FWHM of EDF, mean energy lies between extrema
+				FWHM_eV.append([min(Intersections)*deV,max(Intersections)*deV])
+				MeanEnergyIndex = (max(Intersections)+min(Intersections))/2
+			#endif
+			Mean_eV.append( MeanEnergyIndex*deV )
+
 #			#Median energy calculated as EDF index representing midpoint of equal integrated energies
-##			RisingSum,FallingSum,AbsDiff = 0.0,0.0,list()
-##			for j in range(0,len(EDFprofile)):
-##				Rising_j, Falling_j = j, (len(EDFprofile)-1-2)-j
-##				RisingSum += EDFprofile[Rising_j]*(Rising_j*deV)
-##				FallingSum += EDFprofile[Falling_j]*(Falling_j*deV)
-##				AbsDiff.append(abs(RisingSum-FallingSum))
+#			RisingSum,FallingSum,AbsDiff = 0.0,0.0,list()
+#			for j in range(0,len(EDFprofile)):
+#				Rising_j, Falling_j = j, (len(EDFprofile)-1-2)-j
+#				RisingSum += EDFprofile[Rising_j]*(Rising_j*deV)
+#				FallingSum += EDFprofile[Falling_j]*(Falling_j*deV)
+#				AbsDiff.append(abs(RisingSum-FallingSum))
 #				#endif
 #			#endfor
-##			MedianIndex = AbsDiff.index(min(AbsDiff))
-##			Median_eV.append( MedianIndex*deV ) 				#### MEDIANS' FUCKED UP BRAH! ####
-#
+#			MedianIndex = AbsDiff.index(min(AbsDiff))
+#			Median_eV.append( MedianIndex*deV ) 				#### NB: MEDIANS' ALL FUCKED UP BRAH! ####
+
 #			#Particle energy variance analysis: Returns FWHM of energy distribution.
-##			Take mean and draw line at y = mean 
-##			Calculate where y = mean intercepts EDFprofile
-##			If only one intercept, first intercept is x = 0
-##			Integrate EDFprofile indices between intercepts 
-##			Save in 1D array, can be used to get energy spread percentage.
-#
-#			#==========#
-#			#==========#
-#
-#			if DebugMode == True:
-#				fig2,ax2 = figure()
-#				try: BinAveragedValue = BinAveragedEnergy		#MeanEnergy Value
-#				except: BinAveragedValue = BinAveragedFraction	#MeanFraction Value
-#				Ylims = [0,max(EDFEnergyProfile)]
-#
-#				fig2,ax2 = figure()
-#				ax2.plot(EDFEnergyProfile, 'k-', lw=2)
-#				ax2.plot(ResidualArray, 'r-', lw=2)
-#				ax2.plot((0,len(EDFEnergyProfile)),(BinAveragedValue,BinAveragedValue),'b--',lw=2)
-#				ax2.plot((max(Intersections),max(Intersections)),(Ylims[0],Ylims[1]),'b--',lw=2)
-#				ax2.plot((min(Intersections),min(Intersections)),(Ylims[0],Ylims[1]),'b--',lw=2)
-#				ax2.plot((MeanEnergyIndex,MeanEnergyIndex),(Ylims[0],Ylims[1]),'m--',lw=2)
-#				ax2.legend(['Integrated Energy','abs(ResidualArray)','BinAveragedEnergy/Fraction'])
-##				plt.savefig(DirIEDFTrends+'_DebugOutput.png')
-#			#endif
-#		#endfor
-#
-#		#Write data to ASCII format datafile if requested.
-#		if write_ASCII == True:
-#			if i == 0:
-#				DirASCII = CreateNewFolder(DirTrends,'Trend_Data')
-#				DirASCIIIEDF = CreateNewFolder(DirASCII,'IEDF_Data')
-#			#endif
-#			WriteDataToFile(Legendlist+['\n']+Total_eV, DirASCIIIEDF+variablelist[i]+'_Total', 'w')
-#			WriteDataToFile(Legendlist+['\n']+Range_eV, DirASCIIIEDF+variablelist[i]+'_Range', 'w')
-#			WriteDataToFile(Legendlist+['\n']+Mode_eV, DirASCIIIEDF+variablelist[i]+'_Mode', 'w')
-#			WriteDataToFile(Legendlist+['\n']+Mean_eV, DirASCIIIEDF+variablelist[i]+'_Mean', 'w')
-#		#endif
-#
-#		##IEDF PROFILES##
-#		#===============#
-#
-#		#Apply image options to IEDF plot generated in the above loop.
-#		Title = Dirlist[l][2::]+'\n'+variablelist[i]+' Angular Energy Distribution Function Profiles'
-#		Xlabel,Ylabel = 'Energy [eV]',variablelist[i]+' EDF [$\\theta$ Integrated]'
-#		ImageCrop = [ [0,GlobRange_eV[1]],[] ]		#[[X1,X2],[Y1,Y2]]
-#		ImageOptions(fig,ax,Xlabel,Ylabel,Title,Legendlist,Crop=ImageCrop,Rotate=False)
-#
-#		plt.savefig(DirIEDFTrends+variablelist[i]+'_EDFprofiles'+ext)
-#		plt.close('all')
-#
-#
-#		##ENERGY ANALYSIS##
-#		#=================#
-#
-#		#Plot IEDF average energies with respect to simulation folder names.
-#		fig,ax = figure()
-#		TrendPlotter(ax,Mean_eV,Legendlist,NormFactor=0)
-#		TrendPlotter(ax,Mode_eV,Legendlist,NormFactor=0)
+#			Take mean and draw line at y = mean 
+#			Calculate where y = mean intercepts EDFprofile
+#			If only one intercept, first intercept is x = 0
+#			Integrate EDFprofile indices between intercepts 
+#			Save in 1D array, can be used to get energy spread percentage.
+
+			#==========#
+			#==========#
+
+			if DebugMode == True:
+				fig2,ax2 = figure()
+				try: BinAveragedValue = BinAveragedEnergy		#MeanEnergy Value
+				except: BinAveragedValue = BinAveragedFraction	#MeanFraction Value
+				Ylims = [0,max(EDFEnergyProfile)]
+
+				fig2,ax2 = figure()
+				ax2.plot(EDFEnergyProfile, 'k-', lw=2)
+				ax2.plot(ResidualArray, 'r-', lw=2)
+				ax2.plot((0,len(EDFEnergyProfile)),(BinAveragedValue,BinAveragedValue),'b--',lw=2)
+				ax2.plot((max(Intersections),max(Intersections)),(Ylims[0],Ylims[1]),'b--',lw=2)
+				ax2.plot((min(Intersections),min(Intersections)),(Ylims[0],Ylims[1]),'b--',lw=2)
+				ax2.plot((MeanEnergyIndex,MeanEnergyIndex),(Ylims[0],Ylims[1]),'m--',lw=2)
+				ax2.legend(['Integrated Energy','abs(ResidualArray)','BinAveragedEnergy/Fraction'])
+#				plt.savefig(DirIEDFTrends+'_DebugOutput.png')
+			#endif
+		#endfor
+
+		#Write data to ASCII format datafile if requested.
+		if write_ASCII == True:
+			if i == 0:
+				DirASCII = CreateNewFolder(DirTrends,'Trend_Data')
+				DirASCIIIEDF = CreateNewFolder(DirASCII,'IEDF_Data')
+			#endif
+			WriteDataToFile(Legendlist+['\n']+Total_eV, DirASCIIIEDF+variablelist[i]+'_Total', 'w')
+			WriteDataToFile(Legendlist+['\n']+Range_eV, DirASCIIIEDF+variablelist[i]+'_Range', 'w')
+			WriteDataToFile(Legendlist+['\n']+Mode_eV, DirASCIIIEDF+variablelist[i]+'_Mode', 'w')
+			WriteDataToFile(Legendlist+['\n']+Mean_eV, DirASCIIIEDF+variablelist[i]+'_Mean', 'w')
+		#endif
+
+		##IEDF PROFILES##
+		#===============#
+
+		#Apply image options to IEDF plot generated in the above loop.
+		Title = Dirlist[l][2::]+'\n'+variablelist[i]+' Angular Energy Distribution Function Profiles'
+		Xlabel,Ylabel = 'Energy [eV]',variablelist[i]+' EDF [$\\theta$ Integrated]'
+		ImageCrop = [ [0,GlobRange_eV[1]], [] ]		#[[X1,X2],[Y1,Y2]]
+		ImageOptions(fig,ax,Xlabel,Ylabel,Title,Legendlist,Crop=ImageCrop,Rotate=False)
+
+		plt.savefig(DirIEDFTrends+variablelist[i]+'_EDFprofiles'+ext)
+		plt.close('all')
+
+		##ENERGY ANALYSIS##
+		#=================#
+
+		#Plot IEDF average energies with respect to simulation folder names.
+		fig,ax = figure()
+		TrendPlotter(ax,Mean_eV,Legendlist,NormFactor=0)
+		TrendPlotter(ax,Mode_eV,Legendlist,NormFactor=0)
 ##		TrendPlotter(ax,Range_eV[0],Legendlist,NormFactor=0)
 ##		TrendPlotter(ax,Range_eV[1],Legendlist,NormFactor=0)
-#
-#		Title = Dirlist[l][2::]+'\n'+'Average '+variablelist[i]+' Energies'
-#		Legend = ['EDF Mean Energy','EDF Mode Energy','EDF Min Energy','EDF Max Energy']
-#		Xlabel,Ylabel = 'Varied Property',variablelist[i]+' Energy [eV]'
-#		ImageCrop = [[],[0,max(Mean_eV+Mode_eV)*1.15]]		#[[X1,X2],[Y1,Y2]]
-#		ImageOptions(fig,ax,Xlabel,Ylabel,Title,Legend,Crop=ImageCrop,Rotate=False)
-#
-#		plt.savefig(DirIEDFTrends+variablelist[i]+'_AverageEnergies'+ext)
-#		plt.close('all')
-#	#endfor
-##endif
-#
-#
-#if any([savefig_IEDFangular, savefig_IEDFtrends, savefig_EEDF]) == True:
-#	print'--------------------------------'
-#	print'# EEDF/IEDF Processing Complete.'
-#	print'--------------------------------'
-##endif
-#
-##=====================================================================#
-##=====================================================================#
+
+		Title = Dirlist[l][2::]+'\n'+'Average '+variablelist[i]+' Energies'
+		Legend = ['EDF Mean Energy','EDF Mode Energy','EDF Min Energy','EDF Max Energy']
+		Xlabel,Ylabel = 'Varied Property',variablelist[i]+' Energy [eV]'
+		ImageCrop = [[],[0,max(Mean_eV+Mode_eV)*1.15]]		#[[X1,X2],[Y1,Y2]]
+		ImageOptions(fig,ax,Xlabel,Ylabel,Title,Legend,Crop=ImageCrop,Rotate=False)
+
+		plt.savefig(DirIEDFTrends+variablelist[i]+'_AverageEnergies'+ext)
+		plt.close('all')
+	#endfor
+#endif
+
+
+if any([savefig_IEDFangular, savefig_IEDFtrends, savefig_EEDF]) == True:
+	print('--------------------------------')
+	print('# EEDF/IEDF Processing Complete.')
+	print('--------------------------------')
+#endif
+
+#=====================================================================#
+#=====================================================================#
 
 
 
@@ -5760,7 +5760,7 @@ if bool(set(FluidSpecies).intersection(Variables)) == True:
 
 #Only perform on bulk fluid dynamics relevent species.
 if bool(set(FluidSpecies).intersection(Variables)) == True:
-	if savefig_trendphaseaveraged == True or print_reynolds == True:
+	if savefig_trendphaseaveraged == True or print_Reynolds == True:
 
 		#Create Trend folder to keep output plots.
 		TrendVariable = list(filter(lambda x: x.isalpha(), FolderNameTrimmer(Dirlist[0])))	#List of discrete chars
@@ -5810,7 +5810,7 @@ if bool(set(FluidSpecies).intersection(Variables)) == True:
 
 			#Display mesh-averaged sound speed to terminal if requested.
 			AverageSoundSpeed.append( sum(Image)/(len(Image[0])*len(Image)) )
-			if print_reynolds == True:
+			if print_Reynolds == True:
 				print(Dirlist[l])
 				print('Average Sound Speed:', AverageSoundSpeed[l])
 			#endif
@@ -5868,7 +5868,7 @@ if bool(set(FluidSpecies).intersection(Variables)) == True:
 #===============================#
 #===============================#
 
-if any([savefig_trendphaseaveraged, print_generaltrends, print_Knudsennumber, print_reynolds, print_totalpower, print_DCbias, print_thrust, print_sheath]) == True:
+if any([savefig_trendphaseaveraged, print_generaltrends, print_Knudsennumber, print_Reynolds, print_totalpower, print_DCbias, print_thrust, print_sheath]) == True:
 	print('---------------------------')
 	print('# Trend Processing Complete')
 	print('---------------------------')
