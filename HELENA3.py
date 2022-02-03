@@ -256,7 +256,7 @@ write_ASCII = True						#All diagnostic output written to ASCII.
 #Steady-State diagnostics terminal output toggles.
 print_generaltrends = False				#Verbose Min/Max Trend Outputs.
 print_Knudsennumber = False				#Print cell averaged Knudsen Number
-print_soundspeed = False				#Print cell averaged sound speed
+print_reynolds = False				#Print cell averaged sound speed
 print_totalpower = False				#Print all requested total powers
 print_DCbias = False					#Print DC bias at electrodeloc
 print_thrust = False					#Print neutral, ion and total thrust
@@ -470,7 +470,7 @@ if True in [savefig_phaseresolve1D]:
 	print('# 1D Phase-Resolved Profile Processing')
 if True in [savefig_monoprofiles,savefig_multiprofiles,savefig_compareprofiles,savefig_temporalprofiles]:
 	print('# 1D Steady-State Profile Processing')
-if True in [print_generaltrends,print_Knudsennumber,print_soundspeed, print_totalpower,print_DCbias,print_thrust]:
+if True in [print_generaltrends,print_Knudsennumber,print_reynolds, print_totalpower,print_DCbias,print_thrust]:
 	print('# 1D Specific Trend Analysis')
 if savefig_trendphaseaveraged == True:
 	print('# 1D Steady-State Trend Processing')
@@ -2316,7 +2316,6 @@ for l in range(0,numfolders):
 val, idx = min((val, idx) for (idx, val) in enumerate(Globalnumvars))
 Comparisonlist = Globalvarlist[idx]
 
-
 #===================##===================#
 #===================##===================#
 
@@ -2595,9 +2594,12 @@ def CropImage(ax=plt.gca(),Extent=[],Apply=True,Rotate=True):
 #=========================#
 #=========================#
 
+###
+#NB THIS NEEDS A COMPLETE OVERHAUL AND SPLIT INTO SIMPLER FUNCTIONS!
+###
 
 def CbarMinMax(Image,PROES=False,Symmetry=image_plotsymmetry):
-#Provides a new colourbar scale for cropped images.
+#Determines min/max colourbar scale within the cropped frame of an image array.
 #Takes a 2D image, and returns the min/max value within the cropped region.
 #Assumes image symmetry for best results, otherwise R1 is set to zero.
 #Works for PROES images too, requires PROES='Axial' or 'Radial'.
@@ -2675,18 +2677,15 @@ def CbarMinMax(Image,PROES=False,Symmetry=image_plotsymmetry):
 	#endif
 
 	#Flatten image and obtain min/max in region, defaults to full image if no cropping.
+	#Remove any nan's or infs from image limits (often caused by logging or out-of-bounds material mesh values)
 	try:	
 		flatimage = [item for sublist in Image for item in sublist]
-		cropmin,cropmax = min(flatimage),max(flatimage)
+		filteredflatimage = [x for x in flatimage if not (m.isinf(x) or m.isnan(x))]
+		cropmin, cropmax = min(filteredflatimage), max(filteredflatimage)
 	except:	
-		print( 'IMAGE CROPPING OUTSIDE MESH BOUNDARIES: CHECK IMAGE_RADIALCROP,IMAGE_AXIALCROP')
+		print( 'Err: Image Cropping nan/inf Issue - Check CbarMinMax function' )
 		exit()
 	#endtry
-
-	#Remove any nan's or infs from image limits (potentially caused by normalisation or logging)
-	if np.isinf(cropmin) == True and cropmax < 0.0: cropmin = cropmax		#Cropmin > Cropmax
-	elif np.isinf(cropmin) == True: cropmin = 0.0
-	if np.isinf(cropmax) == True: cropmax = 0.0	
 
 	#Return cropped values in list [min,max], as required by colourbar.
 	return([cropmin,cropmax])
@@ -3327,33 +3326,35 @@ def MinMaxTrends(lineout,Orientation,process):
 #=========================#
 
 #TREND ANALYSIS - Speed of Sound
-def LocalSoundSpeed(NeutralDensity,Pressure,Dimension='2D'):
+def CalcSoundSpeed(NeutralDensity,Pressure,Dimension='2D'):
 #Calculates local sound speed via Newton-Laplace equation
 #Takes appropriate neutral density [m-3] and pressure [Torr] (0D,1D or 2D)
 #Returns same dimensionality array of sound speeds in m/s
-#SoundSpeed = LocalSoundSpeed(ArgonDensity,Pressure,Dimension='2D')
+#SoundSpeed = CalcSoundSpeed(ArgonDensity,Pressure,Dimension='2D')
 
 	#Initiate required lists and set atomic values
 	SoundSpeedArray = list()
-	AdiabaticIndex = 5.0/3.0		#For Argon/Helium
-	AtomicMass = 39.948*1.66E-27	#Kg
+	AdiabaticIndex = 5.0/3.0		#Assumes diatomic species (Hydrogen,Helium,Argon, etc...)
+	AtomicMass = 39.948*1.66E-27	#[Kg]		#NB HARDCODED FOR ARGON
 
 	#For 0D values:
 	if Dimension == '0D':
-		ElasticityModulus = AdiabaticIndex*Pressure*133.33
-		MassDensity = NeutralDensity*AtomicMass
-		try: SoundSpeedArray = np.sqrt( ElasticityModulus/MassDensity )
+		ElasticityModulus = AdiabaticIndex*Pressure*133.33					#[Pa] = [kg m-1 s-2]
+		MassDensity = NeutralDensity*AtomicMass								#[kg m-3]
+		
+		#Calculate local sound speed via Newton-Laplace equation
+		try: SoundSpeedArray = np.sqrt( ElasticityModulus/MassDensity )		#[m/s]
 		except: SoundSpeedArray = np.nan
 	#endif
-
+	
 	#For 1D arrays:
 	if Dimension == '1D':
 		for i in range(0,len(NeutralDensity)):
-			ElasticityModulus = AdiabaticIndex*Pressure[i]*133.33
-			MassDensity = NeutralDensity[i]*AtomicMass
+			ElasticityModulus = AdiabaticIndex*Pressure[i]*133.33			#[Pa] = [kg m-1 s-2]
+			MassDensity = NeutralDensity[i]*AtomicMass						#[kg m-3]
 
 			#Calculate local sound speed via Newton-Laplace equation
-			try: SoundSpeed = np.sqrt( ElasticityModulus/MassDensity )
+			try: SoundSpeed = np.sqrt( ElasticityModulus/MassDensity )		#[m/s]
 			except: SoundSpeed = np.nan
 			SoundSpeedArray.append( SoundSpeed )
 		#endfor
@@ -3364,11 +3365,11 @@ def LocalSoundSpeed(NeutralDensity,Pressure,Dimension='2D'):
 		for i in range(0,len(NeutralDensity)):
 			SoundSpeedArray.append(list())
 			for j in range(0,len(NeutralDensity[i])):
-				ElasticityModulus = AdiabaticIndex*Pressure[i][j]*133.33
-				MassDensity = NeutralDensity[i][j]*AtomicMass
+				ElasticityModulus = AdiabaticIndex*Pressure[i][j]*133.33	#[Pa]
+				MassDensity = NeutralDensity[i][j]*AtomicMass				#[kg m-3]
 
 				#Calculate local sound speed via Newton-Laplace equation
-				try: SoundSpeed = np.sqrt( ElasticityModulus/MassDensity )
+				try: SoundSpeed = np.sqrt( ElasticityModulus/MassDensity )	#[m/s]
 				except: SoundSpeed = np.nan
 				SoundSpeedArray[i].append( SoundSpeed )
 			#endfor
@@ -4541,49 +4542,60 @@ if savefig_temporalprofiles == True:
 	print('-------------------------')
 #endif
 
-##=====================================================================#
-##=====================================================================#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-##====================================================================#
-#				 #GENERAL ENERGY DISTRIBUTION ANALYSIS#
-##====================================================================#
-#
-##====================================================================#
-#				#ION-NEUTRAL ANGULAR ENERGY DISTRIBUTIONS#
-##====================================================================#
-#
+#=====================================================================#
+#=====================================================================#
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#====================================================================#
+				 #GENERAL ENERGY DISTRIBUTION ANALYSIS#
+#====================================================================#
+
+#====================================================================#
+				#ION-NEUTRAL ANGULAR ENERGY DISTRIBUTIONS#
+#====================================================================#
+
 if savefig_IEDFangular == True:
 
 	#For all simulation folders.
@@ -4936,51 +4948,55 @@ if savefig_IEDFangular == True:
 #
 ##=====================================================================#
 ##=====================================================================#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-##====================================================================#
-#				 #GENERAL TREND PLOTTING ANALYSIS#
-##====================================================================#
-#
-##====================================================================#
-#				#COMPARATIVE TRENDS -- MULTI-FOLDER#
-##====================================================================#
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#====================================================================#
+				 #GENERAL TREND PLOTTING ANALYSIS#
+#====================================================================#
+
+#====================================================================#
+				#COMPARATIVE TRENDS -- MULTI-FOLDER#
+#====================================================================#
 
 if savefig_trendphaseaveraged == True or print_generaltrends == True:
 
@@ -5130,786 +5146,792 @@ if savefig_trendphaseaveraged == True or print_generaltrends == True:
 
 
 
-##=====================================================================#
-#						# DC-BIAS CALCULATOR #
-##=====================================================================#
-#
-#
-#
-#if savefig_trendphaseaveraged == True or print_DCbias == True:
-#
-#	#Create Trend folder to keep output plots.
-#	TrendVariable = filter(lambda x: x.isalpha(), FolderNameTrimmer(Dirlist[0]))
-#	DirTrends = CreateNewFolder(os.getcwd()+'/',TrendVariable+' Trends')
-#
-#	#Initiate lists required for storing data.
-#	Xaxis = list()
-#	DCbias = list()
-#
-#	#For all folders.
-#	for l in range(0,numfolders):
-#
-#		#Create processlist for each folder as required.
-#		Process,Variable = VariableEnumerator(['P-POT'],rawdata_2D[l],header_2Dlist[l])
-#
-#		#Update X-axis with folder information.
-#		Xaxis.append( FolderNameTrimmer(Dirlist[l]) )
-#
-#		#Locate powered electrode for bias extraction.
-#		Rlineoutloc = WaveformLoc(electrodeloc,'2D')[0]
-#		Zlineoutloc = WaveformLoc(electrodeloc,'2D')[1]
-#
-#		#Obtain radial and axial profiles for further processing.
-#		try: Rlineout = PlotRadialProfile(Data[l],Process[0],Variable[0],Rlineoutloc,R_mesh[l],  Isymlist[l])
-#		except: Rlineout = float('NaN')
-#		#endtry
-#		try: Zlineout = PlotAxialProfile(Data[l],Process[0],Variable[0],Zlineoutloc,R_mesh[l],Z_mesh[l],Isymlist[l])
-#		except: Zlineout = float('NaN')
-#		#endtry
-#
-#		#Obtain DCbias on axis and across the centre radius of the mesh.
-#		AxialDCbias = DCbiasMagnitude(Zlineout[::-1])
-#		RadialDCbias = DCbiasMagnitude(Rlineout)
-#
-#		#Choose axial or radial DCbias based on user input, else autoselect most probable.
-#		if DCbiasaxis == 'Radial':
-#			DCbias.append(RadialDCbias)
-#		elif DCbiasaxis == 'Axial':
-#			DCbias.append(AxialDCbias)
-#		elif DCbiasaxis == 'Auto':
-#			#Compare Axial and Radial DCbias, if same pick Axial, if not pick the largest.
-#			if AxialDCbias != RadialDCbias:
-#				if abs(AxialDCbias) > abs(RadialDCbias):
-#					DCbias.append(AxialDCbias)
-#				else:
-#					DCbias.append(RadialDCbias)
-#				#endif
-#			else:
-#				DCbias.append(AxialDCbias)
-#			#endif
-#		#endif
-#
-#		#Display DCbias to terminal if requested.
-#		if print_DCbias == True:
-#			print Dirlist[l]
-#			print 'DC Bias:',round(DCbias[l],5),'V'
-#		#endif
-#	#endfor
-#
-#	#Write data to ASCII format datafile if requested.
-#	if write_ASCII == True:
-#		DirASCII = CreateNewFolder(DirTrends,'Trend_Data')
-#		DCASCII = [Xaxis,DCbias]
-#		WriteDataToFile(DCASCII, DirASCII+'DCbias_Trends')
-#	#endif
-#
-#	#Plot and beautify the DCbias, applying normalization if requested.
-#	fig,ax = figure(image_aspectratio,1)
-#	TrendPlotter(ax,DCbias,Xaxis,NormFactor=0)
-#
-#	#Apply image options and axis labels.
-#	Title = 'Trend in DCbias with changing '+TrendVariable+' \n'+Dirlist[l][2:-1]
-#	Xlabel,Ylabel = 'Varied Property','DC bias [V]'
-#	ImageOptions(fig,ax,Xlabel,Ylabel,Title,Crop=False)
-#
-#	plt.savefig(DirTrends+'Powered Electrode DCbias'+ext)
-#	plt.close('all')
-##endif
-#
-#
-#
-##====================================================================#
-#					#POWER DEPOSITED DIAGNOSTIC#
-##====================================================================#
-#
-#
-#if savefig_trendphaseaveraged == True or print_totalpower == True:
-#
-#	#Create Trend folder to keep output plots.
-#	TrendVariable = filter(lambda x: x.isalpha(), FolderNameTrimmer(Dirlist[0]))
-#	DirTrends = CreateNewFolder(os.getcwd()+'/',TrendVariable+' Trends')
-#
-#	#Create required lists.
-#	RequestedPowers,DepositedPowerList = list(),list()
-#	Xaxis,Powers = list(),list()
-#
-#	#Update X-axis with folder information.
-#	for l in range(0,numfolders): Xaxis.append( FolderNameTrimmer(Dirlist[l]) )
-#
-#	#Identify which power densities have been requested.
-#	for i in range(0,len(Variables)):
-#		#Avoids POW-ICP unless coils are used
-#		if len(FREQC[l]) > 0 and Variables[i] in ['POW-ALL','POW-TOT','POW-ICP','POW-RF','POW-RF-E']:
-#			RequestedPowers.append(Variables[i])	
-#		#All powers here should be saved in all simulations (Including DC ones)		
-#		elif Variables[i] in ['POW-ALL','POW-TOT','POW-RF','POW-RF-E']:
-#			RequestedPowers.append(Variables[i])
-#		#endif
-#	#endfor
-#
-#	#For each different power deposition mechanism requested.
-#	for k in range(0,len(RequestedPowers)):
-#		#For all folders.
-#		for l in range(0,numfolders):
-#
-#			#Create extract data for the neutral flux and neutral velocity.
-#			processlist,Variablelist = VariableEnumerator(RequestedPowers,rawdata_2D[l],header_2Dlist[l])
-#
-#			#Extract full 2D power density image. [W/m3]
-#			PowerDensity = ImageExtractor2D(Data[l][processlist[k]])
-#			PowerDensity = VariableUnitConversion(PowerDensity,Variablelist[k])
-#
-#			Power = 0
-#			#Cylindrical integration of power per unit volume ==> total coupled power.
-#			for j in range(0,Z_mesh[l]):
-#				#For each radial slice
-#				for i in range(0,R_mesh[l]-1):
-#					#Calculate radial plane volume of a ring at radius [i], correcting for central r=0.
-#					InnerArea = np.pi*( (i*(dr[l]/100))**2 )		#m^2
-#					OuterArea = np.pi*( ((i+1)*(dr[l]/100))**2 )	#m^2
-#					RingVolume = (OuterArea-InnerArea)*(dz[l]/100)	#m^3
-#
-#					#Calculate Power by multiplying power density for ring[i] by volume of ring[i]
-#					Power += PowerDensity[j][i]*RingVolume 			#W
-#				#endfor
-#			#endfor
-#			DepositedPowerList.append(Power)
-#
-#			#Display power to terminal if requested.
-#			if print_totalpower == True:
-#				print Dirlist[l]
-#				print RequestedPowers[k]+' Deposited:',round(Power,4),'W'
-#			#endif
-#		#endfor
-#
-#		#Plot and beautify each requested power deposition seperately.
-#		fig,ax = figure(image_aspectratio,1)
-#		Powers.append( DepositedPowerList[k*numfolders:(k+1)*numfolders] )
-#		TrendPlotter(ax,Powers[k],Xaxis,NormFactor=0)
-#
-#		#Apply image options and axis labels.
-#		Title = 'Power Deposition with changing '+TrendVariable+' \n'+Dirlist[l][2:-1]
-#		Xlabel,Ylabel = 'Varied Property','Power Deposited [W]'
-#		ImageOptions(fig,ax,Xlabel,Ylabel,Title,Legend=RequestedPowers,Crop=False)
-#
-#		plt.savefig(DirTrends+RequestedPowers[k]+' Deposition Trends'+ext)
-#		plt.close('all')
-#	#endfor
-#
-#	#Write data to ASCII format datafile if requested.
-#	if write_ASCII == True:
-#		DirASCII, TotalPowerASCII = CreateNewFolder(DirTrends,'Trend_Data'), [Xaxis]
-#		for k in range(0,len(RequestedPowers)): TotalPowerASCII.append(Powers[k])
-#		WriteDataToFile(TotalPowerASCII, DirASCII+'RFPower_Trends')
-#	#endif
-#
-#	#Plot a comparison of all power depositions requested.
-#	fig,ax = figure(image_aspectratio,1)
-#	for k in range(0,len(RequestedPowers)):TrendPlotter(ax,Powers[k],Xaxis,NormFactor=0)
-#
-#	#Apply image options and axis labels.
-#	Title = 'Power Deposition with changing '+TrendVariable+' \n'+Dirlist[l][2:-1]
-#	Xlabel,Ylabel = 'Varied Property','Power Deposited [W]'
-#	ImageOptions(fig,ax,Xlabel,Ylabel,Title,Legend=RequestedPowers,Crop=False)
-#
-#	plt.savefig(DirTrends+'Power Deposition Comparison'+ext)
-#	plt.close('all')
-##endif
-#
-#
-#
-##====================================================================#
-#				  	#ION/NEUTRAL THRUST ANALYSIS#
-##====================================================================#
-#
-##ABORT DIAGNOSTIC UNLESS ARGON IS SUPPLIED, WILL FIX LATER!!!
-#if 'AR3S' in list(set(FluidSpecies).intersection(Variables)):
-#	if savefig_trendphaseaveraged == True or print_thrust == True:
-#
-#		#Create Trend folder to keep output plots.
-#		TrendVariable = filter(lambda x: x.isalpha(), FolderNameTrimmer(Dirlist[0]))
-#		DirTrends = CreateNewFolder(os.getcwd()+'/',TrendVariable+' Trends')
-#
-#		#Initiate lists required for storing data.
-#		NeutralThrustlist,IonThrustlist,Thrustlist = list(),list(),list()
-#		NeutralIsplist,IonIsplist,ThrustIsplist = list(),list(),list()
-#		Xaxis = list()
-#	
-#		#Extract Positive, Negative and Neutral species names (Excluding electrons)
-#		NeutralSpecies = list(set(FluidSpecies).intersection(Variables))
-#		PositiveIons = PosSpecies
-#		NegativeIons = NegSpecies[:-1]
-#
-#		#For all folders.
-#		for l in range(0,numfolders):
-#
-#			#Update X-axis with folder information.
-#			Xaxis.append( FolderNameTrimmer(Dirlist[l]) )
-#
-#			#Extract data required for Thrust calculations, discharge plane (Z) = ThrustLoc.
-#			processlist,variablelist = VariableEnumerator(['VZ-NEUTRAL'],rawdata_2D[l],header_2Dlist[l])
-#			NeutralVelocity = PlotRadialProfile(Data[l],processlist[0],variablelist[0],ThrustLoc)
-#			processlist,variablelist = VariableEnumerator(['VZ-ION+'],rawdata_2D[l],header_2Dlist[l])
-#			IonVelocity = PlotRadialProfile(Data[l],processlist[0],variablelist[0],ThrustLoc)
-#			processlist,variablelist = VariableEnumerator(['FZ-AR3S'],rawdata_2D[l],header_2Dlist[l])
-#			NeutralAxialFlux = PlotRadialProfile(Data[l],processlist[0],variablelist[0],ThrustLoc)
-#			processlist,variablelist = VariableEnumerator(['FZ-AR+'],rawdata_2D[l],header_2Dlist[l])
-#			IonAxialFlux = PlotRadialProfile(Data[l],processlist[0],variablelist[0],ThrustLoc)
-#			processlist,variablelist = VariableEnumerator(['TG-AVE'],rawdata_2D[l],header_2Dlist[l])
-#			NeutGasTemp = PlotRadialProfile(Data[l],processlist[0],variablelist[0],ThrustLoc)
-#			processlist,variablelist = VariableEnumerator(['PRESSURE'],rawdata_2D[l],header_2Dlist[l])
-#			try: 
-#				Pressure = PlotRadialProfile(Data[l],processlist[0],variablelist[0],ThrustLoc)
-#				PressureDown = PlotRadialProfile(Data[l],processlist[0],variablelist[0],ThrustLoc+1)
-#			except: 
-#				Pressure = np.zeros(R_mesh[l]*2)
-#				PressureDown = np.zeros(R_mesh[l]*2)
-#			#endtry
-#
-#			#Convert pressure to Torr if required (delta pressure in thrust calculations expect Torr)
-#			if PressureUnit == 'Pa':
-#				for i in range(0,len(Pressure)): Pressure[i] = Pressure[i]/133.33
-#				for i in range(0,len(PressureDown)): PressureDown[i] = PressureDown[i]/133.33
-#			elif PressureUnit == 'mTorr':
-#				for i in range(0,len(Pressure)): Pressure[i] = Pressure[i]/1000.0
-#				for i in range(0,len(PressureDown)): PressureDown[i] = PressureDown[i]/1000.0
-#			#endif
-#
-#			#Define which gas is used and calculate neutral mass per atom.
-#			NeutralIsp,IonIsp = list(),list()
-#			Argon,Xenon = 39.948,131.29			 #amu
-#			NeutralMass = Argon*1.67E-27		 #Kg
-#
-#			#Choose which method to solve for thrust: 'ThermalVelocity','AxialMomentum'
-#			if GlobThrustMethod == 'ThermalVelocity':
-#				#Technique assumes cylindrical geometry, cartesian geometry will be overestimated.
-#				#Integrates neutral momentum loss rate based on neutral gas temperature.
-#				#Assumes angularly symmetric temperature and Maxwellian velocity distribution.
-#				NeutralThrust = 0
-#				for i in range(0,R_mesh[l]):
-#					#Calculate radial plane area of a ring at radius [i], correcting for central r=0.
-#					Circumference = 2*np.pi*(i*(dr[l]/100))		#m
-#					CellArea = Circumference*(dr[l]/100)		#m^2
-#					if CellArea == 0:
-#						CellArea = np.pi*(dr[l]/100)**2			#m^2
-#					#endif  
-#
-#					#Calculate most probable neutral velocity based on temperature
-#					MeanVelocity = np.sqrt( (2*1.38E-23*NeutGasTemp[i])/(NeutralMass) )  	#m/s
-#
-#					#If current cell is gas phase (Pressure > 0.0), calculate thrust
-#					if Pressure[i] > 0.0:
-#						#Calculate Neutral mass flow rate and integrate thrust via F = (dm/dt)Ve.
-#						NeutralMassFlowRate = NeutralAxialFlux[i]*NeutralMass*CellArea	#Kg/s
-#						NeutralExitVelocity = NeutralVelocity[i]						#m/s
-#						NeutralThrust += NeutralMassFlowRate * NeutralExitVelocity 		#N
-#						if NeutralExitVelocity > 0:
-#							NeutralIsp.append(NeutralExitVelocity)
-#						#endif
-#					#endif
-#				#endfor
-#
-#				#Add neutral thrust and Isp to arrays (dummy variables not calculated)
-#				NeutralThrustlist.append( round(NeutralThrust*1000,5) )		#mN
-#				Thrustlist.append( round( NeutralThrust*1000,5) )			#mN
-#				NeutralIsp = (sum(NeutralIsp)/len(NeutralIsp))/9.81			#s
-#				Thrust,ThrustIsp = NeutralThrust,NeutralIsp					#N,s
-#				IonThrust,IonIsp = 1E-30,1E-30								#'Not Calculated'
-#				DiffForce = 1E-30											#'Not Calculated'
-#			#endif
-#
-#			#====================#
-#
-#			elif GlobThrustMethod == 'AxialMomentum':
-#				#Technique assumes cylindrical geometry, cartesian geometry will be overestimated.
-#				#Integrates ion/neutral momentum loss rate and differental pressure for concentric rings.
-#				#Assumes pressure differential, ion/neutral flux equal for all angles at given radii.
-#
-#				#CellArea increases from central R=0.
-#				#Ensure pressure index aligns with radial index for correct cell area.
-#				#ONLY WORKS WHEN SYMMETRY OPTION IS ON, NEED A MORE ROBUST METHOD!
-#				Pressure,PressureDown = Pressure[0:R_mesh[l]][::-1],PressureDown[0:R_mesh[l]][::-1]
-#				NeutralVelocity = NeutralVelocity[0:R_mesh[l]][::-1]
-#				NeutralAxialFlux = NeutralAxialFlux[0:R_mesh[l]][::-1]
-#				IonVelocity = IonVelocity[0:R_mesh[l]][::-1]
-#				IonAxialFlux = IonAxialFlux[0:R_mesh[l]][::-1]
-#				#ONLY WORKS WHEN SYMMETRY OPTION IS ON, NEED A MORE ROBUST METHOD!
-#
-#				DiffForce,NeutralThrust,IonThrust = 0,0,0
-#				for i in range(0,R_mesh[l]):
-#					#Calculate radial plane area of a ring at radius [i], correcting for central r=0.
-#					Circumference = 2*np.pi*(i*(dr[l]/100))		#m
-#					CellArea = Circumference*(dr[l]/100)		#m^2
-#					if CellArea == 0:
-#						CellArea = np.pi*((dr[l]/100)**2)		#m^2
-#					#endif
-#
-#					#Calculate differential pressure between ThrustLoc-(ThrustLoc+1)
-#					if Pressure[i] > 0.0:
-#						DiffPressure = (Pressure[i]-PRESOUT[l])*133.33			#N/m^2
-##						DiffPressure = (Pressure[i]-PressureDown[i])*133.33		#N/m^2
-#						DiffForce += DiffPressure*CellArea						#N
-#					else:
-#						DiffForce += 0.0
-#					#endif
-#
-#					#Calculate Neutral mass flow rate and integrate thrust via F = (dm/dt)Ve.
-#					NeutralMassFlowRate = NeutralAxialFlux[i]*NeutralMass*CellArea	#Kg/s
-#					NeutralExitVelocity = NeutralVelocity[i]						#m/s
-#					NeutralThrust += NeutralMassFlowRate * NeutralExitVelocity 		#N
-#					if NeutralExitVelocity > 0:
-#						NeutralIsp.append(NeutralExitVelocity)
-#					#endif
-#
-#					#Calculate Ion mass flow rate and integrate thrust via F = (dm/dt)Ve.
-#					IonMassFlowRate = IonAxialFlux[i]*NeutralMass*CellArea	#Kg/s
-#					IonExitVelocity = IonVelocity[i]*1000					#m/s
-#					IonThrust += IonMassFlowRate * IonExitVelocity 			#N
-#					if IonExitVelocity > 0: 
-#						IonIsp.append(IonExitVelocity)
-#					#endif
-#				#endfor
-#				if len(IonIsp) == 0: IonIsp.append(np.nan)
-#				if len(NeutralIsp) == 0: NeutralIsp.append(np.nan)
-#
-#				#Add total thrust and calculate Isp of each component
-#				Thrust = DiffForce + NeutralThrust + IonThrust				#N
-#				NeutralFraction = NeutralThrust/(Thrust-DiffForce)			#Ignore dP/dz
-#				IonFraction = IonThrust/(Thrust-DiffForce)					#Ignore dP/dz
-#
-#				IonIsp = (sum(IonIsp)/len(IonIsp))/9.81						#s
-#				NeutralIsp = (sum(NeutralIsp)/len(NeutralIsp))/9.81			#s
-#				ThrustIsp = NeutralFraction*NeutralIsp+IonFraction*IonIsp 	#s
-#
-#				NeutralThrustlist.append( round(NeutralThrust*1000,5) )		#mN
-#				IonThrustlist.append( round(IonThrust*1000,5) )				#mN
-#				Thrustlist.append( round(Thrust*1000,5) )					#mN
-#				NeutralIsplist.append( round(NeutralIsp,5) )				#s
-#				IonIsplist.append( round(IonIsp,5) )						#s
-#				ThrustIsplist.append( round(ThrustIsp,5) )					#s
-#			#endif
-#
-#			#====================#
-#
-#			#Display thrust to terminal if requested.
-#			if print_thrust == True:
-#				print Dirlist[l], '@ Z=',round(ThrustLoc*dz[l],2),'cm'
-#				print 'NeutralThrust', round(NeutralThrust*1000,2), 'mN @ ', round(NeutralIsp,2),'s'
-#				print 'IonThrust:', round(IonThrust*1000,4), 'mN @ ', round(IonIsp,2),'s'
-#				print 'D-Pressure:', round(DiffForce*1000,4), 'mN'
-#				print 'Thrust:',round(Thrust*1000,4),'mN @ ', round(ThrustIsp,2),'s'
-#				print ''
-#			#endif
-#		#endfor
-#
-#		#Write data to ASCII format datafile if requested.
-#		if write_ASCII == True:
-#			DirASCII = CreateNewFolder(DirTrends,'Trend_Data')
-#			WriteDataToFile(Xaxis+['\n'], DirASCII+'Thrust_Trends','w')
-#			WriteDataToFile(Thrustlist+['\n'], DirASCII+'Thrust_Trends','a')
-#			WriteDataToFile(ThrustIsplist, DirASCII+'Thrust_Trends','a')
-#		#endif
-#
-#
-#		#Plot total thrust and ion/neutral components.
-#		fig,ax1 = figure(image_aspectratio,1)
-#		TrendPlotter(ax1,Thrustlist,Xaxis,Marker='ko-',NormFactor=0)
-#		TrendPlotter(ax1,NeutralThrustlist,Xaxis,Marker='r^-',NormFactor=0)
-##		TrendPlotter(ax1,IonThrustlist,Xaxis,Marker='bs-',NormFactor=0)
-#
-#		#Apply image options and save figure.
-#		Title='Thrust at Z='+str(round(ThrustLoc*dz[0],2))+'cm with varying '+TrendVariable+' \n'+Dirlist[l][2:-1]
-#		Xlabel,Ylabel = 'Varied Property','Thrust F$_{T}$ [mN]'
-#		ax1.legend(['Total Thrust','Neutral Component','Ion Component'], fontsize=18, frameon=False)
-#		ImageOptions(fig,ax1,Xlabel,Ylabel,Title,Crop=False)
-#
-#		plt.savefig(DirTrends+'Thrust Trends'+ext)
-#		plt.close('all')
-#
-#
-#		#Plot Specific Impulse for total thrust and ion/neutral components.
-#		fig,ax1 = figure(image_aspectratio,1)
-#		TrendPlotter(ax1,ThrustIsplist,Xaxis,Marker='ko-',NormFactor=0)
-#		TrendPlotter(ax1,NeutralIsplist,Xaxis,Marker='r^-',NormFactor=0)
-##		TrendPlotter(ax1,IonIsplist,Xaxis,Marker='bs-',NormFactor=0)
-#
-#		#Apply image options and save figure.
-#		Title = 'Specific Impulse at Z='+str(round(ThrustLoc*dz[0],2))+'cm with varying '+TrendVariable+' \n'+Dirlist[l][2:-1]
-#		Xlabel,Ylabel = 'Varied Property','Specific Impulse I$_{sp}$ [s]'
-#		ax1.legend(['Total I$_{sp}$','Neutral Component','Ion Component'], fontsize=18, frameon=False)
-#		ImageOptions(fig,ax1,Xlabel,Ylabel,Title,Crop=False)
-#
-#		plt.savefig(DirTrends+'Isp Trends'+ext)
-#		plt.close('all')
-#	#endif
-##endif
-#
-#
-##====================================================================#
-#			 		#PHASE-AVERAGED SHEATH TRENDS#
-##====================================================================#
-#
-#
-#if savefig_trendphaseaveraged == True or print_sheath == True:
-#
-#	#Create Trend folder to keep output plots.
-#	TrendVariable = filter(lambda x: x.isalpha(), FolderNameTrimmer(Dirlist[0]))
-#	DirTrends = CreateNewFolder(os.getcwd()+'/',TrendVariable+' Trends')
-#
-#	#Initialize any required lists.
-#	Xaxis,SxLocExtent,SxMaxExtent = list(),list(),list()	
-#
-#	#Obtain SheathROI and SourceWidth automatically if none are supplied.
-#	if len(SheathROI) != 2:
-#		#image_radialcrop Convert to Cells 
-#		#image_axialcrop Convert to Cells
-#		#Use axialcrop or radialcrop to set automatic ROI!
-#		Start,End = 34,72			#AUTOMATIC ROUTINE REQUIRED#
-#		SheathROI = [Start,End]		#AUTOMATIC ROUTINE REQUIRED#
-#	#endif
-#	if len(SourceWidth) == 0:
-#		#Take Variable that is zero in metals (Density?)
-#		#Take Axial/Radial slice depending on sheath direction.
-#		#Find Cell distance from zero to 'wall' at electrodeloc.
-#		#Convert to SI [cm], set to automatic width.
-#		SourceWidth = [0.21]			#AUTOMATIC ROUTINE REQUIRED#
-#	#endif
-#
-#	SxMeanExtent,SxMeanExtentArray = list(),list()
-#	#For all selected simulations, obtain Xaxis, sheath value and save to array.
-#	for l in range(0,numfolders):
-#		Xaxis.append( FolderNameTrimmer(Dirlist[l]) )
-#
-#		#Obtain sheath thickness array for current folder 
-#		Sx = SheathExtent(folder=l)[0]
-#
-#		#Calculate mean sheath extent across ROI. On failure provide null point for sheath thickness.
-#		try:
-#			SxMeanExtentArray = list()
-#			for i in range(SheathROI[0],SheathROI[1]):	SxMeanExtentArray.append(Sx[i])
-#			SxMeanExtent.append(sum(SxMeanExtentArray)/len(SxMeanExtentArray))
-#		except:
-#			SxMeanExtent.append( np.nan )
-#		#endtry
-#
-#		#Extract maximum sheath thickness from within region of interest
-#		try: SxMaxExtent.append( ((SourceWidth[0]*dr[l])-max(Sx[SheathROI[0]:SheathROI[1]]))*10 )
-#		except: SxMaxExtent.append( np.nan )
-#
-#		#Extract sheath width adjacent to powered electrode
-#		#loc = electrodeloc[0]		#Radial
-#		loc = electrodeloc[1] 		#Axial
-#		try: SxLocExtent.append( ((SourceWidth[0]*dr[l])-Sx[loc])*10 )
-#		except:	SxLocExtent.append( np.nan )
-#	#endfor
-#
-#	#===============================#
-#
-#	#Write trend data to ASCII format datafile if requested.
-#	if write_ASCII == True:
-#		DirASCII = CreateNewFolder(DirTrends,'Trend_Data')
-#		WriteDataToFile(Xaxis, DirASCII+'Sx-Avg_Trends','w')
-#		WriteDataToFile('\n', DirASCII+'Sx-Avg_Trends','w')
-#		WriteDataToFile(SxMaxExtent, DirASCII+'Sx-Avg_Trends','a')
-#	#endif
-#
-#	#Generate figure and plot trends.	
-#	fig,ax = figure(image_aspectratio,1)
-#	TrendPlotter(ax,SxMaxExtent,Xaxis,NormFactor=0)
-#
-#	#Apply image options and axis labels.
-#	Title = 'Maximum Sheath Extension With Varying '+TrendVariable+' \n'+Dirlist[l][2:-1]
-#	Xlabel,Ylabel = 'Varied Property','Sheath Extension [mm]'
-#	ImageOptions(fig,ax,Xlabel,Ylabel,Title,Legend=[],Crop=False)
-#
-#	plt.savefig(DirTrends+'Sheath Extension (Phase-Averaged)'+ext)
-#	plt.close('all')
-##endif
-#
-#
-#
-##====================================================================#
-#				  		#KNUDSEN NUMBER ANALYSIS#
-##====================================================================#
-#
-#
-##Only perform on bulk fluid dynamics relevent species.
-#if bool(set(FluidSpecies).intersection(Variables)) == True:
-#	if savefig_trendphaseaveraged == True or print_Knudsennumber == True:
-#
-#		#Create Trend folder to keep output plots.
-#		TrendVariable = filter(lambda x: x.isalpha(), FolderNameTrimmer(Dirlist[0]))
-#		DirTrends = CreateNewFolder(os.getcwd()+'/',TrendVariable+' Trends')
-#
-#		#Initiate lists required for storing data.
-#		KnudsenAverage,Xaxis = list(),list()
-#
-#		#For all folders.
-#		for l in range(0,numfolders):
-#
-#			#Using effective radius of argon in this calculation.
-#			Dimentionality = 2*(Radius[l]/100)		#meters
-#			CrossSection = np.pi*((7.1E-11)**2)		#meters
-#
-#			#Extract data for the neutral flux and neutral velocity.
-#			processlist,Variablelist = VariableEnumerator(FluidSpecies,rawdata_2D[l],header_2Dlist[l])
-#
-#			#Update X-axis with folder information.
-#			Xaxis.append( FolderNameTrimmer(Dirlist[l]) )
-#
-#			#Create empty image array based on mesh size and symmetry options.
-#			numrows = len(Data[l][0])/R_mesh[l]
-#			Image = np.zeros([Z_mesh[l],R_mesh[l]])
-#
-#			#Produce Knudsen number 2D image using density image.
-#			for j in range(0,Z_mesh[l]):
-#				for i in range(0,R_mesh[l]):
-#					Start = R_mesh[l]*j
-#					Row = Z_mesh[l]-1-j
-#
-#					LocalDensity = (Data[l][processlist[0]][Start+i])*1E6
-#					try:
-#						KnudsenNumber = (1/(LocalDensity*CrossSection*Dimentionality))
-#					except:
-#						KnudsenNumber = 0
-#					#endtry
-#					Image[Row,i] = KnudsenNumber
-#				#endfor
-#			#endfor
-#
-#			#Display average Knudsen number to terminal if requested.
-#			KnudsenAverage.append( sum(Image)/(len(Image[0])*len(Image)) )
-#			if print_Knudsennumber == True:
-#				print Dirlist[l]
-#				print 'Average Knudsen Number:', KnudsenAverage[l]
-#			#endif
-#
-#			#Create new folder to keep 2D output plots.
-#			Dir2Dplots = CreateNewFolder(Dirlist[l],'2Dplots')
-#			#Write image data to ASCII format datafile if requested.
-#			if write_ASCII == True:
-#				DirASCII = CreateNewFolder(Dir2Dplots,'2Dplots_Data')
-#				WriteDataToFile(Image, DirASCII+'Kn','w')
-#			#endif
-#
-#			#Label and save the 2D Plots.
-#			extent,aspectratio = DataExtent(l)
-#			fig,ax,im,Image = ImagePlotter2D(Image,extent,aspectratio)
-#			#Add sheath thickness to figure if requested.
-#			Sx = SheathExtent(folder=l,ax=ax)[0]
-#
-#			#Image plotting details, invert Y-axis to fit 1D profiles.
-#			Title = 'Knudsen Number Image for \n'+Dirlist[l][2:-1]
-#			Xlabel,Ylabel = 'Radial Distance R [cm]','Axial Distance Z [cm]'
-#			cax = Colourbar(ax,'Knudsen Number $K_{n}$',5,Lim=CbarMinMax(Image))
-#			ImageOptions(fig,ax,Xlabel,Ylabel,Title)
-#
-#			#Save Figure
-#			plt.savefig(Dir2Dplots+'2DPlot Kn'+ext)
-#			plt.close('all')
-#		#endfor
-#
-#
-#		#Write trend data to ASCII format datafile if requested.
-#		if write_ASCII == True:
-#			DirASCII = CreateNewFolder(DirTrends,'Trend_Data')
-#			WriteDataToFile(Xaxis, DirASCII+'Kn_Trends','w')
-#			WriteDataToFile('\n', DirASCII+'Kn_Trends','w')
-#			WriteDataToFile(KnudsenAverage, DirASCII+'Kn_Trends','a')
-#		#endif
-#
-#		#Plot a comparison of all average Knudsen numbers.
-#		fig,ax = figure(image_aspectratio,1)
-#		TrendPlotter(ax,KnudsenAverage,Xaxis,NormFactor=0)
-#
-#		#Image plotting details.
-#		Title = 'Average Knudsen Number with Varying '+TrendVariable+' \n'+Dirlist[l][2:-1]
-#		Xlabel,Ylabel = 'Varied Property','Average Knudsen Number $K_{n}$'
-#		ImageOptions(fig,ax,Xlabel,Ylabel,Title,Crop=False)
-#
-#		#Save figure.
-#		plt.savefig(DirTrends+'KnudsenNumber_Comparison'+ext)
-#		plt.close('all')
-#	#endif
-##endif
-#
-#
-#
-##====================================================================#
-#				  #LOCAL/GLOBAL SOUND SPEED ANALYSIS#
-##====================================================================#
-#
-#PERFORMSOUNDSPEED = False
-##Only perform on bulk fluid dynamics relevent species.
-#if bool(set(FluidSpecies).intersection(Variables)) == True and PERFORMSOUNDSPEED == True:
-#	if savefig_trendphaseaveraged == True or print_soundspeed == True:
-#
-#		#Create Trend folder to keep output plots.
-#		TrendVariable = filter(lambda x: x.isalpha(), FolderNameTrimmer(Dirlist[0]))
-#		DirTrends = CreateNewFolder(os.getcwd()+'/',TrendVariable+' Trends')
-#
-#		#Initiate lists required for storing data.
-#		AverageSoundSpeed,Xaxis = list(),list()
-#		NeutralDensities = list()
-#
-#		#For all folders.
-#		for l in range(0,numfolders):
-#
-#			#Extract spatially resolved pressure and neutral densities.
-#			processlist,variablelist = VariableEnumerator(['PRESSURE'],rawdata_2D[l],header_2Dlist[l])
-#			Pressure = ImageExtractor2D(Data[l][processlist[0]],variablelist[0])
-#			#If single neutral species - extract density
-#			processlist,Variablelist = VariableEnumerator(FluidSpecies,rawdata_2D[l],header_2Dlist[l])
-#			if len(processlist) == 1: 
-#				NeutralDensity = ImageExtractor2D(Data[l][processlist[0]],variablelist[0])
-#			#If multiple neutral species, combine them to get total neutral density
-#			elif len(processlist) > 1:
-#				for i in range(0,len(processlist)):
-#					NeutralDensities.append( ImageExtractor2D(Data[l][processlist[i]],variablelist[i]) )
-#				#endfor
-#
-#				#Create empty neutral density array based on mesh size and symmetry options.
-#				numrows = len(Data[l][0])/R_mesh[l]
-#				NeutralDensity = np.zeros([Z_mesh[l],R_mesh[l]])
-#
-#				#Combine all neutral densities to get total neutral density - if required.
-#				for i in range(0,len(NeutralDensities)):
-#					for j in range(0,len(NeutralDensities[i])):
-#						for k in range(0,len(NeutralDensities[i][j])):
-#							NeutralDensity[j][k] += NeutralDensities[i][j][k]
-#						#endfor
-#					#endfor
-#				#endfor
-#			#endif
-#
-#			#Update X-axis with folder information.
-#			Xaxis.append( FolderNameTrimmer(Dirlist[l]) )
-#
-#			#Calculate 2D sound speed image using neutral density and pressure
-#			Image = LocalSoundSpeed(NeutralDensity,Pressure,Dimension='2D')
-#
-#			#Display mesh-averaged sound speed to terminal if requested.
-#			AverageSoundSpeed.append( sum(Image)/(len(Image[0])*len(Image)) )
-#			if print_soundspeed == True:
-#				print Dirlist[l]
-#				print 'Average Sound Speed:', AverageSoundSpeed[l]
-#			#endif
-#
-#			#Create new folder to keep 2D output plots.
-#			Dir2Dplots = CreateNewFolder(Dirlist[l],'2Dplots')
-#			#Write image data to ASCII format datafile if requested.
-#			if write_ASCII == True:
-#				DirASCII = CreateNewFolder(Dir2Dplots,'2Dplots_Data')
-#				WriteDataToFile(Image, DirASCII+'Cs','w')
-#			#endif
-#
-#			#Label and save the 2D Plots.
-#			extent,aspectratio = DataExtent(l)
-#			fig,ax,im,Image = ImagePlotter2D(Image,extent,aspectratio)
-#			#Add sheath thickness to figure if requested.
-#			Sx = SheathExtent(folder=l,ax=ax)[0]
-#
-#			#Image plotting details, invert Y-axis to fit 1D profiles.
-#			#ERROR WITH IMAGE LIMIT - LIKELY DUE TO NANS - #Lim=CbarMinMax(Image)
-#			Title = 'Sound Speed Image for \n'+Dirlist[l][2:-1]
-#			Xlabel,Ylabel = 'Radial Distance R [cm]','Axial Distance Z [cm]'
-#			cax = Colourbar(ax,'Sound Speed $C_{s}$ [m/s]',5,Lim=[]) 
-#			ImageOptions(fig,ax,Xlabel,Ylabel,Title)
-#
-#			#Save Figure
-#			plt.savefig(Dir2Dplots+'2DPlot Cs'+ext)
-#			plt.close('all')
-#		#endfor
-#
-#
-#		#Write trend data to ASCII format datafile if requested.
-#		if write_ASCII == True:
-#			DirASCII = CreateNewFolder(DirTrends,'Trend_Data')
-#			WriteDataToFile(Xaxis, DirASCII+'Cs_Trends','w')
-#			WriteDataToFile('\n', DirASCII+'Cs_Trends','w')
-#			WriteDataToFile(AverageSoundSpeed, DirASCII+'Cs_Trends','a')
-#		#endif
-#
-#		#Plot a comparison of all average Knudsen numbers.
-#		fig,ax = figure(image_aspectratio,1)
-#		TrendPlotter(ax,AverageSoundSpeed,Xaxis,NormFactor=0)
-#
-#		#Image plotting details.
-#		Title = 'Average Sound Speed with Varying '+TrendVariable+' \n'+Dirlist[l][2:-1]
-#		Xlabel,Ylabel = 'Varied Property','Average Sound Speed'
-#		ImageOptions(fig,ax,Xlabel,Ylabel,Title,Crop=False)
-#
-#		#Save figure.
-#		plt.savefig(DirTrends+'SoundSpeed_Comparison'+ext)
-#		plt.close('all')
-#	#endif
-##endif
-#
-##===============================#
-##===============================#
-#
-#if any([savefig_trendphaseaveraged, print_generaltrends, print_Knudsennumber, print_soundspeed, print_totalpower, print_DCbias, print_thrust, print_sheath]) == True:
-#	print'---------------------------'
-#	print'# Trend Processing Complete'
-#	print'---------------------------'
-##endif
-#
-##=====================================================================#
-##=====================================================================#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-##====================================================================#
-#				#PHASE RESOLVED DIAGNOSTICS (REQ MOVIE1)#
-##====================================================================#
-#
-##====================================================================#
-#						#1D PHASE RESOLVED MOVIES#
-##====================================================================#
+
+#=====================================================================#
+						# DC-BIAS CALCULATOR #
+#=====================================================================#
+
+if savefig_trendphaseaveraged == True or print_DCbias == True:
+
+	#Create Trend folder to keep output plots.
+	TrendVariable = list(filter(lambda x: x.isalpha(), FolderNameTrimmer(Dirlist[0])))	#List of discrete chars
+	TrendVariable = ''.join(TrendVariable)												#Single string of chars
+	DirTrends = CreateNewFolder(os.getcwd()+'/',TrendVariable+' Trends')
+
+	#Initiate lists required for storing data.
+	Xaxis = list()
+	DCbias = list()
+
+	#For all folders.
+	for l in range(0,numfolders):
+
+		#Create processlist for each folder as required.
+		Process,Variable = VariableEnumerator(['P-POT'],rawdata_2D[l],header_2Dlist[l])
+
+		#Update X-axis with folder information.
+		Xaxis.append( FolderNameTrimmer(Dirlist[l]) )
+
+		#Locate powered electrode for bias extraction.
+		Rlineoutloc = WaveformLoc(electrodeloc,'2D')[0]
+		Zlineoutloc = WaveformLoc(electrodeloc,'2D')[1]
+
+		#Obtain radial and axial profiles for further processing.
+		try: Rlineout = PlotRadialProfile(Data[l],Process[0],Variable[0],Rlineoutloc,R_mesh[l],  Isymlist[l])
+		except: Rlineout = float('NaN')
+		#endtry
+		try: Zlineout = PlotAxialProfile(Data[l],Process[0],Variable[0],Zlineoutloc,R_mesh[l],Z_mesh[l],Isymlist[l])
+		except: Zlineout = float('NaN')
+		#endtry
+
+		#Obtain DCbias on axis and across the centre radius of the mesh.
+		AxialDCbias = DCbiasMagnitude(Zlineout[::-1])
+		RadialDCbias = DCbiasMagnitude(Rlineout)
+
+		#Choose axial or radial DCbias based on user input, else autoselect most probable.
+		if DCbiasaxis == 'Radial':
+			DCbias.append(RadialDCbias)
+		elif DCbiasaxis == 'Axial':
+			DCbias.append(AxialDCbias)
+		elif DCbiasaxis == 'Auto':
+			#Compare Axial and Radial DCbias, if same pick Axial, if not pick the largest.
+			if AxialDCbias != RadialDCbias:
+				if abs(AxialDCbias) > abs(RadialDCbias):
+					DCbias.append(AxialDCbias)
+				else:
+					DCbias.append(RadialDCbias)
+				#endif
+			else:
+				DCbias.append(AxialDCbias)
+			#endif
+		#endif
+
+		#Display DCbias to terminal if requested.
+		if print_DCbias == True:
+			print(Dirlist[l])
+			print('DC Bias:',round(DCbias[l],5),'V')
+		#endif
+	#endfor
+
+	#Write data to ASCII format datafile if requested.
+	if write_ASCII == True:
+		DirASCII = CreateNewFolder(DirTrends,'Trend_Data')
+		DCASCII = [Xaxis,DCbias]
+		WriteDataToFile(DCASCII, DirASCII+'DCbias_Trends')
+	#endif
+
+	#Plot and beautify the DCbias, applying normalization if requested.
+	fig,ax = figure(image_aspectratio,1)
+	TrendPlotter(ax,DCbias,Xaxis,NormFactor=0)
+
+	#Apply image options and axis labels.
+	Title = 'Trend in DCbias with changing '+TrendVariable+' \n'+Dirlist[l][2:-1]
+	Xlabel,Ylabel = 'Varied Property','DC bias [V]'
+	ImageOptions(fig,ax,Xlabel,Ylabel,Title,Crop=False)
+
+	plt.savefig(DirTrends+'Powered Electrode DCbias'+ext)
+	plt.close('all')
+#endif
+
+
+
+#====================================================================#
+					#POWER DEPOSITED DIAGNOSTIC#
+#====================================================================#
+
+if savefig_trendphaseaveraged == True or print_totalpower == True:
+
+	#Create Trend folder to keep output plots.
+	TrendVariable = list(filter(lambda x: x.isalpha(), FolderNameTrimmer(Dirlist[0])))	#List of discrete chars
+	TrendVariable = ''.join(TrendVariable)												#Single string of chars
+	DirTrends = CreateNewFolder(os.getcwd()+'/',TrendVariable+' Trends')
+
+	#Create required lists.
+	RequestedPowers,DepositedPowerList = list(),list()
+	Xaxis,Powers = list(),list()
+
+	#Update X-axis with folder information.
+	for l in range(0,numfolders): Xaxis.append( FolderNameTrimmer(Dirlist[l]) )
+
+	#Create list of requested power variables and ensure they also exist in all compared folders
+	for i in range(0,len(Variables)):
+		if 'POW-' in Variables[i] and Variables[i] in Comparisonlist:
+			RequestedPowers.append(Variables[i])
+		#endif
+	#endfor
+
+	#For each different power deposition mechanism requested.
+	for k in range(0,len(RequestedPowers)):
+		#For all folders.
+		for l in range(0,numfolders):
+
+			#Create extract data for the neutral flux and neutral velocity.
+			processlist,Variablelist = VariableEnumerator(RequestedPowers,rawdata_2D[l],header_2Dlist[l])
+			
+			#Extract full 2D power density image. [W/m3]
+			PowerDensity = ImageExtractor2D(Data[l][processlist[k]])
+			PowerDensity = VariableUnitConversion(PowerDensity,Variablelist[k])
+
+			Power = 0												#[W]
+			#Cylindrical integration of power per unit volume ==> total coupled power.
+			for j in range(0,Z_mesh[l]):
+				#For each radial slice
+				for i in range(0,R_mesh[l]-1):
+					#Calculate radial plane volume of a ring at radius [i], correcting for central r=0.
+					InnerArea = np.pi*( (i*(dr[l]/100))**2 )		#[m^2]
+					OuterArea = np.pi*( ((i+1)*(dr[l]/100))**2 )	#[m^2]
+					RingVolume = (OuterArea-InnerArea)*(dz[l]/100)	#[m^3]
+
+					#Calculate Power by multiplying power density for ring[i] by volume of ring[i]
+					Power += PowerDensity[j][i]*RingVolume 			#[W]
+				#endfor
+			#endfor
+			DepositedPowerList.append(Power)
+
+			#Display power to terminal if requested.
+			if print_totalpower == True:
+				print(Dirlist[l])
+				print(RequestedPowers[k]+' Deposited:',round(Power,4),'W')
+			#endif
+		#endfor
+
+		#Plot and beautify each requested power deposition seperately.
+		fig,ax = figure(image_aspectratio,1)
+		Powers.append( DepositedPowerList[k*numfolders:(k+1)*numfolders] )
+		TrendPlotter(ax,Powers[k],Xaxis,NormFactor=0)
+
+		#Apply image options and axis labels.
+		Title = 'Power Deposition with changing '+TrendVariable+' \n'+Dirlist[l][2:-1]
+		Xlabel,Ylabel = 'Varied Property','Power Deposited [W]'
+		ImageOptions(fig,ax,Xlabel,Ylabel,Title,Legend=RequestedPowers,Crop=False)
+
+		plt.savefig(DirTrends+RequestedPowers[k]+' Deposition Trends'+ext)
+		plt.close('all')
+	#endfor
+
+	#Write data to ASCII format datafile if requested.
+	if write_ASCII == True:
+		DirASCII, TotalPowerASCII = CreateNewFolder(DirTrends,'Trend_Data'), [Xaxis]
+		for k in range(0,len(RequestedPowers)): TotalPowerASCII.append(Powers[k])
+		WriteDataToFile(TotalPowerASCII, DirASCII+'RFPower_Trends')
+	#endif
+
+	#Plot a comparison of all power depositions requested.
+	fig,ax = figure(image_aspectratio,1)
+	for k in range(0,len(RequestedPowers)):TrendPlotter(ax,Powers[k],Xaxis,NormFactor=0)
+
+	#Apply image options and axis labels.
+	Title = 'Power Deposition with changing '+TrendVariable+' \n'+Dirlist[l][2:-1]
+	Xlabel,Ylabel = 'Varied Property','Power Deposited [W]'
+	ImageOptions(fig,ax,Xlabel,Ylabel,Title,Legend=RequestedPowers,Crop=False)
+
+	plt.savefig(DirTrends+'Power Deposition Comparison'+ext)
+	plt.close('all')
+#endif
+
+
+
+#====================================================================#
+				  	#ION/NEUTRAL THRUST ANALYSIS#
+#====================================================================#
+
+#ABORT DIAGNOSTIC UNLESS ARGON IS SUPPLIED, WILL FIX LATER!!!
+if 'AR3S' in list(set(FluidSpecies).intersection(Variables)):
+	if savefig_trendphaseaveraged == True or print_thrust == True:
+
+		#Create Trend folder to keep output plots.
+		TrendVariable = list(filter(lambda x: x.isalpha(), FolderNameTrimmer(Dirlist[0])))	#List of discrete chars
+		TrendVariable = ''.join(TrendVariable)												#Single string of chars
+		DirTrends = CreateNewFolder(os.getcwd()+'/',TrendVariable+' Trends')
+
+		#Initiate lists required for storing data.
+		NeutralThrustlist,IonThrustlist,Thrustlist = list(),list(),list()
+		NeutralIsplist,IonIsplist,ThrustIsplist = list(),list(),list()
+		Xaxis = list()
+	
+		#Extract Positive, Negative and Neutral species names (Excluding electrons)
+		NeutralSpecies = list(set(FluidSpecies).intersection(Variables))
+		PositiveIons = PosSpecies
+		NegativeIons = NegSpecies[:-1]
+
+		#For all folders.
+		for l in range(0,numfolders):
+
+			#Update X-axis with folder information.
+			Xaxis.append( FolderNameTrimmer(Dirlist[l]) )
+
+			#Extract data required for Thrust calculations, discharge plane (Z) = ThrustLoc.
+			processlist,variablelist = VariableEnumerator(['VZ-NEUTRAL'],rawdata_2D[l],header_2Dlist[l])
+			NeutralVelocity = PlotRadialProfile(Data[l],processlist[0],variablelist[0],ThrustLoc)
+			processlist,variablelist = VariableEnumerator(['VZ-ION+'],rawdata_2D[l],header_2Dlist[l])
+			IonVelocity = PlotRadialProfile(Data[l],processlist[0],variablelist[0],ThrustLoc)
+			processlist,variablelist = VariableEnumerator(['FZ-AR3S'],rawdata_2D[l],header_2Dlist[l])
+			NeutralAxialFlux = PlotRadialProfile(Data[l],processlist[0],variablelist[0],ThrustLoc)
+			processlist,variablelist = VariableEnumerator(['FZ-AR+'],rawdata_2D[l],header_2Dlist[l])
+			IonAxialFlux = PlotRadialProfile(Data[l],processlist[0],variablelist[0],ThrustLoc)
+			processlist,variablelist = VariableEnumerator(['TG-AVE'],rawdata_2D[l],header_2Dlist[l])
+			NeutGasTemp = PlotRadialProfile(Data[l],processlist[0],variablelist[0],ThrustLoc)
+			processlist,variablelist = VariableEnumerator(['PRESSURE'],rawdata_2D[l],header_2Dlist[l])
+			try: 
+				Pressure = PlotRadialProfile(Data[l],processlist[0],variablelist[0],ThrustLoc)
+				PressureDown = PlotRadialProfile(Data[l],processlist[0],variablelist[0],ThrustLoc+1)
+			except: 
+				Pressure = np.zeros(R_mesh[l]*2)
+				PressureDown = np.zeros(R_mesh[l]*2)
+			#endtry
+
+			#Convert pressure to Torr if required (delta pressure in thrust calculations expect Torr)
+			if PressureUnit == 'Pa':
+				for i in range(0,len(Pressure)): Pressure[i] = Pressure[i]/133.33
+				for i in range(0,len(PressureDown)): PressureDown[i] = PressureDown[i]/133.33
+			elif PressureUnit == 'mTorr':
+				for i in range(0,len(Pressure)): Pressure[i] = Pressure[i]/1000.0
+				for i in range(0,len(PressureDown)): PressureDown[i] = PressureDown[i]/1000.0
+			#endif
+
+			#Define which gas is used and calculate neutral mass per atom.
+			NeutralIsp,IonIsp = list(),list()
+			Argon,Xenon = 39.948,131.29			 #amu
+			NeutralMass = Argon*1.67E-27		 #Kg
+
+			#Choose which method to solve for thrust: 'ThermalVelocity','AxialMomentum'
+			if GlobThrustMethod == 'ThermalVelocity':
+				#Technique assumes cylindrical geometry, cartesian geometry will be overestimated.
+				#Integrates neutral momentum loss rate based on neutral gas temperature.
+				#Assumes angularly symmetric temperature and Maxwellian velocity distribution.
+				NeutralThrust = 0
+				for i in range(0,R_mesh[l]):
+					#Calculate radial plane area of a ring at radius [i], correcting for central r=0.
+					Circumference = 2*np.pi*(i*(dr[l]/100))		#m
+					CellArea = Circumference*(dr[l]/100)		#m^2
+					if CellArea == 0:
+						CellArea = np.pi*(dr[l]/100)**2			#m^2
+					#endif  
+
+					#Calculate most probable neutral velocity based on temperature
+					MeanVelocity = np.sqrt( (2*1.38E-23*NeutGasTemp[i])/(NeutralMass) )  	#m/s
+
+					#If current cell is gas phase (Pressure > 0.0), calculate thrust
+					if Pressure[i] > 0.0:
+						#Calculate Neutral mass flow rate and integrate thrust via F = (dm/dt)Ve.
+						NeutralMassFlowRate = NeutralAxialFlux[i]*NeutralMass*CellArea	#Kg/s
+						NeutralExitVelocity = NeutralVelocity[i]						#m/s
+						NeutralThrust += NeutralMassFlowRate * NeutralExitVelocity 		#N
+						if NeutralExitVelocity > 0:
+							NeutralIsp.append(NeutralExitVelocity)
+						#endif
+					#endif
+				#endfor
+
+				#Add neutral thrust and Isp to arrays (dummy variables not calculated)
+				NeutralThrustlist.append( round(NeutralThrust*1000,5) )		#mN
+				Thrustlist.append( round( NeutralThrust*1000,5) )			#mN
+				NeutralIsp = (sum(NeutralIsp)/len(NeutralIsp))/9.81			#s
+				Thrust,ThrustIsp = NeutralThrust,NeutralIsp					#N,s
+				IonThrust,IonIsp = 1E-30,1E-30								#'Not Calculated'
+				DiffForce = 1E-30											#'Not Calculated'
+			#endif
+
+			#====================#
+
+			elif GlobThrustMethod == 'AxialMomentum':
+				#Technique assumes cylindrical geometry, cartesian geometry will be overestimated.
+				#Integrates ion/neutral momentum loss rate and differental pressure for concentric rings.
+				#Assumes pressure differential, ion/neutral flux equal for all angles at given radii.
+
+				#CellArea increases from central R=0.
+				#Ensure pressure index aligns with radial index for correct cell area.
+				#ONLY WORKS WHEN SYMMETRY OPTION IS ON, NEED A MORE ROBUST METHOD!
+				Pressure,PressureDown = Pressure[0:R_mesh[l]][::-1],PressureDown[0:R_mesh[l]][::-1]
+				NeutralVelocity = NeutralVelocity[0:R_mesh[l]][::-1]
+				NeutralAxialFlux = NeutralAxialFlux[0:R_mesh[l]][::-1]
+				IonVelocity = IonVelocity[0:R_mesh[l]][::-1]
+				IonAxialFlux = IonAxialFlux[0:R_mesh[l]][::-1]
+				#ONLY WORKS WHEN SYMMETRY OPTION IS ON, NEED A MORE ROBUST METHOD!
+
+				DiffForce,NeutralThrust,IonThrust = 0,0,0
+				for i in range(0,R_mesh[l]):
+					#Calculate radial plane area of a ring at radius [i], correcting for central r=0.
+					Circumference = 2*np.pi*(i*(dr[l]/100))		#m
+					CellArea = Circumference*(dr[l]/100)		#m^2
+					if CellArea == 0:
+						CellArea = np.pi*((dr[l]/100)**2)		#m^2
+					#endif
+
+					#Calculate differential pressure between ThrustLoc-(ThrustLoc+1)
+					if Pressure[i] > 0.0:
+						DiffPressure = (Pressure[i]-PRESOUT[l])*133.33			#N/m^2
+#						DiffPressure = (Pressure[i]-PressureDown[i])*133.33		#N/m^2
+						DiffForce += DiffPressure*CellArea						#N
+					else:
+						DiffForce += 0.0
+					#endif
+
+					#Calculate Neutral mass flow rate and integrate thrust via F = (dm/dt)Ve.
+					NeutralMassFlowRate = NeutralAxialFlux[i]*NeutralMass*CellArea	#Kg/s
+					NeutralExitVelocity = NeutralVelocity[i]						#m/s
+					NeutralThrust += NeutralMassFlowRate * NeutralExitVelocity 		#N
+					if NeutralExitVelocity > 0:
+						NeutralIsp.append(NeutralExitVelocity)
+					#endif
+
+					#Calculate Ion mass flow rate and integrate thrust via F = (dm/dt)Ve.
+					IonMassFlowRate = IonAxialFlux[i]*NeutralMass*CellArea	#Kg/s
+					IonExitVelocity = IonVelocity[i]*1000					#m/s
+					IonThrust += IonMassFlowRate * IonExitVelocity 			#N
+					if IonExitVelocity > 0: 
+						IonIsp.append(IonExitVelocity)
+					#endif
+				#endfor
+				if len(IonIsp) == 0: IonIsp.append(np.nan)
+				if len(NeutralIsp) == 0: NeutralIsp.append(np.nan)
+
+				#Add total thrust and calculate Isp of each component
+				Thrust = DiffForce + NeutralThrust + IonThrust				#N
+				NeutralFraction = NeutralThrust/(Thrust-DiffForce)			#Ignore dP/dz
+				IonFraction = IonThrust/(Thrust-DiffForce)					#Ignore dP/dz
+
+				IonIsp = (sum(IonIsp)/len(IonIsp))/9.81						#s
+				NeutralIsp = (sum(NeutralIsp)/len(NeutralIsp))/9.81			#s
+				ThrustIsp = NeutralFraction*NeutralIsp+IonFraction*IonIsp 	#s
+
+				NeutralThrustlist.append( round(NeutralThrust*1000,5) )		#mN
+				IonThrustlist.append( round(IonThrust*1000,5) )				#mN
+				Thrustlist.append( round(Thrust*1000,5) )					#mN
+				NeutralIsplist.append( round(NeutralIsp,5) )				#s
+				IonIsplist.append( round(IonIsp,5) )						#s
+				ThrustIsplist.append( round(ThrustIsp,5) )					#s
+			#endif
+
+			#====================#
+
+			#Display thrust to terminal if requested.
+			if print_thrust == True:
+				print(Dirlist[l], '@ Z=',round(ThrustLoc*dz[l],2),'cm')
+				print('NeutralThrust', round(NeutralThrust*1000,2), 'mN @ ', round(NeutralIsp,2),'s')
+				print('IonThrust:', round(IonThrust*1000,4), 'mN @ ', round(IonIsp,2),'s')
+				print('D-Pressure:', round(DiffForce*1000,4), 'mN')
+				print('Thrust:',round(Thrust*1000,4),'mN @ ', round(ThrustIsp,2),'s')
+				print('')
+			#endif
+		#endfor
+
+		#Write data to ASCII format datafile if requested.
+		if write_ASCII == True:
+			DirASCII = CreateNewFolder(DirTrends,'Trend_Data')
+			WriteDataToFile(Xaxis+['\n'], DirASCII+'Thrust_Trends','w')
+			WriteDataToFile(Thrustlist+['\n'], DirASCII+'Thrust_Trends','a')
+			WriteDataToFile(ThrustIsplist, DirASCII+'Thrust_Trends','a')
+		#endif
+
+		#=====#=====#
+
+		#Plot total thrust and ion/neutral components.
+		fig,ax1 = figure(image_aspectratio,1)
+		TrendPlotter(ax1,Thrustlist,Xaxis,Marker='ko-',NormFactor=0)
+		TrendPlotter(ax1,NeutralThrustlist,Xaxis,Marker='r^-',NormFactor=0)
+#		TrendPlotter(ax1,IonThrustlist,Xaxis,Marker='bs-',NormFactor=0)
+
+		#Apply image options and save figure.
+		Title='Thrust at Z='+str(round(ThrustLoc*dz[0],2))+'cm with varying '+TrendVariable+' \n'+Dirlist[l][2:-1]
+		Xlabel,Ylabel = 'Varied Property','Thrust F$_{T}$ [mN]'
+		ax1.legend(['Total Thrust','Neutral Component','Ion Component'], fontsize=18, frameon=False)
+		ImageOptions(fig,ax1,Xlabel,Ylabel,Title,Crop=False)
+
+		plt.savefig(DirTrends+'Thrust Trends'+ext)
+		plt.close('all')
+
+		#=====#=====#
+
+		#Plot Specific Impulse for total thrust and ion/neutral components.
+		fig,ax1 = figure(image_aspectratio,1)
+		TrendPlotter(ax1,ThrustIsplist,Xaxis,Marker='ko-',NormFactor=0)
+		TrendPlotter(ax1,NeutralIsplist,Xaxis,Marker='r^-',NormFactor=0)
+#		TrendPlotter(ax1,IonIsplist,Xaxis,Marker='bs-',NormFactor=0)
+
+		#Apply image options and save figure.
+		Title = 'Specific Impulse at Z='+str(round(ThrustLoc*dz[0],2))+'cm with varying '+TrendVariable+' \n'+Dirlist[l][2:-1]
+		Xlabel,Ylabel = 'Varied Property','Specific Impulse I$_{sp}$ [s]'
+		ax1.legend(['Total I$_{sp}$','Neutral Component','Ion Component'], fontsize=18, frameon=False)
+		ImageOptions(fig,ax1,Xlabel,Ylabel,Title,Crop=False)
+
+		plt.savefig(DirTrends+'Isp Trends'+ext)
+		plt.close('all')
+	#endif
+#endif
+
+
+
+#====================================================================#
+			 		#PHASE-AVERAGED SHEATH TRENDS#
+#====================================================================#
+
+if savefig_trendphaseaveraged == True or print_sheath == True:
+#NB: 	This diagnostic is very out of date, particularily the SheathROI treatment...
+#		Could be easily worked into the savefig_temporaltrends diagnostic or simply re-written
+#		Might be worth considering an overhaul... but it works for now.
+
+	#Create Trend folder to keep output plots.
+	TrendVariable = list(filter(lambda x: x.isalpha(), FolderNameTrimmer(Dirlist[0])))	#List of discrete chars
+	TrendVariable = ''.join(TrendVariable)												#Single string of chars
+	DirTrends = CreateNewFolder(os.getcwd()+'/',TrendVariable+' Trends')
+
+	#Initialize any required lists.
+	Xaxis,SxLocExtent,SxMaxExtent = list(),list(),list()	
+
+	#Obtain SheathROI and SourceWidth automatically if none are supplied.
+	if len(SheathROI) != 2:
+		#image_radialcrop Convert to Cells 
+		#image_axialcrop Convert to Cells
+		#Use axialcrop or radialcrop to set automatic ROI!
+		Start,End = 34,72				#AUTOMATIC ROUTINE REQUIRED#
+		SheathROI = [Start,End]			#AUTOMATIC ROUTINE REQUIRED#
+	#endif
+	if len(SourceWidth) == 0:
+		#Take Variable that is zero in metals (Density?)
+		#Take Axial/Radial slice depending on sheath direction.
+		#Find Cell distance from zero to 'wall' at electrodeloc.
+		#Convert to SI [cm], set to automatic width.
+		SourceWidth = [0.21]			#AUTOMATIC ROUTINE REQUIRED#
+	#endif
+
+	SxMeanExtent,SxMeanExtentArray = list(),list()
+	#For all selected simulations, obtain Xaxis, sheath value and save to array.
+	for l in range(0,numfolders):
+		Xaxis.append( FolderNameTrimmer(Dirlist[l]) )
+
+		#Obtain sheath thickness array for current folder 
+		Sx = SheathExtent(folder=l)[0]
+
+		#Calculate mean sheath extent across ROI. On failure provide null point for sheath thickness.
+		try:
+			SxMeanExtentArray = list()
+			for i in range(SheathROI[0],SheathROI[1]):	SxMeanExtentArray.append(Sx[i])
+			SxMeanExtent.append(sum(SxMeanExtentArray)/len(SxMeanExtentArray))
+		except:
+			SxMeanExtent.append( np.nan )
+		#endtry
+
+		#Extract maximum sheath thickness from within region of interest
+		try: SxMaxExtent.append( ((SourceWidth[0]*dr[l])-max(Sx[SheathROI[0]:SheathROI[1]]))*10 )
+		except: SxMaxExtent.append( np.nan )
+
+		#Extract sheath width adjacent to powered electrode
+		#loc = electrodeloc[0]		#Radial
+		loc = electrodeloc[1] 		#Axial
+		try: SxLocExtent.append( ((SourceWidth[0]*dr[l])-Sx[loc])*10 )
+		except:	SxLocExtent.append( np.nan )
+	#endfor
+
+	#===============================#
+
+	#Write trend data to ASCII format datafile if requested.
+	if write_ASCII == True:
+		DirASCII = CreateNewFolder(DirTrends,'Trend_Data')
+		WriteDataToFile(Xaxis, DirASCII+'Sx-Avg_Trends','w')
+		WriteDataToFile('\n', DirASCII+'Sx-Avg_Trends','w')
+		WriteDataToFile(SxMaxExtent, DirASCII+'Sx-Avg_Trends','a')
+	#endif
+
+	#Generate figure and plot trends.	
+	fig,ax = figure(image_aspectratio,1)
+	TrendPlotter(ax,SxMaxExtent,Xaxis,NormFactor=0)
+
+	#Apply image options and axis labels.
+	Title = 'Maximum Sheath Extension With Varying '+TrendVariable+' \n'+Dirlist[l][2:-1]
+	Xlabel,Ylabel = 'Varied Property','Sheath Extension [mm]'
+	ImageOptions(fig,ax,Xlabel,Ylabel,Title,Legend=[],Crop=False)
+
+	plt.savefig(DirTrends+'Sheath Extension (Phase-Averaged)'+ext)
+	plt.close('all')
+#endif
+
+
+
+#====================================================================#
+				  		#KNUDSEN NUMBER ANALYSIS#
+#====================================================================#
+
+#Only perform on bulk fluid dynamics relevent species.
+if bool(set(FluidSpecies).intersection(Variables)) == True:
+	if savefig_trendphaseaveraged == True or print_Knudsennumber == True:
+
+		#Create Trend folder to keep output plots.
+		TrendVariable = list(filter(lambda x: x.isalpha(), FolderNameTrimmer(Dirlist[0])))	#List of discrete chars
+		TrendVariable = ''.join(TrendVariable)												#Single string of chars
+		DirTrends = CreateNewFolder(os.getcwd()+'/',TrendVariable+' Trends')
+
+		#Initiate lists required for storing data.
+		KnudsenAverage,Xaxis = list(),list()
+
+		#For all folders - calculate Knudsen number for each cell of TECPLOT2D data
+		for l in range(0,numfolders):
+
+			#Using effective radius of argon in this calculation.
+			Dimentionality = 2*(Radius[l]/100)		#[m]
+			CrossSection = np.pi*((7.1E-11)**2)		#[m^2]
+
+			#Extract data for the neutral flux and neutral velocity.
+			processlist,Variablelist = VariableEnumerator(FluidSpecies,rawdata_2D[l],header_2Dlist[l])
+
+			#Update X-axis with folder information.
+			Xaxis.append( FolderNameTrimmer(Dirlist[l]) )
+
+			#Create empty image array based on mesh size and symmetry options.
+			numrows = len(Data[l][0])/R_mesh[l]
+			Image = np.zeros([Z_mesh[l],R_mesh[l]])
+
+			#Produce Knudsen number 2D image using density image.
+			for j in range(0,Z_mesh[l]):
+				for i in range(0,R_mesh[l]):
+					Start = R_mesh[l]*j
+					Row = Z_mesh[l]-1-j
+
+					LocalDensity = (Data[l][processlist[0]][Start+i])*1E6					#[m-3]
+					try:
+						KnudsenNumber = (1/(LocalDensity*CrossSection*Dimentionality))		#[-]
+					except:
+						KnudsenNumber = 0													#[-]
+					#endtry
+					Image[Row,i] = KnudsenNumber
+				#endfor
+			#endfor
+
+			#Display average Knudsen number to terminal if requested.
+			KnudsenAverage.append( sum(Image)/(len(Image[0])*len(Image)) )
+			if print_Knudsennumber == True:
+				print(Dirlist[l])
+				print('Average Knudsen Number:', KnudsenAverage[l])
+			#endif
+
+			#Create new folder to keep 2D output plots.
+			Dir2Dplots = CreateNewFolder(Dirlist[l],'2Dplots')
+			#Write image data to ASCII format datafile if requested.
+			if write_ASCII == True:
+				DirASCII = CreateNewFolder(Dir2Dplots,'2Dplots_Data')
+				WriteDataToFile(Image, DirASCII+'Kn','w')
+			#endif
+
+			#Label and save the 2D Plots.
+			extent,aspectratio = DataExtent(l)
+			fig,ax,im,Image = ImagePlotter2D(Image,extent,aspectratio)
+			#Add sheath thickness to figure if requested.
+			Sx = SheathExtent(folder=l,ax=ax)[0]
+
+			#Image plotting details, invert Y-axis to fit 1D profiles.
+			Title = 'Knudsen Number Image for \n'+Dirlist[l][2:-1]
+			Xlabel,Ylabel = 'Radial Distance R [cm]','Axial Distance Z [cm]'
+			cax = Colourbar(ax,'Knudsen Number $K_{n}$',5,Lim=CbarMinMax(Image))
+			ImageOptions(fig,ax,Xlabel,Ylabel,Title)
+
+			#Save Figure
+			plt.savefig(Dir2Dplots+'2DPlot Kn'+ext)
+			plt.close('all')
+		#endfor
+
+
+		#Write trend data to ASCII format datafile if requested.
+		if write_ASCII == True:
+			DirASCII = CreateNewFolder(DirTrends,'Trend_Data')
+			WriteDataToFile(Xaxis, DirASCII+'Kn_Trends','w')
+			WriteDataToFile('\n', DirASCII+'Kn_Trends','w')
+			WriteDataToFile(KnudsenAverage, DirASCII+'Kn_Trends','a')
+		#endif
+
+		#Plot a comparison of all average Knudsen numbers.
+		fig,ax = figure(image_aspectratio,1)
+		TrendPlotter(ax,KnudsenAverage,Xaxis,NormFactor=0)
+
+		#Image plotting details.
+		Title = 'Average Knudsen Number with Varying '+TrendVariable+' \n'+Dirlist[l][2:-1]
+		Xlabel,Ylabel = 'Varied Property','Average Knudsen Number $K_{n}$'
+		ImageOptions(fig,ax,Xlabel,Ylabel,Title,Crop=False)
+
+		#Save figure.
+		plt.savefig(DirTrends+'KnudsenNumber_Comparison'+ext)
+		plt.close('all')
+	#endif
+#endif
+
+
+
+#====================================================================#
+				#REYNOLDS NUMBER / SOUND SPEED ANALYSIS#
+#====================================================================#
+
+#Only perform on bulk fluid dynamics relevent species.
+if bool(set(FluidSpecies).intersection(Variables)) == True:
+	if savefig_trendphaseaveraged == True or print_reynolds == True:
+
+		#Create Trend folder to keep output plots.
+		TrendVariable = list(filter(lambda x: x.isalpha(), FolderNameTrimmer(Dirlist[0])))	#List of discrete chars
+		TrendVariable = ''.join(TrendVariable)												#Single string of chars
+		DirTrends = CreateNewFolder(os.getcwd()+'/',TrendVariable+' Trends')
+
+		#Initiate lists required for storing data.
+		AverageSoundSpeed,Xaxis = list(),list()
+		NeutralDensities = list()
+
+		#For all folders.
+		for l in range(0,numfolders):
+
+			#Extract spatially resolved pressure and neutral densities.
+			processlist,variablelist = VariableEnumerator(['PRESSURE'],rawdata_2D[l],header_2Dlist[l])
+			Pressure = ImageExtractor2D(Data[l][processlist[0]],variablelist[0])
+			
+			#If only single neutral species - extract that density
+			processlist,Variablelist = VariableEnumerator(FluidSpecies,rawdata_2D[l],header_2Dlist[l])
+			if len(processlist) == 1: 
+				NeutralDensity = ImageExtractor2D(Data[l][processlist[0]],variablelist[0])
+			#If there are multiple neutral species, combine them to get total neutral density
+			elif len(processlist) > 1:
+				for i in range(0,len(processlist)):
+					NeutralDensities.append( ImageExtractor2D(Data[l][processlist[i]],variablelist[i]) )
+				#endfor
+
+				#Create empty neutral density array based on mesh size and symmetry options.
+				numrows = len(Data[l][0])/R_mesh[l]
+				NeutralDensity = np.zeros([Z_mesh[l],R_mesh[l]])
+
+				#Combine all neutral densities to get total neutral density - if required.
+				for i in range(0,len(NeutralDensities)):
+					for j in range(0,len(NeutralDensities[i])):
+						for k in range(0,len(NeutralDensities[i][j])):
+							NeutralDensity[j][k] += NeutralDensities[i][j][k]
+						#endfor
+					#endfor
+				#endfor
+			#endif
+
+			#Update X-axis with folder information.
+			Xaxis.append( FolderNameTrimmer(Dirlist[l]) )
+
+			#Calculate 2D sound speed image using neutral density and pressure
+			Image = CalcSoundSpeed(NeutralDensity,Pressure,Dimension='2D')
+
+			#Display mesh-averaged sound speed to terminal if requested.
+			AverageSoundSpeed.append( sum(Image)/(len(Image[0])*len(Image)) )
+			if print_reynolds == True:
+				print(Dirlist[l])
+				print('Average Sound Speed:', AverageSoundSpeed[l])
+			#endif
+
+			#Create new folder to keep 2D output plots.
+			Dir2Dplots = CreateNewFolder(Dirlist[l],'2Dplots')
+			#Write image data to ASCII format datafile if requested.
+			if write_ASCII == True:
+				DirASCII = CreateNewFolder(Dir2Dplots,'2Dplots_Data')
+				WriteDataToFile(Image, DirASCII+'Cs','w')
+			#endif
+
+			#Label and save the 2D Plots.
+			extent,aspectratio = DataExtent(l)
+			fig,ax,im,Image = ImagePlotter2D(Image,extent,aspectratio)
+			#Add sheath thickness to figure if requested.
+			Sx = SheathExtent(folder=l,ax=ax)[0]
+
+			#Image plotting details, invert Y-axis to fit 1D profiles.
+			#ERROR WITH IMAGE LIMIT - LIKELY DUE TO NANS - #Lim=CbarMinMax(Image)
+			Title = 'Sound Speed Image for \n'+Dirlist[l][2:-1]
+			Xlabel,Ylabel = 'Radial Distance R [cm]','Axial Distance Z [cm]'
+			cax = Colourbar(ax,'Sound Speed $C_{s}$ [m/s]',5,Lim=[]) 
+			ImageOptions(fig,ax,Xlabel,Ylabel,Title)
+
+			#Save Figure
+			plt.savefig(Dir2Dplots+'2DPlot Cs'+ext)
+			plt.close('all')
+		#endfor
+		
+
+		#Write trend data to ASCII format datafile if requested.
+		if write_ASCII == True:
+			DirASCII = CreateNewFolder(DirTrends,'Trend_Data')
+			WriteDataToFile(Xaxis, DirASCII+'Cs_Trends','w')
+			WriteDataToFile('\n', DirASCII+'Cs_Trends','w')
+			WriteDataToFile(AverageSoundSpeed, DirASCII+'Cs_Trends','a')
+		#endif
+
+		#Plot a comparison of all average Knudsen numbers.
+		fig,ax = figure(image_aspectratio,1)
+		TrendPlotter(ax,AverageSoundSpeed,Xaxis,NormFactor=0)
+
+		#Image plotting details.
+		Title = 'Average Sound Speed with Varying '+TrendVariable+' \n'+Dirlist[l][2:-1]
+		Xlabel,Ylabel = 'Varied Property','Average Sound Speed'
+		ImageOptions(fig,ax,Xlabel,Ylabel,Title,Crop=False)
+
+		#Save figure.
+		plt.savefig(DirTrends+'SoundSpeed_Comparison'+ext)
+		plt.close('all')
+	#endif
+#endif
+
+#===============================#
+#===============================#
+
+if any([savefig_trendphaseaveraged, print_generaltrends, print_Knudsennumber, print_reynolds, print_totalpower, print_DCbias, print_thrust, print_sheath]) == True:
+	print('---------------------------')
+	print('# Trend Processing Complete')
+	print('---------------------------')
+#endif
+
+#=====================================================================#
+#=====================================================================#
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#====================================================================#
+				#PHASE RESOLVED DIAGNOSTICS (REQ MOVIE1)#
+#====================================================================#
+
+#====================================================================#
+						#1D PHASE RESOLVED MOVIES#
+#====================================================================#
 
 #Plot Phase-Resolved profiles with electrode voltage and requested variables.
 if savefig_phaseresolve1D == True:
@@ -6087,10 +6109,11 @@ if savefig_phaseresolve1D == True:
 
 
 
-##====================================================================#
-#					#2D PHASE RESOLVED MOVIES#
-##====================================================================#
-#
+
+#====================================================================#
+					#2D PHASE RESOLVED MOVIES#
+#====================================================================#
+
 #Plot 2D images over all saved phase cycles with included wavevform guide.
 if savefig_phaseresolve2D == True:
 
