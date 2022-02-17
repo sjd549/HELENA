@@ -245,9 +245,11 @@ savefig_phaseresolve2D = False			#2D Phase Resolved Images
 savefig_sheathdynamics = False			#1D and 2D sheath dynamics images
 savefig_PROES =	False					#Simulated PROES Diagnostic
 
-savefig_IEDFangular = False				#2D images of angular IEDF; single folders		autoprofconv needs fixed
-savefig_IEDFtrends = False				#1D IEDF trends; all folders					autoprofconv needs fixed
+savefig_IEDFangular = False				#2D images of angular IEDF; single folders
+savefig_IEDFtrends = False				#1D IEDF trends; all folders
 savefig_EEDF = False					#NO PLOTTING ROUTINE							#IN DEVELOPMENT#
+#[pcmc.prof,title,1,1,1]+[pcmcmat+pcmcmat*pcmcspecies]+[1] for manual usage.
+
 
 #Write processed data to ASCII files.
 write_ASCII = True						#All diagnostic output written to ASCII.
@@ -299,19 +301,24 @@ cbaroverride = ['NotImplimented']
 
 
 
-#V3.2.0 Release Version To Do list:
-#Fix sound speed diagnostic - Current version has issue with NaNs and incorrect averaging
+#####TODO#####
+
+### V3.2.0 Release Version ###
+#Namelist read-in functions to simplify error analysis. (deal with !!! in .nam)
+#Variable Interpolator needs to work with phasedata - Take variables from batch?
+#Correct any data 'direction' within readin functions, not within diagnostics.
 
 #Add 'TrendLocation' option to savefig_temporal, where the meshavg is the default but if there are any supplied TrendLocation cells then those get saved into their own seperate folder.
 
-#Multivar_profiles diagnostic overhaul - update coding structure and include an ASCII output option
-
-#Corrected 1DPhaseMovie, 2DPhaseMovie and PROES, however the radial direction is not consistent. 
-#1DPhaseMovie needs no reversal using plotradialprofile
-#2PhaseMovie needs no reversal using ImageExtractor2D
-#PROES requires a reversal using plotradialprofile
+#Confirm 2DPhaseMovie and PROES radial direction is consistent when rotating:
+	#1DPhaseMovie needs no reversal using plotradialprofile
+	#2PhaseMovie needs no reversal using ImageExtractor2D
+	#PROES requires a reversal using plotradialprofile
 #Refactor PROES into 3D array (R,Z,Phase) and perform slice/integration rather than calling plotradial?
 
+#Fix issue with ffmpeg "convert-im6.q16: DistributedPixelCache" and address the ignorance of os.system.
+
+#Remove/simplify the phase-averaged sheath diagnostic?
 #Sheathwidth function integrates axially or radially depending on mesh geometry.
 #Sheathwidth function has 1D (Scott) and 2D (Greg) capabilities
 #SheathWidth function can deal with image rotations.
@@ -319,47 +326,35 @@ cbaroverride = ['NotImplimented']
 #Thrust diagnostic split into functions performing the same task as before.
 #Thrust diagnostic enforces image symmetry, correcting the half-thrust error.
 
-#Automate AutoConvProfData() and provide a timeout setting. 
-#Automate IEDFVarArgs input for varying PCMC settings.
-
 #IEDF diagnostic capable of comparing between different material surfaces in single image
 #IEDF diagnostic saves different material surfaces in different folders
+#Add EEDF section and functionalise.
 
-#Variable Interpolator needs to work with phasedata - Take variables from batch?
+#Multivar_profiles diagnostic overhaul - update coding structure and include an ASCII output option
 
-#Fix issue with ffmpeg "convert-im6.q16: DistributedPixelCache" and address the ignorance of os.system.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-#####TODO#####
-
-#For Future:
-#include 'garbage ./collection' at the end of each diagnostic.
-#Correct data 'direction' in readin functions, not diagnostics.
-#Include Andor, OO and LeCroy readin functions.
-#Namelist read-in functions to simplify error analysis. (deal with !!! in .nam)
+#Fix sound speed diagnostic - Current version has issue with NaNs and incorrect averaging
 
 #Impliment image_numericaxis, try float(FolderNameTrimmer) as axis.
 #Impliment numerical image_rotate, allow for 000,090,180,270.
-#Functionalise PROES images, 3D PROES cube model?
-#Remove/simplify the phase-averaged sheath diagnostic?
-#Add EEDF section and Functionalise.
 
+
+### For Future ###
+#include 'garbage ./collection' at the end of each diagnostic.
 #Clean up unused functions and ensure homogeneity.
+#Split into modules: HELENAIO, HELENADIAGNOSTIC, HELENAPLOTTING
 #Update README, include all diagnostics and examples.
 #Create developer handbook describing functions.
-#Python 3.x compatable.
+
+#Include Andor, OceanOptics, and LeCroy readin functions.
+
+
+
+
+
+
+
+
+
 
 
 
@@ -455,7 +450,7 @@ print( '   |  |__|  | |  |__   |  |     |  |__   |   \|  |   /  ^  \        ')
 print( '   |   __   | |   __|  |  |     |   __|  |  . `  |  /  /_\  \       ')
 print( '   |  |  |  | |  |____ |  `----.|  |____ |  |\   | /  _____  \      ')
 print( '   |__|  |__| |_______||_______||_______||__| \__|/__/     \__\     ')
-print( '                                                              v3.1.2')
+print( '                                                              v3.1.4')
 print( '--------------------------------------------------------------------')
 print( '')
 print( 'The following diagnostics were requested:')
@@ -725,8 +720,21 @@ for l in range(0,numfolders):
 		
 	#=====#=====#
 
+
+
+
 	#Plasma Chemistry Monte-Carlo (PCMC) Namelist Inputs
 	try:
+		IMATSTATS = list(filter(lambda x:'IMATSTATS' in x,NamelistData))[0].strip(' \t\n\r,=IMATSTATS')
+		IMATSTATS = int(IMATSTATS)
+		CMATSTATS = list(filter(lambda x: 'CMATSTATS=' in x, NamelistData))[0].strip(' \t\n\r,')
+		CMATSTATS = CMATSTATS.split('=')[1].split(',')[0:IMATSTATS]
+		##
+		IPCMCSPEC = list(filter(lambda x:'IPCMCSPEC' in x,NamelistData))[0].strip(' \t\n\r,=IPCMCSPEC')
+		IPCMCSPEC = int(IPCMCSPEC)+1		#Add 1 to account for ION-TOT
+		CPCMCSPEC = list(filter(lambda x: 'CPCMCSPEC=' in x, NamelistData))[0].strip(' \t\n\r,')
+		CPCMCSPEC = CPCMCSPEC.split('=')[1].split(',')[0:IPCMCSPEC]
+		##
 		IEBINSPCMC = list(filter(lambda x: 'IEBINSPCMC=' in x, NamelistData))[0]
 		IEBINSPCMC = float(IEBINSPCMC.split()[0].strip(' \t\n\r,=IEBINSPCMC'))
 		EMAXIPCMC = list(filter(lambda x: 'EMAXIPCMC=' in x, NamelistData))[0]
@@ -1179,18 +1187,41 @@ def MakeMovie(FolderDir,Output):
 #Runs requested dataconversion script with pre-defined arguments.
 #Takes name of convert script, any predefined arguments and newly created files.
 #Returns nothing, runs script in each folder, expects to run over all folders.
-def AutoConvProfData(Convertexe,args=[],DirAdditions=[]):
+# *** TECPLOT FILE IS "NPROFILE_TEC2D.PDT" FOR NEUTRAL PROFILE DATA. ***
+# *** TECPLOT FILE IS "IPROFILE_TEC2D.PDT FOR ION PROFILE DATA. ***
+def AutoConvProf(ConvProfexe,args=[],DirAdditions=[]):
 	HomeDir = os.getcwd()
 	os.chdir(Dirlist[l])
 
-	#[pcmc.prof, title, 1, 1, 1] are basic requirements
-	#Then add (surface*pcmc_species) number of '1's after that
-	#Not sure about the final - flux(energy), flux(angle) integration, maybe zero?
-	args = ['pcmc.prof', 'title', '1', '1', '1']+['1', '1', '1', '1', '1', '1', '1']
-#	print(args)					# UPDATE FEED ARGS IN NAM.READIN AND REMOVE THE ABOVE LINE ONCE FIXED.
-	args=[]						# <<<< UNCOMMENT THIS TO ALLOW MANUAL ENTRY OF NUMBERS
+	#ENTER FILE NAME FOR RAW PLOTTING DATA (simulation pcmc output file, default pcmc.prof)
+	pcmcprof = 'pcmc.prof'
+	#ENTER TITLE FOR DATA TO BE USED BY TECPLOT (TITLE MUST BE <= 20 CHARACTERS)
+	TECPlotTitle = 'title'
+	#ENTER 1 TO "APPROVE" WRITING VARIABLES 0 NOT TO "APPROVE"
+	WriteVars = '1'
+	#Should angular statistics be normalized to f(theta)/solid-angle? (default is f(theta) x d(omega))
+	NormaliseAngularStatistics = '1'
+	#Should profiles be averaged across 0 degrees?
+	AverageAcross0Degrees = '1'
+	#[pcmc.prof, title, write, normalise, average] are basic requirements
+	InitArgs = [pcmcprof,TECPlotTitle,WriteVars,NormaliseAngularStatistics,AverageAcross0Degrees]
+	
+	# Write data for each CPCMCSPEC species, for each CMATSTATS material
+	# Asks for material first, then for each species seperately, total = IPCMCSPEC + IMATSTATS*IPCMCSPEC
+	# EXAMPLE TEXT: SHOULD DATA FOR POSITION  0.25 CM, MATERIAL 5 BE WRITTEN? (1 OR 0)
+	SpecArgs = np.ones(IMATSTATS*IPCMCSPEC+IPCMCSPEC, dtype=str).tolist()
 
-	print(os.linesep.join(args))
+	# Should flux(energy) be integrated for angle and flux(angle) be integrated for energy
+	IntegrateFluxEnergy = '1'
+	IntegrateArgs = [IntegrateFluxEnergy]
+
+	#Concat all pcmc.prof args into a single list of strings
+	args = InitArgs+SpecArgs+IntegrateArgs
+#	args = [] 						# <<< UNCOMMENT FOR MANUAL ENTRY OF VALUES.
+#	print(args)						# UPDATE FEED ARGS IN NAM.READIN AND REMOVE THE ABOVE LINE ONCE FIXED.	
+#	print(os.linesep.join(args))	# PRINTS EACH ITEM IN LIST ON SEPERATE LINE
+
+	#=====#=====#
 
 	#Remove old files to avoid any overwrite errors.
 	for i in range(0,len(DirAdditions)): os.system('rm -f '+DirAdditions[i])
@@ -1200,13 +1231,20 @@ def AutoConvProfData(Convertexe,args=[],DirAdditions=[]):
 	#Use predefined arguments if supplied, suppresses output to devnull.
 	if len(args) > 0:
 		with open(os.devnull, 'w') as fp:
-			subprocess = Popen(Convertexe, stdin=PIPE, stdout=fp) #noshell=True
-			subprocess.communicate(os.linesep.join(args))
+			try:
+				subprocess = Popen(ConvProfexe, stdin=PIPE, stdout=fp, encoding='utf8') #noshell=True
+				subprocess.communicate(os.linesep.join(args), timeout=15)				#15 second timeout
+			except:
+				print('')
+				print('### Timeout while using conv_prof.exe   ###')
+				print('### Check "args" length in AutoConvProf ###')
+				print('')
+				exit()
 		#endwith
 
 	#If no arguments are supplied, run script and allow user inputs.
 	elif len(args) == 0:
-		os.system(Convertexe)
+		os.system(ConvProfexe)
 	#endif
 
 	#Update Dir with new filenames, must be supplied manually for now.
@@ -2110,9 +2148,9 @@ for l in tqdm(range(0,numfolders)):
 		ExtraArgs = ['1','1','1','1','1','1','1','1','1','1']#[]	#Hack For Additional Species
 		Args = ['pcmc.prof','title','1','1','1'] + IEDFVarArgs + ExtraArgs + ['0','0']
 		DirAdditions = ['iprofile_tec2d.pdt','nprofile_tec2d.pdt','iprofile_tec1d.pdt', 'nprofile_tec1d.pdt','iprofile_zones_tec1d.pdt','nprofile_zones_tec1d.pdt']
-		#try: AutoConvProfData('./conv_prof.exe',Args,DirAdditions)
+		#try: AutoConvProf('./conv_prof.exe',Args,DirAdditions)
 		#except: print('ConvProf Failure:'+Dirlist[l])
-		AutoConvProfData('./conv_prof.exe',Args,DirAdditions)
+		AutoConvProf('./conv_prof.exe',Args,DirAdditions)
 
 		#Load data from IEDFprofile file and unpack into 1D array.
 		rawdata, nn_IEDF = ExtractRawData(Dir,'iprofile_tec2d.pdt',l)
