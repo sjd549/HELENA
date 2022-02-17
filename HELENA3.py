@@ -273,7 +273,7 @@ image_axialcrop = [1.0,4.0]				#[Z1,Z2] in cm
 image_cbarlimit = []					#[min,max] colourbar limits	
 
 image_plotsymmetry = True				#Toggle radial symmetry
-image_numericaxis = False				#### NOT IMPLIMENTED ####
+image_numericaxis = False				#### NOT implementED ####
 image_contourplot = True				#Toggle contour Lines in images
 image_1Doverlay = False					#Overlay location(s) of radialineouts/heightlineouts
 image_plotgrid = False					#Plot major/minor gridlines on profiles
@@ -290,7 +290,7 @@ legendoverride = []
 xaxisoverride = []
 xlabeloverride = []
 ylabeloverride = []
-cbaroverride = ['NotImplimented']
+cbaroverride = ['Notimplemented']
 
 
 
@@ -308,8 +308,6 @@ cbaroverride = ['NotImplimented']
 #Variable Interpolator needs to work with phasedata - Take variables from batch?
 #Correct any data 'direction' within readin functions, not within diagnostics.
 
-#Add 'TrendLocation' option to savefig_temporal, where the meshavg is the default but if there are any supplied TrendLocation cells then those get saved into their own seperate folder.
-
 #Confirm 2DPhaseMovie and PROES radial direction is consistent when rotating:
 	#1DPhaseMovie needs no reversal using plotradialprofile
 	#2PhaseMovie needs no reversal using ImageExtractor2D
@@ -323,19 +321,29 @@ cbaroverride = ['NotImplimented']
 #Sheathwidth function has 1D (Scott) and 2D (Greg) capabilities
 #SheathWidth function can deal with image rotations.
 
-#Thrust diagnostic split into functions performing the same task as before.
-#Thrust diagnostic enforces image symmetry, correcting the half-thrust error.
-
 #IEDF diagnostic capable of comparing between different material surfaces in single image
 #IEDF diagnostic saves different material surfaces in different folders
 #Add EEDF section and functionalise.
 
+#Thrust diagnostic split into functions performing the same task as before.
+#Thrust diagnostic enforces image symmetry, correcting the half-thrust error.
+
 #Multivar_profiles diagnostic overhaul - update coding structure and include an ASCII output option
 
-#Fix sound speed diagnostic - Current version has issue with NaNs and incorrect averaging
+#Add 'TrendLocation' option to savefig_temporal, where the meshavg is the default but if there are any supplied TrendLocation cells then those get saved into their own seperate folder.
 
-#Impliment image_numericaxis, try float(FolderNameTrimmer) as axis.
-#Impliment numerical image_rotate, allow for 000,090,180,270.
+#Fix Rynolds diagnostic - Current version has issue with NaNs and incorrect averaging
+#implement Rynolds number properly (was converted from sound speed diagnostic)
+#implement magnetic Rynolds number as well if possible
+
+#implement image_numericaxis, try float(FolderNameTrimmer) as axis.
+#implement numerical image_rotate, allow for 000,090,180,270.
+
+#implement tests for key I/O functions
+#Implement tests for key mathematical/diagnostic functions (dc self-bias/thrust/soundspeed/knudsen/etc...)
+#Implement tests for each diagnostic 
+	#AND/OR include a tiny parallel plate folder in github with output figures for comparison
+
 
 
 ### For Future ###
@@ -387,14 +395,19 @@ dr = list()						#Radial mesh resolution [cm/cell] in folder order in Dirlist
 dz = list()						#Axial mesh resolution [cm/cell] in folder order in Dirlist
 
 #Lists for icp.nam variables
-VRFM,VRFM2 = list(),list()
+VRFM,VRFM2   = list(),list()
 FREQM,FREQM2 = list(),list()
 FREQC        = list()
-FREQGLOB,IRFPOW = list(),list()
-FREQMAX,FREQMIN = list(),list()
+FREQMAX,FREQMIN  = list(),list()
+FREQGLOB,FREQALL = list(),list()
+IRFPOW = list()
 PRESOUT = list()
-IETRODEM = list()
 IMOVIE_FRAMES = list()
+NUMMETALS=0, CMETALS,IETRODEM = list(),list()
+NUMCOILS=0, CCOILS = list()
+IMATSTATS=0, CMATSTATS = list()
+IPCMCSPEC=0, CPCMCSPEC = list()
+IEBINSPCMC=0,EMAXIPCMC=0
 
 #Lists for icp.dat variables
 header_icpdat = list()			#[SpeciesName, Charge, MolecularWeight, StickingCoeff,
@@ -2779,7 +2792,7 @@ def ImageOptions(fig,ax=plt.gca(),Xlabel='',Ylabel='',Title='',Legend=[],Crop=Tr
 
 	#Plot mesh outline if requested.	### HACKY ###
 	if image_plotmesh == True:
-		mesh_auto_plot = 1 #AUTO PLOT MESH NOT IMPLIMENTED!! REQUIRES initmesh.out READER#
+		mesh_auto_plot = 1 #AUTO PLOT MESH NOT implementED!! REQUIRES initmesh.out READER#
 	elif image_plotmesh == 'PRCCP' and Crop == True:	
 		ManualPRCCPMesh(ax)
 	elif image_plotmesh == 'PRMCCP' and Crop == True:	
