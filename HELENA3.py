@@ -403,11 +403,11 @@ FREQGLOB,FREQALL = list(),list()
 IRFPOW = list()
 PRESOUT = list()
 IMOVIE_FRAMES = list()
-NUMMETALS=0, CMETALS,IETRODEM = list(),list()
-NUMCOILS=0, CCOILS = list()
-IMATSTATS=0, CMATSTATS = list()
-IPCMCSPEC=0, CPCMCSPEC = list()
-IEBINSPCMC=0,EMAXIPCMC=0
+NUMMETALS=0; CMETALS,IETRODEM = list(),list()
+NUMCOILS=0; CCOILS = list()
+IMATSTATS=0; CMATSTATS = list()
+IPCMCSPEC=0; CPCMCSPEC = list()
+IEBINSPCMC=0; EMAXIPCMC=0
 
 #Lists for icp.dat variables
 header_icpdat = list()			#[SpeciesName, Charge, MolecularWeight, StickingCoeff,
