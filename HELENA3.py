@@ -229,7 +229,7 @@ EDF_Threshold = 0.01					#Maximum Recognised EEDF/IEDF energy fraction (Plot all
 
 
 #Requested diagnostics and plotting routines.
-savefig_convergence = False				#Single-Variables: iter-time axis			Requires movie_icp.pdt
+savefig_convergence = True				#Single-Variables: iter-time axis			Requires movie_icp.pdt
 savefig_plot2D = False					#Single-Variables: converged				Requires TECPLOT2D.PDT
 
 savefig_monoprofiles = False			#Single-Variables; fixed height/radius
@@ -301,13 +301,6 @@ cbaroverride = ['Notimplemented']
 
 
 #####TODO#####
-
-
-
-#CHECK FOR COMMENTS WHEN READING IN icp.nam VARIABLES
-#THIS IS PARTICULARILY IMPORTANT FOR THE FREQALL LISTS
-
-
 
 ### V3.2.0 Release Version ###
 #Namelist read-in functions to simplify error analysis. (deal with !!! in .nam)
@@ -2299,61 +2292,6 @@ for l in tqdm(range(0,numfolders)):
             
 #		print('final', IterMovieData, len(IterMovieData), len(IterMovieData[0]), len(IterMovieData[0][0]), len(IterMovieData[0][0][0]),type(IterMovieData))        
 	#endif
-
-
-
-#===================##===================#
-#===================##===================#
-
-	Batch=False
-	if True in [savefig_phaseresolve2D,savefig_phaseresolve1D,savefig_PROES] and Batch==True:
-
-		#Load data from movie_icp file and unpack into 1D array.
-		rawdata,nn_phasemovie = ExtractRawData(Dir,'movie1.pdt',l)
-		rawdata_phasemovie.append(rawdata)
-
-		#Read through all variables for each file and stop when list ends. 
-		#Movie1 has geometry at top, therefore len(header) != len(variables).
-		#Only the first encountered geometry is used to define variable zone.
-		VariableEndMarker,HeaderEndMarker = 'GEOMETRY','ZONE'
-		variablelist,numvar = list(),0
-		for i in range(2,nn_phasemovie):
-			if HeaderEndMarker in str(rawdata_phasemovie[l][i]): 
-				header_phase = i+2		# +2 to skip to data row.
-				break
-			if VariableEndMarker in str(rawdata_phasemovie[l][i]) and numvar == 0:
-				numvar = (i-3)	# -3 to not include R,Z and remove overflow.
-			if len(rawdata_phasemovie[l][i]) > 1 and numvar == 0: 
-				variablelist.append(str(rawdata_phasemovie[l][i][:-2].strip(' \t\n\r\"')))
-			#endif
-		#endfor
-		header_phasemovie.append(header_phase)
-
-		#Rough method of obtaining the movie1.pdt cycle locations for data extraction.
-		cycleloc = list()
-		for i in range(0,len(rawdata_phasemovie[l])):
-			if "CYCL=" in rawdata_phasemovie[l][i]:
-				cycleloc.append(i+1)
-			#endif
-		#endfor
-
-		#Cycle through all phases for current datafile, appending per cycle.
-		CurrentFolderData,CurrentFolderPhaselist = list(),list()
-		for i in range(0,len(cycleloc)):
-			if i == 0:
-				CurrentPhaseData = SDFileFormatConvertorHPEM(rawdata,cycleloc[i],numvar+2,offset=2)
-				CurrentFolderData.append(CurrentPhaseData[0:numvar])
-			else:
-				CurrentPhaseData = SDFileFormatConvertorHPEM(rawdata,cycleloc[i],numvar)
-				CurrentFolderData.append(CurrentPhaseData)
-			#endif
-			CurrentFolderPhaselist.append('CYCL = '+str(i+1))
-		#endfor
-		Moviephaselist.append(CurrentFolderPhaselist)
-		PhaseMovieData.append(CurrentFolderData)
-	#endif
-#endfor
-
 
 #===================##===================#
 #===================##===================#
