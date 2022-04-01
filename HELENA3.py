@@ -82,10 +82,10 @@ from pylab import *
 #====================================================================#
 
 #Various debug and streamlining options.
-Magmesh = 1							#initmesh.exe magnification factor. (almost obsolete)
+Magmesh = 1							#initmesh.exe magnification factor. (Obsolete - legacy)
+QuickConverge = False				#Supresses 2D Convergence images in savefig_convergence
 ffmpegMovies = False				#If False: Suppresses ffmpeg routines, saves RAM.
 DebugMode = False					#Produces debug outputs for most diagnostics.
-QuickConverge = False				#Supresses 2D Convergence images in savefig_convergence
 
 #Warning suppressions
 np.seterr(divide='ignore', invalid='ignore')		#Suppresses divide by zero errors
@@ -110,6 +110,9 @@ SheathIonSpecies = ['AR+']					#Force Sheath Ion Species (blank for auto)
 KineticFiltering = True						#Pre-fit kinetic data employing a SavGol filter
 PlotKineticFiltering = False				#Plot Filtered Profiles, or employ only in trends.
 Glob_SavWindow, Glob_SavPolyOrder = 25, 3	#Window > FeatureSize, Polyorder ~= Smoothness
+
+#Apply azimuthal direction (phase) to relevant variables if true, else plot magnitude only
+PlotAzimuthalDirection = True
 
 #Define units for particular variables
 PressureUnit = 'Torr'						#'Torr','mTorr','Pa'
@@ -206,29 +209,29 @@ NEDFVariables = []							#Requested nprofile_2d variables (no spaces)
 #Requested movie1/movie_icp Variables.
 IterVariables = ['E','S-E','PPOT','TE']				#Requested Movie_icp (iteration) Variables.		
 PhaseVariables = Ar_Phase							#Requested Movie1 (phase) Variables. +['E','AR+']
-electrodeloc = [35,45]								#Cell location of powered electrode [R,Z].
+electrodeloc = [13,10]	#THC[35,45]					#Cell location of powered electrode [R,Z].
 waveformlocs = []									#Cell locations of additional waveforms [R,Z].
 
 #Requested TECPLOT Variables and plotting locations.
 Variables = Ar
 MultiVar = []								#Additional variables plotted ontop of [Variables]
-radialineouts = [3]		#[85]		 		#Radial 1D-Profiles to be plotted (fixed Z-mesh) --
-heightlineouts = [10] 	#[20]				#Axial 1D-Profiles to be plotted (fixed R-mesh) |
-TrendLocation = [20,85] 					#Cell location For Trend Analysis [R,Z], ([] = min/max)
+radialineouts = [10]	#THC[85]		 	#Radial 1D-Profiles to be plotted (fixed Z-mesh) --
+heightlineouts = [9] 	#THC[20]			#Axial 1D-Profiles to be plotted (fixed R-mesh) |
+TrendLocation = [15,10] #THC[20,85]			#Cell location For Trend Analysis [R,Z], ([] = min/max)
 
 
 #Various Diagnostic Settings.
 phasecycles = 1.00						#Number of waveform phase cycles to be plotted. (float)
 DoFWidth = 10 							#PROES Depth of Field (symmetric about image plane) (cells)
-ThrustLoc = 45							#Z-axis cell for thrust calculation  (cells)
+ThrustLoc = 15			#PR45			#Z-axis cell for thrust calculation  (cells)
 SheathROI = [34,72]						#Sheath Region of Interest, (Start,End) [cells]
 SourceWidth = [12]						#Source Dimension at ROI, leave empty for auto. [cells]
 EDF_Threshold = 0.01					#Maximum Recognised EEDF/IEDF energy fraction (Plot all: 0.0)
 
 
 #Requested diagnostics and plotting routines.
-savefig_convergence = True				#Single-Variables: iter-time axis			Requires movie_icp.pdt
-savefig_plot2D = True					#Single-Variables: converged				Requires TECPLOT2D.PDT
+savefig_convergence = False				#Single-Variables: iter-time axis			Requires movie_icp.pdt
+savefig_plot2D = False					#Single-Variables: converged				Requires TECPLOT2D.PDT
 
 savefig_monoprofiles = False			#Single-Variables; fixed height/radius
 savefig_multiprofiles = False			#Multi-Variables; same folder					- NO ASCII OUTPUT
@@ -255,7 +258,7 @@ write_ASCII = True						#All diagnostic output written to ASCII.
 #Steady-State diagnostics terminal output toggles.
 print_generaltrends = False				#Verbose Min/Max Trend Outputs.
 print_Knudsennumber = False				#Print cell averaged Knudsen Number
-print_totalpower = False				#Print all requested total powers
+print_totalpower = True				#Print all requested total powers
 print_Reynolds = False					#Print cell averaged sound speed
 print_DCbias = False					#Print DC bias at electrodeloc
 print_thrust = False					#Print neutral, ion and total thrust
@@ -384,7 +387,8 @@ Globalvarlist = list()			#List of all commonly shared variable names between all
 Globalnumvars = list()			#Number of commonly shared variables between all folders.
 
 #Create mesh_size lists and SI conversion
-Isymlist = list()				#Boolian list of ISYM values in folder order in in Dirlist
+ISYMlist = list()				#list of ISYM values in folder order in Dirlist
+IXZlist = list()				#List of IXZ values in folder order in Dirlist
 R_mesh = list()					#List of radial mesh cells for initmesh.out in folder order in Dirlist
 Z_mesh = list()					#List of axial mesh cells for initmesh.out in folder order in Dirlist
 Raxis = list()					#Radial SI [cm] axis for plotting
@@ -395,6 +399,7 @@ Radius = list()					#icp.nam Radius input [cm] in folder order in Dirlist
 Height = list()					#icp.nam Height input [cm] in folder order in Dirlist
 dr = list()						#Radial mesh resolution [cm/cell] in folder order in Dirlist
 dz = list()						#Axial mesh resolution [cm/cell] in folder order in Dirlist
+dy = list()						#Depth mesh resolution [cm/cell] in folder order in Dirlist
 
 #Lists for icp.nam variables
 VRFM,VRFM2   = list(),list()
@@ -645,23 +650,32 @@ for l in range(0,numfolders):
 		HEIGHTT = float(HEIGHTT[0].strip(' \t\n\r,=HEIGHTT'))
 		DEPTH = list(filter(lambda x:'DEPTH=' in x, NamelistData))
 		DEPTH = float(DEPTH[0].strip(' \t\n\r,=DEPTH')        )
-		SYM = list(filter(lambda x:'ISYM=' in x, NamelistData))
-		SYM = SYM[0].strip(' \t\n\r,=ISYM')
+
+		IXZ = list(filter(lambda x:'IXZ=' in x, NamelistData))
+		IXZ = IXZ[0].split('!!!')[0]
+		IXZ = int(IXZ.strip(' \t\n\r,=IXZ'))
+	
+		ISYM = list(filter(lambda x:'ISYM=' in x, NamelistData))
+		ISYM = ISYM[0].split('!!!')[0]
+		ISYM = int(ISYM.strip(' \t\n\r,=ISYM'))
+	
+		#ISYMlist[l] = 1 if mesh uses radial symmetry, = 0 if not
+		if image_plotsymmetry == True: ISYMlist= np.append(ISYMlist,ISYM)
+		else: ISYMlist.append(0)
 		
-		#Isymlist[l] = 1 if mesh uses radial symmetry
-		if image_plotsymmetry == True: Isymlist= np.append(Isymlist,SYM)
-		else: Isymlist.append(0)
+		#IXZlist[l] = 1 if mesh uses cartesian coordinates, = 0 if cylindrical
+		IXZlist = np.append(IXZlist,IXZ)
 		
 		#Determine if mesh RADIUS or RADIUST was used, save 'Radius' used for further calculations
 		if RADIUS > 0.0: Radius = np.append(Radius, RADIUS)			#[cm]
 		elif RADIUST > 0.0: Radius = np.append(Radius, RADIUST)		#[cm]
 		if HEIGHT > 0.0: Height = np.append(Height, HEIGHT)			#[cm]
 		elif HEIGHTT > 0.0: Height = np.append(Height, HEIGHTT)		#[cm]
-		DEPTH = np.append(Depth, DEPTH)
 
-		#Determine mesh cell radial (dr) and axial (dz) resolutions 
+		#Determine mesh cell radial (dr), axial (dz), and depth (dy) resolutions 
 		dr = np.append(dr, Radius[-1]/(R_mesh[-1]-1))		#[cm/cell]
 		dz = np.append(dz, Height[-1]/(Z_mesh[-1]-1))		#[cm/cell]
+		dy = np.append(dy, DEPTH)							#[cm/cell] (DEPTH is always 1 cell)
         
 	except:
 		#If the geometry section cannot be found, manual input is required.
@@ -1637,6 +1651,11 @@ def VariableUnitConversion(profile,variable):
 #Only applicable to azimuthal variables, others will be returned unchanged.
 def VariableAzimuthalConversion(image,variable):
 
+	#Global toggle to enforce plotting of magnitudes only if requested
+	if PlotAzimuthalDirection == False:	return(image)
+	
+	#=====#=====#
+	
 	#Determine if supplied profile requires phase conversion
 	if variable == 'ETHETA': 		
 		phaseprocess,phasevariable = VariableEnumerator(['PHASE'],rawdata_2D[l],header_2Dlist[l])
@@ -1646,8 +1665,6 @@ def VariableAzimuthalConversion(image,variable):
 		phaseprocess,phasevariable = VariableEnumerator(['J-TH(PHA)'],rawdata_2D[l],header_2Dlist[l])
 	else: 
 		return(image)
-	
-	#=====#=====#
 	
 	#Extract the appropriate phase data for the supplied variable
 	phasemap = ImageExtractor2D(Data[l][phaseprocess[0]],phasevariable[0])
@@ -2381,7 +2398,7 @@ data_array,templineout = list(),list()
 Energy,Fe,rawdata_mcs = list(),list(),list()
 Variablelist,variablelist = list(),list()
 HomeDir,DirContents = list(),list()
-del RADIUS,RADIUST,HEIGHT,HEIGHTT,DEPTH,SYM
+del RADIUS,RADIUST,HEIGHT,HEIGHTT,DEPTH,ISYM,IXZ
 del data_array,tempdata,tempdata2,templineout
 del Variablelist,variablelist
 del Energy,Fe,rawdata_mcs
@@ -2518,7 +2535,7 @@ def SymmetryConverter(Image,Radial=False):
 #Image = SymmetryConverter(Image,Radial=False)
 
 	#Create new image by reversing and adding itself on the LHS.
-	if image_plotsymmetry == True and int(Isymlist[l]) == 1:
+	if image_plotsymmetry == True and int(ISYMlist[l]) == 1:
 		SymImage = np.zeros([len(Image),2*len(Image[0])])
 		if Radial == False:
 			for m in range(0,len(Image)):
@@ -2900,11 +2917,11 @@ def InvisibleColourbar(ax='NaN'):
 #=========================#
 
 
-def GenerateAxis(Orientation,Isym=Isymlist[l],PhaseFrames=range(0,IMOVIE_FRAMES[l])):
+def GenerateAxis(Orientation,Isym=ISYMlist[l],PhaseFrames=range(0,IMOVIE_FRAMES[l])):
 #Generates a 1D SI [cm] axis for plotting, includes radial symmetry.
 #Takes orientation, symmetry and phasecycle options.
 #Returns 1D array in units of [cm] or [omega*t/2pi].
-#Raxis=GenerateAxis('Radial',Isym=Isymlist[l])
+#Raxis=GenerateAxis('Radial',Isym=ISYMlist[l])
 
 	#Create axis list and extract the number of phaseframes
 	PhaseResolution = len(PhaseFrames)
@@ -2995,7 +3012,7 @@ def DataExtent(folder=l,aspectratio=image_aspectratio):
 #extent,aspectratio = DataExtent(l)
 
 	#Obtain global variables for current folder.
-	Isym = float(Isymlist[folder])
+	Isym = float(ISYMlist[folder])
 	radius,height = Radius[folder],Height[folder]
 	#Rotated Image: [X,Y] = [Height,Radius]
 	if image_rotate == True:
@@ -3142,7 +3159,7 @@ def ExtractRadialProfile(Data,process,variable,Profile,Rmesh='NaN',Isym='NaN'):
 
 	#If no mesh sizes supplied, collect sizes for current global folder.
 	if Rmesh == 'NaN' or Isym == 'NaN':
-		Rmesh,Isym = R_mesh[l],Isymlist[l]
+		Rmesh,Isym = R_mesh[l],ISYMlist[l]
 	#endif
 
 	#Obtain start location for requested data and perform SI conversion.
@@ -3192,7 +3209,7 @@ def ExtractAxialProfile(Data,process,variable,lineout,Rmesh=0,Zmesh=0,Isym=0):
 
 	#If no mesh sizes supplied, collect sizes for current global folder.
 	if Rmesh == 0 or Zmesh == 0 or Isym == 0:
-		Rmesh,Zmesh,ISym = R_mesh[l],Z_mesh[l],Isymlist[l]
+		Rmesh,Zmesh,ISym = R_mesh[l],Z_mesh[l],ISYMlist[l]
 	#endif
 
 	#Pull out Z-data point from each radial line of data and list them.
@@ -3345,11 +3362,11 @@ def MinMaxTrends(lineout,Orientation,process):
 
 		#Obtain radial and axial profiles for further processing.
 		if Orientation == 'Radial':
-			try: Profile = ExtractRadialProfile(Data[l],processlist[p],Variablelist[p],lineout,R_mesh[l],Isymlist[l])
+			try: Profile = ExtractRadialProfile(Data[l],processlist[p],Variablelist[p],lineout,R_mesh[l],ISYMlist[l])
 			except: Profile = float('NaN')
 			#endtry
 		elif Orientation == 'Axial':
-			try: Profile = ExtractAxialProfile(Data[l],processlist[p],Variablelist[p],lineout,R_mesh[l],Z_mesh[l],Isymlist[l])
+			try: Profile = ExtractAxialProfile(Data[l],processlist[p],Variablelist[p],lineout,R_mesh[l],Z_mesh[l],ISYMlist[l])
 			except: Profile = float('NaN')
 			#endtry
 		#endif
@@ -3747,7 +3764,7 @@ def CalcSheathExtent(folder=l,Orientation='Axial',Phase='NaN',Ne=list(),Ni=list(
 		#endif
 
 		#Extract axis to plot sheath against
-		SxAxis = GenerateAxis(Orientation,Isym=Isymlist[l])
+		SxAxis = GenerateAxis(Orientation,Isym=ISYMlist[l])
 	#endif
 
 	#=======#	#=======#	#=======#
@@ -3761,7 +3778,7 @@ def CalcSheathExtent(folder=l,Orientation='Axial',Phase='NaN',Ne=list(),Ni=list(
 		#endfor
 		
 		#Extract axis to plot sheath against
-		SxAxis = GenerateAxis(Orientation,Isym=Isymlist[l])
+		SxAxis = GenerateAxis(Orientation,Isym=ISYMlist[l])
 	#endif
 
 	#=======#	#=======#	#=======#
@@ -3791,7 +3808,7 @@ def CalcSheathExtent(folder=l,Orientation='Axial',Phase='NaN',Ne=list(),Ni=list(
 
 
 def PlotSheathExtent(SxAxis,Sx,ax=plt.gca(),ISymmetry=0):
-#PlotSheathExtent(SxAxis,Sx,ax[0],Isymlist[l])
+#PlotSheathExtent(SxAxis,Sx,ax[0],ISYMlist[l])
 
 	#Determine mesh symmetry and create symmetric mesh if required
 	if int(ISymmetry) == 1:
@@ -3898,7 +3915,7 @@ if savefig_plot2D == True:
 			#Generate and rotate figure as requested.
 			extent,aspectratio = DataExtent(l)
 			fig,ax,im,Image = ImagePlotter2D(Image,extent,aspectratio,variablelist[k])
-			PlotSheathExtent(SxAxis,Sx,ax,Isymlist[l])
+			PlotSheathExtent(SxAxis,Sx,ax,ISYMlist[l])
 			
 			#Overlay location of 1D profiles if requested, adjusting for image rotation.
 			if image_1Doverlay == True:
@@ -4009,7 +4026,7 @@ if savefig_convergence == True:
 					#Generate and rotate figure as requested.
 					extent,aspectratio = DataExtent(l)
 					fig,ax,im,Image = ImagePlotter2D(Image,extent,aspectratio,variablelist[i])
-					PlotSheathExtent(SxAxis,Sx,ax,Isymlist[l])
+					PlotSheathExtent(SxAxis,Sx,ax,ISYMlist[l])
 					
 					#Define image axis labels.
 					if image_rotate == True:
@@ -4172,8 +4189,8 @@ if savefig_monoprofiles == True:
 		processlist,Variablelist = VariableEnumerator(Variables,rawdata_2D[l],header_2Dlist[l])
 
 		#Generate SI scale axes for lineout plots and refresh legend.
-		Raxis = GenerateAxis('Radial',Isymlist[l])
-		Zaxis = GenerateAxis('Axial',Isymlist[l])
+		Raxis = GenerateAxis('Radial',ISYMlist[l])
+		Zaxis = GenerateAxis('Axial',ISYMlist[l])
 		Legendlist = list()
 
 		#Generate the radial (horizontal) lineouts for a specific height.
@@ -4280,8 +4297,8 @@ if savefig_compareprofiles == True:
 	DirComparisons = CreateNewFolder(os.getcwd(),'/1D Comparisons')
 
 	#Generate SI scale axes for lineout plots.
-	Raxis = GenerateAxis('Radial',Isymlist[l])
-	Zaxis = GenerateAxis('Axial',Isymlist[l])
+	Raxis = GenerateAxis('Radial',ISYMlist[l])
+	Zaxis = GenerateAxis('Axial',ISYMlist[l])
 
 	#Perform radial (horizontal) profile comparisons
 	for j in range(0,len(radialineouts)):
@@ -4316,7 +4333,7 @@ if savefig_compareprofiles == True:
 				Ylabels = VariableLabelMaker(Variablelist)
 
 				#Plot all radial profiles for all variables in one folder.
-				RProfile = ExtractRadialProfile(Data[l],processlist[k],Variablelist[k], radialineouts[j],R_mesh[l],Isymlist[l])
+				RProfile = ExtractRadialProfile(Data[l],processlist[k],Variablelist[k], radialineouts[j],R_mesh[l],ISYMlist[l])
 
 				#Plot radial profile and allow for log y-axis if requested.
 				ImagePlotter1D(Raxis,RProfile,image_aspectratio,fig,ax)
@@ -4379,7 +4396,7 @@ if savefig_compareprofiles == True:
 				Ylabels = VariableLabelMaker(Variablelist)
 
 				#Obtain axial profile for each folder of the current variable.
-				ZProfile = ExtractAxialProfile(Data[l],processlist[k],Variablelist[k], heightlineouts[j],R_mesh[l],Z_mesh[l],Isymlist[l])
+				ZProfile = ExtractAxialProfile(Data[l],processlist[k],Variablelist[k], heightlineouts[j],R_mesh[l],Z_mesh[l],ISYMlist[l])
 
 				#Plot axial profile and allow for log y-axis if requested.
 				ImagePlotter1D(Zaxis,ZProfile[::-1],image_aspectratio,fig,ax)
@@ -4437,7 +4454,7 @@ if savefig_multiprofiles == True:
 		if len(heightlineouts) > 0:
 
 			#Generate SI scale axes for lineout plots.
-			Zaxis = GenerateAxis('Axial',Isymlist[l])
+			Zaxis = GenerateAxis('Axial',ISYMlist[l])
 
 			#Perform the plotting for all requested variables.
 			for i in tqdm(range(0,len(processlist))):
@@ -4456,13 +4473,13 @@ if savefig_multiprofiles == True:
 					Legendlist.append(VariableLabelMaker(Variablelist)[i])
 
 					#Plot the initial variable in processlist first.
-					ZProfile = ExtractAxialProfile(Data[l],processlist[i],Variablelist[i], heightlineouts[j],R_mesh[l],Z_mesh[l],Isymlist[l])
+					ZProfile = ExtractAxialProfile(Data[l],processlist[i],Variablelist[i], heightlineouts[j],R_mesh[l],Z_mesh[l],ISYMlist[l])
 					ImagePlotter1D(Zaxis,ZProfile[::-1],image_aspectratio,fig,ax)
 
 					#Plot all of the requested comparison variables for this plot.
 					for m in range(0,len(multiprocesslist)):
 						#Plot profile for multiplot variables in compareprocesslist.
-						ZProfile = ExtractAxialProfile(Data[l],multiprocesslist[m],multiVariablelist[m], heightlineouts[j],R_mesh[l],Z_mesh[l],Isymlist[l])
+						ZProfile = ExtractAxialProfile(Data[l],multiprocesslist[m],multiVariablelist[m], heightlineouts[j],R_mesh[l],Z_mesh[l],ISYMlist[l])
 						ImagePlotter1D(Zaxis,ZProfile[::-1],image_aspectratio,fig,ax)
 
 						#Update legendlist with each variable compared.
@@ -4490,7 +4507,7 @@ if savefig_multiprofiles == True:
 			Dirlineouts = CreateNewFolder(Dirlist[l],'MultiVar_Profiles/')
 
 			#Generate SI scale axes for lineout plots.
-			Raxis = GenerateAxis('Radial',Isymlist[l])
+			Raxis = GenerateAxis('Radial',ISYMlist[l])
 
 			#Perform the plotting for all requested variables.
 			for i in tqdm(range(0,len(processlist))):
@@ -4509,13 +4526,13 @@ if savefig_multiprofiles == True:
 					Legendlist.append(VariableLabelMaker(Variablelist)[i])
 
 					#Plot profile for initial variable in processlist.
-					RProfile = ExtractRadialProfile(Data[l],processlist[i],Variablelist[i], radialineouts[j],R_mesh[l],Isymlist[l])
+					RProfile = ExtractRadialProfile(Data[l],processlist[i],Variablelist[i], radialineouts[j],R_mesh[l],ISYMlist[l])
 					ImagePlotter1D(Raxis,RProfile,image_aspectratio,fig,ax)
 
 					#Plot all of the requested comparison variables for this plot.
 					for m in range(0,len(multiprocesslist)):
 						#Plot profile for multiplot variables in compareprocesslist.
-						RProfile = ExtractRadialProfile(Data[l],multiprocesslist[m], multiVariablelist[m],radialineouts[j],R_mesh[l],Isymlist[l])
+						RProfile = ExtractRadialProfile(Data[l],multiprocesslist[m], multiVariablelist[m],radialineouts[j],R_mesh[l],ISYMlist[l])
 						ImagePlotter1D(Raxis,RProfile,image_aspectratio,fig,ax)
 
 						#Update legendlist with each variable compared.
@@ -5272,10 +5289,10 @@ if savefig_trendphaseaveraged == True or print_DCbias == True:
 		Zlineoutloc = WaveformLoc(electrodeloc,'2D')[1]
 
 		#Obtain radial and axial profiles for further processing.
-		try: Rlineout = ExtractRadialProfile(Data[l],Process[0],Variable[0],Rlineoutloc,R_mesh[l],  Isymlist[l])
+		try: Rlineout = ExtractRadialProfile(Data[l],Process[0],Variable[0],Rlineoutloc,R_mesh[l],  ISYMlist[l])
 		except: Rlineout = float('NaN')
 		#endtry
-		try: Zlineout = ExtractAxialProfile(Data[l],Process[0],Variable[0],Zlineoutloc,R_mesh[l],Z_mesh[l],Isymlist[l])
+		try: Zlineout = ExtractAxialProfile(Data[l],Process[0],Variable[0],Zlineoutloc,R_mesh[l],Z_mesh[l],ISYMlist[l])
 		except: Zlineout = float('NaN')
 		#endtry
 
@@ -5367,28 +5384,63 @@ if savefig_trendphaseaveraged == True or print_totalpower == True:
 			PowerDensity = ImageExtractor2D(Data[l][processlist[k]])
 			PowerDensity = VariableUnitConversion(PowerDensity,Variablelist[k])
 
-			Power = 0												#[W]
+			#=====#=====#
+
 			#Cylindrical integration of power per unit volume ==> total coupled power.
-			for j in range(0,Z_mesh[l]):
-				#For each radial slice
-				for i in range(0,R_mesh[l]-1):
-					#Calculate radial plane volume of a ring at radius [i], correcting for central r=0.
-					InnerArea = np.pi*( (i*(dr[l]/100))**2 )		#[m^2]
-					OuterArea = np.pi*( ((i+1)*(dr[l]/100))**2 )	#[m^2]
-					RingVolume = (OuterArea-InnerArea)*(dz[l]/100)	#[m^3]
+			if IXZlist[l] == 0:
+			
+				Power = 0												#[W]
+				#For each axial slice
+				for j in range(0,Z_mesh[l]):
+					#For each radial slice
+					for i in range(0,R_mesh[l]-1):
+						#Calculate radial plane volume of a ring at radius [i], correcting for central r=0.
+						InnerArea = np.pi*( (i*(dr[l]/100))**2 )		#[m^2]
+						OuterArea = np.pi*( ((i+1)*(dr[l]/100))**2 )	#[m^2]
+						RingVolume = (OuterArea-InnerArea)*(dz[l]/100)	#[m^3]
 
-					#Calculate Power by multiplying power density for ring[i] by volume of ring[i]
-					Power += PowerDensity[j][i]*RingVolume 			#[W]
+						#Calculate Power by multiplying power density for ring[i] by volume of ring[i]
+						Power += PowerDensity[j][i]*RingVolume 			#[W]
+					#endfor
 				#endfor
-			#endfor
-			DepositedPowerList.append(Power)
+				DepositedPowerList.append(Power)
 
-			#Display power to terminal if requested.
-			if print_totalpower == True:
-				print(Dirlist[l])
-				print(RequestedPowers[k]+' Deposited:',round(Power,4),'W')
-			#endif
+				#Display power to terminal if requested.
+				if print_totalpower == True:
+					print(Dirlist[l])
+					print(RequestedPowers[k]+' Deposited:',round(Power,4),'W')
+				#endif
+				
+			#=====#=====#
+				
+			#Cartesian integration of power per unit volume ==> total coupled power.	
+			elif IXZlist[l] == 1:
+			
+				Power = 0												#[W]
+				#For each axial slice
+				for j in range(0,Z_mesh[l]):
+					#For each radial slice
+					for i in range(0,R_mesh[l]-1):
+					
+						#Calculate cell area, all cells have the same area in a cartesian grid
+						CellArea = (dr[l]/100.)*(dz[l]/100.)			#[m^2]
+						CellVolume = CellArea*(dy[l]/100.)				#[m^3]
+
+						#Calculate Power by multiplying power density for ring[i] by volume of ring[i]
+						Power += PowerDensity[j][i]*CellVolume 			#[W]
+					#endfor
+				#endfor
+				DepositedPowerList.append(Power)
+
+				#Display power to terminal if requested.
+				if print_totalpower == True:
+					print(Dirlist[l])
+					print(RequestedPowers[k]+' Deposited:',round(Power,4),'W')
+				#endif
+			#endif	
 		#endfor
+		
+		#==========#==========#
 
 		#Plot and beautify each requested power deposition seperately.
 		fig,ax = figure(image_aspectratio,1)
@@ -5811,7 +5863,7 @@ if bool(set(FluidSpecies).intersection(Variables)) == True:
 			#Label and save the 2D Plots.
 			extent,aspectratio = DataExtent(l)
 			fig,ax,im,Image = ImagePlotter2D(Image,extent,aspectratio)
-			PlotSheathExtent(SxAxis,Sx,ax,Isymlist[l])
+			PlotSheathExtent(SxAxis,Sx,ax,ISYMlist[l])
 
 			#Image plotting details, invert Y-axis to fit 1D profiles.
 			Title = 'Knudsen Number Image for \n'+Dirlist[l][2:-1]
@@ -5923,7 +5975,7 @@ if bool(set(FluidSpecies).intersection(Variables)) == True:
 			#Label and save the 2D Plots.
 			extent,aspectratio = DataExtent(l)
 			fig,ax,im,Image = ImagePlotter2D(Image,extent,aspectratio)
-			PlotSheathExtent(SxAxis,Sx,ax,Isymlist[l])
+			PlotSheathExtent(SxAxis,Sx,ax,ISYMlist[l])
 
 			#Image plotting details, invert Y-axis to fit 1D profiles.
 			#ERROR WITH IMAGE LIMIT - LIKELY DUE TO NANS - #Lim=CbarMinMax(Image)
@@ -6048,9 +6100,9 @@ if savefig_phaseresolve1D == True:
 		PPOT = ExtractPhaseData(folder=l,Variables=['PPOT'])[2][0]
 
 		#Generate SI scale axes for lineout plots. ([omega*t/2pi] and [cm] respectively)
-		Phaseaxis = GenerateAxis('Phase',Isymlist[l],Phaselist)
-		Raxis = GenerateAxis('Radial',Isymlist[l])
-		Zaxis = GenerateAxis('Axial',Isymlist[l])
+		Phaseaxis = GenerateAxis('Phase',ISYMlist[l],Phaselist)
+		Raxis = GenerateAxis('Radial',ISYMlist[l])
+		Zaxis = GenerateAxis('Axial',ISYMlist[l])
 
 		#=============#
 
@@ -6148,12 +6200,12 @@ if savefig_phaseresolve1D == True:
 
 					if ProfileOrientation[k] == 'Axial':
 						ZlineoutLoc,axis = Lineouts[k],Zaxis
-						PhaseResolvedProfile = ExtractAxialProfile(PhaseData[j],proclist[i],varlist[i],ZlineoutLoc,R_mesh[l],Z_mesh[l],Isymlist[l])[::-1]
+						PhaseResolvedProfile = ExtractAxialProfile(PhaseData[j],proclist[i],varlist[i],ZlineoutLoc,R_mesh[l],Z_mesh[l],ISYMlist[l])[::-1]
 						ProfileString = ' @ R='+str(round(Lineouts[k]*dr[l],2))+'cm \n'
 						Xlabel = 'Axial Distance Z [cm]'
 					elif ProfileOrientation[k] == 'Radial':
 						RlineoutLoc,axis = Lineouts[k],Raxis
-						PhaseResolvedProfile = ExtractRadialProfile(PhaseData[j],proclist[i],varlist[i],RlineoutLoc,R_mesh[l],Isymlist[l])
+						PhaseResolvedProfile = ExtractRadialProfile(PhaseData[j],proclist[i],varlist[i],RlineoutLoc,R_mesh[l],ISYMlist[l])
 						ProfileString = ' @ Z='+str(round(Lineouts[k]*dz[l],2))+'cm \n'
 						Xlabel = 'Radial Distance R [cm]'
 					#endif
@@ -6229,9 +6281,9 @@ if savefig_phaseresolve2D == True:
 		PPOT = ExtractPhaseData(folder=l,Variables=['PPOT'])[2][0]
 
 		#Generate SI scale axes for lineout plots. ([omega*t/2pi] and [cm] respectively)
-		Phaseaxis = GenerateAxis('Phase',Isymlist[l],Phaselist)
-		Raxis = GenerateAxis('Radial',Isymlist[l])
-		Zaxis = GenerateAxis('Axial',Isymlist[l])
+		Phaseaxis = GenerateAxis('Phase',ISYMlist[l],Phaselist)
+		Raxis = GenerateAxis('Radial',ISYMlist[l])
+		Zaxis = GenerateAxis('Axial',ISYMlist[l])
 
 		#=============#
 
@@ -6314,7 +6366,7 @@ if savefig_phaseresolve2D == True:
 
 				#Plot 2D image, applying image options and cropping as required.
 				fig,ax[0],im,Image = ImagePlotter2D(Image,extent,aspectratio,varlist[i],fig,ax[0])
-				PlotSheathExtent(SxAxis,Sx,ax[0],Isymlist[l])
+				PlotSheathExtent(SxAxis,Sx,ax[0],ISYMlist[l])
 				
 				#Add Colourbar (Axis, Label, Bins)
 				ImageOptions(fig,ax[0],Xlabel,Ylabel,Crop=True)
@@ -6404,7 +6456,7 @@ if savefig_sheathdynamics == True:
 		Orientation = 'Axial'
 		if Orientation == 'Axial': loc = electrodeloc[1]		#Axial depth where sheath plotted
 		elif Orientation == 'Radial': loc = electrodeloc[0]		#Radial depth where sheath plotted
-		Phaseaxis = GenerateAxis('Phase',Isym=Isymlist[l])
+		Phaseaxis = GenerateAxis('Phase',Isym=ISYMlist[l])
 
 		#=============#
 
@@ -6597,9 +6649,9 @@ if savefig_PROES == True:
 		PPOT = ExtractPhaseData(folder=l,Variables=['PPOT'])[2][0]
 
 		#Generate SI scale axes for lineout plots.
-		Phaseaxis = GenerateAxis('Phase',Isymlist[l],Phaselist)		#[omega*t/2pi]
-		Raxis = GenerateAxis('Radial',Isymlist[l])					#[cm]
-		Zaxis = GenerateAxis('Axial',Isymlist[l])					#[cm]
+		Phaseaxis = GenerateAxis('Phase',ISYMlist[l],Phaselist)		#[omega*t/2pi]
+		Raxis = GenerateAxis('Radial',ISYMlist[l])					#[cm]
+		Zaxis = GenerateAxis('Axial',ISYMlist[l])					#[cm]
 
 		#=============#
 
@@ -6739,13 +6791,13 @@ if savefig_PROES == True:
 					Ylabel = 'Axial Distance Z [cm]'
 					Crop = [image_axialcrop[::-1],image_radialcrop] #Reversed accounting for rotation.
 					y1,y2 = Zaxis[-1],Zaxis[0]						#Reversed accounting for top origin.
-				elif ProfileOrientation[k] == 'Radial' and int(Isymlist[l]) == 1:
+				elif ProfileOrientation[k] == 'Radial' and int(ISYMlist[l]) == 1:
 					ProfileString = ' @ Z='+str(round(Lineouts[k]*dz[l],2))+'cm'
 					NameString = varlist[i]+ProfileString[2::]
 					Ylabel = 'Radial Distance R [cm]'
 					Crop = [image_radialcrop,image_axialcrop]
 					y1,y2 = Raxis[-1],-Raxis[-1]
-				elif ProfileOrientation[k] == 'Radial' and int(Isymlist[l]) == 0:
+				elif ProfileOrientation[k] == 'Radial' and int(ISYMlist[l]) == 0:
 					ProfileString = ' @ Z='+str(round(Lineouts[k]*dz[l],2))+'cm'
 					NameString = varlist[i]+ProfileString[2::]
 					Ylabel = 'Radial Distance R [cm]'
@@ -6758,7 +6810,7 @@ if savefig_PROES == True:
 				fig.suptitle( 'Simulated '+varlist[i]+' PROES for '+VariedValuelist[l]+ProfileString+'\n DoF = '+str(round(((2*DoFWidth)+1)*dz[l],2))+' cm', y=0.95, fontsize=18)
 				im = ax[0].contour(PROES,extent=[x1,x2,y1,y2],origin='lower')
 				im = ax[0].imshow(PROES,extent=[x1,x2,y1,y2],origin='bottom',aspect='auto')
-				PlotSheathExtent(Phaseaxis,PhaseSx,ax[0],Isymlist[l])
+				PlotSheathExtent(Phaseaxis,PhaseSx,ax[0],ISYMlist[l])
 				
 				#Beautify Image
 				ImageOptions(fig,ax[0],Xlabel='',Ylabel=Ylabel,Crop=Crop)
