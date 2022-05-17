@@ -3,13 +3,14 @@
 #################################
 #		Point of Contact		#
 #								#
-#	   Dr. Scott J. Doyle		#
-#	   University of York		#
-#	   York Plasma Institute	#
-#	   1&2 Genesis Building		#
-#	   North Yorkshire, UK		#
-#	  Scott.Doyle@Physics.org	#
-#								#
+#	    Dr. Scott J. Doyle      #
+#	  University of Michigan    #
+#	  Electrical Engineering    # 
+#	 & Computer Science Dept.   #
+#    1301 Beal Ave, Ann Arbor,  #
+#        MI 48109-2122 USA      #
+#	  Scott.Doyle@Physics.org   #
+#                               #
 #################################
 #           'HELENA'            #
 #Hpem ELectronic ENgine Analysis#
@@ -85,7 +86,7 @@ from pylab import *
 Magmesh = 1							#initmesh.exe magnification factor. (Obsolete - legacy)
 QuickConverge = False				#Supresses 2D Convergence images in savefig_convergence
 ffmpegMovies = False				#If False: Suppresses ffmpeg routines, saves RAM.
-DebugMode = False					#Produces debug outputs for most diagnostics.
+IDEBUG = False						#Produces debug outputs for most diagnostics.
 
 #Warning suppressions
 np.seterr(divide='ignore', invalid='ignore')		#Suppresses divide by zero errors
@@ -114,7 +115,16 @@ Glob_SavWindow, Glob_SavPolyOrder = 25, 3	#Window > FeatureSize, Polyorder ~= Sm
 #Apply azimuthal direction (phase) to relevant variables if true, else plot magnitude only
 PlotAzimuthalDirection = True
 
+#Minimum plotted EDF energy fraction, cuts x-axis at index where :: f(e) = f(e)*EDF_Threshold
+#Note: IEDF/EEDF trends are only taken within range :: EDF_threshold < f(e) < 1.0 
+EDF_Threshold = 0.01						# i.e. = 0.0 to plot all
+
 #Define units for particular variables
+# THIS NEEDS REWORKING:
+# 1) CONVERT UNITS TO SI FOR MATHS ON INPUT		(Current variable function but renamed?)
+# 2) APPLY PLOTTED UNITS SEPERATELY				(New variable function (plot variables?)
+# 3) APPLY SI and CGS PRESETS
+#		- PROBABLY REMOVE INDIVIDUAL UNIT SETTINGS (too messy)
 PressureUnit = 'Torr'						#'Torr','mTorr','Pa'
 BFieldUnit	=  'Gauss'						#'Gauss','Tesla'
 
@@ -124,8 +134,8 @@ BFieldUnit	=  'Gauss'						#'Gauss','Tesla'
 #Commonly used variable sets.
 Phys = ['P-POT','TE','EF-TOT','EAMB-Z','EAMB-R','ETHETA','PHASE','RHO','BR','BRS','BZ','BZS','BT','BRF','VR-NEUTRAL','VZ-NEUTRAL','VR-ION+','VZ-ION+','EFLUX-R','EFLUX-Z','JZ-NET','JR-NET','J-THETA','J-TH(MAG)','J-TH(PHA)','TG-AVE','PRESSURE','POW-RF','POW-RF-E','POW-ICP','EB-ESORC','COLF']
 
-Ar = ['AR3S','AR4SM','AR4SR','AR4SPM','AR4SPR','AR4P','AR4D','AR','AR+','AR2+','AR2*','E','S-AR+','S-AR4P','SEB-AR+','SEB-AR4P','FZ-AR3S','FR-AR3S','FR-AR+','FZ-AR+','FZ-AR3S','FR-AR3S']+Phys
-O2 = ['O3','O2','O2+','O','O+','O-','E','S-O3','S-O2+','S-O+','S-O-','SEB-O3','SEB-O+','SEB-O2+','SEB-O-','FR-O+','FZ-O+','FR-O-','FZ-O-']+['O3P3P','O***','S-O3P3P','S-O***','SEB-O3P3P','SEB-O***']+Phys
+Ar = ['AR3S','AR4SM','AR4SR','AR4SPM','AR4SPR','AR4P','AR4D','AR','AR+','AR2+','AR2*','E','S-AR+','S-AR4P','SEB-AR+','SEB-AR4P','FZ-AR3S','FR-AR3S','FR-AR+','FZ-AR+','FZ-AR3S','FR-AR3S']
+O2 = ['O3','O2','O2+','O','O+','O-','E','S-O3','S-O2+','S-O+','S-O-','SEB-O3','SEB-O+','SEB-O2+','SEB-O-','FR-O+','FZ-O+','FR-O-','FZ-O-']+['O3P3P','O***','S-O3P3P','S-O***','SEB-O3P3P','SEB-O***']
 
 Ar_Phase = ['S-E','S-AR+','S-AR4P','SEB-AR+','SEB-AR4P','SRCE-2437','TE','PPOT','FR-E','FZ-E']
 O2_Phase = ['S-E','S-O+','S-O-','S-O2+','SEB-O+','SEB-O-','SEB-O2+','TE','PPOT','FR-E','FZ-E']+['S-O3P3P','SEB-O3P3P']
@@ -161,7 +171,7 @@ ParallelPlatePCMC = ['AR^2.67', 'ION-TOT2.67']				#RM-OUTDATED
 #SourceWidth =		[0.21]						
 #Crop =				R[0.65];Z[1.0,4.0] 
 
-#### PRuICP ####	
+#### PRICP ####	
 #electrodeloc = 	[33,33]			#Coil V
 #waveformlocs = 	[]
 #DOFWidth = 		[]
@@ -169,10 +179,20 @@ ParallelPlatePCMC = ['AR^2.67', 'ION-TOT2.67']				#RM-OUTDATED
 #ThrustLoc = 		[79]
 #SheathROI = 		[]
 #SourceWidth = 		[]
-#Crop = 			R[0.0,1.0];Z[1.5,10]
+#Crop = 			R[1.0];Z[1.0,9.0]
 #Plotmesh = 		'PRCCP'
 
-#### TSHC-Ar ####
+#### ESCT ####
+#electrodeloc = 	[0,5]
+#waveformlocs = 	[]
+#DOFWidth = 		R;??,Z;??
+#TrendLoc =  		H[0];R[??]		#[??] For PROES
+#ThrustLoc = 		[??]
+#SheathROI = 		[]
+#SourceWidth = 		[??]
+#Crop = 			R[0];Z[0,5]
+
+#### TSHC ####
 #electrodeloc = 	[5,20]
 #waveformlocs = 	[]
 #DOFWidth = 		R;20,Z;6
@@ -209,33 +229,32 @@ NEDFVariables = []							#Requested nprofile_2d variables (no spaces)
 #Requested movie1/movie_icp Variables.
 IterVariables = ['E','S-E','PPOT','TE']				#Requested Movie_icp (iteration) Variables.		
 PhaseVariables = Ar_Phase							#Requested Movie1 (phase) Variables. +['E','AR+']
-electrodeloc = [13,10]	#THC[35,45]					#Cell location of powered electrode [R,Z].
+electrodeloc = [13,10]	#PR[13,10]#THC[35,45]		#Cell location of powered electrode [R,Z].
 waveformlocs = []									#Cell locations of additional waveforms [R,Z].
 
 #Requested TECPLOT Variables and plotting locations.
-Variables = Ar
-MultiVar = []								#Additional variables plotted ontop of [Variables]
-radialineouts = [10]	#THC[85]		 	#Radial 1D-Profiles to be plotted (fixed Z-mesh) --
-heightlineouts = [9] 	#THC[20]			#Axial 1D-Profiles to be plotted (fixed R-mesh) |
-TrendLocation = [15,10] #THC[20,85]			#Cell location For Trend Analysis [R,Z], ([] = min/max)
+Variables = Phys+Ar
+MultiVar = []								 #Additional variables plotted ontop of [Variables]
+radialineouts = [10]	#PR[44]#THC[85]		 #Radial 1D-Profiles to be plotted (fixed Z-mesh) --
+heightlineouts = []		#PR[0]#THC[20]		 #Axial 1D-Profiles to be plotted (fixed R-mesh) |
+ProbeLoc = [0,44]		#PR[0,44]#THC[20,85] #Cell location For Trend Analysis [R,Z], ([] = min/max)
 
 
 #Various Diagnostic Settings.
 phasecycles = 1.00						#Number of waveform phase cycles to be plotted. (float)
 DoFWidth = 10 							#PROES Depth of Field (symmetric about image plane) (cells)
-ThrustLoc = 15			#PR45			#Z-axis cell for thrust calculation  (cells)
-SheathROI = [34,72]						#Sheath Region of Interest, (Start,End) [cells]
-SourceWidth = [12]						#Source Dimension at ROI, leave empty for auto. [cells]
-EDF_Threshold = 0.01					#Maximum Recognised EEDF/IEDF energy fraction (Plot all: 0.0)
+ThrustLoc = 45			#THC[10]		#Z-axis cell for thrust calculation  (cells)
+SheathROI = [34,72]						#Sheath Region of Interest, (Start,End) [cells]				<<< OUTDATED
+SourceWidth = [12]						#Source Dimension at ROI, leave empty for auto. [cells]		<<< OUTDATED
 
 
 #Requested diagnostics and plotting routines.
-savefig_convergence = False				#Single-Variables: iter-time axis			Requires movie_icp.pdt
-savefig_plot2D = False					#Single-Variables: converged				Requires TECPLOT2D.PDT
+savefig_convergence = True				#Single-Variables: iter-time axis			Requires movie_icp.pdt
+savefig_plot2D = True					#Single-Variables: converged				Requires TECPLOT2D.PDT
 
 savefig_monoprofiles = False			#Single-Variables; fixed height/radius
 savefig_multiprofiles = False			#Multi-Variables; same folder					- NO ASCII OUTPUT
-savefig_compareprofiles = False			#Multi-Variables; all folders
+savefig_compareprofiles = True			#Multi-Variables; all folders
 savefig_temporalprofiles = False		#Single-Variables; real-time axis
 					
 savefig_trendphaseaveraged = False		#Converged trends at 'TrendLoc' cell
@@ -258,7 +277,7 @@ write_ASCII = True						#All diagnostic output written to ASCII.
 #Steady-State diagnostics terminal output toggles.
 print_generaltrends = False				#Verbose Min/Max Trend Outputs.
 print_Knudsennumber = False				#Print cell averaged Knudsen Number
-print_totalpower = True				#Print all requested total powers
+print_totalpower = False				#Print all requested total powers
 print_Reynolds = False					#Print cell averaged sound speed
 print_DCbias = False					#Print DC bias at electrodeloc
 print_thrust = False					#Print neutral, ion and total thrust
@@ -267,27 +286,26 @@ print_sheath = False					#Print sheath width at electrodeloc
 
 #Image plotting options.
 image_extension = '.png'				#Define image extension  ('.png', '.jpg', '.eps')		
-image_interp = 'bilinear'				#Define image smoothing  ('none', 'bilinear')
+image_interp = 'none'					#Define image smoothing  ('none', 'bilinear')
 image_cmap = 'plasma'					#Define global colourmap ('jet','plasma','inferno','gnuplot')
+# ADD TECPLOT COLOUR SCHEME
 
-image_aspectratio = [10,10]				#[x,y] in cm [Doesn't rotate dynamically]
-image_radialcrop = []#[0.65]			#[R1,R2] in cm
-image_axialcrop = []#[1.0,4.0]			#[Z1,Z2] in cm
-image_cbarlimit = []					#[min,max] colourbar limits	
+image_aspectratio = [10,10]				#Real Size of [X,Y] in cm [Doesn't Rotate - X is always horizontal]
+image_radialcrop = []#[0.65]			#Crops 2D images to [R1,R2] in cm
+image_axialcrop = []#[1.0,4.0]			#Crops 2D images to [Z1,Z2] in cm
+image_cbarlimit = []					#[min,max] colourbar limits
 
-image_plotsymmetry = False				#Toggle radial symmetry
+image_plotsymmetry = False				#Plot radial symmetry - mirrors across the ISYM axis
+image_plotcontours = False				#Plot contour lines in 2D images
+image_plotoverlay = False				#Plot location(s) of 1D radial/axial profiles onto 2D images
+image_plotsheath = False				#Plot sheath extent onto 2D images
+image_plotgrid = False					#Plot major/minor gridlines on 1D profiles
+image_plotmesh = False#'PRCCP'			#Plot material mesh outlines ('Auto','PRCCP','PRCCPM','ESCT','GEC')
 image_numericaxis = False				#### NOT implemented ####
-image_contourplot = True				#Toggle contour Lines in images
-image_1Doverlay = False					#Overlay location(s) of radialineouts/heightlineouts
-image_plotgrid = False					#Plot major/minor gridlines on profiles
-image_plotmesh = False#'PRCCP'			#Plot material mesh outlines ('Auto','PRCCP','PRMCCP','ESCT','GEC')
-image_rotate = False					#Rotate image 90 degrees to the right.
 
-image_Normalise = False					#Normalise image/profiles to local max
+image_rotate = False					#Rotate image 90 degrees to the right.			# MAKE [0000-1000, 0-2pi]
+image_normalise = False					#Normalise image/profiles to local max
 image_logplot = False					#Plot ln(Data), against linear axis.
-image_sheath = False					#Plot sheath width onto 2D images.
-
-
 
 #Overrides the automatic image labelling.
 titleoverride = []
@@ -335,7 +353,7 @@ cbaroverride = ['Notimplemented']
 
 #Multivar_profiles diagnostic overhaul - update coding structure and include an ASCII output option
 
-#Add 'TrendLocation' option to savefig_temporal, where the meshavg is the default but if there are any supplied TrendLocation cells then those get saved into their own seperate folder.
+#Add 'ProbeLoc' option to savefig_temporal, where the meshavg is the default but if there are any supplied ProbeLoc cells then those get saved into their own seperate folder.
 
 #Fix Rynolds diagnostic - Current version has issue with NaNs and incorrect averaging
 #implement Rynolds number properly (was converted from sound speed diagnostic)
@@ -377,7 +395,7 @@ cbaroverride = ['Notimplemented']
  						#INITIATE GLOBAL LISTS#
 #====================================================================#
 
-#Create lists for basic processing
+#Variables and lists for basic processing
 Dir = list()					#List of all datafile directories inside folders
 Dirlist = list()				#List of all folder directories (not including filenames)
 IEDFVariablelist = list()		#List of all variable names in pcmc.prof in header order
@@ -386,7 +404,7 @@ Geometrylist = list()			#List containing commonly used geometries [LEGACY: NOT U
 Globalvarlist = list()			#List of all commonly shared variable names between all folders
 Globalnumvars = list()			#Number of commonly shared variables between all folders.
 
-#Create mesh_size lists and SI conversion
+#Variables for mesh_size lists and SI conversion
 ISYMlist = list()				#list of ISYM values in folder order in Dirlist
 IXZlist = list()				#List of IXZ values in folder order in Dirlist
 R_mesh = list()					#List of radial mesh cells for initmesh.out in folder order in Dirlist
@@ -401,54 +419,54 @@ dr = list()						#Radial mesh resolution [cm/cell] in folder order in Dirlist
 dz = list()						#Axial mesh resolution [cm/cell] in folder order in Dirlist
 dy = list()						#Depth mesh resolution [cm/cell] in folder order in Dirlist
 
-#Lists for icp.nam variables
-VRFM,VRFM2   = list(),list()
-FREQM,FREQM2 = list(),list()
-FREQC        = list()
-FREQMAX,FREQMIN  = list(),list()
-FREQGLOB,FREQALL = list(),list()
-IRFPOW = list()
-PRESOUT = list()
-IMOVIE_FRAMES = list()
-NUMMETALS=0; CMETALS,IETRODEM = list(),list()
-NUMCOILS=0; CCOILS = list()
-IMATSTATS=0; CMATSTATS = list()
-IPCMCSPEC=0; CPCMCSPEC = list()
-IEBINSPCMC=0; EMAXIPCMC=0
+#Variables and lists for icp.nam parameters
+VRFM,VRFM2   = list(),list()							# Array of reals (In Material Order)
+FREQM,FREQM2 = list(),list()							# Array of reals (In Material Order)
+FREQC        = list()									# Array of reals (In Material Order)
+FREQMAX,FREQMIN  = list(),list()						# Array of reals (In Material Order)
+FREQGLOB,FREQALL = list(),list()						# real
+IRFPOW = list()											# real
+PRESOUT = list()										# real
+IMOVIE_FRAMES = list()									# real
+NUMMETALS=0; CMETALS,IETRODEM = list(),list()			# int;	Array of strings and ints, respectively
+NUMCOILS=0; CCOILS = list()								# int;	Array of strings
+IMATSTATS=0; CMATSTATS = list()							# int;	Array of strings
+IPCMCSPEC=0; CPCMCSPEC = list()							# int;	Array of strings
+IEBINSPCMC=0; EMAXIPCMC=0								# int; 	int
 
 #Lists for icp.dat variables
-header_icpdat = list()			#[SpeciesName, Charge, MolecularWeight, StickingCoeff,
+header_icpdat = list()			#[SpeciesName, Charge, MolecularWeight, StickingCoeff,	- Array of strings
 								# Transport, ReturnFrac, ReturnName]
-AtomicSpecies = list()			#All species contained within chemistry set
-FluidSpecies  = list() 			#All 'bulk' fluid species (for fluid dynamics analysis)
-NeutSpecies	= list()			#All neutral and metastable species
-PosSpecies = list()				#All positive ion species
-NegSpecies = list()				#All negative ion species
+AtomicSpecies = list()			#All species contained within chemistry set				- Array of strings
+FluidSpecies  = list() 			#All neutral fluid species (for fluid dynamics) 		- Array of strings
+NeutSpecies	= list()			#All neutral and metastable species						- Array of strings
+PosSpecies = list()				#All positive ion species								- Array of strings
+NegSpecies = list()				#All negative ion species								- Array of strings
 
 #Lists to store raw data
-rawdata_2D = list()				#ASCII format TECPLOT2D data string list 		  - Variable,Radius,Axis
-rawdata_kin = list()			#ASCII format kin.pdt data string list 			  - Variable,Radius,Axis
-rawdata_phasemovie = list()		#ASCII format movie1.pdt data string list 		  - Variable,Radius,Axis
-rawdata_itermovie = list()		#ASCII format movie_icp.pdt data string list 	  - Variable,Radius,Axis
-rawdata_IEDF = list()			#ASCII format iprofile_tec2d.pdt data string list - Variable,Radius,Axis
-rawdata_mcs = list()			#ASCII format mcs.pdt data string list 			  - Variable,Radius,Axis
+rawdata_2D = list()				#ASCII format TECPLOT2D.pdt data string list			- Variable,Radius,Axis
+rawdata_kin = list()			#ASCII format kin.pdt data string list					- Variable,Radius,Axis
+rawdata_phasemovie = list()		#ASCII format movie1.pdt data string list				- Variable,Radius,Axis
+rawdata_itermovie = list()		#ASCII format movie_icp.pdt data string list 	  		- Variable,Radius,Axis
+rawdata_IEDF = list()			#ASCII format iprofile_tec2d.pdt data string list 		- Variable,Radius,Axis
+rawdata_mcs = list()			#ASCII format mcs.pdt data string list 			  		- Variable,Radius,Axis
 
-Data = list()					#Data[folder][Variable][Datapoint]						-2D Data
-DataKin = list()				#Data[folder][Variable][Datapoint]						-1D Data
-DataIEDF = list()				#Data[folder][Variable][Datapoint]						-2D Data
-DataEEDF = list()				#Data[folder][Variable][Datapoint]						-2D Data
-IterMovieData = list()			#ITERMovieData[folder][timestep][variable][datapoints]	-3D Data
-PhaseMovieData = list()			#PhaseMovieData[folder][timestep][variable][datapoints]	-3D Data
+Data = list()					#Data[folder][Variable][Data]						-Data = 2D (R,Z) of reals
+DataKin = list()				#Data[folder][Variable][Data]						-Data = 1D (Avg) of reals
+DataIEDF = list()				#Data[folder][Variable][Data]						-Data = 2D (R,Z) of reals
+DataEEDF = list()				#Data[folder][Variable][Data]						-Data = 2D (R,Z) of Reals
+IterMovieData = list()			#ITERMovieData[folder][Timestep][Variable][Data]	-Data = 2D (R,Z) of Reals
+PhaseMovieData = list()			#PhaseMovieData[folder][Timestep][Variable][Data]	-Data = 2D (R,Z) of Reals
 
-Moviephaselist = list()			#'CYCL = n'
-MovieIterlist = list()			#'ITER = n'
-EEDF_TDlist = list()			#'???'
+Moviephaselist = list()			#'CYCL = n'												-int
+MovieIterlist = list()			#'ITER = n'												-int
+EEDF_TDlist = list()			#'???'													-???
 
-header_itermovie = list()
-header_phasemovie = list()
-header_IEDFlist = list()
-header_kinlist = list()
-header_2Dlist = list()
+header_itermovie = list()		#Header num rows for movie_icp.pdt						-1D array of ints
+header_phasemovie = list()		#Header num rows for movie1.pdt							-1D array of ints
+header_IEDFlist = list()		#Header num rows for iprofile_tec2d.pdt					-1D array of ints
+header_kinlist = list()			#Header num rows for kin.pdt							-1D array of ints
+header_2Dlist = list()			#Header num rows for TECPLOT2D.pdt						-1D array of ints
 
 
 
@@ -459,7 +477,7 @@ header_2Dlist = list()
 
 
 #====================================================================#
-					#WELCOME TEXT AND INFORMATION#
+					#WELCOME SPLASH AND INFORMATION#
 #====================================================================#
 
 print( '')
@@ -608,9 +626,7 @@ for l in range(0,numfolders):
 		if l <= len(TEC2D)-1:
 
 			#If the initmesh.out file cannot be found, manual input is required.
-			print( '------------------------------------------------------------------------')
-			print( 'INITMESH GEOMETRY READIN ERROR, PLEASE MANUALLY DEFINE MESH GEOMETRY FOR')
-			print( '------------------------------------------------------------------------')
+			print( 'ERR: ICP.NAM GEOMETRY READIN, USING MANUAL MESH CELL INPUT:')
 			print( Dirlist[l])
 			r_mesh = int(input("DEFINE NUM RADIAL CELLS:"))
 			z_mesh = int(input("DEFINE NUM AXIAL CELLS:"))
@@ -623,12 +639,12 @@ for l in range(0,numfolders):
 
 	#Retrieve entire mesh for plotting if requested.	#MESH PLOTTING NOT WORKING#
 	if image_plotmesh == True:							#MESH PLOTTING NOT WORKING#
-		print( '-------------------------------------------------')
-		print( 'Mesh Outline Plotting Does Not Currently Function')
-		print( '-------------------------------------------------')
+		image_plotmesh = False
+		print( 'WARNING: AUTOMESH PLOTTING IS NOT CURRENTLY SUPPORTED')
+		print( 'SETTING image_plotmesh = False')
 		print( '')
 		#Extract mesh data from initmesh.out			#MESH PLOTTING NOT WORKING#
-		mesh = open(mesh[l]).readlines()				#MESH PLOTTING NOT WORKING#
+#		mesh = open(mesh[l]).readlines()				#MESH PLOTTING NOT WORKING#
 	#endif
 
 
@@ -641,15 +657,24 @@ for l in range(0,numfolders):
 	#Mesh Geometry Namelist Inputs
 	try:
 		RADIUS = list(filter(lambda x:'RADIUS=' in x, NamelistData))
-		RADIUS = float(RADIUS[0].strip(' \t\n\r,=RADIUS'))
+		RADIUS = RADIUS[0].split('!!!')[0]
+		RADIUS = float(RADIUS.strip(' \t\n\r,=RADIUS'))
+		
 		RADIUST = list(filter(lambda x:'RADIUST=' in x, NamelistData))
-		RADIUST = float(RADIUST[0].strip(' \t\n\r,=RADIUST'))
+		RADIUST = RADIUST[0].split('!!!')[0]
+		RADIUST = float(RADIUST.strip(' \t\n\r,=RADIUST'))
+
 		HEIGHT = list(filter(lambda x:'HEIGHT=' in x, NamelistData))
-		HEIGHT = float(HEIGHT[0].strip(' \t\n\r,=HEIGHT')        )
+		HEIGHT = HEIGHT[0].split('!!!')[0]
+		HEIGHT = float(HEIGHT.strip(' \t\n\r,=HEIGHT'))
+		
 		HEIGHTT = list(filter(lambda x:'HEIGHTT=' in x, NamelistData))
-		HEIGHTT = float(HEIGHTT[0].strip(' \t\n\r,=HEIGHTT'))
+		HEIGHTT = HEIGHTT[0].split('!!!')[0]
+		HEIGHTT = float(HEIGHTT.strip(' \t\n\r,=HEIGHTT'))
+
 		DEPTH = list(filter(lambda x:'DEPTH=' in x, NamelistData))
-		DEPTH = float(DEPTH[0].strip(' \t\n\r,=DEPTH')        )
+		DEPTH = DEPTH[0].split('!!!')[0]
+		DEPTH = float(DEPTH.strip(' \t\n\r,=DEPTH'))
 
 		IXZ = list(filter(lambda x:'IXZ=' in x, NamelistData))
 		IXZ = IXZ[0].split('!!!')[0]
@@ -679,14 +704,12 @@ for l in range(0,numfolders):
         
 	except:
 		#If the geometry section cannot be found, manual input is required.
-		print( '-------------------------------------------------------------------------')
-		print( 'ERR: ICP.NAM GEOMETRY READIN, PLEASE MANUALLY DEFINE MESH DIMENSIONS FOR:')
-		print( '-------------------------------------------------------------------------')
-		print( Dirlist[l])
+		print('ERR: ICP.NAM GEOMETRY READIN, USING MANUAL MESH SI INPUT:')
+		print(Dirlist[l])
 		radius = float(input("DEFINE RADIUST [cm]:"))
 		height = float(input("DEFINE HEIGHTT [cm]:"))
 		depth = float(input("DEFINE DEPTH [cm]:"))
-		print( '')
+		print('')
 
 		Radius.append(radius)
 		Height.append(height)
@@ -697,7 +720,7 @@ for l in range(0,numfolders):
 
 	#=====#=====#
 	
-	#Material Namelist Inputs (frequencies/voltages/powers)   [FREQGLOB ONLY READS 10 CHARACTERS]
+	#Material Namelist Inputs (frequencies/voltages/powers)
 	try:
 		NUMMETALS = list(filter(lambda x:'IMETALS' in x,NamelistData))[0].strip(' \t\n\r,=IMETALS')
 		NUMMETALS = int(NUMMETALS)+1
@@ -722,22 +745,24 @@ for l in range(0,numfolders):
 		FREQGLOB.append( list(filter(lambda x:'FREQ=' in x, NamelistData))[0].split() )
 		FREQGLOB[l] = float( FREQGLOB[l][0].strip(' \t\n\r,=FREQ') )	#NOTE: Assumes 1 entry for "FREQ="
 		##
-		FREQC.append( list(filter(lambda x: 'FREQC=' in x, NamelistData))[0].split(',')[0:-1] ) #[0:NUMCOILS]
+		FREQC.append( list(filter(lambda x: 'FREQC=' in x, NamelistData))[0].split(',')[0:-1] )
 		for i in range(0,len(FREQC[-1])): FREQC[-1][i] = float(FREQC[-1][i].strip(' \t\n\r,=FREQC'))
 		##
-		IRFPOW.append( float(list(filter(lambda x:'IRFPOW=' in x, NamelistData))[0].strip(' \t\n\r,=IRFPOW')))
+		IRFPOW.append( list(filter(lambda x:'IRFPOW=' in x, NamelistData))[0].strip(' \t\n\r,=IRFPOW'))
+		IRFPOW[l] = float( IRFPOW[l].split('!!!')[0].strip(' \t\n\r,') )
 		##
-		PRESOUT.append( float(list(filter(lambda x:'PRESOUT=' in x, NamelistData))[0].strip(' \t\n\r,=PRESOUT')))
+		PRESOUT.append( list(filter(lambda x:'PRESOUT=' in x, NamelistData))[0].strip(' \t\n\r,=PRESOUT'))
+		PRESOUT[l] = float( PRESOUT[l].split('!!!')[0].strip(' \t\n\r,') )
 	except:
 		print( 'ERR: ICP.NAM MATERIAL DEFINITIONS READIN, USING DEFAULT MATERIAL PROPERTIES')
-		FREQM.append(13.56E6)		#Hz
-		FREQM2.append(13.56E6)		#Hz
-		FREQC.append(13.56E6)		#Hz
-		FREQGLOB.append(13.56E6)	#Hz
-		VRFM.append(300.0)			#Volts
-		VRFM2.append(150.0)			#Volts
-		IRFPOW.append(100.0)		#Watts
-		PRESOUT.append(0.85)		#Torr
+		FREQM.append(13.56E6)		#[Hz]
+		FREQM2.append(13.56E6)		#[Hz]
+		FREQC.append(13.56E6)		#[Hz]
+		FREQGLOB.append(13.56E6)	#[Hz]
+		VRFM.append(300.0)			#[Volts]
+		VRFM2.append(150.0)			#[Volts]
+		IRFPOW.append(100.0)		#[Watts]
+		PRESOUT.append(0.85)		#[Torr]
 	#endtry
 
 	#No ICP coils are on - Ignore ICP frequencies in FREQALL
@@ -745,31 +770,40 @@ for l in range(0,numfolders):
 		FREQALL = FREQM[l]+FREQM2[l]+FREQGLOB
 		FREQALL = [x for x in FREQALL if x > 0]				#Ignore any DC voltages (FREQ = 0)
 	#ICP coils are on - include ICP frequencies in FREQALL
-	elif NUMCOILS > 0: 
+	elif NUMCOILS > 0:
 		FREQALL = FREQM[l]+FREQM2[l]+FREQC[l]+FREQGLOB
 		FREQALL = [x for x in FREQALL if x > 0]				#Ignore any DC voltages (FREQ = 0)
-	#endif	
-#	print( FREQM[l], FREQM2[l], FREQGLOB )					#Debug to check all frequencies
+	#endif
 	FREQMIN.append( min(FREQALL) )							#Minimum global frequency 	[Hz]
 	FREQMAX.append( max(FREQALL) )							#Maximum global frequency	[Hz]
+	
+	#Debug to check all RF frequencies
+	if IDEBUG == 1:	
+		print( 'Material Frequencies FREQM', FREQM[l] )
+		print( 'Material Frequencies FREQM2', FREQM2[l] )
+		print( 'Coil Freqencies FREQC', FREQC[l] )
+		print( 'Global Frequency FREQ', FREQGLOB )
+	#endif
 		
 	#=====#=====#
 
 	#Plasma Chemistry Monte-Carlo (PCMC) Namelist Inputs
 	try:
 		IMATSTATS = list(filter(lambda x:'IMATSTATS' in x,NamelistData))[0].strip(' \t\n\r,=IMATSTATS')
-		IMATSTATS = int(IMATSTATS)
+		IMATSTATS = int( IMATSTATS[0].split('!!!')[0] )
 		CMATSTATS = list(filter(lambda x: 'CMATSTATS=' in x, NamelistData))[0].strip(' \t\n\r,')
 		CMATSTATS = CMATSTATS.split('=')[1].split(',')[0:IMATSTATS]
 		##
 		IPCMCSPEC = list(filter(lambda x:'IPCMCSPEC' in x,NamelistData))[0].strip(' \t\n\r,=IPCMCSPEC')
-		IPCMCSPEC = int(IPCMCSPEC)+1		#Add 1 to account for ION-TOT
+		IPCMCSPEC = int( IPCMCSPEC[0].split('!!!')[0])+1		#Add 1 to account for default ION-TOT
 		CPCMCSPEC = list(filter(lambda x: 'CPCMCSPEC=' in x, NamelistData))[0].strip(' \t\n\r,')
 		CPCMCSPEC = CPCMCSPEC.split('=')[1].split(',')[0:IPCMCSPEC]
 		##
-		IEBINSPCMC = list(filter(lambda x: 'IEBINSPCMC=' in x, NamelistData))[0]
+		IEBINSPCMC = list(filter(lambda x: 'IEBINSPCMC=' in x, NamelistData))
+		IEBINSPCMC = IEBINSPCMC[0].split('!!!')[0]
 		IEBINSPCMC = float(IEBINSPCMC.split()[0].strip(' \t\n\r,=IEBINSPCMC'))
-		EMAXIPCMC = list(filter(lambda x: 'EMAXIPCMC=' in x, NamelistData))[0]
+		EMAXIPCMC = list(filter(lambda x: 'EMAXIPCMC=' in x, NamelistData))
+		EMAXIPCMC = EMAXIPCMC[0].split('!!!')[0]
 		EMAXIPCMC = float(EMAXIPCMC.split()[0].strip(' \t\n\r,=EMAXIPCMC'))
 	except:
 		print( 'ERR: ICP.NAM PCMC READIN, USING DEFAULT PCMC PROPERTIES')
@@ -779,7 +813,8 @@ for l in range(0,numfolders):
 
 	#Phase-Resolved IMOVIE Namelist Inputs
 	try:
-		imovie_frames = list(filter(lambda x:'IMOVIE_FRAMES=' in x, NamelistData))[0]
+		imovie_frames = list(filter(lambda x:'IMOVIE_FRAMES=' in x, NamelistData))	#OLD VERSION HAD [0]
+		imovie_frames = imovie_frames[0].split('!!!')[0]
 		IMOVIE_FRAMES.append( int(imovie_frames.strip(' \t\n\r,=IMOVIE_FRAMES')) )
 	except:
 		print( 'ERR: ICP.NAM IMOVIE READIN, USING DEFAULT PHASE RESOLVED PROPERTIES')
@@ -817,7 +852,7 @@ for l in range(0,numfolders):
 				elif Charge >= 1 and SpeciesName not in PosSpecies:  PosSpecies.append(SpeciesName)
 				elif Charge <= -1 and SpeciesName not in NegSpecies: NegSpecies.append(SpeciesName)
 				#List of recognized ground-state neutral species for fluid analysis.
-				FluidSpecies = ['AR','AR3S','O2','O']	#RE FLUID SPECIES ARE STILL MANUALLY DEFINED
+				FluidSpecies = ['AR','AR3S','O2','O']	#NOTE :: FLUID SPECIES ARE STILL MANUALLY DEFINED
 
 				#Collect icp.dat header if required for later use
 				header_icpdat.append([SpeciesName,Charge,MolecularWeight,StickingCoeff, TransportBool,ReturnFrac,ReturnSpecies])
@@ -1435,7 +1470,7 @@ def VariableLabelMaker(variablelist):
 			VariableUnit = '[C cm$^{-3}$]'
 			
 		elif variablelist[i] == 'EF-TOT':
-			Variable = 'Cycle-Averaged E-Field Amplitude'
+			Variable = 'Average E-Field Amplitude'
 			VariableUnit = '[Vcm$^{-1}$]'
 		elif variablelist[i] in ['ER','EAMB-R']:
 			Variable = 'Radial E-Field Amplitude'
@@ -1726,7 +1761,7 @@ def ManualPRCCPMesh(Ax=plt.gca()):
 
 #=============#
 
-def ManualPRMCCPMesh(Ax=plt.gca()):
+def ManualPRCCPMMesh(Ax=plt.gca()):
 	#Plot pocket rocket material dimensions.
 	Ax.plot((27*dz[l],27*dz[l]),   (-1.0,-0.21), '-', color='dimgrey', linewidth=2)
 	Ax.plot((75*dz[l],75*dz[l]),   (-1.0,-0.21), '-', color='dimgrey', linewidth=2)
@@ -2687,7 +2722,7 @@ def CbarMinMax(Image,PROES=False,Symmetry=image_plotsymmetry):
 
 	#Ensure limits are in line with any requested mathematical constraints
 #	if image_logplot == True: Image = np.log(Image)
-#	if image_Normalise == True: Image = Normalise(Image)
+#	if image_normalise == True: Image = Normalise(Image)
 
 	#Extract min/max from cropped region if a region is supplied.
 	if any( [len(image_radialcrop),len(image_axialcrop)] ) > 0:
@@ -2820,8 +2855,8 @@ def ImageOptions(fig,ax=plt.gca(),Xlabel='',Ylabel='',Title='',Legend=[],Crop=Tr
 		mesh_auto_plot = 1 #AUTO PLOT MESH NOT implementED!! REQUIRES initmesh.out READER#
 	elif image_plotmesh == 'PRCCP' and Crop == True:	
 		ManualPRCCPMesh(ax)
-	elif image_plotmesh == 'PRMCCP' and Crop == True:	
-		ManualPRMCCPMesh(ax)
+	elif image_plotmesh == 'PRCCPM' and Crop == True:	
+		ManualPRCCPMMesh(ax)
 	elif image_plotmesh == 'GEC' and Crop == True:
 		ManualGECMesh(ax)
 	elif image_plotmesh == 'EVgeny' and Crop == True:
@@ -3053,7 +3088,7 @@ def ImagePlotter1D(axis,profile,aspectratio,fig=111,ax=111):
 	#Apply any required numerical changes to the profile.
 	if image_logplot == True:
 		profile = np.log(profile)
-	if image_Normalise == True:
+	if image_normalise == True:
 		profile = Normalise(profile)[0]
 	#endif
 
@@ -3094,12 +3129,12 @@ def ImagePlotter2D(Image,extent,aspectratio=image_aspectratio,variable='N/A',fig
 	#Apply any required numerical changes to the image.
 	if image_logplot == True:
 		Image = np.log(Image)
-	elif image_Normalise == True:
+	elif image_normalise == True:
 		Image = Normalise(Image)[0]
 	#endif
 
 	#Plot image with or without contour plots, (contour scale = 90% of cbar scale)
-	if image_contourplot == True:
+	if image_plotcontours == True:
 		im = ax.contour(Image,extent=extent,origin="lower")
 		im.set_clim(CbarMinMax(Image)[0]*0.90,CbarMinMax(Image)[1]*0.90)
 		im = ax.imshow(Image,extent=extent,origin="lower")
@@ -3121,7 +3156,7 @@ def TrendPlotter(ax=plt.gca(),TrendArray=[],Xaxis=[],Marker='o-',NormFactor=0):
 #TrendPlotter(ax[0],TrendProfiles,Xaxis,'o-',0)
 
 	#Normalise data to provided normalization factor if required.
-	if image_Normalise == True:
+	if image_normalise == True:
 		TrendArray = Normalise(TrendArray,NormFactor)[0]
 	#endif
 
@@ -3292,14 +3327,14 @@ def WaveformExtractor(PhaseData,PPOT,waveformlocation=electrodeloc):
 #=========================#
 
 
-def TrendAtGivenLocation(TrendLocation,process,variable):
+def TrendAtGivenLocation(ProbeLoc,process,variable):
 #Trend analysis for a given point on a 2D Image.
-#Takes global 'TrendLocation' for safety, process and variable.
+#Takes global 'ProbeLoc' for safety, process and variable.
 #Returns two arrays: One is the X-axis to plot against
 #Second is the value of variable at location for all simulations.
 
 	#Refresh lists that change per image.
-	R,Z = TrendLocation[0],TrendLocation[1]
+	R,Z = ProbeLoc[0],ProbeLoc[1]
 	Trend = list()
 	Xaxis = list()
 
@@ -3327,7 +3362,7 @@ def TrendAtGivenLocation(TrendLocation,process,variable):
 	#endfor
 
 	#Normalise to maximum value in each profile if required.
-	if image_Normalise == True:
+	if image_normalise == True:
 		Trend,Min,Max = Normalise(Image)
 	#endif
 
@@ -3390,7 +3425,7 @@ def MinMaxTrends(lineout,Orientation,process):
 	#endfor
 
 	#Normalise to maximum value in each profile if required.
-	if image_Normalise == True:
+	if image_normalise == True:
 		MaxValueTrend,MaxMin,MaxMax = Normalise(MaxValueTrend)
 		MinValueTrend,MinMin,MinMax = Normalise(MinValueTrend)
 	#endif
@@ -3534,7 +3569,7 @@ def DCbiasMagnitude(PPOTlineout):
 		except: DCbias = PreIndexVoltageDrop - PostIndexVoltageDrop
 	#endif
 
-	if DebugMode == True:
+	if IDEBUG == True:
 		X1 = range(0,len(PreIndex))
 		X2 = range(len(PreIndex),len(PPOTlineout))
 
@@ -3821,9 +3856,9 @@ def PlotSheathExtent(SxAxis,Sx,ax=plt.gca(),ISymmetry=0):
 	#endif
 
 	#Plot sheath extent from origin with or without mesh symmetry
-	if image_sheath == True and int(ISymmetry) == 0:
+	if image_plotsheath == True and int(ISymmetry) == 0:
 		ax.plot(SxAxis,Sx, 'w--', lw=2)
-	elif image_sheath == True and int(ISymmetry) == 1:
+	elif image_plotsheath == True and int(ISymmetry) == 1:
 		ax.plot(SxAxis,Sx, 'w--', lw=2)
 		ax.plot(SxAxis,SymSx, 'w--', lw=2)
 	#endif
@@ -3918,7 +3953,7 @@ if savefig_plot2D == True:
 			PlotSheathExtent(SxAxis,Sx,ax,ISYMlist[l])
 			
 			#Overlay location of 1D profiles if requested, adjusting for image rotation.
-			if image_1Doverlay == True:
+			if image_plotoverlay == True:
 				for j in range(0,len(radialineouts)):
 					X1,X2 = extent[0],extent[1]
 					Y1,Y2 = radialineouts[j]*dz[l],radialineouts[j]*dz[l]
@@ -3953,7 +3988,7 @@ if savefig_plot2D == True:
 			if write_ASCII == True:
 				DirWrite = CreateNewFolder(Dir2Dplots, '2Dplots_Data')
 				WriteDataToFile(Image, DirWrite+variablelist[k])
-				if image_sheath == True and k == len(processlist)-1: WriteDataToFile(Sx, DirWrite+'Sx-EXT')
+				if image_plotsheath == True and k == len(processlist)-1: WriteDataToFile(Sx, DirWrite+'Sx-EXT')
 			#endif
 
 			#Save Figure
@@ -4989,7 +5024,7 @@ if savefig_IEDFtrends == True:
 			#==========#
 			#==========#
 
-			if DebugMode == True:
+			if IDEBUG == True:
 				fig2,ax2 = figure()
 				try: BinAveragedValue = BinAveragedEnergy		#MeanEnergy Value
 				except: BinAveragedValue = BinAveragedFraction	#MeanFraction Value
@@ -5148,17 +5183,17 @@ if savefig_trendphaseaveraged == True or print_generaltrends == True:
 			DirAxialTrends = CreateNewFolder(DirTrends,'Axial Trends')
 
 			#Take Trend at Given Location or Default to Min/Max Trends.
-			if len(TrendLocation) == 2:
+			if len(ProbeLoc) == 2:
 				#Append requested position to the legendlist.
-				R,Z = TrendLocation[0],TrendLocation[1]
+				R,Z = ProbeLoc[0],ProbeLoc[1]
 				Location = '(R'+str(round(R*dr[l],1))+'cm, Z'+str(round(Z*dz[l],1))+'cm)'
 				Legendlist.append(Location)
 				#Take trend at given location if specified.
 				Xaxis,Trend = TrendAtGivenLocation([R,Z],processlist[k],Variablelist[k])
 
-			elif len(TrendLocation) == 1:
+			elif len(ProbeLoc) == 1:
 				#Append requested position to the legendlist.
-				R,Z = TrendLocation[0],heightlineouts[j]
+				R,Z = ProbeLoc[0],heightlineouts[j]
 				Location = '(R'+str(round(R*dr[l],1))+'cm, Z'+str(round(Z*dz[l],1))+'cm)'
 				Legendlist.append(Location)
 				#Take trend at given location if specified.
@@ -5209,17 +5244,17 @@ if savefig_trendphaseaveraged == True or print_generaltrends == True:
 			DirRadialTrends = CreateNewFolder(DirTrends,'Radial Trends')
 
 			#Take Trend at Given Location or Default to Min/Max Trends.
-			if len(TrendLocation) == 2:
+			if len(ProbeLoc) == 2:
 				#Append requested position to the legendlist.
-				R,Z = TrendLocation[0],TrendLocation[1]
+				R,Z = ProbeLoc[0],ProbeLoc[1]
 				Location = '(R'+str(round(R*dr[l],1))+'cm, Z'+str(round(Z*dz[l],1))+'cm)'
 				Legendlist.append(Location)
 				#Take trend at given location if specified.
 				Xaxis,Trend = TrendAtGivenLocation([R,Z],processlist[k],Variablelist[k])
 
-			elif len(TrendLocation) == 1:
+			elif len(ProbeLoc) == 1:
 				#Append requested position to the legendlist.
-				R,Z = radialineouts[j],TrendLocation[0],
+				R,Z = radialineouts[j],ProbeLoc[0],
 				Location = '(R'+str(round(R*dr[l],1))+'cm, Z'+str(round(Z*dz[l],1))+'cm)'
 				Legendlist.append(Location)
 				#Take trend at given location if specified.
@@ -6348,7 +6383,7 @@ if savefig_phaseresolve2D == True:
 				#Extract full 2D image for further processing.
 				Image = ImageExtractor2D(PhaseData[j][proclist[i]],varlist[i])
 				#Extract Ni and Ne variables for sheath processing.
-				if image_sheath == True:
+				if image_plotsheath == True:
 					Ne = SxData[j][Sxproc[Sxvar.index('E')]]
 					Ni = SxData[j][Sxproc[Sxvar.index('AR+')]]
 					Sx,SxAxis = CalcSheathExtent(folder=l,Phase=j,Ne=Ne,Ni=Ni)
@@ -6757,7 +6792,7 @@ if savefig_PROES == True:
 						#endif
 					#endif
 
-					if image_sheath == True:
+					if image_plotsheath == True:
 						#Extract Ni and Ne variables and perform sheath processing.
 						Ne = SxData[j][Sxproc[Sxvar.index('E')]]
 						Ni = SxData[j][Sxproc[Sxvar.index('AR+')]]
@@ -6773,7 +6808,7 @@ if savefig_PROES == True:
 				for n in range(0,int(phasecycles*len(PROES))):
 					Index = n % len(PROES)		#Modulo index for multiple phasecycles
 					ScaledPROES.append(PROES[Index])
-					if image_sheath == True:
+					if image_plotsheath == True:
 						ScaledPhaseSx.append(PhaseSx[Index])
 					#endif
 				#endfor
