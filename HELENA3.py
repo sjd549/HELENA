@@ -286,7 +286,7 @@ print_sheath = False					#Print sheath width at electrodeloc
 
 #Image plotting options.
 image_extension = '.png'				#Define image extension  ('.png', '.jpg', '.eps')		
-image_interp = 'none'					#Define image smoothing  ('none', 'bilinear')
+image_interp = 'bilinear'				#Define image smoothing  ('none', 'bilinear')
 image_cmap = 'plasma'					#Define global colourmap ('jet','plasma','inferno','gnuplot')
 # ADD TECPLOT COLOUR SCHEME
 
@@ -4118,8 +4118,10 @@ if savefig_convergence == True:
 			ConvergenceTrends[i] = Normalise(ConvergenceTrends[i],NormFactor=FinalIterationValues[i])[0]
 			ax.plot(IterArray,ConvergenceTrends[i], lw=2)
 		#endfor
+		#Calculate image Ylims :: also "Limit the limits!" (avoids super zoomed out figures)
 		Limits = [min(np.asarray(ConvergenceTrends).flatten()),max(np.asarray(ConvergenceTrends).flatten())]
-		if Limits[1] > 2*Limits[0]: Limits[1] = 2			#Limit the limits! (avoids early messy figures)
+		if abs(Limits[1]) > 2*Limits[0]: Limits[1] = +4.0
+		if abs(Limits[0]) > 2*Limits[1]: Limits[0] = -4.0
 
 		#Image plotting details.
 		Title = 'Convergence of '+str(variablelist)+' for \n'+Dirlist[l][2:-1]
