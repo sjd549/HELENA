@@ -135,10 +135,10 @@ Units = 'SI'								#'SI','CGS'
 #Commonly used variable sets.
 Phys = ['P-POT','TE','EF-TOT','ERADIAL','ETHETA','EAXIAL','PHASER','PHASE','PHASEZ','EAMB-Z','EAMB-R','RHO','BR','BRS','BZ','BZS','BT','BTS','BRF','VR-NEUTRAL','VZ-NEUTRAL','VR-ION+','VZ-ION+','EFLUX-R','EFLUX-Z','JZ-NET','JR-NET','J-THETA','J-THETA-5','J-TH(MAG)','J-TH(PHA)','TG-AVE','PRESSURE','POW-RF','POW-RF-E','POW-ICP','EB-ESORC','COLF']
 ASTRONCOILEF = \
-['ERADIAL-2','ETHETA-2','EAXIAL-2','PHASE-2','ERADIAL-3','ETHETA-3','EAXIAL-3','PHASE-3', \
- 'ERADIAL-4','ETHETA-4','EAXIAL-4','PHASE-4','ERADIAL-5','ETHETA-5','EAXIAL-5','PHASE-5', \
- 'ERADIAL-6','ETHETA-6','EAXIAL-6','PHASE-6','ERADIAL-7','ETHETA-7','EAXIAL-7','PHASE-7', \
- 'ERADIAL-8','ETHETA-8','EAXIAL-8','PHASE-8']
+['ERADIAL-2','ETHETA-2','EAXIAL-2','PHASER-2','PHASEZ-2','ERADIAL-3','ETHETA-3','EAXIAL-3','PHASER-3','PHASEZ-3', \
+ 'ERADIAL-4','ETHETA-4','EAXIAL-4','PHASER-4','PHASEZ-4','ERADIAL-5','ETHETA-5','EAXIAL-5','PHASER-5','PHASEZ-5', \
+ 'ERADIAL-6','ETHETA-6','EAXIAL-6','PHASER-6','PHASEZ-6','ERADIAL-7','ETHETA-7','EAXIAL-7','PHASER-7','PHASEZ-7', \
+ 'ERADIAL-8','ETHETA-8','EAXIAL-8','PHASER-8','PHASEZ-8',]
 ASTRONCOILBF = \
 ['BT-2','BT-3','BT-4','BT-5','BT-6','BT-7','BT-8', \
  'BRF-2','BRF-3','BRF-4','BRF-5','BRF-6','BRF-7','BRF-8', \
@@ -262,7 +262,7 @@ sourcewidth = [12]						#Source Dimension at ROI, leave empty for auto. [cells]	
 
 #Requested diagnostics and plotting routines.
 savefig_convergence = False				#Single-Variables: iter-time axis			Requires movie_icp.pdt
-savefig_plot2D = False					#Single-Variables: converged				Requires TECPLOT2D.PDT
+savefig_plot2D = True					#Single-Variables: converged				Requires TECPLOT2D.PDT
 #	NEED TO ADD ICOILP-n TOT OPTION WITH ALL COILSETS OVERLAYED
 
 savefig_monoprofiles = False			#Single-Variables; fixed height/radius
@@ -1391,12 +1391,12 @@ def VariableLabelMaker(variablelist):
 	RegEx = re.compile('EAXIAL.')
 	EAXIALVars = ['EAXIAL']+[string for string in variablelist if re.match(RegEx, string)]
 
-	RegEx = re.compile('PHASEER.')
-	PHASERVars = ['PHASEER']+[string for string in variablelist if re.match(RegEx, string)]
+	RegEx = re.compile('PHASER.')
+	PHASERVars = ['PHASER']+[string for string in variablelist if re.match(RegEx, string)]
 	RegEx = re.compile('PHASE.')
 	PHASEVars = ['PHASE']+[string for string in variablelist if re.match(RegEx, string)]
-	RegEx = re.compile('PHASEEZ.')
-	PHASEZVars = ['PHASEEZ']+[string for string in variablelist if re.match(RegEx, string)]
+	RegEx = re.compile('PHASEZ.')
+	PHASEZVars = ['PHASEZ']+[string for string in variablelist if re.match(RegEx, string)]
 	
 	RegEx = re.compile('BR.')
 	BRVars = ['BR']+[string for string in variablelist if re.match(RegEx, string)]
