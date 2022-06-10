@@ -61,6 +61,7 @@ import math as m
 import subprocess
 import os, sys
 import os.path
+import re
 
 #Enforce matplotlib to avoid instancing undisplayed windows
 #matplotlib-tcl-asyncdelete-async-handler-deleted-by-the-wrong-thread
@@ -71,6 +72,7 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 from scipy.signal import savgol_filter
 from subprocess import Popen, PIPE
 from matplotlib import pyplot as plt
+from matplotlib import colors as col
 from matplotlib import ticker
 from scipy import ndimage
 from tqdm import tqdm
@@ -125,17 +127,27 @@ EDF_Threshold = 0.01						# i.e. = 0.0 to plot all
 # 2) APPLY PLOTTED UNITS SEPERATELY				(New variable function (plot variables?)
 # 3) APPLY SI and CGS PRESETS
 #		- PROBABLY REMOVE INDIVIDUAL UNIT SETTINGS (too messy)
-PressureUnit = 'Torr'						#'Torr','mTorr','Pa'
-BFieldUnit	=  'Gauss'						#'Gauss','Tesla'
-
+PressureUnit = 'Torr'						#'Torr','mTorr','Pa'			#RM OUTDATED, TO REMOVE
+Units = 'SI'								#'SI','CGS'
 
 ####################
 
 #Commonly used variable sets.
-Phys = ['P-POT','TE','EF-TOT','EAMB-Z','EAMB-R','ETHETA','PHASE','RHO','BR','BRS','BZ','BZS','BT','BRF','VR-NEUTRAL','VZ-NEUTRAL','VR-ION+','VZ-ION+','EFLUX-R','EFLUX-Z','JZ-NET','JR-NET','J-THETA','J-TH(MAG)','J-TH(PHA)','TG-AVE','PRESSURE','POW-RF','POW-RF-E','POW-ICP','EB-ESORC','COLF']
+Phys = ['P-POT','TE','EF-TOT','ERADIAL','ETHETA','EAXIAL','PHASER','PHASE','PHASEZ','EAMB-Z','EAMB-R','RHO','BR','BRS','BZ','BZS','BT','BTS','BRF','VR-NEUTRAL','VZ-NEUTRAL','VR-ION+','VZ-ION+','EFLUX-R','EFLUX-Z','JZ-NET','JR-NET','J-THETA','J-THETA-5','J-TH(MAG)','J-TH(PHA)','TG-AVE','PRESSURE','POW-RF','POW-RF-E','POW-ICP','EB-ESORC','COLF']
+ASTRONCOILEF = \
+['ERADIAL-2','ETHETA-2','EAXIAL-2','PHASE-2','ERADIAL-3','ETHETA-3','EAXIAL-3','PHASE-3', \
+ 'ERADIAL-4','ETHETA-4','EAXIAL-4','PHASE-4','ERADIAL-5','ETHETA-5','EAXIAL-5','PHASE-5', \
+ 'ERADIAL-6','ETHETA-6','EAXIAL-6','PHASE-6','ERADIAL-7','ETHETA-7','EAXIAL-7','PHASE-7', \
+ 'ERADIAL-8','ETHETA-8','EAXIAL-8','PHASE-8']
+ASTRONCOILBF = \
+['BT-2','BT-3','BT-4','BT-5','BT-6','BT-7','BT-8', \
+ 'BRF-2','BRF-3','BRF-4','BRF-5','BRF-6','BRF-7','BRF-8', \
+ 'PHASEBT-2','PHASEBT-3','PHASEBT-4','PHASEBT-5','PHASEBT-6','PHASEBT-7','PHASEBT-8',]
+
 
 Ar = ['AR3S','AR4SM','AR4SR','AR4SPM','AR4SPR','AR4P','AR4D','AR','AR+','AR2+','AR2*','E','S-AR+','S-AR4P','SEB-AR+','SEB-AR4P','FZ-AR3S','FR-AR3S','FR-AR+','FZ-AR+','FZ-AR3S','FR-AR3S']
 O2 = ['O3','O2','O2+','O','O+','O-','E','S-O3','S-O2+','S-O+','S-O-','SEB-O3','SEB-O+','SEB-O2+','SEB-O-','FR-O+','FZ-O+','FR-O-','FZ-O-']+['O3P3P','O***','S-O3P3P','S-O***','SEB-O3P3P','SEB-O***']
+NF3 = ['F']
 
 Ar_Phase = ['S-E','S-AR+','S-AR4P','SEB-AR+','SEB-AR4P','SRCE-2437','TE','PPOT','FR-E','FZ-E']
 O2_Phase = ['S-E','S-O+','S-O-','S-O2+','SEB-O+','SEB-O-','SEB-O2+','TE','PPOT','FR-E','FZ-E']+['S-O3P3P','SEB-O3P3P']
@@ -164,52 +176,52 @@ ParallelPlatePCMC = ['AR^2.67', 'ION-TOT2.67']				#RM-OUTDATED
 #### PRCCP ####
 #electrodeloc =		[29,44] 					#Reverse [29,62]
 #waveformlocs =		[[16,29],[16,44],[16,64],[0,29],[0,44],[0,64]]
-#DOFWidth =			R;16,Z;21
+#DoFwidth =			R;16,Z;21
 #TrendLoc =			H[0,16];R[29,44,64,75]
-#ThrustLoc =		75, 						#stdESCT=76, smlESCT=48/54
-#SheathROI =		[34,72]
-#SourceWidth =		[0.21]						
+#thrustloc =		75, 						#stdESCT=76, smlESCT=48/54
+#sheathROI =		[34,72]
+#sourcewidth =		[0.21]						
 #Crop =				R[0.65];Z[1.0,4.0] 
 
 #### PRICP ####	
 #electrodeloc = 	[33,33]			#Coil V
 #waveformlocs = 	[]
-#DOFWidth = 		[]
+#DoFwidth = 		[]
 #TrendLoc = 		H[0];R[36,50]
-#ThrustLoc = 		[79]
-#SheathROI = 		[]
-#SourceWidth = 		[]
+#thrustloc = 		[79]
+#sheathROI = 		[]
+#sourcewidth = 		[]
 #Crop = 			R[1.0];Z[1.0,9.0]
 #Plotmesh = 		'PRCCP'
 
 #### ESCT ####
 #electrodeloc = 	[0,5]
 #waveformlocs = 	[]
-#DOFWidth = 		R;??,Z;??
+#DoFwidth = 		R;??,Z;??
 #TrendLoc =  		H[0];R[??]		#[??] For PROES
-#ThrustLoc = 		[??]
-#SheathROI = 		[]
-#SourceWidth = 		[??]
+#thrustloc = 		[??]
+#sheathROI = 		[]
+#sourcewidth = 		[??]
 #Crop = 			R[0];Z[0,5]
 
 #### TSHC ####
 #electrodeloc = 	[5,20]
 #waveformlocs = 	[]
-#DOFWidth = 		R;20,Z;6
+#DoFwidth = 		R;20,Z;6
 #TrendLoc =  		H[1,22,44,60];R[35,40,44]	#[40] For PROES
-#ThrustLoc = 		[60]
-#SheathROI = 		[]
-#SourceWidth = 		[5]
+#thrustloc = 		[60]
+#sheathROI = 		[]
+#sourcewidth = 		[5]
 #Crop = 			R[0,15];Z[7,14]					#Mk3: R[0,15];Z[10,17.5]
 
 #### SERPENT ####	
 #electrodeloc = 	[33,33]			#Coil V
 #waveformlocs = 	[]
-#DOFWidth = 		[]
+#DoFwidth = 		[]
 #TrendLoc = 		H[0];R[36,50]
-#ThrustLoc = 		[79]
-#SheathROI = 		[]
-#SourceWidth = 		[]
+#thrustloc = 		[79]
+#sheathROI = 		[]
+#sourcewidth = 		[]
 #Crop = 			R[1.4];Z[1,9]
 #Plotmesh = 		False
 
@@ -229,28 +241,29 @@ NEDFVariables = []							#Requested nprofile_2d variables (no spaces)
 #Requested movie1/movie_icp Variables.
 IterVariables = ['E','S-E','PPOT','TE']				#Requested Movie_icp (iteration) Variables.		
 PhaseVariables = Ar_Phase							#Requested Movie1 (phase) Variables. +['E','AR+']
-electrodeloc = [13,10]	#PR[13,10]#THC[35,45]		#Cell location of powered electrode [R,Z].
+electrodeloc = [29,44]	#PR[29,44]#THC[35,45]		#Cell location of powered electrode [R,Z].
 waveformlocs = []									#Cell locations of additional waveforms [R,Z].
 
 #Requested TECPLOT Variables and plotting locations.
-Variables = Phys+Ar
-MultiVar = []								 #Additional variables plotted ontop of [Variables]
-radialineouts = [10]	#PR[44]#THC[85]		 #Radial 1D-Profiles to be plotted (fixed Z-mesh) --
-heightlineouts = []		#PR[0]#THC[20]		 #Axial 1D-Profiles to be plotted (fixed R-mesh) |
-ProbeLoc = [0,44]		#PR[0,44]#THC[20,85] #Cell location For Trend Analysis [R,Z], ([] = min/max)
+Variables = Phys+Ar + ASTRONCOILEF+ASTRONCOILBF
+multivar = []								 #Additional variables plotted ontop of [Variables]
+radialprofiles = [10]	#PR[44]#THC[85]#[10] #Radial 1D-Profiles to be plotted (fixed Z-mesh) --
+axialprofiles = [10]	#PR[0]#THC[20]		 #Axial 1D-Profiles to be plotted (fixed R-mesh) |
+probeloc = [0,44]		#PR[0,44]#THC[20,85] #Cell location For Trend Analysis [R,Z], ([] = min/max)
 
 
 #Various Diagnostic Settings.
 phasecycles = 1.00						#Number of waveform phase cycles to be plotted. (float)
-DoFWidth = 10 							#PROES Depth of Field (symmetric about image plane) (cells)
-ThrustLoc = 45			#THC[10]		#Z-axis cell for thrust calculation  (cells)
-SheathROI = [34,72]						#Sheath Region of Interest, (Start,End) [cells]				<<< OUTDATED
-SourceWidth = [12]						#Source Dimension at ROI, leave empty for auto. [cells]		<<< OUTDATED
+DoFwidth = 10 							#PROES Depth of Field (symmetric about image plane) (cells)
+thrustloc = 45			#THC[10]		#Z-axis cell for thrust calculation  (cells)
+sheathROI = [34,72]						#Sheath Region of Interest, (Start,End) [cells]				<<< OUTDATED
+sourcewidth = [12]						#Source Dimension at ROI, leave empty for auto. [cells]		<<< OUTDATED
 
 
 #Requested diagnostics and plotting routines.
-savefig_convergence = True				#Single-Variables: iter-time axis			Requires movie_icp.pdt
-savefig_plot2D = True					#Single-Variables: converged				Requires TECPLOT2D.PDT
+savefig_convergence = False				#Single-Variables: iter-time axis			Requires movie_icp.pdt
+savefig_plot2D = False					#Single-Variables: converged				Requires TECPLOT2D.PDT
+#	NEED TO ADD ICOILP-n TOT OPTION WITH ALL COILSETS OVERLAYED
 
 savefig_monoprofiles = False			#Single-Variables; fixed height/radius
 savefig_multiprofiles = False			#Multi-Variables; same folder					- NO ASCII OUTPUT
@@ -283,27 +296,27 @@ print_DCbias = False					#Print DC bias at electrodeloc
 print_thrust = False					#Print neutral, ion and total thrust
 print_sheath = False					#Print sheath width at electrodeloc						
 
-
 #Image plotting options.
 image_extension = '.png'				#Define image extension  ('.png', '.jpg', '.eps')		
 image_interp = 'bilinear'				#Define image smoothing  ('none', 'bilinear')
 image_cmap = 'plasma'					#Define global colourmap ('jet','plasma','inferno','gnuplot')
 # ADD TECPLOT COLOUR SCHEME
+# ADD SI/CGS UNIT SCHEMES
 
 image_aspectratio = [10,10]				#Real Size of [X,Y] in cm [Doesn't Rotate - X is always horizontal]
 image_radialcrop = []#[0.65]			#Crops 2D images to [R1,R2] in cm
 image_axialcrop = []#[1.0,4.0]			#Crops 2D images to [Z1,Z2] in cm
 image_cbarlimit = []					#[min,max] colourbar limits
 
-image_plotsymmetry = False				#Plot radial symmetry - mirrors across the ISYM axis
-image_plotcontours = False				#Plot contour lines in 2D images
+image_plotsymmetry = False#True				#Plot radial symmetry - mirrors across the ISYM axis
+image_plotcontours = False#True				#Plot contour lines in 2D images
 image_plotoverlay = False				#Plot location(s) of 1D radial/axial profiles onto 2D images
 image_plotsheath = False				#Plot sheath extent onto 2D images
 image_plotgrid = False					#Plot major/minor gridlines on 1D profiles
 image_plotmesh = False#'PRCCP'			#Plot material mesh outlines ('Auto','PRCCP','PRCCPM','ESCT','GEC')
 image_numericaxis = False				#### NOT implemented ####
 
-image_rotate = False					#Rotate image 90 degrees to the right.			# MAKE [0000-1000, 0-2pi]
+image_rotate = False#True					#Rotate image 90 degrees to the right.			# MAKE [0000-1000, 0-2pi]
 image_normalise = False					#Normalise image/profiles to local max
 image_logplot = False					#Plot ln(Data), against linear axis.
 
@@ -351,9 +364,9 @@ cbaroverride = ['Notimplemented']
 #Thrust diagnostic split into functions performing the same task as before.
 #Thrust diagnostic enforces image symmetry, correcting the half-thrust error.
 
-#Multivar_profiles diagnostic overhaul - update coding structure and include an ASCII output option
+#multivar_profiles diagnostic overhaul - update coding structure and include an ASCII output option
 
-#Add 'ProbeLoc' option to savefig_temporal, where the meshavg is the default but if there are any supplied ProbeLoc cells then those get saved into their own seperate folder.
+#Add 'probeloc' option to savefig_temporal, where the meshavg is the default but if there are any supplied probeloc cells then those get saved into their own seperate folder.
 
 #Fix Rynolds diagnostic - Current version has issue with NaNs and incorrect averaging
 #implement Rynolds number properly (was converted from sound speed diagnostic)
@@ -918,8 +931,9 @@ def VariableEnumerator(Variables,Rawdata,Header):
 #proclist,varlist = VariableInterpolator(processlist,Variablelist,Comparisonlist):
 def VariableInterpolator(processlist,Variablelist,Comparisonlist):
 
-	#Return default if atomic physics is the same in all datasets.
-	if all(map(lambda x: x == Globalnumvars[0], Globalnumvars)) == True:
+	#No interpolation needed if variable count is the same for all datasets.
+#	if all(map(lambda x: x == Globalnumvars[0], Globalnumvars)) == True:		#Py2.x.x Lambda Method
+	if Globalnumvars.count(Globalnumvars[0]) == len(Globalnumvars):				#Py3.x.x Count Method
 		return(processlist, Variablelist)
 	#endif
 
@@ -1365,17 +1379,59 @@ def VariableLabelMaker(variablelist):
 	Fluxlist = ['FZ-','FR-','EFLUX-R','EFLUX-Z']
 	Ionisationlist = ['S-','SEB-']
 	Velocitylist = ['VZ-','VR-']
+	
+	#Define Regular Expression lists for numericised ICP coil set variable names
+	RegEx = re.compile('POWICP.')
+	POWICPVars = ['POWICP']+[string for string in variablelist if re.match(RegEx, string)]
+	
+	RegEx = re.compile('ERADIAL.')
+	ERADIALVars = ['ERADIAL']+[string for string in variablelist if re.match(RegEx, string)]
+	RegEx = re.compile('ETHETA.')
+	ETHETAVars = ['ETHETA']+[string for string in variablelist if re.match(RegEx, string)]
+	RegEx = re.compile('EAXIAL.')
+	EAXIALVars = ['EAXIAL']+[string for string in variablelist if re.match(RegEx, string)]
 
+	RegEx = re.compile('PHASEER.')
+	PHASERVars = ['PHASEER']+[string for string in variablelist if re.match(RegEx, string)]
+	RegEx = re.compile('PHASE.')
+	PHASEVars = ['PHASE']+[string for string in variablelist if re.match(RegEx, string)]
+	RegEx = re.compile('PHASEEZ.')
+	PHASEZVars = ['PHASEEZ']+[string for string in variablelist if re.match(RegEx, string)]
+	
+	RegEx = re.compile('BR.')
+	BRVars = ['BR']+[string for string in variablelist if re.match(RegEx, string)]
+	RegEx = re.compile('BT.')
+	BTVars = ['BT']+[string for string in variablelist if re.match(RegEx, string)]
+	RegEx = re.compile('BZ.')
+	BZVars = ['BZ']+[string for string in variablelist if re.match(RegEx, string)]
+	RegEx = re.compile('BRF.')
+	BRFVars = ['BRF']+[string for string in variablelist if re.match(RegEx, string)]
+	
+	RegEx = re.compile('PHASEBR.')
+	PHASEBRVars = ['PHASEBR']+[string for string in variablelist if re.match(RegEx, string)]
+	RegEx = re.compile('PHASEBT.')
+	PHASEBTVars = ['PHASEBT']+[string for string in variablelist if re.match(RegEx, string)]
+	RegEx = re.compile('PHASEBZ.')
+	PHASEBZVars = ['PHASEBZ']+[string for string in variablelist if re.match(RegEx, string)]
+	RegEx = re.compile('J-THETA.')
+	JTHETAVars = ['J-THETA']+[string for string in variablelist if re.match(RegEx, string)]
+	
+	#=====#=====#
+	#=====#=====#
+	
 	Variablelegends = list()
 	for i in range(0,len(variablelist)):
-		#Explicit Species Densities.
-		if variablelist[i] == 'E':
-			Variable = 'Electron Density n$_{e}$'
-			VariableUnit = '[m$^{-3}$]'
+		#Explicit Pressure and Species Densities.
+		if variablelist[i] in ['PRESSURE']:
+			Variable = 'Pressure'
+			VariableUnit = '['+str(PressureUnit)+']'			#Default: '[Torr]'
 		elif variablelist[i] in ['AR','AR3S']:
 			Variable = 'Neutral Ar Density'
 			VariableUnit = '[m$^{-3}$]'
-		elif variablelist[i] == 'AR+':
+		elif variablelist[i] in ['E']:
+			Variable = 'Electron Density n$_{e}$'
+			VariableUnit = '[m$^{-3}$]'
+		elif variablelist[i] in ['AR+']:
 			Variable = 'Ar+ Density'
 			VariableUnit = '[m$^{-3}$]'
 
@@ -1415,10 +1471,7 @@ def VariableLabelMaker(variablelist):
 			Variable = 'Neutral Gas Temperature'
 			VariableUnit = '[K]'
 
-		#Explicit Species Velocities and Resulting Pressure.
-		elif variablelist[i] == 'PRESSURE':
-			Variable = 'Pressure'
-			VariableUnit = '['+str(PressureUnit)+']'			#Default: '[Torr]'
+		#Explicit Species Velocities.
 		elif variablelist[i] == 'VZ-NEUTRAL':
 			Variable = 'Neutral Axial Velocity'
 			VariableUnit = '[ms$^{-1}$]'
@@ -1459,82 +1512,95 @@ def VariableLabelMaker(variablelist):
 			VariableUnit = '[m$^{-2}$ s$^{-1}$]'
 
 		#Explicit Electrodynamic Properties
-		elif variablelist[i] == 'P-POT':
+		elif variablelist[i] in ['PPOT','P-POT']:
 			Variable = 'Plasma Potential V$_{p}$'
 			VariableUnit = '[V]'
-		elif variablelist[i] == 'PPOT':
-			Variable = 'Plasma Potential V$_{p}$'
-			VariableUnit = '[V]'
-		elif variablelist[i] == 'RHO':
-			Variable = 'Charge Density'
+		elif variablelist[i] in ['RHO']:
+			Variable = 'Charge Density $\\rho$'
 			VariableUnit = '[C cm$^{-3}$]'
 			
-		elif variablelist[i] == 'EF-TOT':
-			Variable = 'Average E-Field Amplitude'
+		elif variablelist[i] in ['EF-TOT']:
+			Variable = 'Absolute E-Field Amplitude'
 			VariableUnit = '[Vcm$^{-1}$]'
-		elif variablelist[i] in ['ER','EAMB-R']:
-			Variable = 'Radial E-Field Amplitude'
+		elif variablelist[i] in ERADIALVars+['ER','EAMB-R']:
+			Variable = 'Radial E-Field Amplitude $E_{R}$'
 			VariableUnit = '[Vcm$^{-1}$]'
-		elif variablelist[i] in ['EZ','EAMB-Z']:
-			Variable = 'Axial E-Field Amplitude'
-			VariableUnit = '[Vcm$^{-1}$]'
-		elif variablelist[i] in ['ETHETA']:
+		elif variablelist[i] in PHASERVars:
+			Variable = 'Radial E-Field Phase'
+			VariableUnit = '[Radians]'
+		elif variablelist[i] in ETHETAVars+['ET','EAMB-T']:
 			Variable = 'Azimuthal E-Field Amplitude $E_{\\theta}$'
 			VariableUnit = '[Vcm$^{-1}$]'
-		elif variablelist[i] in ['PHASE']:
+		elif variablelist[i] in PHASEVars:
 			Variable = 'Azimuthal E-Field Phase'
 			VariableUnit = '[Radians]'
-			
-		elif variablelist[i] == 'BT':
-			Variable = 'Total B-field Amplitude'
-			VariableUnit = '['+str(BFieldUnit)+']'			#Default: '[G]'
-		elif variablelist[i] == 'BR':
-			Variable = 'Radial Induced B-field Amplitude'
-			VariableUnit = '['+str(BFieldUnit)+']'			#Default: '[G]'
+		elif variablelist[i] in EAXIALVars+['EZ','EAMB-Z']:
+			Variable = 'Axial E-Field Amplitude $E_{Z}$'
+			VariableUnit = '[Vcm$^{-1}$]'
+		elif variablelist[i] in PHASEZVars:
+			Variable = 'Axial E-Field Phase'
+			VariableUnit = '[Radians]'
+
 		elif variablelist[i] == 'BRS':
-			Variable = 'Radial Static B-field Amplitude'
-			VariableUnit = '['+str(BFieldUnit)+']'			#Default: '[G]'
-		elif variablelist[i] == 'BZ':
-			Variable = 'Axial Induced B-field Amplitude'
-			VariableUnit = '['+str(BFieldUnit)+']'			#Default: '[G]'
+			Variable = 'Radial Static B-field Magnitude $B_{R}$'
+			VariableUnit = '[G]'
+		elif variablelist[i] == 'BTS':
+			Variable = 'Azimuthal Static B-field Magnitude $B_{\\theta}$'
+			VariableUnit = '[G]'
 		elif variablelist[i] == 'BZS':
-			Variable = 'Axial Static B-field Amplitude'
-			VariableUnit = '['+str(BFieldUnit)+']'			#Default: '[G]'
-		elif variablelist[i] == 'BRF':
-			Variable = 'Total Induced B-field Amplitude'
-			VariableUnit = '['+str(BFieldUnit)+']'			#Default: '[G]'
-		elif variablelist[i] == 'BTHETA':
-			Variable = 'Azimuthal B-Field Amplitude $B_{\\theta}$'
-			VariableUnit = '['+str(BFieldUnit)+']'			#Default: '[G]'
+			Variable = 'Axial Static B-field Magnitude $B_{Z}$'
+			VariableUnit = '[G]'
 			
-		elif variablelist[i] == 'JZ-NET':
+		elif variablelist[i] in BRVars:
+			Variable = 'Radial Induced B-field Magnitude $B_{R}$'
+			VariableUnit = '[G]'
+		elif variablelist[i] in PHASEBRVars:
+			Variable = 'Radial Induced B-field Phase'
+			VariableUnit = '[Radians]'
+		elif variablelist[i] in BTVars+['BTHETA']:
+			Variable = 'Azimuthal Induced B-field Magnitude $B_{\\theta}$'
+			VariableUnit = '[G]'
+		elif variablelist[i] in PHASEBTVars:
+			Variable = 'Azimuthal Induced B-field Phase'
+			VariableUnit = '[Radians]'
+		elif variablelist[i] in BZVars:
+			Variable = 'Axial Induced B-field Magnitude $B_{Z}$'
+			VariableUnit = '[G]'
+		elif variablelist[i] in PHASEBZVars:
+			Variable = 'Axial Induced B-field Phase'
+			VariableUnit = '[Radians]'
+		elif variablelist[i] in BRFVars:
+			Variable = 'Total Induced B-field Magnitude $B_{RF}$'
+			VariableUnit = '[G]'
+			
+		elif variablelist[i] in ['JZ-NET']:
 			Variable = 'Axial Net Current Density $J_{Z}$'
 			VariableUnit = '[mA cm$^{-2}$]'					#Default: '[A cm$^{-2}$]'
-		elif variablelist[i] == 'JR-NET':
+		elif variablelist[i] in ['JR-NET']:
 			Variable = 'Radial Net Current Density $J_{R}$'
 			VariableUnit = '[mA cm$^{-2}$]'					#Default: '[A cm$^{-2}$]'
-		elif variablelist[i] == 'J-THETA':
+		elif variablelist[i] in JTHETAVars:
 			Variable = 'Azimuthal Net Current Density $J_{\\theta}$'
 			VariableUnit = '[mA cm$^{-2}$]'					#Default: '[A cm$^{-2}$]'
-		elif variablelist[i] == 'J-TH(MAG)':
+		elif variablelist[i] in ['J-TH(MAG)']:
 			Variable = 'Azimuthal MCS Electron Current Density $J_{e\\theta}$'
 			VariableUnit = '[mA cm$^{-2}$]'					#Default: '[A cm$^{-2}$]'
-		elif variablelist[i] == 'J-TH(PHA)':
+		elif variablelist[i] in ['J-TH(PHA)']:
 			Variable = 'Azimuthal MCS Electron Current Phase $J_{e\\theta}$'
 			VariableUnit = '[Radians]'						#Default: '[Radians]'
 			
 		#Explicit Power Deposition.
-		elif variablelist[i] == 'POW-TOT':
-			Variable = 'Capacitively Coupled RF-Power'
+		elif variablelist[i] in ['POW-TOT']:
+			Variable = 'Total Coupled RF-Power'
 			VariableUnit = '[Wm$^{-3}$]'
-		elif variablelist[i] == 'POW-ICP':
-			Variable = 'Inductively Coupled RF-Power'
+		elif variablelist[i] in POWICPVars+['POW-ICP']:		#Note: 	POW-ICP is total icp power, 
+			Variable = 'Inductively Coupled RF-Power'		#		POWICP-n is coilset #n icp power
 			VariableUnit = '[Wm$^{-3}$]'
-		elif variablelist[i] == 'POW-RF':
-			Variable = 'RF-Power Deposited'
+		elif variablelist[i] in ['POW-RF']:
+			Variable = 'RF Power Density'
 			VariableUnit = '[Wm$^{-3}$]'
-		elif variablelist[i] == 'POW-RF-E':
-			Variable = 'RF-Power Deposited by e$^-$'
+		elif variablelist[i] in ['POW-RF-E']:
+			Variable = 'RF Electron Power Density'
 			VariableUnit = '[Wm$^{-3}$]'
 
 		#Explicit Collision Rates.
@@ -1630,21 +1696,23 @@ def VariableUnitConversion(profile,variable):
 	#For B-field strengths, convert to Tesla or retain as default Gauss.
 	if IsStringInVariable(variable,['BT','BR','BRS','BRF','BTHETA']) == True:
 		for i in range(0,len(profile)):
-			if BFieldUnit == 'Tesla': 	profile[i] = profile[i]/10000			#[T]
-			else: profile[i] = 			profile[i]								#[G]
+#			if 		Units == 'SI': 	profile[i] = profile[i]/10000			#[T]
+#			elif:	Units == 'CGS':	profile[i] = profile[i]					#[G]
+			profile[i] = profile[i]											#[G]
 		#endfor
 	#~~~ AXIAL MAGNETIC FIELD IS NOT REVERSED HERE - RM: NEED TO LOOK INTO THIS... ~~~#
 	if IsStringInVariable(variable,['BZ','BZS']) == True:
 		for i in range(0,len(profile)):
-			if BFieldUnit == 'Tesla': 	profile[i] = (profile[i]/10000)#*(-1)	#[T]
-			else: 						profile[i] = profile[i]#*(-1)			#[G]
+#			if 		Units == 'SI': 	profile[i] = (profile[i]/10000)#*(-1)	#[T]
+#			elif:	Units == 'CGS':	profile[i] = profile[i]					#[G]
+			profile[i] = profile[i]#*(-1)										#[G]
 		#endfor
 	#endif
 
 	#For E-field strengths, convert from [V cm-1] to [V m-1]. (also reverse axial field)
 	if IsStringInVariable(variable,['EF-TOT','EAMB-R','EAMB-Z','ETHETA']) == True:
 		for i in range(0,len(profile)):
-			profile[i] = profile[i]#*100	### [V cm-1] ###
+			profile[i] = profile[i]#*100									### [V cm-1] ###
 		#endfor
 	if IsStringInVariable(variable,['EAMB-Z']) == True:
 		for i in range(0,len(profile)):
@@ -2527,6 +2595,105 @@ Matplotlib_GlobalOptions()	#MUST BE RUN BEFORE ANY DIAGNOSTICS!!!!
 #=========================#
 
 
+def tecplot_cmap():
+#	Creates a colourmap closely approximating the Tecplot "modern" map
+#
+#		Python tutor:	https://matplotlib.org/3.1.0/tutorials/colors/colormap-manipulation.html
+#		RGB Hex Codes:	https://www.rapidtables.com/web/color/RGB_Color.html
+#		Colour Picker:	sudo apt-get install gpick 
+#
+# 	Colour dictionary details the vertices of the linear colour scales for rgb
+#		x1		::	Fraction of cbar range (0=min, 1=max)
+#		yleft	::  Percent of colour at start of X1 range
+#		yright	::	Percent of colour at end of X1 range
+#
+#	Colour Order (low to high):
+#		43006F 27.17% red, 00.00% green, 43.35% blue
+#		5BC4CB 35.54% red, 76.56% green, 79.29% blue
+#		00C952 00.00% red, 78.51% green, 32.03% blue
+#		CDF100 80.07% red, 94.14% green, 00.00% blue
+#		AC6313	67.18% red, 38.67% green, 07.42% blue
+#		F70000	96.86% red, 00.00% green, 00.00% blue
+#
+	from matplotlib.colors import ListedColormap, LinearSegmentedColormap
+
+						#x1			#yleft		#yright
+	cdict = {'red':   [[0.00,		0.00,		0.26],
+			           [0.17,		0.26,		0.36],
+			           [0.33,		0.36,		0.00],
+			           [0.50,		0.00,		0.80],
+			           [0.66,		0.80,		0.67],
+			           [0.83,		0.67,		0.97],
+			           [1.00,		0.97,		1.00]],
+			           
+			 'green': [[0.00,		0.00,		0.00],
+			           [0.17,		0.00,		0.77],
+			           [0.33,		0.77,		0.79],
+			           [0.50,		0.79,		0.94],
+			           [0.66,		0.94,		0.38],
+			           [0.83,		0.38,		0.00],
+			           [1.00,		0.00,		0.00]],
+			           
+			 'blue':  [[0.00,		0.00,		0.43],
+			           [0.17,		0.43,		0.79],
+			           [0.33,		0.79,		0.32],
+			           [0.50,		0.32,		0.00],
+			           [0.66,		0.00,		0.07],
+			           [0.83,		0.07,		0.00],
+			           [1.00,		0.00,		0.00]]}
+
+	cmap = LinearSegmentedColormap('testCmap', segmentdata=cdict, N=256)
+	rgba = cmap(np.linspace(0, 1, 256))
+	
+	return(cmap,cdict)
+#enddef           
+
+#Load TECPLOT colourmap
+#imshow(Array,cmap=tecplotcmap)
+tecplotcmap,tecplotcdict = tecplot_cmap()
+
+#Load IDL colourmap
+#Requires std_gamma_II.txt is modules directory
+Filename = 'Modules/std_gamma_II.txt'          
+map = np.loadtxt(Filename, delimiter=',')
+IDL_Gamma_II = col.ListedColormap(map.T, name='IDL_Gamma_II')
+
+#=========================#
+#=========================#
+
+
+def plot_linearmap(cdict):
+#	Shows linear rgb colour fractions for cmap colour dictionary
+#
+#	USAGE:
+#		cmap,cdict = tecplot_cmap()
+#		plot_linearmap(cdict)
+
+	from matplotlib.colors import ListedColormap, LinearSegmentedColormap
+
+	newcmp = LinearSegmentedColormap('testCmap', segmentdata=cdict, N=256)
+	rgba = newcmp(np.linspace(0, 1, 256))
+	
+	fig, ax = plt.subplots(figsize=(10, 10), constrained_layout=True)
+
+	col = ['r', 'g', 'b']	
+	for xx in [0.25, 0.5, 0.75]:
+		ax.axvline(xx, color='0.7', linestyle='--')
+	#endfor
+	for i in range(3):
+		ax.plot(np.arange(256)/256, rgba[:, i], color=col[i])
+	#endfor
+	
+	ax.set_xlabel('index')
+	ax.set_ylabel('RGB')
+	plt.show()
+#enddef
+
+
+#=========================#
+#=========================#
+
+
 def ImageExtractor2D(Data,Variable=[],Rmesh=0,Zmesh=0):
 #Returns a 2D array of inputted data with size [R_mesh] x [Z_mesh]
 #Can optionally perform variable unit conversion if required.
@@ -3327,14 +3494,14 @@ def WaveformExtractor(PhaseData,PPOT,waveformlocation=electrodeloc):
 #=========================#
 
 
-def TrendAtGivenLocation(ProbeLoc,process,variable):
+def TrendAtGivenLocation(probeloc,process,variable):
 #Trend analysis for a given point on a 2D Image.
-#Takes global 'ProbeLoc' for safety, process and variable.
+#Takes global 'probeloc' for safety, process and variable.
 #Returns two arrays: One is the X-axis to plot against
 #Second is the value of variable at location for all simulations.
 
 	#Refresh lists that change per image.
-	R,Z = ProbeLoc[0],ProbeLoc[1]
+	R,Z = probeloc[0],probeloc[1]
 	Trend = list()
 	Xaxis = list()
 
@@ -3616,10 +3783,19 @@ def CalcSheathExtent(folder=l,Orientation='Axial',Phase='NaN',Ne=list(),Ni=list(
 	if len(SheathIonSpecies) == 0:
 		global PosSpecies
 		global NegSpecies
-	#Force single sheath species - Legacy Code or for testing purposes
+	#Force a single sheath species - Legacy Code or for testing purposes
 	elif len(SheathIonSpecies) > 0:
 		PosSpecies = SheathIonSpecies
 		NegSpecies = []
+	#endif
+
+	#Return NaN sheath array if no appropriate species are detected
+	if len(PosSpecies)+len(NegSpecies) == 0:
+		SxAxis = GenerateAxis(Orientation,Isym=ISYMlist[l])
+		Sx = np.empty(len(SxAxis))
+		[np.nan for x in Sx]
+		
+		return(Sx,SxAxis)
 	#endif
 
 	#Identify charged species and alter names to suit TECPLOT2D nomenclature
@@ -3830,7 +4006,7 @@ def CalcSheathExtent(folder=l,Orientation='Axial',Phase='NaN',Ne=list(),Ni=list(
 		except: SheathWidth = 0.0
 		print( 'Simulation:', Dirlist[folder])
 		print( 'Sheath Location:',SheathWidth*10, 'mm')
-		print( 'Sheath Extent:',((SourceWidth[0]*dr[l])-SheathWidth)*10, 'mm')
+		print( 'Sheath Extent:',((sourcewidth[0]*dr[l])-SheathWidth)*10, 'mm')
 	#endif
 
 	#Return sheath axis and sheath extent
@@ -3954,14 +4130,14 @@ if savefig_plot2D == True:
 			
 			#Overlay location of 1D profiles if requested, adjusting for image rotation.
 			if image_plotoverlay == True:
-				for j in range(0,len(radialineouts)):
+				for j in range(0,len(radialprofiles)):
 					X1,X2 = extent[0],extent[1]
-					Y1,Y2 = radialineouts[j]*dz[l],radialineouts[j]*dz[l]
+					Y1,Y2 = radialprofiles[j]*dz[l],radialprofiles[j]*dz[l]
 					if image_rotate == True: X1,X2,Y1,Y2 = Y1,Y2,X1,X2
 					ax.plot((X1,X2),(Y1,Y2),'k--',lw=2)
 				#endfor
-				for j in range(0,len(heightlineouts)):
-					X1,X2 = heightlineouts[j]*dr[l],heightlineouts[j]*dr[l]
+				for j in range(0,len(axialprofiles)):
+					X1,X2 = axialprofiles[j]*dr[l],axialprofiles[j]*dr[l]
 					Y1,Y2 = extent[2],extent[3]
 					if image_rotate == True: X1,X2,Y1,Y2 = Y1,Y2,X1,X2
 					ax.plot((X1,X2),(Y1,Y2),'k--',lw=2)
@@ -4231,7 +4407,7 @@ if savefig_monoprofiles == True:
 		Legendlist = list()
 
 		#Generate the radial (horizontal) lineouts for a specific height.
-		if len(radialineouts) > 0:
+		if len(radialprofiles) > 0:
 			#Create folder to keep output plots.
 			DirRlineouts = CreateNewFolder(Dirlist[l],'Radial_Profiles/')
 
@@ -4240,20 +4416,20 @@ if savefig_monoprofiles == True:
 				#Create fig of desired size.
 				fig,ax = figure(image_aspectratio,1)
 
-				for j in range(0,len(radialineouts)):
+				for j in range(0,len(radialprofiles)):
 					#Update legend with location of each lineout.
-					if len(Legendlist) < len(radialineouts):
-						Legendlist.append('Z='+str(round((radialineouts[j])*dz[l], 2))+' cm')
+					if len(Legendlist) < len(radialprofiles):
+						Legendlist.append('Z='+str(round((radialprofiles[j])*dz[l], 2))+' cm')
 					#endif
 
 					#Plot all requested radial lines on single image per variable.
-					Rlineout=ExtractRadialProfile(Data[l],processlist[i],Variablelist[i],radialineouts[j])
+					Rlineout=ExtractRadialProfile(Data[l],processlist[i],Variablelist[i],radialprofiles[j])
 					#Plot lines for each variable at each requested slice.
 					ImagePlotter1D(Raxis,Rlineout,image_aspectratio,fig,ax)
 
 					#Write data to ASCII files if requested.
 					if write_ASCII == True:
-						SaveString = '_R='+str(round((radialineouts[j])*dz[l], 2))+'cm'
+						SaveString = '_R='+str(round((radialprofiles[j])*dz[l], 2))+'cm'
 						DirWrite = CreateNewFolder(DirRlineouts, 'Radial_Data')
 						WriteDataToFile([Raxis,Rlineout], DirWrite+Variablelist[i]+SaveString)
 					#endif
@@ -4274,7 +4450,7 @@ if savefig_monoprofiles == True:
 #===================##===================#
 
 		#Generate the vertical (height) lineouts for a given radius.
-		if len(heightlineouts) > 0:
+		if len(axialprofiles) > 0:
 			#Create folder to keep output plots.
 			DirZlineouts = CreateNewFolder(Dirlist[l],'Axial_Profiles/')
 			Legendlist = list()
@@ -4284,20 +4460,20 @@ if savefig_monoprofiles == True:
 				#Create fig of desired size.
 				fig,ax = figure(image_aspectratio,1)
 
-				for j in range(0,len(heightlineouts)):
+				for j in range(0,len(axialprofiles)):
 					#Perform SI conversion and save to legend.
-					if len(Legendlist) < len(heightlineouts):
-						Legendlist.append('R='+str(round(heightlineouts[j]*dr[l], 2))+' cm')
+					if len(Legendlist) < len(axialprofiles):
+						Legendlist.append('R='+str(round(axialprofiles[j]*dr[l], 2))+' cm')
 					#endif
 
 					#Plot all requested radial lines on single image per variable.
-					Zlineout=ExtractAxialProfile(Data[l],processlist[i],Variablelist[i],heightlineouts[j])
+					Zlineout=ExtractAxialProfile(Data[l],processlist[i],Variablelist[i],axialprofiles[j])
 					#Plot lines for each variable at each requested slice.
 					ImagePlotter1D(Zaxis,Zlineout[::-1],image_aspectratio,fig,ax)
 
 					#Write data to ASCII files if requested.
 					if write_ASCII == True:
-						SaveString = '_Z='+str(round((heightlineouts[j])*dr[l], 2))+'cm'
+						SaveString = '_Z='+str(round((axialprofiles[j])*dr[l], 2))+'cm'
 						DirWrite = CreateNewFolder(DirZlineouts, 'Axial_Data')
 						WriteDataToFile([Zaxis,Zlineout[::-1]], DirWrite+Variablelist[i]+SaveString)
 					#endif
@@ -4338,10 +4514,10 @@ if savefig_compareprofiles == True:
 	Zaxis = GenerateAxis('Axial',ISYMlist[l])
 
 	#Perform radial (horizontal) profile comparisons
-	for j in range(0,len(radialineouts)):
+	for j in range(0,len(radialprofiles)):
 
 		#Create new folder for each axial or radial slice.
-		ProfileFolder = 'Z='+str(round((radialineouts[j])*dz[l], 2))+'cm'
+		ProfileFolder = 'Z='+str(round((radialprofiles[j])*dz[l], 2))+'cm'
 		DirProfile = CreateNewFolder(DirComparisons,ProfileFolder)
 
 		#For each requested comparison variable.
@@ -4370,7 +4546,7 @@ if savefig_compareprofiles == True:
 				Ylabels = VariableLabelMaker(Variablelist)
 
 				#Plot all radial profiles for all variables in one folder.
-				RProfile = ExtractRadialProfile(Data[l],processlist[k],Variablelist[k], radialineouts[j],R_mesh[l],ISYMlist[l])
+				RProfile = ExtractRadialProfile(Data[l],processlist[k],Variablelist[k], radialprofiles[j],R_mesh[l],ISYMlist[l])
 
 				#Plot radial profile and allow for log y-axis if requested.
 				ImagePlotter1D(Raxis,RProfile,image_aspectratio,fig,ax)
@@ -4379,7 +4555,7 @@ if savefig_compareprofiles == True:
 				#Write data to ASCII files if requested.
 				if write_ASCII == True:
 					if l == 0:
-						WriteFolder = 'Z='+str(round((radialineouts[j])*dz[l], 2))+'cm_Data'
+						WriteFolder = 'Z='+str(round((radialprofiles[j])*dz[l], 2))+'cm_Data'
 						DirWrite = CreateNewFolder(DirComparisons, WriteFolder)
 						WriteDataToFile(Raxis+['\n'], DirWrite+Variablelist[k], 'w')
 					#endif
@@ -4387,13 +4563,13 @@ if savefig_compareprofiles == True:
 				#endif
 
 				#Apply image options and axis labels.
-				Title = 'Comparison of '+Variablelist[k]+' Profiles at Z='+str(round((radialineouts[j])*dz[l], 2))+'cm for \n'+Dirlist[l][2:-1]
+				Title = 'Comparison of '+Variablelist[k]+' Profiles at Z='+str(round((radialprofiles[j])*dz[l], 2))+'cm for \n'+Dirlist[l][2:-1]
 				Xlabel,Ylabel,Legend = 'Radial Distance R [cm]',Ylabels[k],Legendlist
 				ImageOptions(fig,ax,Xlabel,Ylabel,Title,Legendlist,Crop=False)
 			#endfor
 
 			#Save one image per variable with data from all simulations.
-			plt.savefig(DirProfile+Variablelist[k]+'@ Z='+str(round((radialineouts[j])*dz[l], 2))+'cm profiles'+ext)
+			plt.savefig(DirProfile+Variablelist[k]+'@ Z='+str(round((radialprofiles[j])*dz[l], 2))+'cm profiles'+ext)
 			plt.close('all')
 		#endfor
 	#endfor
@@ -4401,10 +4577,10 @@ if savefig_compareprofiles == True:
 ##===================##===================#
 
 	#Perform vertical (axial) profile comparisons
-	for j in range(0,len(heightlineouts)):
+	for j in range(0,len(axialprofiles)):
 
 		#Create new folder for each axial or radial slice.
-		ProfileFolder = 'R='+str(round((heightlineouts[j])*dr[l], 2))+'cm'
+		ProfileFolder = 'R='+str(round((axialprofiles[j])*dr[l], 2))+'cm'
 		DirProfile = CreateNewFolder(DirComparisons,ProfileFolder)
 
 		#For each requested comparison variable.
@@ -4433,7 +4609,7 @@ if savefig_compareprofiles == True:
 				Ylabels = VariableLabelMaker(Variablelist)
 
 				#Obtain axial profile for each folder of the current variable.
-				ZProfile = ExtractAxialProfile(Data[l],processlist[k],Variablelist[k], heightlineouts[j],R_mesh[l],Z_mesh[l],ISYMlist[l])
+				ZProfile = ExtractAxialProfile(Data[l],processlist[k],Variablelist[k], axialprofiles[j],R_mesh[l],Z_mesh[l],ISYMlist[l])
 
 				#Plot axial profile and allow for log y-axis if requested.
 				ImagePlotter1D(Zaxis,ZProfile[::-1],image_aspectratio,fig,ax)
@@ -4442,7 +4618,7 @@ if savefig_compareprofiles == True:
 				#Write data to ASCII files if requested.
 				if write_ASCII == True:
 					if l == 0:
-						WriteFolder = 'R='+str(round((heightlineouts[j])*dr[l], 2))+'cm_Data'
+						WriteFolder = 'R='+str(round((axialprofiles[j])*dr[l], 2))+'cm_Data'
 						DirWrite = CreateNewFolder(DirComparisons, WriteFolder)
 						WriteDataToFile(Zaxis+['\n'], DirWrite+Variablelist[k], 'w')
 					#endif
@@ -4450,13 +4626,13 @@ if savefig_compareprofiles == True:
 				#endif
 
 				#Apply image options and axis labels.
-				Title = 'Comparison of '+Variablelist[k]+' Profiles at R='+str(round((heightlineouts[j])*dr[l], 2))+'cm for \n'+Dirlist[l][2:-1]
+				Title = 'Comparison of '+Variablelist[k]+' Profiles at R='+str(round((axialprofiles[j])*dr[l], 2))+'cm for \n'+Dirlist[l][2:-1]
 				Xlabel,Ylabel,Legend = 'Axial Distance Z [cm]',Ylabels[k],Legendlist
 				ImageOptions(fig,ax,Xlabel,Ylabel,Title,Legendlist,Crop=False)
 			#endfor
 
 			#Save one image per variable with data from all simulations.
-			plt.savefig(DirProfile+Variablelist[k]+'@ R='+str(round((heightlineouts[j])*dr[l], 2))+'cm profiles'+ext)
+			plt.savefig(DirProfile+Variablelist[k]+'@ R='+str(round((axialprofiles[j])*dr[l], 2))+'cm profiles'+ext)
 			plt.close('all')
 		#endfor
 	#endfor
@@ -4477,18 +4653,18 @@ if savefig_multiprofiles == True:
 	#For each folder in turn
 	for l in range(0,numfolders):
 		#Create global multivar folder.
-		Dirlineouts = CreateNewFolder(Dirlist[l],'MultiVar_Profiles/')
+		Dirlineouts = CreateNewFolder(Dirlist[l],'multivar_Profiles/')
 
 		#Create processlist for each folder as required.
 		processlist,Variablelist = VariableEnumerator(Variables,rawdata_2D[l],header_2Dlist[l])
-		multiprocesslist,multiVariablelist = VariableEnumerator(MultiVar,rawdata_2D[l],header_2Dlist[l])
+		multiprocesslist,multivariablelist = VariableEnumerator(multivar,rawdata_2D[l],header_2Dlist[l])
 
 		#Create variable labels with SI unit conversions if required.
 		Ylabel = VariableLabelMaker(Variablelist)
-		multiYlabel = VariableLabelMaker(multiVariablelist)
+		multiYlabel = VariableLabelMaker(multivariablelist)
 
 		#Generate the vertical (height) lineouts for a given radius.
-		if len(heightlineouts) > 0:
+		if len(axialprofiles) > 0:
 
 			#Generate SI scale axes for lineout plots.
 			Zaxis = GenerateAxis('Axial',ISYMlist[l])
@@ -4497,12 +4673,12 @@ if savefig_multiprofiles == True:
 			for i in tqdm(range(0,len(processlist))):
 
 				#Extract the lineout data from the main data array.
-				for j in range(0,len(heightlineouts)):
+				for j in range(0,len(axialprofiles)):
 					#Create fig of desired size.
 					fig,ax = figure(image_aspectratio,1)
 
 					#Create folder to keep output plots.
-					Slice = str(round((heightlineouts[j])*dr[l], 2))
+					Slice = str(round((axialprofiles[j])*dr[l], 2))
 					DirZlineouts = CreateNewFolder(Dirlineouts,'R='+Slice+'cm/')	
 
 					#Create legendlist
@@ -4510,26 +4686,26 @@ if savefig_multiprofiles == True:
 					Legendlist.append(VariableLabelMaker(Variablelist)[i])
 
 					#Plot the initial variable in processlist first.
-					ZProfile = ExtractAxialProfile(Data[l],processlist[i],Variablelist[i], heightlineouts[j],R_mesh[l],Z_mesh[l],ISYMlist[l])
+					ZProfile = ExtractAxialProfile(Data[l],processlist[i],Variablelist[i], axialprofiles[j],R_mesh[l],Z_mesh[l],ISYMlist[l])
 					ImagePlotter1D(Zaxis,ZProfile[::-1],image_aspectratio,fig,ax)
 
 					#Plot all of the requested comparison variables for this plot.
 					for m in range(0,len(multiprocesslist)):
 						#Plot profile for multiplot variables in compareprocesslist.
-						ZProfile = ExtractAxialProfile(Data[l],multiprocesslist[m],multiVariablelist[m], heightlineouts[j],R_mesh[l],Z_mesh[l],ISYMlist[l])
+						ZProfile = ExtractAxialProfile(Data[l],multiprocesslist[m],multivariablelist[m], axialprofiles[j],R_mesh[l],Z_mesh[l],ISYMlist[l])
 						ImagePlotter1D(Zaxis,ZProfile[::-1],image_aspectratio,fig,ax)
 
 						#Update legendlist with each variable compared.
-						Legendlist.append(VariableLabelMaker(multiVariablelist)[m])
+						Legendlist.append(VariableLabelMaker(multivariablelist)[m])
 					#endfor
 
 					#Apply image options and axis labels.
-					Title = str(round((heightlineouts[j])*dr[l], 2))+'cm Height profiles for '+Variablelist[i]+','' for \n'+Dirlist[l][2:-1]
+					Title = str(round((axialprofiles[j])*dr[l], 2))+'cm Height profiles for '+Variablelist[i]+','' for \n'+Dirlist[l][2:-1]
 					Xlabel,Ylabel = 'Axial Distance Z [cm]',VariableLabelMaker(Variablelist)[i]
 					ImageOptions(fig,ax,Xlabel,Ylabel,Title,Legendlist,Crop=False)
 
 					#Save figures in original folder.
-					R = 'R='+str(round((heightlineouts[j])*dr[l], 2))+'_'
+					R = 'R='+str(round((axialprofiles[j])*dr[l], 2))+'_'
 					plt.savefig(DirZlineouts+R+Variablelist[i]+'_MultiProfiles'+ext)
 					plt.close('all')
 				#endfor
@@ -4539,9 +4715,9 @@ if savefig_multiprofiles == True:
 ##===================##===================#
 
 		#Generate the horizontal (Radial) lineouts for a given radius.
-		if len(radialineouts) > 0:
+		if len(radialprofiles) > 0:
 			#Create global multivar folder.
-			Dirlineouts = CreateNewFolder(Dirlist[l],'MultiVar_Profiles/')
+			Dirlineouts = CreateNewFolder(Dirlist[l],'multivar_Profiles/')
 
 			#Generate SI scale axes for lineout plots.
 			Raxis = GenerateAxis('Radial',ISYMlist[l])
@@ -4550,12 +4726,12 @@ if savefig_multiprofiles == True:
 			for i in tqdm(range(0,len(processlist))):
 
 				#Perform the plotting for all requested variables.
-				for j in range(0,len(radialineouts)):
+				for j in range(0,len(radialprofiles)):
 					#Create fig of desired size.
 					fig,ax = figure(image_aspectratio,1)
 
 					#Create folder to keep output plots.
-					Slice = str(round((radialineouts[j])*dz[l], 2))
+					Slice = str(round((radialprofiles[j])*dz[l], 2))
 					DirRlineouts = CreateNewFolder(Dirlineouts,'Z='+Slice+'cm/')
 
 					#Create legendlist
@@ -4563,27 +4739,27 @@ if savefig_multiprofiles == True:
 					Legendlist.append(VariableLabelMaker(Variablelist)[i])
 
 					#Plot profile for initial variable in processlist.
-					RProfile = ExtractRadialProfile(Data[l],processlist[i],Variablelist[i], radialineouts[j],R_mesh[l],ISYMlist[l])
+					RProfile = ExtractRadialProfile(Data[l],processlist[i],Variablelist[i], radialprofiles[j],R_mesh[l],ISYMlist[l])
 					ImagePlotter1D(Raxis,RProfile,image_aspectratio,fig,ax)
 
 					#Plot all of the requested comparison variables for this plot.
 					for m in range(0,len(multiprocesslist)):
 						#Plot profile for multiplot variables in compareprocesslist.
-						RProfile = ExtractRadialProfile(Data[l],multiprocesslist[m], multiVariablelist[m],radialineouts[j],R_mesh[l],ISYMlist[l])
+						RProfile = ExtractRadialProfile(Data[l],multiprocesslist[m], multivariablelist[m],radialprofiles[j],R_mesh[l],ISYMlist[l])
 						ImagePlotter1D(Raxis,RProfile,image_aspectratio,fig,ax)
 
 						#Update legendlist with each variable compared.
-						Legendlist.append(VariableLabelMaker(multiVariablelist)[m])
+						Legendlist.append(VariableLabelMaker(multivariablelist)[m])
 					#endfor
 
 
 					#Apply image options and axis labels.
-					Title = str(round((radialineouts[j])*dz[l], 2))+'cm Radial Profiles for '+Variablelist[i]+' for \n'+Dirlist[l][2:-1]
+					Title = str(round((radialprofiles[j])*dz[l], 2))+'cm Radial Profiles for '+Variablelist[i]+' for \n'+Dirlist[l][2:-1]
 					Xlabel,Ylabel = 'Radial Distance R [cm]',VariableLabelMaker(Variablelist)[i]
 					ImageOptions(fig,ax,Xlabel,Ylabel,Title,Legendlist,Crop=False)
 
 					#Save lines in previously created folder.
-					Z = 'Z='+str(round((radialineouts[j])*dz[l], 2))+'_'
+					Z = 'Z='+str(round((radialprofiles[j])*dz[l], 2))+'_'
 					plt.savefig(DirRlineouts+Z+Variablelist[i]+'_MultiProfiles'+ext)
 					plt.close('all')
 				#endfor
@@ -5179,23 +5355,23 @@ if savefig_trendphaseaveraged == True or print_generaltrends == True:
 		#===============#
 
 		#Perform trend analysis on requested axial profiles.
-		for j in range(0,len(heightlineouts)):
+		for j in range(0,len(axialprofiles)):
 
 			#Create folder for axial trends if needed.
 			DirAxialTrends = CreateNewFolder(DirTrends,'Axial Trends')
 
 			#Take Trend at Given Location or Default to Min/Max Trends.
-			if len(ProbeLoc) == 2:
+			if len(probeloc) == 2:
 				#Append requested position to the legendlist.
-				R,Z = ProbeLoc[0],ProbeLoc[1]
+				R,Z = probeloc[0],probeloc[1]
 				Location = '(R'+str(round(R*dr[l],1))+'cm, Z'+str(round(Z*dz[l],1))+'cm)'
 				Legendlist.append(Location)
 				#Take trend at given location if specified.
 				Xaxis,Trend = TrendAtGivenLocation([R,Z],processlist[k],Variablelist[k])
 
-			elif len(ProbeLoc) == 1:
+			elif len(probeloc) == 1:
 				#Append requested position to the legendlist.
-				R,Z = ProbeLoc[0],heightlineouts[j]
+				R,Z = probeloc[0],axialprofiles[j]
 				Location = '(R'+str(round(R*dr[l],1))+'cm, Z'+str(round(Z*dz[l],1))+'cm)'
 				Legendlist.append(Location)
 				#Take trend at given location if specified.
@@ -5203,10 +5379,10 @@ if savefig_trendphaseaveraged == True or print_generaltrends == True:
 
 			else:
 				#Obtain min/max trend values for requested profile over all folders.
-				Xaxis,MaxTrend,MinTrend = MinMaxTrends(heightlineouts[j],'Axial',k)
+				Xaxis,MaxTrend,MinTrend = MinMaxTrends(axialprofiles[j],'Axial',k)
 				Trend = MaxTrend
 				#Append the radial position to the legendlist.
-				Legendlist.append( 'R='+str(round((heightlineouts[j]*dr[l]), 2))+'cm' )
+				Legendlist.append( 'R='+str(round((axialprofiles[j]*dr[l]), 2))+'cm' )
 			#endif
 
 			#Plot trends for each variable over all folders, applying image options.
@@ -5226,7 +5402,7 @@ if savefig_trendphaseaveraged == True or print_generaltrends == True:
 			#endif
 
 		#Save one image per variable with data from all simulations.
-		if len(heightlineouts) > 0:
+		if len(axialprofiles) > 0:
 			plt.savefig(DirAxialTrends+'Axial Trends in '+Variablelist[k]+ext)
 			plt.close('all')
 		#endif
@@ -5240,23 +5416,23 @@ if savefig_trendphaseaveraged == True or print_generaltrends == True:
 		Legendlist = list()
 
 		#Perform trend analysis on requested radial profiles.
-		for j in range(0,len(radialineouts)):
+		for j in range(0,len(radialprofiles)):
 
 			#Create folder for axial trends if needed.
 			DirRadialTrends = CreateNewFolder(DirTrends,'Radial Trends')
 
 			#Take Trend at Given Location or Default to Min/Max Trends.
-			if len(ProbeLoc) == 2:
+			if len(probeloc) == 2:
 				#Append requested position to the legendlist.
-				R,Z = ProbeLoc[0],ProbeLoc[1]
+				R,Z = probeloc[0],probeloc[1]
 				Location = '(R'+str(round(R*dr[l],1))+'cm, Z'+str(round(Z*dz[l],1))+'cm)'
 				Legendlist.append(Location)
 				#Take trend at given location if specified.
 				Xaxis,Trend = TrendAtGivenLocation([R,Z],processlist[k],Variablelist[k])
 
-			elif len(ProbeLoc) == 1:
+			elif len(probeloc) == 1:
 				#Append requested position to the legendlist.
-				R,Z = radialineouts[j],ProbeLoc[0],
+				R,Z = radialprofiles[j],probeloc[0],
 				Location = '(R'+str(round(R*dr[l],1))+'cm, Z'+str(round(Z*dz[l],1))+'cm)'
 				Legendlist.append(Location)
 				#Take trend at given location if specified.
@@ -5264,10 +5440,10 @@ if savefig_trendphaseaveraged == True or print_generaltrends == True:
 
 			else:
 				#Obtain min/max trend values for requested profile over all folders.
-				Xaxis,MaxTrend,MinTrend = MinMaxTrends(radialineouts[j],'Radial',k)
+				Xaxis,MaxTrend,MinTrend = MinMaxTrends(radialprofiles[j],'Radial',k)
 				Trend = MaxTrend
 				#Append the axial position to the legendlist.
-				Legendlist.append( 'Z='+str(round((radialineouts[j]*dz[l]), 2))+'cm' )
+				Legendlist.append( 'Z='+str(round((radialprofiles[j]*dz[l]), 2))+'cm' )
 			#endif
 
 			#Plot trends for each variable over all folders, applying image options.
@@ -5287,7 +5463,7 @@ if savefig_trendphaseaveraged == True or print_generaltrends == True:
 			#endif
 
 		#Save one image per variable with data from all simulations.
-		if len(radialineouts) > 0:
+		if len(radialprofiles) > 0:
 			plt.savefig(DirRadialTrends+'Radial Trends in '+Variablelist[k]+ext)
 			plt.close('all')
 		#endif
@@ -5544,21 +5720,21 @@ if 'AR3S' in list(set(FluidSpecies).intersection(Variables)):
 			#Update X-axis with folder information.
 			Xaxis.append( FolderNameTrimmer(Dirlist[l]) )
 
-			#Extract data required for Thrust calculations, discharge plane (Z) = ThrustLoc.
+			#Extract data required for Thrust calculations, discharge plane (Z) = thrustloc.
 			processlist,variablelist = VariableEnumerator(['VZ-NEUTRAL'],rawdata_2D[l],header_2Dlist[l])
-			NeutralVelocity = ExtractRadialProfile(Data[l],processlist[0],variablelist[0],ThrustLoc)
+			NeutralVelocity = ExtractRadialProfile(Data[l],processlist[0],variablelist[0],thrustloc)
 			processlist,variablelist = VariableEnumerator(['VZ-ION+'],rawdata_2D[l],header_2Dlist[l])
-			IonVelocity = ExtractRadialProfile(Data[l],processlist[0],variablelist[0],ThrustLoc)
+			IonVelocity = ExtractRadialProfile(Data[l],processlist[0],variablelist[0],thrustloc)
 			processlist,variablelist = VariableEnumerator(['FZ-AR3S'],rawdata_2D[l],header_2Dlist[l])
-			NeutralAxialFlux = ExtractRadialProfile(Data[l],processlist[0],variablelist[0],ThrustLoc)
+			NeutralAxialFlux = ExtractRadialProfile(Data[l],processlist[0],variablelist[0],thrustloc)
 			processlist,variablelist = VariableEnumerator(['FZ-AR+'],rawdata_2D[l],header_2Dlist[l])
-			IonAxialFlux = ExtractRadialProfile(Data[l],processlist[0],variablelist[0],ThrustLoc)
+			IonAxialFlux = ExtractRadialProfile(Data[l],processlist[0],variablelist[0],thrustloc)
 			processlist,variablelist = VariableEnumerator(['TG-AVE'],rawdata_2D[l],header_2Dlist[l])
-			NeutGasTemp = ExtractRadialProfile(Data[l],processlist[0],variablelist[0],ThrustLoc)
+			NeutGasTemp = ExtractRadialProfile(Data[l],processlist[0],variablelist[0],thrustloc)
 			processlist,variablelist = VariableEnumerator(['PRESSURE'],rawdata_2D[l],header_2Dlist[l])
 			try: 
-				Pressure = ExtractRadialProfile(Data[l],processlist[0],variablelist[0],ThrustLoc)
-				PressureDown = ExtractRadialProfile(Data[l],processlist[0],variablelist[0],ThrustLoc+1)
+				Pressure = ExtractRadialProfile(Data[l],processlist[0],variablelist[0],thrustloc)
+				PressureDown = ExtractRadialProfile(Data[l],processlist[0],variablelist[0],thrustloc+1)
 			except: 
 				Pressure = np.zeros(R_mesh[l]*2)
 				PressureDown = np.zeros(R_mesh[l]*2)
@@ -5642,7 +5818,7 @@ if 'AR3S' in list(set(FluidSpecies).intersection(Variables)):
 						CellArea = np.pi*((dr[l]/100)**2)		#m^2
 					#endif
 
-					#Calculate differential pressure between ThrustLoc-(ThrustLoc+1)
+					#Calculate differential pressure between thrustloc-(thrustloc+1)
 					if Pressure[i] > 0.0:
 						DiffPressure = (Pressure[i]-PRESOUT[l])*133.33			#N/m^2
 #						DiffPressure = (Pressure[i]-PressureDown[i])*133.33		#N/m^2
@@ -5691,7 +5867,7 @@ if 'AR3S' in list(set(FluidSpecies).intersection(Variables)):
 
 			#Display thrust to terminal if requested.
 			if print_thrust == True:
-				print(Dirlist[l], '@ Z=',round(ThrustLoc*dz[l],2),'cm')
+				print(Dirlist[l], '@ Z=',round(thrustloc*dz[l],2),'cm')
 				print('NeutralThrust', round(NeutralThrust*1000,2), 'mN @ ', round(NeutralIsp,2),'s')
 				print('IonThrust:', round(IonThrust*1000,4), 'mN @ ', round(IonIsp,2),'s')
 				print('D-Pressure:', round(DiffForce*1000,4), 'mN')
@@ -5717,7 +5893,7 @@ if 'AR3S' in list(set(FluidSpecies).intersection(Variables)):
 #		TrendPlotter(ax1,IonThrustlist,Xaxis,Marker='bs-',NormFactor=0)
 
 		#Apply image options and save figure.
-		Title='Thrust at Z='+str(round(ThrustLoc*dz[0],2))+'cm with varying '+TrendVariable+' \n'+Dirlist[l][2:-1]
+		Title='Thrust at Z='+str(round(thrustloc*dz[0],2))+'cm with varying '+TrendVariable+' \n'+Dirlist[l][2:-1]
 		Xlabel,Ylabel = 'Varied Property','Thrust F$_{T}$ [mN]'
 		ax1.legend(['Total Thrust','Neutral Component','Ion Component'], fontsize=18, frameon=False)
 		ImageOptions(fig,ax1,Xlabel,Ylabel,Title,Crop=False)
@@ -5734,7 +5910,7 @@ if 'AR3S' in list(set(FluidSpecies).intersection(Variables)):
 #		TrendPlotter(ax1,IonIsplist,Xaxis,Marker='bs-',NormFactor=0)
 
 		#Apply image options and save figure.
-		Title = 'Specific Impulse at Z='+str(round(ThrustLoc*dz[0],2))+'cm with varying '+TrendVariable+' \n'+Dirlist[l][2:-1]
+		Title = 'Specific Impulse at Z='+str(round(thrustloc*dz[0],2))+'cm with varying '+TrendVariable+' \n'+Dirlist[l][2:-1]
 		Xlabel,Ylabel = 'Varied Property','Specific Impulse I$_{sp}$ [s]'
 		ax1.legend(['Total I$_{sp}$','Neutral Component','Ion Component'], fontsize=18, frameon=False)
 		ImageOptions(fig,ax1,Xlabel,Ylabel,Title,Crop=False)
@@ -5751,7 +5927,7 @@ if 'AR3S' in list(set(FluidSpecies).intersection(Variables)):
 #====================================================================#
 
 if savefig_trendphaseaveraged == True or print_sheath == True:
-#NB: 	This diagnostic is very out of date, particularily the SheathROI treatment...
+#NB: 	This diagnostic is very out of date, particularily the sheathROI treatment...
 #		Could be easily worked into the savefig_temporaltrends diagnostic or simply re-written
 #		Might be worth considering an overhaul... but it works for now.
 
@@ -5763,20 +5939,20 @@ if savefig_trendphaseaveraged == True or print_sheath == True:
 	#Initialize any required lists.
 	Xaxis,SxLocExtent,SxMaxExtent = list(),list(),list()	
 
-	#Obtain SheathROI and SourceWidth automatically if none are supplied.
-	if len(SheathROI) != 2:
+	#Obtain sheathROI and sourcewidth automatically if none are supplied.
+	if len(sheathROI) != 2:
 		#image_radialcrop Convert to Cells 
 		#image_axialcrop Convert to Cells
 		#Use axialcrop or radialcrop to set automatic ROI!
 		Start,End = 34,72				#AUTOMATIC ROUTINE REQUIRED#
-		SheathROI = [Start,End]			#AUTOMATIC ROUTINE REQUIRED#
+		sheathROI = [Start,End]			#AUTOMATIC ROUTINE REQUIRED#
 	#endif
-	if len(SourceWidth) == 0:
+	if len(sourcewidth) == 0:
 		#Take Variable that is zero in metals (Density?)
 		#Take Axial/Radial slice depending on sheath direction.
 		#Find Cell distance from zero to 'wall' at electrodeloc.
 		#Convert to SI [cm], set to automatic width.
-		SourceWidth = [0.21]			#AUTOMATIC ROUTINE REQUIRED#
+		sourcewidth = [0.21]			#AUTOMATIC ROUTINE REQUIRED#
 	#endif
 
 	SxMeanExtent,SxMeanExtentArray = list(),list()
@@ -5790,20 +5966,20 @@ if savefig_trendphaseaveraged == True or print_sheath == True:
 		#Calculate mean sheath extent across ROI. On failure provide null point for sheath thickness.
 		try:
 			SxMeanExtentArray = list()
-			for i in range(SheathROI[0],SheathROI[1]):	SxMeanExtentArray.append(Sx[i])
+			for i in range(sheathROI[0],sheathROI[1]):	SxMeanExtentArray.append(Sx[i])
 			SxMeanExtent.append(sum(SxMeanExtentArray)/len(SxMeanExtentArray))
 		except:
 			SxMeanExtent.append( np.nan )
 		#endtry
 
 		#Extract maximum sheath thickness from within region of interest
-		try: SxMaxExtent.append( ((SourceWidth[0]*dr[l])-max(Sx[SheathROI[0]:SheathROI[1]]))*10 )
+		try: SxMaxExtent.append( ((sourcewidth[0]*dr[l])-max(Sx[sheathROI[0]:sheathROI[1]]))*10 )
 		except: SxMaxExtent.append( np.nan )
 
 		#Extract sheath width adjacent to powered electrode
 		#loc = electrodeloc[0]		#Radial
 		loc = electrodeloc[1] 		#Axial
-		try: SxLocExtent.append( ((SourceWidth[0]*dr[l])-Sx[loc])*10 )
+		try: SxLocExtent.append( ((sourcewidth[0]*dr[l])-Sx[loc])*10 )
 		except:	SxLocExtent.append( np.nan )
 	#endfor
 
@@ -6191,12 +6367,12 @@ if savefig_phaseresolve1D == True:
 			Lineouts,ProfileOrientation = list(),list()
 
 			#Concatinate all requested lineouts together, keeping seperate orientation.
-			for m in range(0,len(radialineouts)):
-				Lineouts.append(radialineouts[m])
+			for m in range(0,len(radialprofiles)):
+				Lineouts.append(radialprofiles[m])
 				ProfileOrientation.append('Radial')
 			#endfor
-			for m in range(0,len(heightlineouts)):
-				Lineouts.append(heightlineouts[m])
+			for m in range(0,len(axialprofiles)):
+				Lineouts.append(axialprofiles[m])
 				ProfileOrientation.append('Axial')
 			#endfor
 
@@ -6507,7 +6683,7 @@ if savefig_sheathdynamics == True:
 			#calculate sheath width employing 'E' and 'AR+'
 			Sx,SxAxis = CalcSheathExtent(folder=l,Phase=j,Ne=Ne,Ni=Ni)
 			for j in range(0,len(Sx)): 
-				Sx[j] = ((SourceWidth[0]*dr[l])-Sx[j])*10	#Convert to mm
+				Sx[j] = ((sourcewidth[0]*dr[l])-Sx[j])*10	#Convert to mm
 			#endfor
 			
 			SxLoc.append(Sx[loc])
@@ -6737,12 +6913,12 @@ if savefig_PROES == True:
 			Lineouts,ProfileOrientation = list(),list()
 
 			#Concatinate all requested lineouts together, keeping seperate orientation.
-			for m in range(0,len(radialineouts)):
-				Lineouts.append(radialineouts[m])
+			for m in range(0,len(radialprofiles)):
+				Lineouts.append(radialprofiles[m])
 				ProfileOrientation.append('Radial')
 			#endfor
-			for m in range(0,len(heightlineouts)):
-				Lineouts.append(heightlineouts[m])
+			for m in range(0,len(axialprofiles)):
+				Lineouts.append(axialprofiles[m])
 				ProfileOrientation.append('Axial')
 			#endfor
 
@@ -6759,9 +6935,9 @@ if savefig_PROES == True:
 					IntegratedDoFArray,DoFArrays = list(),list()
 
 					#Collect each profile for stitching into a PROES image if required.
-					if DoFWidth > 0:
+					if DoFwidth > 0:
 						#Determine range of lineouts within the depth of field.
-						DOFRegion = [(Lineouts[k]-DoFWidth),(Lineouts[k]+DoFWidth)]
+						DOFRegion = [(Lineouts[k]-DoFwidth),(Lineouts[k]+DoFwidth)]
 						#If DOF extends beyond mesh, alert user and abort diagnostic.
 						if any(DOFRegion) < 0:
 							print('----------------------------------')
@@ -6780,12 +6956,12 @@ if savefig_PROES == True:
 
 						#Integrate DoF profiles spatially, obtaining PROES profile for phase 'j'
 						for n in range(0,len(DoFArrays)):
-							IntegratedDoFArray.append( sum(DoFArrays[n])/(DoFWidth*2+1) )
+							IntegratedDoFArray.append( sum(DoFArrays[n])/(DoFwidth*2+1) )
 						#endif
 						PROES.append(IntegratedDoFArray)
 
 					#If no DoF then simply collect lineout from required location.
-					elif DoFWidth == 0:
+					elif DoFwidth == 0:
 						LineoutLoc = Lineouts[k]
 						if ProfileOrientation[k] == 'Radial':
 							PROES.append(ExtractRadialProfile(PhaseData[j],proclist[i],varlist[i],LineoutLoc))
@@ -6844,7 +7020,7 @@ if savefig_PROES == True:
 				DirPROESloc = CreateNewFolder(DirPROES,ProfileString[3::])
 
 				#Create PROES image along line of sight with phase-locked waveform.
-				fig.suptitle( 'Simulated '+varlist[i]+' PROES for '+VariedValuelist[l]+ProfileString+'\n DoF = '+str(round(((2*DoFWidth)+1)*dz[l],2))+' cm', y=0.95, fontsize=18)
+				fig.suptitle( 'Simulated '+varlist[i]+' PROES for '+VariedValuelist[l]+ProfileString+'\n DoF = '+str(round(((2*DoFwidth)+1)*dz[l],2))+' cm', y=0.95, fontsize=18)
 				im = ax[0].contour(PROES,extent=[x1,x2,y1,y2],origin='lower')
 				im = ax[0].imshow(PROES,extent=[x1,x2,y1,y2],origin='bottom',aspect='auto')
 				PlotSheathExtent(Phaseaxis,PhaseSx,ax[0],ISYMlist[l])
@@ -6892,7 +7068,7 @@ if savefig_PROES == True:
 				#Plot Spatially Collapsed PROES with phase axis.
 				fig,ax = figure(image_aspectratio,2,shareX=True)
 				ax[0].plot(Phaseaxis,TemporalPROES, lw=2)
-				Title = 'Spatially Integrated '+varlist[i]+' for '+VariedValuelist[l]+ProfileString+'\n DoF = '+str(round(((2*DoFWidth)+1)*dz[l],2))+' cm'
+				Title = 'Spatially Integrated '+varlist[i]+' for '+VariedValuelist[l]+ProfileString+'\n DoF = '+str(round(((2*DoFwidth)+1)*dz[l],2))+' cm'
 				Ylabel = 'Spatially Integrated '+varlist[i]
 				ImageOptions(fig,ax[0],Title=Title,Ylabel=Ylabel,Crop=False)
 #				ax[0].set_xlim(x1,x2)
@@ -7021,7 +7197,7 @@ if any([savefig_sheathdynamics, savefig_phaseresolve1D, savefig_phaseresolve2D, 
 ##dz(5.50/118), dr(2.55/102) height=[24,43], Trend=[19]
 #
 ##SDoyle2018a: 
-##PROES, (Z=14.2, 21.0, 31.0) radialineouts = [29,44,64]
+##PROES, (Z=14.2, 21.0, 31.0) radialprofiles = [29,44,64]
 ##Dielectric locations: [16,29],[16,44],[16,64]
 #
 ##===============================#
@@ -7031,51 +7207,51 @@ if any([savefig_sheathdynamics, savefig_phaseresolve1D, savefig_phaseresolve2D, 
 #### PP-SCCP ####
 ##electrodeloc = 	[0,3]
 ##waveformlocs = 	[]
-##DOFWidth = 		R;??,Z;??
+##DoFwidth = 		R;??,Z;??
 ##TrendLoc =  		H[0];R[]
-##ThrustLoc = 		[]
-##SheathROI = 		[]
-##SourceWidth = 		[]
+##thrustloc = 		[]
+##sheathROI = 		[]
+##sourcewidth = 		[]
 ##Crop = 			R[];Z[]
 #
 ##### TSHC-2017 ####
 ##electrodeloc = 	[0,15]
 ##waveformlocs = 	[]
-##DOFWidth = 		R;5,Z;10
+##DoFwidth = 		R;5,Z;10
 ##TrendLoc =  		H[0,20];R[30,60,90]
-##ThrustLoc = 		[]
-##SheathROI = 		[]
-##SourceWidth = 		[]
+##thrustloc = 		[]
+##sheathROI = 		[]
+##sourcewidth = 		[]
 ##Crop = 			R[0.0,1.0];Z[0.5,2.5]
 #
 #### TSHC-OI Mk3 ###
 ##electrodeloc = 	[58,15]
 ##waveformlocs = 	[]
-##DOFWidth = 		R;??,Z;??
+##DoFwidth = 		R;??,Z;??
 ##TrendLoc =  		H[0,23,45];R[46,55,64]			#R,Z = 0.2cm/cell,0.1cm/cell
-##ThrustLoc = 		[]
-##SheathROI = 		[]
-##SourceWidth = 		[]
+##thrustloc = 		[]
+##sheathROI = 		[]
+##sourcewidth = 		[]
 ##Crop = 			R[0,12];Z[4,7]
 #
 #### HYPERION-I Mk1 ###
 ##electrodeloc = 	[51,14]HYPI OR [12,28]HYPII			#Upper(Positive) ICP coil
 ##waveformlocs = 	[[51,24][51,34]]					#Middle ICP Coil, Lower(Negative) coil
-##DOFWidth = 		R;??,Z;??
+##DoFwidth = 		R;??,Z;??
 ##TrendLoc =  		H[0];R[50]HYPI OR H[56];R[50]HYPII	#R,Z = 0.2cm/cell,0.1cm/cell
-##ThrustLoc = 		[]
-##SheathROI = 		[]
-##SourceWidth = 		[]
+##thrustloc = 		[]
+##sheathROI = 		[]
+##sourcewidth = 		[]
 ##Crop = 			R[];Z[]
 #
 #### EVgeny Mk1 ###
 ##electrodeloc = 	[31,14]							#Middle ICP Coil
 ##waveformlocs = 	[[31,6],[31,23],[20,6]]			#[UpstreamCoil],[DownstreamCoil],[DielectricSurface]
-##DOFWidth = 		R;??,Z;??
+##DoFwidth = 		R;??,Z;??
 ##TrendLoc =  		H[0,21,41];R[]					#R,Z = 0.2cm/cell,0.1cm/cell
-##ThrustLoc = 		[]
-##SheathROI = 		[45,85]							#Downstream
-##SourceWidth = 		[90]							#Downstream
+##thrustloc = 		[]
+##sheathROI = 		[45,85]							#Downstream
+##sourcewidth = 		[90]							#Downstream
 ##Crop = 			R[];Z[]
 ##Plotmesh = 		'EVgeny'
 #
