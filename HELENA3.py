@@ -122,18 +122,13 @@ PlotAzimuthalDirection = True
 EDF_Threshold = 0.01						# i.e. = 0.0 to plot all
 
 #Define units for particular variables
-# THIS NEEDS REWORKING:
-# 1) CONVERT UNITS TO SI FOR MATHS ON INPUT		(Current variable function but renamed?)
-# 2) APPLY PLOTTED UNITS SEPERATELY				(New variable function (plot variables?)
-# 3) APPLY SI and CGS PRESETS
-#		- PROBABLY REMOVE INDIVIDUAL UNIT SETTINGS (too messy)
-PressureUnit = 'Torr'						#'Torr','mTorr','Pa'			#RM OUTDATED, TO REMOVE
-Units = 'SI'								#'SI','CGS'
+Units = 'CGS'								#'SI','CGS'					
+											# MATHS STILL ASSUMES SI, WILL NEED TO FIX THIS !!!
 
 ####################
 
 #Commonly used variable sets.
-Phys = ['P-POT','TE','EF-TOT','ERADIAL','ETHETA','EAXIAL','PHASER','PHASE','PHASEZ','EAMB-Z','EAMB-R','RHO','BR','BRS','BZ','BZS','BT','BTS','BRF','VR-NEUTRAL','VZ-NEUTRAL','VR-ION+','VZ-ION+','EFLUX-R','EFLUX-Z','JZ-NET','JR-NET','J-THETA','J-THETA-5','J-TH(MAG)','J-TH(PHA)','TG-AVE','PRESSURE','POW-RF','POW-RF-E','POW-ICP','EB-ESORC','COLF']
+Phys = ['P-POT','TE','EF-TOT','ERADIAL','ETHETA','EAXIAL','PHASER','PHASE','PHASEZ','EAMB-Z','EAMB-R','RHO','BR','BRS','BZ','BZS','BT','BTS','BRF','VR-NEUTRAL','VZ-NEUTRAL','VR-ION+','VZ-ION+','EFLUX-R','EFLUX-Z','JZ-NET','JR-NET','J-THETA','J-TH(MAG)','J-TH(PHA)','TG-AVE','PRESSURE','POW-RF','POW-RF-E','POW-ICP','EB-ESORC','COLF']
 ASTRONCOILEF = \
 ['ERADIAL-2','ETHETA-2','EAXIAL-2','PHASER-2','PHASEZ-2','ERADIAL-3','ETHETA-3','EAXIAL-3','PHASER-3','PHASEZ-3', \
  'ERADIAL-4','ETHETA-4','EAXIAL-4','PHASER-4','PHASEZ-4','ERADIAL-5','ETHETA-5','EAXIAL-5','PHASER-5','PHASEZ-5', \
@@ -144,10 +139,12 @@ ASTRONCOILBF = \
  'BRF-2','BRF-3','BRF-4','BRF-5','BRF-6','BRF-7','BRF-8', \
  'PHASEBT-2','PHASEBT-3','PHASEBT-4','PHASEBT-5','PHASEBT-6','PHASEBT-7','PHASEBT-8',]
 
-
 Ar = ['AR3S','AR4SM','AR4SR','AR4SPM','AR4SPR','AR4P','AR4D','AR','AR+','AR2+','AR2*','E','S-AR+','S-AR4P','SEB-AR+','SEB-AR4P','FZ-AR3S','FR-AR3S','FR-AR+','FZ-AR+','FZ-AR3S','FR-AR3S']
-O2 = ['O3','O2','O2+','O','O+','O-','E','S-O3','S-O2+','S-O+','S-O-','SEB-O3','SEB-O+','SEB-O2+','SEB-O-','FR-O+','FZ-O+','FR-O-','FZ-O-']+['O3P3P','O***','S-O3P3P','S-O***','SEB-O3P3P','SEB-O***']
-NF3 = ['F']
+O2 = ['O3','O2','O2+','O','O+','O-','S-O3','S-O2+','S-O+','S-O-','SEB-O3','SEB-O+','SEB-O2+','SEB-O-','FR-O+','FZ-O+','FR-O-','FZ-O-']+['O3P3P','O***','S-O3P3P','S-O***','SEB-O3P3P','SEB-O***']
+H2 = ['H','H*','H^','H-']
+N2 = ['N2','N2V','N2*','N2**','N2^','N','N*','N^']
+F = ['F2','F2*','F2^','F','F*','F^','F-']
+NFx = ['NF3A','NF2B','NFB','NF3^','NF2^','NF^']
 
 Ar_Phase = ['S-E','S-AR+','S-AR4P','SEB-AR+','SEB-AR4P','SRCE-2437','TE','PPOT','FR-E','FZ-E']
 O2_Phase = ['S-E','S-O+','S-O-','S-O2+','SEB-O+','SEB-O-','SEB-O2+','TE','PPOT','FR-E','FZ-E']+['S-O3P3P','SEB-O3P3P']
@@ -156,19 +153,19 @@ PRCCPAr_PCMC = ['AR^0.35','EB-0.35','ION-TOT0.35']
 PRCCPO2_PCMC = ['O^0.35','EB-0.35','ION-TOT0.35']
 ESCTAr_PCMC = ['TO BE COMPLETED']
 TSHCAr_PCMC = ['AR^0.2S','EB-0.2S','ION-TOT0.2S','AR^0.2T','EB-0.2T','ION-TOT0.2T','AR^4.9U','EB-4.9U','ION-TOT4.9U','AR^9.8V','EB-9.8V','ION-TOT9.8V']					#RM-OUTDATED
-
-EVgeny_PCMC = ['AR^0.1P','EB-0.1P','ION-TOT0.1P','AR^2.1Q','EB-2.1Q','ION-TOT2.1Q']
-HYPI_PCMC = ['O^0.2P','EB-0.2P','ION-TOT0.2P','O^4.1Q','EB-4.1Q','ION-TOT4.1Q','O^4.15','EB-4.15','ION-TOT4.15']
-HYPII_PCMC = ['O^2.8P','EB-2.8P','ION-TOT2.8P','O^3.5Q','EB-3.5Q','ION-TOT3.5Q']
+ParallelPlatePCMC = ['AR^2.67', 'ION-TOT2.67']				#RM-OUTDATED
 
 
 #Archived variable sets
+HYPI_PCMC = ['O^0.2P','EB-0.2P','ION-TOT0.2P','O^4.1Q','EB-4.1Q','ION-TOT4.1Q','O^4.15','EB-4.15','ION-TOT4.15']
+HYPII_PCMC = ['O^2.8P','EB-2.8P','ION-TOT2.8P','O^3.5Q','EB-3.5Q','ION-TOT3.5Q']
+EVgeny_PCMC = ['AR^0.1P','EB-0.1P','ION-TOT0.1P','AR^2.1Q','EB-2.1Q','ION-TOT2.1Q']
 TSHCOI2019_PCMC = ['AR^0.2S','ION-TOT0.2S','AR^4.4T','ION-TOT4.4T','AR^8.9U','ION-TOT8.9U']
 TSHCOI2020_PCMC = ['AR^0.2S','ION-TOT0.2S','AR^4.9T','ION-TOT4.9T','AR^9.8U','ION-TOT9.8U']
 MSHC2017Mk0_PCMC = ['AR^0.5S','EB-0.5S','ION-TOT0.5S','AR^1.1B','EB-1.1B','ION-TOT1.1B']
 SCCP2018Mk0_PCMC = ['AR^7.7J','ION-TOT7.7J','AR^5.1B','ION-TOT5.1B']
 ESCT2018Mk0_PCMC = ['AR^0.3S','EB-0.3S','ION-TOT0.3S']
-ParallelPlatePCMC = ['AR^2.67', 'ION-TOT2.67']				#RM-OUTDATED
+
 
 ####################
 
@@ -261,7 +258,7 @@ sourcewidth = [12]						#Source Dimension at ROI, leave empty for auto. [cells]	
 
 
 #Requested diagnostics and plotting routines.
-savefig_convergence = False				#Single-Variables: iter-time axis			Requires movie_icp.pdt
+savefig_convergence = True				#Single-Variables: iter-time axis			Requires movie_icp.pdt
 savefig_plot2D = True					#Single-Variables: converged				Requires TECPLOT2D.PDT
 #	NEED TO ADD ICOILP-n TOT OPTION WITH ALL COILSETS OVERLAYED
 
@@ -300,8 +297,6 @@ print_sheath = False					#Print sheath width at electrodeloc
 image_extension = '.png'				#Define image extension  ('.png', '.jpg', '.eps')		
 image_interp = 'bilinear'				#Define image smoothing  ('none', 'bilinear')
 image_cmap = 'plasma'					#Define global colourmap ('jet','plasma','inferno','gnuplot')
-# ADD TECPLOT COLOUR SCHEME
-# ADD SI/CGS UNIT SCHEMES
 
 image_aspectratio = [10,10]				#Real Size of [X,Y] in cm [Doesn't Rotate - X is always horizontal]
 image_radialcrop = []#[0.65]			#Crops 2D images to [R1,R2] in cm
@@ -313,7 +308,7 @@ image_plotcontours = False#True				#Plot contour lines in 2D images
 image_plotoverlay = False				#Plot location(s) of 1D radial/axial profiles onto 2D images
 image_plotsheath = False				#Plot sheath extent onto 2D images
 image_plotgrid = False					#Plot major/minor gridlines on 1D profiles
-image_plotmesh = False#'PRCCP'			#Plot material mesh outlines ('Auto','PRCCP','PRCCPM','ESCT','GEC')
+image_plotmesh = 'ASTRON'#'PRCCP'		#Plot material mesh outlines ('Auto','PRCCP','PRCCPM','ESCT','GEC')
 image_numericaxis = False				#### NOT implemented ####
 
 image_rotate = False#True					#Rotate image 90 degrees to the right.			# MAKE [0000-1000, 0-2pi]
@@ -326,8 +321,6 @@ legendoverride = []
 xaxisoverride = []
 xlabeloverride = []
 ylabeloverride = []
-cbaroverride = ['Notimplemented']
-
 
 
 
@@ -1424,44 +1417,53 @@ def VariableLabelMaker(variablelist):
 		#Explicit Pressure and Species Densities.
 		if variablelist[i] in ['PRESSURE']:
 			Variable = 'Pressure'
-			VariableUnit = '['+str(PressureUnit)+']'			#Default: '[Torr]'
+			if Units=='SI': 	VariableUnit = '[Pa]'
+			elif Units=='CGS': VariableUnit = '[Torr]'
 		elif variablelist[i] in ['AR','AR3S']:
 			Variable = 'Neutral Ar Density'
-			VariableUnit = '[m$^{-3}$]'
+			if Units=='SI': 	VariableUnit = '[m$^{-3}$]'
+			elif Units=='CGS':	VariableUnit = '[cm$^{-3}$]'
 		elif variablelist[i] in ['E']:
 			Variable = 'Electron Density n$_{e}$'
-			VariableUnit = '[m$^{-3}$]'
+			if Units=='SI': 	VariableUnit = '[m$^{-3}$]'
+			elif Units=='CGS':	VariableUnit = '[cm$^{-3}$]'
 		elif variablelist[i] in ['AR+']:
 			Variable = 'Ar+ Density'
-			VariableUnit = '[m$^{-3}$]'
+			if Units=='SI': 	VariableUnit = '[m$^{-3}$]'
+			elif Units=='CGS':	VariableUnit = '[cm$^{-3}$]'
 
 		#Explicit Ionization Rates.
 		elif variablelist[i] == 'S-E':
 			Variable = 'Bulk e$^-$ Source Rate \n'
-			VariableUnit = '[m$^{-3}$s$^{-1}$]'
+			if Units=='SI': 	VariableUnit = '[m$^{-3}$s$^{-1}$]'
+			elif Units=='CGS':	VariableUnit = '[cm$^{-3}$s$^{-1}$]'
 		elif variablelist[i] == 'SEB-E':
 			Variable = 'Secondry e$^-$ Source Rate \n'
-			VariableUnit = '[m$^{-3}$s$^{-1}$]'
+			if Units=='SI': 	VariableUnit = '[m$^{-3}$s$^{-1}$]'
+			elif Units=='CGS':	VariableUnit = '[cm$^{-3}$s$^{-1}$]'
 		elif variablelist[i] == 'EB-ESORC':
 			Variable = 'Secondry e$^-$ Relaxation Rate \n'
-			VariableUnit = '[m$^{-3}$s$^{-1}$]'
+			if Units=='SI': 	VariableUnit = '[m$^{-3}$s$^{-1}$]'
+			elif Units=='CGS':	VariableUnit = '[cm$^{-3}$s$^{-1}$]'
 		elif variablelist[i] == 'S-AR+':
 			Variable = 'Bulk Ar+ Ionization Rate \n'
-			VariableUnit = '[m$^{-3}$s$^{-1}$]'
+			if Units=='SI': 	VariableUnit = '[m$^{-3}$s$^{-1}$]'
+			elif Units=='CGS':	VariableUnit = '[cm$^{-3}$s$^{-1}$]'
 		elif variablelist[i] == 'SEB-AR+':
 			Variable = 'Secondry Ar+ Ionization Rate \n'
-			VariableUnit = '[m$^{-3}$s$^{-1}$]'
+			if Units=='SI': 	VariableUnit = '[m$^{-3}$s$^{-1}$]'
+			elif Units=='CGS':	VariableUnit = '[cm$^{-3}$s$^{-1}$]'
 		
 		#Explicit Vibrational States.
 		elif variablelist[i] == 'GSH2V1':
 			Variable = '1st Vibrational Excited State \n'
-			VariableUnit = '[m$^{-3}$]'
+			VariableUnit = '[cm$^{-3}$]'
 		elif variablelist[i] == 'GSH2V4':
 			Variable = '4th Vibrational Excited State \n'
-			VariableUnit = '[m$^{-3}$]'
+			VariableUnit = '[cm$^{-3}$]'
 		elif variablelist[i] == 'GSH2V14':
 			Variable = '14th Vibrational Excited State \n'
-			VariableUnit = '[m$^{-3}$]'
+			VariableUnit = '[cm$^{-3}$]'
 
 		#Explicit Species Temperatures.
 		elif variablelist[i] == 'TE':
@@ -1474,134 +1476,166 @@ def VariableLabelMaker(variablelist):
 		#Explicit Species Velocities.
 		elif variablelist[i] == 'VZ-NEUTRAL':
 			Variable = 'Neutral Axial Velocity'
-			VariableUnit = '[ms$^{-1}$]'
+			if Units=='SI': 	VariableUnit = '[ms$^{-1}$]'
+			elif Units=='CGS':	VariableUnit = '[cms$^{-1}$]'
 		elif variablelist[i] == 'VR-NEUTRAL':
 			Variable = 'Neutral Radial Velocity'
-			VariableUnit = '[ms$^{-1}$]'
+			if Units=='SI': 	VariableUnit = '[ms$^{-1}$]'
+			elif Units=='CGS':	VariableUnit = '[cms$^{-1}$]'
 		elif variablelist[i] == 'VZ-ION+':
 			Variable = '+Ion Axial Velocity'
-			VariableUnit = '[kms$^{-1}$]'
+			if Units=='SI': 	VariableUnit = '[kms$^{-1}$]'
+			elif Units=='CGS':	VariableUnit = '[cms$^{-1}$]'
 		elif variablelist[i] == 'VR-ION+':
 			Variable = '+Ion Radial Velocity'
-			VariableUnit = '[kms$^{-1}$]'
+			if Units=='SI': 	VariableUnit = '[kms$^{-1}$]'
+			elif Units=='CGS':	VariableUnit = '[cms$^{-1}$]'
 		elif variablelist[i] == 'VZ-ION-':
 			Variable = '-Ion Axial Velocity'
-			VariableUnit = '[kms$^{-1}$]'
+			if Units=='SI': 	VariableUnit = '[kms$^{-1}$]'
+			elif Units=='CGS':	VariableUnit = '[cms$^{-1}$]'
 		elif variablelist[i] == 'VR-ION-':
 			Variable = '-Ion Radial Velocity'
-			VariableUnit = '[kms$^{-1}$]'
+			if Units=='SI': 	VariableUnit = '[kms$^{-1}$]'
+			elif Units=='CGS':	VariableUnit = '[cms$^{-1}$]'
 
 		#Explicit Species Fluxes.
 		elif variablelist[i] == 'EFLUX-Z':
 			Variable = 'Electron Axial Flux'
-			VariableUnit = '[m$^{-2}$ s$^{-1}$]'
+			if Units=='SI': 	VariableUnit = '[m$^{-2}$s$^{-1}$]'
+			elif Units=='CGS':	VariableUnit = '[cm$^{-2}$s$^{-1}$]'
 		elif variablelist[i] == 'EFLUX-R':
 			Variable = 'Electron Radial Flux'
-			VariableUnit = '[m$^{-2}$ s$^{-1}$]'
+			if Units=='SI': 	VariableUnit = '[m$^{-2}$s$^{-1}$]'
+			elif Units=='CGS':	VariableUnit = '[cm$^{-2}$s$^{-1}$]'
 		elif variablelist[i] == 'FZ-AR+':
 			Variable = 'Ar+ Axial Flux'
-			VariableUnit = '[m$^{-2}$ s$^{-1}$]'
+			if Units=='SI': 	VariableUnit = '[m$^{-2}$s$^{-1}$]'
+			elif Units=='CGS':	VariableUnit = '[cm$^{-2}$s$^{-1}$]'
 		elif variablelist[i] == 'FR-AR+':
 			Variable = 'Ar+ Radial Flux'
-			VariableUnit = '[m$^{-2}$ s$^{-1}$]'
+			if Units=='SI': 	VariableUnit = '[m$^{-2}$s$^{-1}$]'
+			elif Units=='CGS':	VariableUnit = '[cm$^{-2}$s$^{-1}$]'
 		elif variablelist[i] == 'FZ-AR':
 			Variable = 'Ar Axial Flux'
-			VariableUnit = '[m$^{-2}$ s$^{-1}$]'
+			if Units=='SI': 	VariableUnit = '[m$^{-2}$s$^{-1}$]'
+			elif Units=='CGS':	VariableUnit = '[cm$^{-2}$s$^{-1}$]'
 		elif variablelist[i] == 'FR-AR':
 			Variable = 'Ar Radial Flux'
-			VariableUnit = '[m$^{-2}$ s$^{-1}$]'
+			if Units=='SI': 	VariableUnit = '[m$^{-2}$s$^{-1}$]'
+			elif Units=='CGS':	VariableUnit = '[cm$^{-2}$s$^{-1}$]'
 
 		#Explicit Electrodynamic Properties
+		elif variablelist[i] in ['RHO']:
+			Variable = 'Charge Density $\\rho$'
+			if Units=='SI': 	VariableUnit = '[C m$^{-3}$]'
+			elif Units=='CGS':	VariableUnit = '[C cm$^{-3}$]'
 		elif variablelist[i] in ['PPOT','P-POT']:
 			Variable = 'Plasma Potential V$_{p}$'
 			VariableUnit = '[V]'
-		elif variablelist[i] in ['RHO']:
-			Variable = 'Charge Density $\\rho$'
-			VariableUnit = '[C cm$^{-3}$]'
 			
 		elif variablelist[i] in ['EF-TOT']:
 			Variable = 'Absolute E-Field Amplitude'
-			VariableUnit = '[Vcm$^{-1}$]'
+			if Units=='SI': 	VariableUnit = '[Vm$^{-1}$]'
+			elif Units=='CGS':	VariableUnit = '[Vcm$^{-1}$]'
 		elif variablelist[i] in ERADIALVars+['ER','EAMB-R']:
 			Variable = 'Radial E-Field Amplitude $E_{R}$'
-			VariableUnit = '[Vcm$^{-1}$]'
+			if Units=='SI': 	VariableUnit = '[Vm$^{-1}$]'
+			elif Units=='CGS':	VariableUnit = '[Vcm$^{-1}$]'
+		elif variablelist[i] in ETHETAVars+['ET','EAMB-T']:
+			Variable = 'Azimuthal E-Field Amplitude $E_{\\theta}$'
+			if Units=='SI': 	VariableUnit = '[Vm$^{-1}$]'
+			elif Units=='CGS':	VariableUnit = '[Vcm$^{-1}$]'
+		elif variablelist[i] in EAXIALVars+['EZ','EAMB-Z']:
+			Variable = 'Axial E-Field Amplitude $E_{Z}$'
+			if Units=='SI': 	VariableUnit = '[Vm$^{-1}$]'
+			elif Units=='CGS':	VariableUnit = '[Vcm$^{-1}$]'
 		elif variablelist[i] in PHASERVars:
 			Variable = 'Radial E-Field Phase'
 			VariableUnit = '[Radians]'
-		elif variablelist[i] in ETHETAVars+['ET','EAMB-T']:
-			Variable = 'Azimuthal E-Field Amplitude $E_{\\theta}$'
-			VariableUnit = '[Vcm$^{-1}$]'
 		elif variablelist[i] in PHASEVars:
 			Variable = 'Azimuthal E-Field Phase'
 			VariableUnit = '[Radians]'
-		elif variablelist[i] in EAXIALVars+['EZ','EAMB-Z']:
-			Variable = 'Axial E-Field Amplitude $E_{Z}$'
-			VariableUnit = '[Vcm$^{-1}$]'
 		elif variablelist[i] in PHASEZVars:
 			Variable = 'Axial E-Field Phase'
 			VariableUnit = '[Radians]'
 
 		elif variablelist[i] == 'BRS':
 			Variable = 'Radial Static B-field Magnitude $B_{R}$'
-			VariableUnit = '[G]'
+			if Units=='SI': 	VariableUnit = '[T]'
+			elif Units=='CGS':	VariableUnit = '[G]'
 		elif variablelist[i] == 'BTS':
 			Variable = 'Azimuthal Static B-field Magnitude $B_{\\theta}$'
-			VariableUnit = '[G]'
+			if Units=='SI': 	VariableUnit = '[T]'
+			elif Units=='CGS':	VariableUnit = '[G]'
 		elif variablelist[i] == 'BZS':
 			Variable = 'Axial Static B-field Magnitude $B_{Z}$'
-			VariableUnit = '[G]'
+			if Units=='SI': 	VariableUnit = '[T]'
+			elif Units=='CGS':	VariableUnit = '[G]'
 			
 		elif variablelist[i] in BRVars:
 			Variable = 'Radial Induced B-field Magnitude $B_{R}$'
-			VariableUnit = '[G]'
+			if Units=='SI': 	VariableUnit = '[T]'
+			elif Units=='CGS':	VariableUnit = '[G]'
+		elif variablelist[i] in BTVars+['BTHETA']:
+			Variable = 'Azimuthal Induced B-field Magnitude $B_{\\theta}$'
+			if Units=='SI': 	VariableUnit = '[T]'
+			elif Units=='CGS':	VariableUnit = '[G]'
+		elif variablelist[i] in BZVars:
+			Variable = 'Axial Induced B-field Magnitude $B_{Z}$'
+			if Units=='SI': 	VariableUnit = '[T]'
+			elif Units=='CGS':	VariableUnit = '[G]'
+		elif variablelist[i] in BRFVars:
+			Variable = 'Induced B-field Magnitude $B_{RF}$'
+			if Units=='SI': 	VariableUnit = '[T]'
+			elif Units=='CGS':	VariableUnit = '[G]'
 		elif variablelist[i] in PHASEBRVars:
 			Variable = 'Radial Induced B-field Phase'
 			VariableUnit = '[Radians]'
-		elif variablelist[i] in BTVars+['BTHETA']:
-			Variable = 'Azimuthal Induced B-field Magnitude $B_{\\theta}$'
-			VariableUnit = '[G]'
 		elif variablelist[i] in PHASEBTVars:
 			Variable = 'Azimuthal Induced B-field Phase'
 			VariableUnit = '[Radians]'
-		elif variablelist[i] in BZVars:
-			Variable = 'Axial Induced B-field Magnitude $B_{Z}$'
-			VariableUnit = '[G]'
 		elif variablelist[i] in PHASEBZVars:
 			Variable = 'Axial Induced B-field Phase'
 			VariableUnit = '[Radians]'
-		elif variablelist[i] in BRFVars:
-			Variable = 'Total Induced B-field Magnitude $B_{RF}$'
-			VariableUnit = '[G]'
 			
 		elif variablelist[i] in ['JZ-NET']:
 			Variable = 'Axial Net Current Density $J_{Z}$'
-			VariableUnit = '[mA cm$^{-2}$]'					#Default: '[A cm$^{-2}$]'
+			if Units=='SI': 	VariableUnit = '[A m$^{-2}$]'
+			elif Units=='CGS':	VariableUnit = '[A cm$^{-2}$]'
 		elif variablelist[i] in ['JR-NET']:
 			Variable = 'Radial Net Current Density $J_{R}$'
-			VariableUnit = '[mA cm$^{-2}$]'					#Default: '[A cm$^{-2}$]'
+			if Units=='SI': 	VariableUnit = '[A m$^{-2}$]'
+			elif Units=='CGS':	VariableUnit = '[A cm$^{-2}$]'
 		elif variablelist[i] in JTHETAVars:
 			Variable = 'Azimuthal Net Current Density $J_{\\theta}$'
-			VariableUnit = '[mA cm$^{-2}$]'					#Default: '[A cm$^{-2}$]'
+			if Units=='SI': 	VariableUnit = '[A m$^{-2}$]'
+			elif Units=='CGS':	VariableUnit = '[A cm$^{-2}$]'
 		elif variablelist[i] in ['J-TH(MAG)']:
 			Variable = 'Azimuthal MCS Electron Current Density $J_{e\\theta}$'
-			VariableUnit = '[mA cm$^{-2}$]'					#Default: '[A cm$^{-2}$]'
+			if Units=='SI': 	VariableUnit = '[A m$^{-2}$]'
+			elif Units=='CGS':	VariableUnit = '[A cm$^{-2}$]'
 		elif variablelist[i] in ['J-TH(PHA)']:
 			Variable = 'Azimuthal MCS Electron Current Phase $J_{e\\theta}$'
-			VariableUnit = '[Radians]'						#Default: '[Radians]'
+			VariableUnit = '[Radians]'
 			
 		#Explicit Power Deposition.
 		elif variablelist[i] in ['POW-TOT']:
 			Variable = 'Total Coupled RF-Power'
-			VariableUnit = '[Wm$^{-3}$]'
-		elif variablelist[i] in POWICPVars+['POW-ICP']:		#Note: 	POW-ICP is total icp power, 
-			Variable = 'Inductively Coupled RF-Power'		#		POWICP-n is coilset #n icp power
-			VariableUnit = '[Wm$^{-3}$]'
+			if Units=='SI': 	VariableUnit = '[Wm$^{-3}$]'
+			elif Units=='CGS':	VariableUnit = '[Wcm$^{-3}$]'
+		elif variablelist[i] in POWICPVars+['POW-ICP']:			#Note: 	POW-ICP:  total icp power
+			Variable = 'Inductively Coupled RF-Power'			#		POWICP-n: coilset #n icp power
+			if Units=='SI': 	VariableUnit = '[Wm$^{-3}$]'
+			elif Units=='CGS':	VariableUnit = '[Wcm$^{-3}$]'
 		elif variablelist[i] in ['POW-RF']:
 			Variable = 'RF Power Density'
-			VariableUnit = '[Wm$^{-3}$]'
+			if Units=='SI': 	VariableUnit = '[Wm$^{-3}$]'
+			elif Units=='CGS':	VariableUnit = '[Wcm$^{-3}$]'
 		elif variablelist[i] in ['POW-RF-E']:
 			Variable = 'RF Electron Power Density'
-			VariableUnit = '[Wm$^{-3}$]'
+			if Units=='SI': 	VariableUnit = '[Wm$^{-3}$]'
+			elif Units=='CGS':	VariableUnit = '[Wcm$^{-3}$]'
 
 		#Explicit Collision Rates.
 		elif variablelist[i] == 'COLF':
@@ -1611,28 +1645,35 @@ def VariableLabelMaker(variablelist):
 		#Implicit Variables.
 		elif IsStringInVariable(variablelist[i],Ionisationlist) == True:
 			Variable = variablelist[i]
-			VariableUnit = '[m$^{-3}$s$^{-1}$]'
+			if Units=='SI': 	VariableUnit = '[m$^{-3}$s$^{-1}$]'
+			elif Units=='CGS':	VariableUnit = '[cm$^{-3}$s$^{-1}$]'
 		elif IsStringInVariable(variablelist[i],['SRCE-']) == True:
 			Variable = variablelist[i]
-			VariableUnit = '[m$^{-3}$s$^{-1}$]'
+			if Units=='SI': 	VariableUnit = '[m$^{-3}$s$^{-1}$]'
+			elif Units=='CGS':	VariableUnit = '[cm$^{-3}$s$^{-1}$]'
 		elif IsStringInVariable(variablelist[i],['T-']) == True:
 			Variable = variablelist[i]
 			VariableUnit = '[K]'
 		elif IsStringInVariable(variablelist[i],Velocitylist) == True:
 			Variable = variablelist[i]
-			VariableUnit = '[kms$^{-1}$]'
+			if Units=='SI': 	VariableUnit = '[kms$^{-1}$]'
+			elif Units=='CGS':	VariableUnit = '[cms$^{-1}$]'
 		elif IsStringInVariable(variablelist[i],Fluxlist) == True:
 			Variable = variablelist[i]
-			VariableUnit = '[m$^{-2}$ s$^{-1}$]'
+			if Units=='SI': 	VariableUnit = '[m$^{-2}$s$^{-1}$]'
+			elif Units=='CGS':	VariableUnit = '[cm$^{-2}$s$^{-1}$]'
 		elif IsStringInVariable(variablelist[i],['POW-']) == True:
 			Variable = variablelist[i]
-			VariableUnit = '[Wcm$^{-3}$]'
+			if Units=='SI': 	VariableUnit = '[Wm$^{-3}]'
+			elif Units=='CGS':	VariableUnit = '[Wcm$^{-3}$]'
 		elif variablelist[i] in [x.replace('^', '+') for x in AtomicSpecies]:
 			Variable = variablelist[i]
-			VariableUnit = '[m$^{-3}$]'
+			if Units=='SI': 	VariableUnit = '[m$^{-3}]'
+			elif Units=='CGS':	VariableUnit = '[cm$^{-3}$]'
 		elif variablelist[i] in AtomicSpecies:
 			Variable = variablelist[i]
-			VariableUnit = '[m$^{-3}$]'
+			if Units=='SI': 	VariableUnit = '[m$^{-3}]'
+			elif Units=='CGS':	VariableUnit = '[cm$^{-3}$]'
 
 		#Default if no fitting variable found.
 		else:
@@ -1653,23 +1694,24 @@ def VariableUnitConversion(profile,variable):
 	#For Pressures, convert to mTorr or Pa as requested, or retain as default Torr.
 	if IsStringInVariable(variable,['PRESSURE']) == True:
 		for i in range(0,len(profile)):
-			if PressureUnit == 'Pa': 		profile[i] = profile[i]*133.333333333	#[Pa]
-			elif PressureUnit == 'mTorr': 	profile[i] = profile[i]*1000.0			#[mTorr]
-			else: 							profile[i] = profile[i]					#[Torr]
+			if Units == 'SI': 		profile[i] = profile[i]*133.333333333	#[Pa]
+			elif Units == 'CGS': 	profile[i] = profile[i]					#[Torr]
 		#endfor
 	#endif
 
 	#For ionisation rates, convert from [cm3 s-1] to [m3 s-1]
 	if IsStringInVariable(variable,['S-','SEB-']) == True:
 		for i in range(0,len(profile)):
-			profile[i] = profile[i]*1E6
+			if Units == 'SI': 		profile[i] = profile[i]*1.E6			#[m3 s-1]
+			elif Units == 'CGS': 	profile[i] = profile[i]					#[cm3 s-1]
 		#endfor
 	#endif
 
-	#For fluxes, convert from [cm-2] to [m-2]. (also reverse axial flux)
+	#For fluxes, convert from [cm-2] to [m-2]. (also reverse axial flux direction)
 	if IsStringInVariable(variable,['EFLUX-Z','EFLUX-R','FZ-','FR-']) == True:
 		for i in range(0,len(profile)):
-			profile[i] = profile[i]*1E4
+			if Units == 'SI': 		profile[i] = profile[i]*1.E4			#[m2 s-1]
+			elif Units == 'CGS': 	profile[i] = profile[i]					#[cm2 s-1]
 		#endfor
 	#endif
 	if IsStringInVariable(variable,['EFLUX-Z','FZ-']) == True:
@@ -1681,11 +1723,13 @@ def VariableUnitConversion(profile,variable):
 	#For velocities, convert from [cms-1] to [ms-1] or [kms-1]. (also reverse axial velocity)
 	if IsStringInVariable(variable,['VR-NEUTRAL','VZ-NEUTRAL']) == True:
 		for i in range(0,len(profile)):
-			profile[i] = profile[i]*(0.01)			#Neutral [ms-1]
+			if Units == 'SI': 		profile[i] = profile[i]*1.E-2			#[ms-1]
+			elif Units == 'CGS': 	profile[i] = profile[i]					#[cms-1]
 		#endfor
 	if IsStringInVariable(variable,['VR-ION+','VZ-ION+','VR-ION-','VZ-ION-']) == True:
 		for i in range(0,len(profile)):
-			profile[i] = profile[i]*(0.01)*(0.001)	#Ion [kms-1]
+			if Units == 'SI': 		profile[i] = profile[i]*1.E-5			#[kms-1]
+			elif Units == 'CGS': 	profile[i] = profile[i]					#[cms-1]
 		#endfor
 	if IsStringInVariable(variable,['VZ-NEUTRAL','VZ-ION+','VZ-ION-']) == True:
 		for i in range(0,len(profile)):
@@ -1694,36 +1738,44 @@ def VariableUnitConversion(profile,variable):
 	#endif
 
 	#For B-field strengths, convert to Tesla or retain as default Gauss.
-	if IsStringInVariable(variable,['BT','BR','BRS','BRF','BTHETA']) == True:
+	if IsStringInVariable(variable,['BR','BT','BZ','BRF','BTHETA']) == True:
 		for i in range(0,len(profile)):
-#			if 		Units == 'SI': 	profile[i] = profile[i]/10000			#[T]
-#			elif:	Units == 'CGS':	profile[i] = profile[i]					#[G]
-			profile[i] = profile[i]											#[G]
+			if Units == 'SI': 		profile[i] = profile[i]/10000			#[T]
+			elif Units == 'CGS':	profile[i] = profile[i]					#[G]
 		#endfor
 	#~~~ AXIAL MAGNETIC FIELD IS NOT REVERSED HERE - RM: NEED TO LOOK INTO THIS... ~~~#
 	if IsStringInVariable(variable,['BZ','BZS']) == True:
 		for i in range(0,len(profile)):
-#			if 		Units == 'SI': 	profile[i] = (profile[i]/10000)#*(-1)	#[T]
-#			elif:	Units == 'CGS':	profile[i] = profile[i]					#[G]
-			profile[i] = profile[i]#*(-1)										#[G]
+			if Units == 'SI': 		profile[i] = (profile[i]/10000)#*(-1)	#[T]
+			elif Units == 'CGS':	profile[i] = profile[i]					#[G]
 		#endfor
 	#endif
 
 	#For E-field strengths, convert from [V cm-1] to [V m-1]. (also reverse axial field)
-	if IsStringInVariable(variable,['EF-TOT','EAMB-R','EAMB-Z','ETHETA']) == True:
+	if IsStringInVariable(variable,['EF-TOT','EAMB-R','EAMB-Z','ERADIAL','ETHETA','EAXIAL']) == True:
 		for i in range(0,len(profile)):
-			profile[i] = profile[i]#*100									### [V cm-1] ###
+			if Units == 'SI': 		profile[i] = profile[i]*100.			#[V m-1]
+			elif Units == 'CGS': 	profile[i] = profile[i]					#[V cm-1]
 		#endfor
 	if IsStringInVariable(variable,['EAMB-Z']) == True:
 		for i in range(0,len(profile)):
 			profile[i] = profile[i]*(-1)
 		#endfor
 	#endif
+	
+	#For plasma charge, convert from [C cm-3] to [C m-3]. (also reverse axial field)
+	if IsStringInVariable(variable,['RHO']) == True:
+		for i in range(0,len(profile)):
+			if Units == 'SI': 		profile[i] = profile[i]*1.E6			#[C m-3]
+			elif Units == 'CGS': 	profile[i] = profile[i]					#[C cm-3]
+		#endfor
+
 
 	#For Current Densities, convert from [A cm-2] to [mA cm-2]. (also reverse axial current)
 	if IsStringInVariable(variable,['JZ-NET','JR-NET','J-THETA','J-TH(MAG)']) == True:
 		for i in range(0,len(profile)):
-			profile[i] = profile[i]*1000
+			if Units == 'SI': 		profile[i] = profile[i]/1000.			#[A m-2]
+			elif Units == 'CGS': 	profile[i] = profile[i]					#[A cm-2]
 		#endfor
 	if IsStringInVariable(variable,['JZ-NET']) == True:
 		for i in range(0,len(profile)):
@@ -1732,16 +1784,18 @@ def VariableUnitConversion(profile,variable):
 	#endif
 
 	#For power densities, convert from [Wcm-3] to [Wm-3].
-	if IsStringInVariable(variable,['POW-ALL','POW-TOT','POW-ICP','POW-RF','POW-RF-E']) == True:	
+	if IsStringInVariable(variable,['POW-ALL','POW-TOT','POW-ICP','POWICP','POW-RF','POW-RF-E']) == True:	
 		for i in range(0,len(profile)):
-			profile[i] = profile[i]*1E6
+			if Units == 'SI': 		profile[i] = profile[i]*1.E6			#[W m-3]
+			elif Units == 'CGS': 	profile[i] = profile[i]					#[W cm-3]
 		#endfor
 	#endif
 
 	#For densities, convert from [cm-3] to [m-3]. (AtomicSpecies is defined in icp.nam input)
 	if variable in AtomicSpecies or variable in [x.replace('^', '+') for x in AtomicSpecies]:
 		for i in range(0,len(profile)):
-			profile[i] = profile[i]*1E6
+			if Units == 'SI': 		profile[i] = profile[i]*1.E6			#[m-3]
+			elif Units == 'CGS': 	profile[i] = profile[i]					#[cm-3]
 		#endfor
 	#endif
 
@@ -1749,25 +1803,26 @@ def VariableUnitConversion(profile,variable):
 #enddef
 
 
-#Applies azimuthal direction (phase) for input 2D data arrays.
-#Takes 2D image and variable name, returns image multiplied by sin(phase)
-#Only applicable to azimuthal variables, others will be returned unchanged.
-def VariableAzimuthalConversion(image,variable):
+#Applies field phase to sign of field amplitude for azimuthal data arrays.
+#Takes 2D image and variable string, returns image multiplied by sin(phase)
+#Only applicable to azimuthal fields, others will be returned unchanged.
+def AzimuthalPhaseConversion(image,variable):
 
 	#Global toggle to enforce plotting of magnitudes only if requested
 	if PlotAzimuthalDirection == False:	return(image)
 	
 	#=====#=====#
 	
-	#Determine if supplied profile requires phase conversion
-	if variable == 'ETHETA': 		
+	#Only Azimuthally varying fields require phase conversion
+	elif IsStringInVariable(variable,['ETHETA']) == True:	
 		phaseprocess,phasevariable = VariableEnumerator(['PHASE'],rawdata_2D[l],header_2Dlist[l])
-	elif variable == 'J-THETA':
+	elif IsStringInVariable(variable,['J-THETA']) == True:
 		phaseprocess,phasevariable = VariableEnumerator(['PHASE'],rawdata_2D[l],header_2Dlist[l])
-	elif variable == 'J-TH(MAG)':
+	elif IsStringInVariable(variable,['J-TH(MAG)']) == True:
 		phaseprocess,phasevariable = VariableEnumerator(['J-TH(PHA)'],rawdata_2D[l],header_2Dlist[l])
 	else: 
 		return(image)
+	#endif
 	
 	#Extract the appropriate phase data for the supplied variable
 	phasemap = ImageExtractor2D(Data[l][phaseprocess[0]],phasevariable[0])
@@ -2228,6 +2283,61 @@ def ManualGECMesh(Ax=plt.gca()):	#Greg's GEC overlay code
     
     Ax.plot((0.01*dz[l], 0.2*dz[l]), (57*dr[l],57*dr[l]), color= 'black', linewidth = 14)
 
+#=============#
+
+def ManualASTRONMesh(Ax=plt.gca()):
+
+	#Line Plotting Format
+	#	Ax.plot((Yend,Ystart),(Xend,Xstart))
+
+	#Plot Reactor Wall material dimensions.
+	Ax.plot((1.5*dz[l],1.5*dz[l]), (1.5*dr[l],17.5*dr[l]), '-', color='grey', linewidth=4)
+	Ax.plot((17.5*dz[l],17.5*dz[l]), (1.5*dr[l],17.5*dr[l]), '-', color='grey', linewidth=4)
+	Ax.plot((1.5*dz[l],17.5*dz[l]), (1.5*dr[l],1.5*dr[l]), '-', color='grey', linewidth=4)
+	Ax.plot((1.5*dz[l],17.5*dz[l]), (17.5*dr[l],17.5*dr[l]), '-', color='grey', linewidth=4)
+	#
+#	Ax.plot((2.0*dz[l],2.0*dz[l]), (2.0*dr[l],17.0*dr[l]), '-', color='grey', linewidth=4)
+#	Ax.plot((17.0*dz[l],17.0*dz[l]), (2.0*dr[l],17.0*dr[l]), '-', color='grey', linewidth=4)
+#	Ax.plot((2.0*dz[l],17.0*dz[l]), (2.0*dr[l],2.0*dr[l]), '-', color='grey', linewidth=4)
+#	Ax.plot((2.0*dz[l],17.0*dz[l]), (17.0*dr[l],17.0*dr[l]), '-', color='grey', linewidth=4)
+
+	#Plot Magnetic Ferrous Core material dimensions.
+	Ax.plot((8.0*dz[l],8.0*dz[l]), (8.0*dr[l],11.0*dr[l]), '-', color='green', linewidth=4)
+	Ax.plot((11.0*dz[l],11.0*dz[l]), (8.0*dr[l],11.0*dr[l]), '-', color='green', linewidth=4)
+	Ax.plot((8.0*dz[l],11.0*dz[l]), (8.0*dr[l],8.0*dr[l]), '-', color='green', linewidth=4)
+	Ax.plot((8.0*dz[l],11.0*dz[l]), (11.0*dr[l],11.0*dr[l]), '-', color='green', linewidth=4)
+	#Cross-Hatch
+#	Ax.plot((11.0*dz[l],8.0*dz[l]), (11.0*dr[l],8.0*dr[l]), '-', color='green', linewidth=2)
+#	Ax.plot((8.0*dz[l],11.0*dz[l]), (11.0*dr[l],8.0*dr[l]), '-', color='green', linewidth=2)
+	
+	#Plot ICP Antenna Material Outline
+	Ax.plot((6.0*dz[l],6.0*dz[l]), (6.0*dr[l],13.0*dr[l]), '-', color='red', linewidth=4)
+	Ax.plot((13.0*dz[l],13.0*dz[l]), (6.0*dr[l],13.0*dr[l]), '-', color='red', linewidth=4)
+	Ax.plot((6.0*dz[l],13.0*dz[l]), (6.0*dr[l],6.0*dr[l]), '-', color='red', linewidth=4)
+	Ax.plot((6.0*dz[l],13.0*dz[l]), (13.0*dr[l],13.0*dr[l]), '-', color='red', linewidth=4)
+	
+	#Plot ICP Antenna Material Segmentation
+	Ax.plot((6.0*dz[l],8.0*dz[l]), (8.0*dr[l],8.0*dr[l]), '-', color='red', linewidth=2)
+	Ax.plot((6.0*dz[l],8.0*dz[l]), (8.0*dr[l],8.0*dr[l]), '-', color='red', linewidth=2)
+	Ax.plot((6.0*dz[l],8.0*dz[l]), (11.0*dr[l],11.0*dr[l]), '-', color='red', linewidth=2)
+	Ax.plot((6.0*dz[l],8.0*dz[l]), (11.0*dr[l],11.0*dr[l]), '-', color='red', linewidth=2)
+	
+	Ax.plot((11.0*dz[l],13.0*dz[l]), (8.0*dr[l],8.0*dr[l]), '-', color='red', linewidth=2)
+	Ax.plot((11.0*dz[l],13.0*dz[l]), (8.0*dr[l],8.0*dr[l]), '-', color='red', linewidth=2)
+	Ax.plot((11.0*dz[l],13.0*dz[l]), (11.0*dr[l],11.0*dr[l]), '-', color='red', linewidth=2)
+	Ax.plot((11.0*dz[l],13.0*dz[l]), (11.0*dr[l],11.0*dr[l]), '-', color='red', linewidth=2)
+
+	Ax.plot((8.0*dz[l],8.0*dz[l]), (11.0*dr[l],13.0*dr[l]), '-', color='red', linewidth=2)
+	Ax.plot((8.0*dz[l],8.0*dz[l]), (11.0*dr[l],13.0*dr[l]), '-', color='red', linewidth=2)
+	Ax.plot((11.0*dz[l],11.0*dz[l]), (11.0*dr[l],13.0*dr[l]), '-', color='red', linewidth=2)
+	Ax.plot((11.0*dz[l],11.0*dz[l]), (11.0*dr[l],13.0*dr[l]), '-', color='red', linewidth=2)
+	
+	Ax.plot((8.0*dz[l],8.0*dz[l]), (6.0*dr[l],8.0*dr[l]), '-', color='red', linewidth=2)
+	Ax.plot((8.0*dz[l],8.0*dz[l]), (6.0*dr[l],8.0*dr[l]), '-', color='red', linewidth=2)
+	Ax.plot((11.0*dz[l],11.0*dz[l]), (6.0*dr[l],8.0*dr[l]), '-', color='red', linewidth=2)
+	Ax.plot((11.0*dz[l],11.0*dz[l]), (6.0*dr[l],8.0*dr[l]), '-', color='red', linewidth=2)
+	
+#enddef
 
 #===================##===================#
 #===================##===================#
@@ -2552,6 +2662,109 @@ else:
 				  #COMMONLY USED PLOTTING FUNCTIONS#
 #====================================================================#
 
+#Load IDL colourmap
+#Requires std_gamma_II.txt is modules directory
+Filename = 'Modules/std_gamma_II.txt'          
+map = np.loadtxt(Filename, delimiter=',')
+IDL_Gamma_II = col.ListedColormap(map.T, name='IDL_Gamma_II')
+
+#=========================#
+#=========================#
+
+def tecplot_cmap():
+#	Creates a colourmap closely approximating the Tecplot "modern" map
+#
+#		Python tutor:	https://matplotlib.org/3.1.0/tutorials/colors/colormap-manipulation.html
+#		RGB Hex Codes:	https://www.rapidtables.com/web/color/RGB_Color.html
+#		Colour Picker:	sudo apt-get install gpick 
+#
+# 	Colour dictionary details the vertices of the linear colour scales for rgb
+#		x1		::	Fraction of cbar range (0=min, 1=max)
+#		yleft	::  Percent of colour at start of X1 range
+#		yright	::	Percent of colour at end of X1 range
+#
+#	Colour Order (low to high):
+#		FFFFFF 100.0% red, 100.0% green, 100.0% blue
+#		FF69B4 100.0% red, 41.01% green, 70.31% blue								!!! NOT SWATCHED
+#		43006F 27.17% red, 00.00% green, 43.35% blue
+#		5BC4CB 35.54% red, 76.56% green, 79.29% blue
+#		00C952 00.00% red, 78.51% green, 32.03% blue
+#		CDF100 80.07% red, 94.14% green, 00.00% blue
+#		AC6313	67.18% red, 38.67% green, 07.42% blue
+#		F70000	96.86% red, 00.00% green, 00.00% blue
+#
+	from matplotlib.colors import ListedColormap, LinearSegmentedColormap
+#
+#						Cbar%		FadeFrom	FadeTo	
+						#x1			#yleft		#yright
+	cdict0 = {'red':  [[0.00,		0.00,		0.26],
+			           [0.17,		0.26,		0.36],
+			           [0.33,		0.36,		0.00],
+			           [0.50,		0.00,		0.80],
+			           [0.66,		0.80,		0.67],
+			           [0.83,		0.67,		0.97],
+			           [1.00,		0.97,		1.00]],
+			           
+			 'green': [[0.00,		0.00,		0.00],
+			           [0.17,		0.00,		0.77],
+			           [0.33,		0.77,		0.79],
+			           [0.50,		0.79,		0.94],
+			           [0.66,		0.94,		0.38],
+			           [0.83,		0.38,		0.00],
+			           [1.00,		0.00,		0.00]],
+			           
+			 'blue':  [[0.00,		0.00,		0.43],
+			           [0.17,		0.43,		0.79],
+			           [0.33,		0.79,		0.32],
+			           [0.50,		0.32,		0.00],
+			           [0.66,		0.00,		0.07],
+			           [0.83,		0.07,		0.00],
+			           [1.00,		0.00,		0.00]]}
+	
+						#x1			#yleft		#yright
+	cdict = {'red':   [[0.00,		1.00,		1.00],
+	                   [0.14,		1.00,		0.26],
+			           [0.28,		0.26,		0.36],
+			           [0.42,		0.36,		0.00],
+			           [0.56,		0.00,		0.80],
+			           [0.70,		0.80,		0.67],
+			           [0.84,		0.67,		0.97],
+			           [1.00,		0.97,		1.00]],
+			           
+			 'green': [[0.00,		1.00,		1.00],
+			           [0.14,		0.41,		0.00],
+			           [0.28,		0.00,		0.77],
+			           [0.42,		0.77,		0.79],
+			           [0.56,		0.79,		0.94],
+			           [0.70,		0.94,		0.38],
+			           [0.84,		0.38,		0.00],
+			           [1.00,		0.00,		0.00]],
+			           
+			 'blue':  [[0.00,		1.00,		1.00],
+			           [0.14,		0.70,		0.43],
+			           [0.28,		0.43,		0.79],
+			           [0.42,		0.79,		0.32],
+			           [0.56,		0.32,		0.00],
+			           [0.70,		0.00,		0.07],
+			           [0.84,		0.07,		0.00],
+			           [1.00,		0.00,		0.00]]}
+
+
+
+	cmap = LinearSegmentedColormap('testCmap', segmentdata=cdict, N=256)
+	rgba = cmap(np.linspace(0, 1, 256))
+	
+	return(cmap,cdict)
+#enddef
+
+#Load TECPLOT colourmap
+#imshow(Array,cmap=tecplotcmap)
+tecplotcmap,tecplotcdict = tecplot_cmap()
+
+#=========================#
+#=========================#
+
+
 def Matplotlib_GlobalOptions():
 #Takes global inputs from switchboard, returns nothing
 #Alters global image options, run before any diagnostics
@@ -2590,73 +2803,6 @@ def Matplotlib_GlobalOptions():
 #enddef
 Matplotlib_GlobalOptions()	#MUST BE RUN BEFORE ANY DIAGNOSTICS!!!!
 
-
-#=========================#
-#=========================#
-
-
-def tecplot_cmap():
-#	Creates a colourmap closely approximating the Tecplot "modern" map
-#
-#		Python tutor:	https://matplotlib.org/3.1.0/tutorials/colors/colormap-manipulation.html
-#		RGB Hex Codes:	https://www.rapidtables.com/web/color/RGB_Color.html
-#		Colour Picker:	sudo apt-get install gpick 
-#
-# 	Colour dictionary details the vertices of the linear colour scales for rgb
-#		x1		::	Fraction of cbar range (0=min, 1=max)
-#		yleft	::  Percent of colour at start of X1 range
-#		yright	::	Percent of colour at end of X1 range
-#
-#	Colour Order (low to high):
-#		43006F 27.17% red, 00.00% green, 43.35% blue
-#		5BC4CB 35.54% red, 76.56% green, 79.29% blue
-#		00C952 00.00% red, 78.51% green, 32.03% blue
-#		CDF100 80.07% red, 94.14% green, 00.00% blue
-#		AC6313	67.18% red, 38.67% green, 07.42% blue
-#		F70000	96.86% red, 00.00% green, 00.00% blue
-#
-	from matplotlib.colors import ListedColormap, LinearSegmentedColormap
-
-						#x1			#yleft		#yright
-	cdict = {'red':   [[0.00,		0.00,		0.26],
-			           [0.17,		0.26,		0.36],
-			           [0.33,		0.36,		0.00],
-			           [0.50,		0.00,		0.80],
-			           [0.66,		0.80,		0.67],
-			           [0.83,		0.67,		0.97],
-			           [1.00,		0.97,		1.00]],
-			           
-			 'green': [[0.00,		0.00,		0.00],
-			           [0.17,		0.00,		0.77],
-			           [0.33,		0.77,		0.79],
-			           [0.50,		0.79,		0.94],
-			           [0.66,		0.94,		0.38],
-			           [0.83,		0.38,		0.00],
-			           [1.00,		0.00,		0.00]],
-			           
-			 'blue':  [[0.00,		0.00,		0.43],
-			           [0.17,		0.43,		0.79],
-			           [0.33,		0.79,		0.32],
-			           [0.50,		0.32,		0.00],
-			           [0.66,		0.00,		0.07],
-			           [0.83,		0.07,		0.00],
-			           [1.00,		0.00,		0.00]]}
-
-	cmap = LinearSegmentedColormap('testCmap', segmentdata=cdict, N=256)
-	rgba = cmap(np.linspace(0, 1, 256))
-	
-	return(cmap,cdict)
-#enddef           
-
-#Load TECPLOT colourmap
-#imshow(Array,cmap=tecplotcmap)
-tecplotcmap,tecplotcdict = tecplot_cmap()
-
-#Load IDL colourmap
-#Requires std_gamma_II.txt is modules directory
-Filename = 'Modules/std_gamma_II.txt'          
-map = np.loadtxt(Filename, delimiter=',')
-IDL_Gamma_II = col.ListedColormap(map.T, name='IDL_Gamma_II')
 
 #=========================#
 #=========================#
@@ -2720,8 +2866,8 @@ def ImageExtractor2D(Data,Variable=[],Rmesh=0,Zmesh=0):
 	#Convert units if required.
 	Image = VariableUnitConversion(Image,Variable)
 	
-	#Apply direction to azimuthal magnitudes if required
-	Image = VariableAzimuthalConversion(Image,Variable)
+	#Apply Azimuthal phase to Azimuthal field amplitudes if required.
+	Image = AzimuthalPhaseConversion(Image,Variable)
 
 	return(Image)
 #enddef
@@ -2810,7 +2956,7 @@ def CropImage(ax=plt.gca(),Extent=[],Apply=True,Rotate=True):
 #Takes image axis (assumes default axis), use figure()
 #Input Extent format: [ [Rmin,Rmax], [Zmin,Zmax] ] in cm.
 #Returns cropping limits in format: [ [R1,R2],[Z1,Z2] ] in cm.
-#CropImage(ax[0],Extent=[[R1,R2],[Z1,Z2]],Apply=True,Rotate=True), 
+#CropImage(ax[0],Extent=[[R1,R2],[Z1,Z2]],Apply=True,Rotate=True),
 
 	#Obtain default limits and rotate if needed, doesn't crash if no crop applied.
 	#R1,R2 are radial limits of image, Z1,Z2 are axial limits. (non-rotated)
@@ -3017,9 +3163,9 @@ def ImageOptions(fig,ax=plt.gca(),Xlabel='',Ylabel='',Title='',Legend=[],Crop=Tr
 	if image_plotgrid == True: ax.grid(True)
 	#endif
 
-	#Plot mesh outline if requested.	### HACKY ###
+	#Plot mesh outline if requested.
 	if image_plotmesh == True:
-		mesh_auto_plot = 1 #AUTO PLOT MESH NOT implementED!! REQUIRES initmesh.out READER#
+		mesh_auto_plot = 1 								# !! NOT IMPLEMENTED !! 
 	elif image_plotmesh == 'PRCCP' and Crop == True:	
 		ManualPRCCPMesh(ax)
 	elif image_plotmesh == 'PRCCPM' and Crop == True:	
@@ -3032,7 +3178,8 @@ def ImageOptions(fig,ax=plt.gca(),Xlabel='',Ylabel='',Title='',Legend=[],Crop=Tr
 		ManualHyperionIMesh(ax)
 	elif image_plotmesh == 'HyperionII' and Crop == True:
 		ManualHyperionIIMesh(ax)
-
+	elif image_plotmesh == 'ASTRON' and Crop == True:
+		ManualASTRONMesh(ax)
 	#endif
 
 	#Crop image dimensions, use provided dimensions or default if not provided.
@@ -3306,7 +3453,9 @@ def ImagePlotter2D(Image,extent,aspectratio=image_aspectratio,variable='N/A',fig
 		im.set_clim(CbarMinMax(Image)[0]*0.90,CbarMinMax(Image)[1]*0.90)
 		im = ax.imshow(Image,extent=extent,origin="lower")
 	else:
+#		im = ax.imshow(Image,extent=extent,cmap=tecplotcmap,origin="lower")			!!! RM SJD: TECPLOT EXAMPLE
 		im = ax.imshow(Image,extent=extent,origin="lower")
+		#endif
 	#endif
 	return(fig,ax,im,Image)
 #enddef
@@ -3767,12 +3916,12 @@ def DCbiasMagnitude(PPOTlineout):
 
 
 #BRINKMANN SHEATH WIDTH CALCULATOR
-def CalcSheathExtent(folder=l,Orientation='Axial',Phase='NaN',Ne=list(),Ni=list()):
+def CalcSheathExtent(folderidx=l,Orientation='Axial',Phase='NaN',Ne=list(),Ni=list()):
 #Calculates Brinkmann sheath width assuming Child-Langmuir conditions.
 #Calculation Methods: 'AbsDensity', 'IntDensity'
-#Takes current folder, current axis, movie1 Phase and sheath calc method.
+#Takes current folderidx, current axis, movie1 Phase and sheath calc method.
 #Returns array of sheath distances from symmetry boundary (or from origin)
-#Sx,SxAxis = CalcSheathExtent(folder=l,Phase=moviephaselist[k])
+#Sx,SxAxis = CalcSheathExtent(folderidx=l,Phase=moviephaselist[k])
 
 	#Initiate required data storage lists
 	NPos,NNeg = list(),list()
@@ -3887,15 +4036,15 @@ def CalcSheathExtent(folder=l,Orientation='Axial',Phase='NaN',Ne=list(),Ni=list(
 	#Obtain current folder ion and electron densities if not already supplied.
 	#Default to 2D data format.
 	if Phase == 'NaN' and len(Ne) == 0:
-		IONproc = VariableEnumerator(PosSpecies,rawdata_2D[folder],header_2Dlist[folder])[0][0]
-		Eproc = VariableEnumerator(['E'],rawdata_2D[folder],header_2Dlist[folder])[0][0]
-		Ne,Ni = Data[folder][Eproc], Data[folder][IONproc]
+		IONproc = VariableEnumerator(PosSpecies,rawdata_2D[folderidx],header_2Dlist[folderidx])[0][0]
+		Eproc = VariableEnumerator(['E'],rawdata_2D[folderidx],header_2Dlist[folderidx])[0][0]
+		Ne,Ni = Data[folderidx][Eproc], Data[folderidx][IONproc]
 	#If phase is supplied, use phase data format.
 	elif Phase != 'NaN' and len(Ne) == 0:
-		IONproc = VariableEnumerator(PosSpecies,rawdata_phasemovie[folder],header_phasemovie[folder])[0][0]
-		Eproc = VariableEnumerator(['E'],rawdata_phasemovie[folder],header_phasemovie[folder])[0][0]
+		IONproc = VariableEnumerator(PosSpecies,rawdata_phasemovie[folderidx],header_phasemovie[folderidx])[0][0]
+		Eproc = VariableEnumerator(['E'],rawdata_phasemovie[folderidx],header_phasemovie[folderidx])[0][0]
 		IONproc,Eproc = IONproc-2, Eproc-2		#Skip R,Z data inputs in phase data.
-		Ne,Ni = PhaseMovieData[folder][Phase][Eproc], PhaseMovieData[folder][Phase][IONproc]
+		Ne,Ni = PhaseMovieData[folderidx][Phase][Eproc], PhaseMovieData[folderidx][Phase][IONproc]
 	#endif
 	#Extract 2D image for further processing.
 	Ne,Neff = ImageExtractor2D(Ne),ImageExtractor2D(Ni)
@@ -4121,7 +4270,7 @@ if savefig_plot2D == True:
 
 			#Extract full 2D image for further processing.
 			Image = ImageExtractor2D(Data[l][processlist[k]],variablelist[k])
-			Sx,SxAxis = CalcSheathExtent(folder=l)
+			Sx,SxAxis = CalcSheathExtent(folderidx=l)
 
 			#Generate and rotate figure as requested.
 			extent,aspectratio = DataExtent(l)
@@ -4228,7 +4377,7 @@ if savefig_convergence == True:
 				for k in range(0,len(MovieIterlist[l])):
 					#Extract full 2D image for further processing.
 					Image = ImageExtractor2D(IterMovieData[l][k][processlist[i]],variablelist[i])
-					Sx,SxAxis = CalcSheathExtent(folder=l)		#NB: CURRENTLY USES TECPLOT2D DATA
+					Sx,SxAxis = CalcSheathExtent(folderidx=l)		#NB: CURRENTLY USES TECPLOT2D DATA
 
 					#Take MEAN value of image for general convergence trend.
 					ImageMean = sum(Image.flatten())/len(Image.flatten())
@@ -4294,10 +4443,20 @@ if savefig_convergence == True:
 			ConvergenceTrends[i] = Normalise(ConvergenceTrends[i],NormFactor=FinalIterationValues[i])[0]
 			ax.plot(IterArray,ConvergenceTrends[i], lw=2)
 		#endfor
-		#Calculate image Ylims :: also "Limit the limits!" (avoids super zoomed out figures)
-		Limits = [min(np.asarray(ConvergenceTrends).flatten()),max(np.asarray(ConvergenceTrends).flatten())]
-		if abs(Limits[1]) > 2*Limits[0]: Limits[1] = +4.0
-		if abs(Limits[0]) > 2*Limits[1]: Limits[0] = -4.0
+		
+		#Calculate image Ylimits as (mean-0.25, mean+0.25)
+		MeanTrends = list()
+		for i in range(0,len(ConvergenceTrends)):
+			MeanTrends.append( np.mean(ConvergenceTrends[i]) )
+		#endfor
+		Limits = [min(MeanTrends)-0.25,max(MeanTrends)+0.25]
+		
+		#Various debug outputs
+		if IDEBUG == True: 
+			print(' ')
+			print('Convergence Limits:',Limits)
+			print(' ')
+		#endif
 
 		#Image plotting details.
 		Title = 'Convergence of '+str(variablelist)+' for \n'+Dirlist[l][2:-1]
@@ -5740,19 +5899,16 @@ if 'AR3S' in list(set(FluidSpecies).intersection(Variables)):
 				PressureDown = np.zeros(R_mesh[l]*2)
 			#endtry
 
-			#Convert pressure to Torr if required (delta pressure in thrust calculations expect Torr)
-			if PressureUnit == 'Pa':
-				for i in range(0,len(Pressure)): Pressure[i] = Pressure[i]/133.33
-				for i in range(0,len(PressureDown)): PressureDown[i] = PressureDown[i]/133.33
-			elif PressureUnit == 'mTorr':
-				for i in range(0,len(Pressure)): Pressure[i] = Pressure[i]/1000.0
-				for i in range(0,len(PressureDown)): PressureDown[i] = PressureDown[i]/1000.0
+			#Following calculations expect Torr, convert back to Torr from SI if required
+			if Units == 'SI':
+				for i in range(0,len(Pressure)): Pressure[i] = Pressure[i]/133.33				#[Torr]
+				for i in range(0,len(PressureDown)): PressureDown[i] = PressureDown[i]/133.33	#[Torr]
 			#endif
 
 			#Define which gas is used and calculate neutral mass per atom.
 			NeutralIsp,IonIsp = list(),list()
-			Argon,Xenon = 39.948,131.29			 #amu
-			NeutralMass = Argon*1.67E-27		 #Kg
+			Argon,Xenon = 39.948,131.29			 #[amu]
+			NeutralMass = Argon*1.67E-27		 #[Kg]
 
 			#Choose which method to solve for thrust: 'ThermalVelocity','AxialMomentum'
 			if GlobThrustMethod == 'ThermalVelocity':
@@ -5961,7 +6117,7 @@ if savefig_trendphaseaveraged == True or print_sheath == True:
 		Xaxis.append( FolderNameTrimmer(Dirlist[l]) )
 
 		#Obtain sheath thickness array for current folder 
-		Sx,SxAxis = CalcSheathExtent(folder=l)
+		Sx,SxAxis = CalcSheathExtent(folderidx=l)
 
 		#Calculate mean sheath extent across ROI. On failure provide null point for sheath thickness.
 		try:
@@ -6033,7 +6189,7 @@ if bool(set(FluidSpecies).intersection(Variables)) == True:
 
 			#Extract data for the neutral flux and neutral velocity.
 			processlist,Variablelist = VariableEnumerator(FluidSpecies,rawdata_2D[l],header_2Dlist[l])
-			Sx,SxAxis = CalcSheathExtent(folder=l)
+			Sx,SxAxis = CalcSheathExtent(folderidx=l)
 
 			#Update X-axis with folder information.
 			Xaxis.append( FolderNameTrimmer(Dirlist[l]) )
@@ -6138,7 +6294,7 @@ if bool(set(FluidSpecies).intersection(Variables)) == True:
 			#Extract spatially resolved pressure and neutral densities.
 			processlist,variablelist = VariableEnumerator(['PRESSURE'],rawdata_2D[l],header_2Dlist[l])
 			Pressure = ImageExtractor2D(Data[l][processlist[0]],variablelist[0])
-			Sx,SxAxis = CalcSheathExtent(folder=l)
+			Sx,SxAxis = CalcSheathExtent(folderidx=l)
 			
 			#If only single neutral species - extract that density
 			processlist,Variablelist = VariableEnumerator(FluidSpecies,rawdata_2D[l],header_2Dlist[l])
@@ -6564,7 +6720,7 @@ if savefig_phaseresolve2D == True:
 				if image_plotsheath == True:
 					Ne = SxData[j][Sxproc[Sxvar.index('E')]]
 					Ni = SxData[j][Sxproc[Sxvar.index('AR+')]]
-					Sx,SxAxis = CalcSheathExtent(folder=l,Phase=j,Ne=Ne,Ni=Ni)
+					Sx,SxAxis = CalcSheathExtent(folderidx=l,Phase=j,Ne=Ne,Ni=Ni)
 				#endif
 
 				#Obtain image extent and axis labels based on image symmetry and rotation.
@@ -6681,7 +6837,7 @@ if savefig_sheathdynamics == True:
 			Ni = SxData[k][Sxproc[Sxvar.index('AR+')]]
 
 			#calculate sheath width employing 'E' and 'AR+'
-			Sx,SxAxis = CalcSheathExtent(folder=l,Phase=j,Ne=Ne,Ni=Ni)
+			Sx,SxAxis = CalcSheathExtent(folderidx=l,Phase=j,Ne=Ne,Ni=Ni)
 			for j in range(0,len(Sx)): 
 				Sx[j] = ((sourcewidth[0]*dr[l])-Sx[j])*10	#Convert to mm
 			#endfor
@@ -6976,7 +7132,7 @@ if savefig_PROES == True:
 						Ni = SxData[j][Sxproc[Sxvar.index('AR+')]]
 						#Extract the full spatial sheath extent for phase 'j' 
 						#and save sheath extent at PROES profile location
-						Sx,SxAxis = CalcSheathExtent(folder=l,Orientation=ProfileOrientation[k],Phase=j,Ne=Ne,Ni=Ni)
+						Sx,SxAxis = CalcSheathExtent(folderidx=l,Orientation=ProfileOrientation[k],Phase=j,Ne=Ne,Ni=Ni)
 						PhaseSx.append(Sx[Lineouts[k]])
 					#endif
 				#endfor
