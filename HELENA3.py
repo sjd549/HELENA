@@ -62,10 +62,12 @@ import subprocess
 import os, sys
 import os.path
 import re
+import gc
 
 #Enforce matplotlib to avoid instancing undisplayed windows
 #matplotlib-tcl-asyncdelete-async-handler-deleted-by-the-wrong-thread
-import matplotlib			#matplotlib.use('Agg')
+import matplotlib
+matplotlib.use('Agg')			# SSH memory leak fix, but disables GUI backend (so can't show figures)
 
 #Import additional modules
 from mpl_toolkits.axes_grid1 import make_axes_locatable
@@ -78,7 +80,8 @@ from scipy import ndimage
 from tqdm import tqdm
 from pylab import *
 #from Read_data_functions.py import overlay_GEC_geometry
- 
+
+
 
 #====================================================================#
 				  		 #LOW LEVEL INPUTS#
@@ -115,7 +118,7 @@ PlotKineticFiltering = False				#Plot Filtered Profiles, or employ only in trend
 Glob_SavWindow, Glob_SavPolyOrder = 25, 3	#Window > FeatureSize, Polyorder ~= Smoothness
 
 #Apply azimuthal direction (phase) to relevant variables if true, else plot magnitude only
-PlotAzimuthalDirection = True
+ConvAzimuthalPhase = True
 
 #Minimum plotted EDF energy fraction, cuts x-axis at index where :: f(e) = f(e)*EDF_Threshold
 #Note: IEDF/EEDF trends are only taken within range :: EDF_threshold < f(e) < 1.0 
@@ -123,7 +126,7 @@ EDF_Threshold = 0.01						# i.e. = 0.0 to plot all
 
 #Define units for particular variables
 Units = 'CGS'								#'SI','CGS'					
-											# MATHS STILL ASSUMES SI, WILL NEED TO FIX THIS !!!
+											# FUNCTION MATHS ASSUMES SI, CGS WILL GIVE INCORRECT RESULTS
 
 ####################
 
@@ -143,8 +146,8 @@ Ar = ['AR3S','AR4SM','AR4SR','AR4SPM','AR4SPR','AR4P','AR4D','AR','AR+','AR2+','
 O2 = ['O3','O2','O2+','O','O+','O-','S-O3','S-O2+','S-O+','S-O-','SEB-O3','SEB-O+','SEB-O2+','SEB-O-','FR-O+','FZ-O+','FR-O-','FZ-O-']+['O3P3P','O***','S-O3P3P','S-O***','SEB-O3P3P','SEB-O***']
 H2 = ['H','H*','H^','H-']
 N2 = ['N2','N2V','N2*','N2**','N2^','N','N*','N^']
-F = ['F2','F2*','F2^','F','F*','F^','F-']
-NFx = ['NF3A','NF2B','NFB','NF3^','NF2^','NF^']
+F = ['F2','F2*','F2^','F','F*','F^','F-','S-F','S-F^','S-F-','SEB-F','SEB-F^','SEB-F-','FZ-F','FR-F','FZ-F^','FR-F^','FZ-F-','FR-F-']
+NFx = ['NF3A','NF2A','NFA','NF3B','NF2B','NFB','NF3^','NF2^','NF^']
 
 Ar_Phase = ['S-E','S-AR+','S-AR4P','SEB-AR+','SEB-AR4P','SRCE-2437','TE','PPOT','FR-E','FZ-E']
 O2_Phase = ['S-E','S-O+','S-O-','S-O2+','SEB-O+','SEB-O-','SEB-O2+','TE','PPOT','FR-E','FZ-E']+['S-O3P3P','SEB-O3P3P']
@@ -225,8 +228,6 @@ ESCT2018Mk0_PCMC = ['AR^0.3S','EB-0.3S','ION-TOT0.3S']
 ####################
 
 
-
-
 #====================================================================#
 					#SWITCHBOARD AND DIAGNOSTICS#
 #====================================================================#
@@ -236,17 +237,17 @@ IEDFVariables = PRCCPAr_PCMC				#Requested iprofile_2d variables (no spaces)
 NEDFVariables = []							#Requested nprofile_2d variables (no spaces)
 
 #Requested movie1/movie_icp Variables.
-IterVariables = ['E','S-E','PPOT','TE']				#Requested Movie_icp (iteration) Variables.		
+IterVariables = ['E','NF3A','F','F-','TG-AVE','TE','PPOT'] 	#Requested Movie_icp (iteration) Variables.			
 PhaseVariables = Ar_Phase							#Requested Movie1 (phase) Variables. +['E','AR+']
 electrodeloc = [29,44]	#PR[29,44]#THC[35,45]		#Cell location of powered electrode [R,Z].
 waveformlocs = []									#Cell locations of additional waveforms [R,Z].
 
 #Requested TECPLOT Variables and plotting locations.
-Variables = Phys+Ar + ASTRONCOILEF+ASTRONCOILBF
-multivar = []								 #Additional variables plotted ontop of [Variables]
-radialprofiles = [10]	#PR[44]#THC[85]#[10] #Radial 1D-Profiles to be plotted (fixed Z-mesh) --
-axialprofiles = [10]	#PR[0]#THC[20]		 #Axial 1D-Profiles to be plotted (fixed R-mesh) |
-probeloc = [0,44]		#PR[0,44]#THC[20,85] #Cell location For Trend Analysis [R,Z], ([] = min/max)
+Variables = Phys+Ar+F+NFx +ASTRONCOILEF+ASTRONCOILBF
+multivar = []									#Additional variables plotted ontop of [Variables]
+radialprofiles = [46]	#PR[44]#THC[85]			#Radial 1D-Profiles to be plotted (fixed Z-mesh) --
+axialprofiles = [38]	#PR[0]#THC[20]			#Axial 1D-Profiles to be plotted (fixed R-mesh) |
+probeloc = [10,46]		#PR[0,44]#THC[20,85]	#Cell location For Trend Analysis [R,Z], ([] = min/max)
 
 
 #Various Diagnostic Settings.
@@ -260,15 +261,17 @@ sourcewidth = [12]						#Source Dimension at ROI, leave empty for auto. [cells]	
 #Requested diagnostics and plotting routines.
 savefig_convergence = True				#Single-Variables: iter-time axis			Requires movie_icp.pdt
 savefig_plot2D = True					#Single-Variables: converged				Requires TECPLOT2D.PDT
-#	NEED TO ADD ICOILP-n TOT OPTION WITH ALL COILSETS OVERLAYED
+#	ISSUE WITH READING movie_icp.pdt WITH EXCLUDED SPECIES!?
+#	DIFFERENT LENGTHS OF ARRAY IN SDFILEFORMAT WHEN READING EXC F-SIMS
 
 savefig_monoprofiles = False			#Single-Variables; fixed height/radius
 savefig_multiprofiles = False			#Multi-Variables; same folder					- NO ASCII OUTPUT
-savefig_compareprofiles = True			#Multi-Variables; all folders
+savefig_compareprofiles = False			#Multi-Variables; all folders
 savefig_temporalprofiles = False		#Single-Variables; real-time axis
-					
-savefig_trendphaseaveraged = False		#Converged trends at 'TrendLoc' cell
-savefig_trendphaseresolved = False		#Temporal trends at 'TrendLoc' cell				#IN DEVELOPMENT#
+
+savefig_trendphaseaveraged = False		#RF-Averaged trends at axial/radial cells		# CHANGE TO 'ProbeLoc' cell
+savefig_trendphaseresolved = False		#RF-Resolved trends at axial/radial cells		# CHANGE TO 'ProbeLoc' cell
+#FLIP THE SOUND SPEED DIAGNOSTIC, ALSO CHECK THE KNUDSEN DIAGNOSTIC
 
 savefig_phaseresolve1D = False			#1D Phase Resolved Images
 savefig_phaseresolve2D = False			#2D Phase Resolved Images
@@ -303,13 +306,16 @@ image_radialcrop = []#[0.65]			#Crops 2D images to [R1,R2] in cm
 image_axialcrop = []#[1.0,4.0]			#Crops 2D images to [Z1,Z2] in cm
 image_cbarlimit = []					#[min,max] colourbar limits
 
-image_plotsymmetry = False#True				#Plot radial symmetry - mirrors across the ISYM axis
-image_plotcontours = False#True				#Plot contour lines in 2D images
+image_plotcolourfill = True				#Plot 2D image colour fill
+image_plotcontours = True				#Plot 2D image contour lines
+image_plotsymmetry = False#True			#Plot radial symmetry - mirrors across the ISYM axis
 image_plotoverlay = False				#Plot location(s) of 1D radial/axial profiles onto 2D images
 image_plotsheath = False				#Plot sheath extent onto 2D images
 image_plotgrid = False					#Plot major/minor gridlines on 1D profiles
-image_plotmesh = 'ASTRON'#'PRCCP'		#Plot material mesh outlines ('Auto','PRCCP','PRCCPM','ESCT','GEC')
+image_plotmesh = False#'ASTRON'#'PRCCP'		#Plot material mesh outlines ('Auto','PRCCP','PRCCPM','ESCT','GEC')
 image_numericaxis = False				#### NOT implemented ####
+
+image_contourlvls = 20					#Number of contour levels
 
 image_rotate = False#True					#Rotate image 90 degrees to the right.			# MAKE [0000-1000, 0-2pi]
 image_normalise = False					#Normalise image/profiles to local max
@@ -332,18 +338,28 @@ ylabeloverride = []
 
 #####TODO#####
 
-### V3.2.0 Release Version ###
-#Namelist read-in functions to simplify error analysis. (deal with !!! in .nam)
-#Variable Interpolator needs to work with phasedata - Take variables from batch?
-#Correct any data 'direction' within readin functions, not within diagnostics.
+### Immediate ###
 
+#
+#	NEED TO ADD ICOILP-n TOT OPTION WITH ALL COILSETS OVERLAYED
+#
+#	NEED TO FINISH B-FIELD QUIVER PLOT IN savefig_plot2D AND MAKE SEPARATE FUNCTION
+#			- ADD KNUDSEN, REYNOLDS, ETC... TO SEPARATE FUNCTION CALLS
+#
+#	NEED to examine all maths in all trends to check for CGS or SI units
+#		- Each "trend" that employs a calculation will need an initial branch to
+#			check for global "Units" string, and convert accordingly.
+#		- Maths will always be performed in SI, so always convert back to SI for 
+#			each current and future "Units" option.
+#
+
+#Variable Interpolator needs to work with phasedata - Take variables from batch?
+
+#Refactor PROES into 3D array (R,Z,Phase) and perform slice/integration
 #Confirm 2DPhaseMovie and PROES radial direction is consistent when rotating:
 	#1DPhaseMovie needs no reversal using ExtractRadialProfile
 	#2PhaseMovie needs no reversal using ImageExtractor2D
 	#PROES requires a reversal using ExtractRadialProfile
-#Refactor PROES into 3D array (R,Z,Phase) and perform slice/integration rather than calling plotradial?
-
-#Fix issue with ffmpeg "convert-im6.q16: DistributedPixelCache" and address the ignorance of os.system.
 
 #Remove/simplify the phase-averaged sheath diagnostic?
 #Sheathwidth function integrates axially or radially depending on mesh geometry.
@@ -352,18 +368,23 @@ ylabeloverride = []
 
 #IEDF diagnostic capable of comparing between different material surfaces in single image
 #IEDF diagnostic saves different material surfaces in different folders
-#Add EEDF section and functionalise.
 
 #Thrust diagnostic split into functions performing the same task as before.
 #Thrust diagnostic enforces image symmetry, correcting the half-thrust error.
 
-#multivar_profiles diagnostic overhaul - update coding structure and include an ASCII output option
-
-#Add 'probeloc' option to savefig_temporal, where the meshavg is the default but if there are any supplied probeloc cells then those get saved into their own seperate folder.
+#Add 'probeloc' option to savefig_temporal, where the meshavg is the default 
+#but if there are any supplied probeloc cells then those get saved into their own seperate folder.
 
 #Fix Rynolds diagnostic - Current version has issue with NaNs and incorrect averaging
 #implement Rynolds number properly (was converted from sound speed diagnostic)
 #implement magnetic Rynolds number as well if possible
+
+
+
+
+
+
+### For Future ###
 
 #implement image_numericaxis, try float(FolderNameTrimmer) as axis.
 #implement numerical image_rotate, allow for 000,090,180,270.
@@ -373,9 +394,11 @@ ylabeloverride = []
 #Implement tests for each diagnostic 
 	#AND/OR include a tiny parallel plate folder in github with output figures for comparison
 
+#Add EEDF section and functionalise.
 
+#Fix issue with ffmpeg "convert-im6.q16: DistributedPixelCache" 
+#	- Address the ignorance of os.system.
 
-### For Future ###
 #include 'garbage ./collection' at the end of each diagnostic.
 #Clean up unused functions and ensure homogeneity.
 #Split into modules: HELENAIO, HELENADIAGNOSTIC, HELENAPLOTTING
@@ -735,8 +758,8 @@ for l in range(0,numfolders):
 		IETRODEM.append( list(filter(lambda x:'IETRODEM=' in x, NamelistData))[0].split()[1:NUMMETALS])
 		for i in range(0,len(IETRODEM[l])): IETRODEM[l][i] = int(IETRODEM[l][i].strip(','))
 		##
-		NUMCOILS = list(filter(lambda x:'ICOILS' in x,NamelistData))[0].strip(' \t\n\r,=ICOILS')
-		NUMCOILS = int(NUMCOILS)
+		NUMCOILS = list(filter(lambda x:'ICOILS' in x,NamelistData))[0]
+		NUMCOILS = int( NUMCOILS.split('!!!')[0].strip(' \t\n\r,=ICOILS') )
 		CCOILS = list(filter(lambda x: 'CCOIL=' in x, NamelistData))[0].strip(' \t\n\r,').split()[1:NUMCOILS]
 		for i in range(0,len(CCOILS)): CCOILS[i] = str(CCOILS[i].strip(','))
 		##
@@ -772,11 +795,11 @@ for l in range(0,numfolders):
 	#endtry
 
 	#No ICP coils are on - Ignore ICP frequencies in FREQALL
-	if NUMCOILS == 0: 
+	if int(NUMCOILS) == 0: 
 		FREQALL = FREQM[l]+FREQM2[l]+FREQGLOB
 		FREQALL = [x for x in FREQALL if x > 0]				#Ignore any DC voltages (FREQ = 0)
 	#ICP coils are on - include ICP frequencies in FREQALL
-	elif NUMCOILS > 0:
+	elif int(NUMCOILS) > 0:
 		FREQALL = FREQM[l]+FREQM2[l]+FREQC[l]+FREQGLOB
 		FREQALL = [x for x in FREQALL if x > 0]				#Ignore any DC voltages (FREQ = 0)
 	#endif
@@ -832,7 +855,11 @@ for l in range(0,numfolders):
 	#==========##==========================##==========#
 
 	#Attempt automated retrieval of atomic species
-	ChemistryData = open(icpdat[l]).readlines()
+	try: 
+		ChemistryData = open(icpdat[l], encoding='utf-8').readlines()
+	except:
+		ChemistryData = open(icpdat[l], encoding='iso-8859-15').readlines()
+	#endtry
 
 	#Plasma chemistry .dat file inputs
 	try:
@@ -843,13 +870,19 @@ for l in range(0,numfolders):
 			#len(Header.split()) = 13 for atomic or molecular species definition
 			#len(Header.split()) = 8 for material surface interaction definition 
 			if len(ChemistryData[i].split()) == 13:
-				SpeciesName     = ChemistryData[i].split()[0]
-				Charge          = int(ChemistryData[i].split()[2])
-				MolecularWeight = float(ChemistryData[i].split()[4])
-				StickingCoeff   = float(ChemistryData[i].split()[6])
-				TransportBool   = int(ChemistryData[i].split()[8])
-				ReturnFrac      = float(ChemistryData[i].split()[10])
-				ReturnSpecies   = ChemistryData[i].split()[11]
+				try:
+					SpeciesName     = ChemistryData[i].split()[0]
+					Charge          = int(ChemistryData[i].split()[2])
+					MolecularWeight = float(ChemistryData[i].split()[4])
+					StickingCoeff   = float(ChemistryData[i].split()[6])
+					TransportBool   = int(ChemistryData[i].split()[8])
+					ReturnFrac      = float(ChemistryData[i].split()[10])
+					ReturnSpecies   = ChemistryData[i].split()[11]
+				except:
+					#Catches any lines that 'coincidentally' have length 13 and ignores
+					# e.g. "This Sentence Happens To Have A Number of Word Entries Equal To Thirteen" 
+					continue
+				#endtry
 
 				#Collect all atomic species (including electrons)
 				if SpeciesName not in AtomicSpecies: AtomicSpecies.append(SpeciesName)
@@ -964,6 +997,166 @@ def VariableInterpolator(processlist,Variablelist,Comparisonlist):
 #enddef
 
 
+#Converts units and direction (sign) for input 1D, 2D data arrays.
+#Takes profile and variable name, returns profile in required SI unit.
+#Implicitly calculates for common variables, explicitly for densities.
+def VariableUnitConversion(profile,variable):
+
+	#For Pressures, convert to mTorr or Pa as requested, or retain as default Torr.
+	if IsStringInVariable(variable,['PRESSURE']) == True:
+		for i in range(0,len(profile)):
+			if Units == 'SI': 		profile[i] = profile[i]*133.333333333	#[Pa]
+			elif Units == 'CGS': 	profile[i] = profile[i]					#[Torr]
+		#endfor
+	#endif
+
+	#For ionisation rates, convert from [cm3 s-1] to [m3 s-1]
+	if IsStringInVariable(variable,['S-','SEB-']) == True:
+		for i in range(0,len(profile)):
+			if Units == 'SI': 		profile[i] = profile[i]*1.E6			#[m3 s-1]
+			elif Units == 'CGS': 	profile[i] = profile[i]					#[cm3 s-1]
+		#endfor
+	#endif
+
+	#For fluxes, convert from [cm-2] to [m-2]. (also reverse axial flux direction)
+	if IsStringInVariable(variable,['EFLUX-Z','EFLUX-R','FZ-','FR-']) == True:
+		for i in range(0,len(profile)):
+			if Units == 'SI': 		profile[i] = profile[i]*1.E4			#[m2 s-1]
+			elif Units == 'CGS': 	profile[i] = profile[i]					#[cm2 s-1]
+		#endfor
+	#endif
+	if IsStringInVariable(variable,['EFLUX-Z','FZ-']) == True:
+		for i in range(0,len(profile)):
+			profile[i] = profile[i]*(-1)
+		#endfor
+	#endif
+
+	#For velocities, convert from [cms-1] to [ms-1] or [kms-1]. (also reverse axial velocity)
+	if IsStringInVariable(variable,['VR-NEUTRAL','VZ-NEUTRAL']) == True:
+		for i in range(0,len(profile)):
+			if Units == 'SI': 		profile[i] = profile[i]*1.E-2			#[ms-1]
+			elif Units == 'CGS': 	profile[i] = profile[i]					#[cms-1]
+		#endfor
+	if IsStringInVariable(variable,['VR-ION+','VZ-ION+','VR-ION-','VZ-ION-']) == True:
+		for i in range(0,len(profile)):
+			if Units == 'SI': 		profile[i] = profile[i]*1.E-5			#[kms-1]
+			elif Units == 'CGS': 	profile[i] = profile[i]					#[cms-1]
+		#endfor
+	if IsStringInVariable(variable,['VZ-NEUTRAL','VZ-ION+','VZ-ION-']) == True:
+		for i in range(0,len(profile)):
+			profile[i] = profile[i]*(-1)
+		#endfor
+	#endif
+
+	#For B-field strengths, convert to Tesla or retain as default Gauss.
+	if IsStringInVariable(variable,['BR','BT','BZ','BRF','BTHETA']) == True:
+		for i in range(0,len(profile)):
+			if Units == 'SI': 		profile[i] = profile[i]/10000			#[T]
+			elif Units == 'CGS':	profile[i] = profile[i]					#[G]
+		#endfor
+	#~~~ AXIAL MAGNETIC FIELD IS NOT REVERSED HERE - RM: NEED TO LOOK INTO THIS... ~~~#
+	if IsStringInVariable(variable,['BZ','BZS']) == True:
+		for i in range(0,len(profile)):
+			if Units == 'SI': 		profile[i] = (profile[i]/10000)#*(-1)	#[T]
+			elif Units == 'CGS':	profile[i] = profile[i]					#[G]
+		#endfor
+	#endif
+
+	#For E-field strengths, convert from [V cm-1] to [V m-1]. (also reverse axial field)
+	if IsStringInVariable(variable,['EF-TOT','EAMB-R','EAMB-Z','ERADIAL','ETHETA','EAXIAL']) == True:
+		for i in range(0,len(profile)):
+			if Units == 'SI': 		profile[i] = profile[i]*100.			#[V m-1]
+			elif Units == 'CGS': 	profile[i] = profile[i]					#[V cm-1]
+		#endfor
+	if IsStringInVariable(variable,['EAMB-Z']) == True:
+		for i in range(0,len(profile)):
+			profile[i] = profile[i]*(-1)
+		#endfor
+	#endif
+	
+	#For plasma charge, convert from [C cm-3] to [C m-3]. (also reverse axial field)
+	if IsStringInVariable(variable,['RHO']) == True:
+		for i in range(0,len(profile)):
+			if Units == 'SI': 		profile[i] = profile[i]*1.E6			#[C m-3]
+			elif Units == 'CGS': 	profile[i] = profile[i]					#[C cm-3]
+		#endfor
+
+
+	#For Current Densities, convert from [A cm-2] to [mA cm-2]. (also reverse axial current)
+	if IsStringInVariable(variable,['JZ-NET','JR-NET','J-THETA','J-TH(MAG)']) == True:
+		for i in range(0,len(profile)):
+			if Units == 'SI': 		profile[i] = profile[i]/1000.			#[A m-2]
+			elif Units == 'CGS': 	profile[i] = profile[i]					#[A cm-2]
+		#endfor
+	if IsStringInVariable(variable,['JZ-NET']) == True:
+		for i in range(0,len(profile)):
+			profile[i] = profile[i]*(-1)
+		#endfor
+	#endif
+
+	#For power densities, convert from [Wcm-3] to [Wm-3].
+	if IsStringInVariable(variable,['POW-ALL','POW-TOT','POW-ICP','POWICP','POW-RF','POW-RF-E']) == True:	
+		for i in range(0,len(profile)):
+			if Units == 'SI': 		profile[i] = profile[i]*1.E6			#[W m-3]
+			elif Units == 'CGS': 	profile[i] = profile[i]					#[W cm-3]
+		#endfor
+	#endif
+
+	#For densities, convert from [cm-3] to [m-3]. (AtomicSpecies is defined in icp.nam input)
+	if variable in AtomicSpecies or variable in [x.replace('^', '+') for x in AtomicSpecies]:
+		for i in range(0,len(profile)):
+			if Units == 'SI': 		profile[i] = profile[i]*1.E6			#[m-3]
+			elif Units == 'CGS': 	profile[i] = profile[i]					#[cm-3]
+		#endfor
+	#endif
+
+	return(profile)
+#enddef
+
+
+#Applies field phase to sign of field amplitude for azimuthal data arrays.
+#Takes 1D, or 2D data profile and variable string.
+#Returns data array multiplied by sin(phase).
+#Returns non-azimuthal data arrays unchanged.
+def AzimuthalPhaseConversion(profile,variable):
+
+	#Global toggle to enforce plotting of magnitudes only if requested
+	if ConvAzimuthalPhase == False:	return(profile)
+	
+	#=====#=====#
+	
+	#Only Azimuthally varying fields require phase conversion
+	elif IsStringInVariable(variable,['ETHETA']) == True:	
+		phaseprocess,phasevariable = VariableEnumerator(['PHASE'],rawdata_2D[l],header_2Dlist[l])
+	elif IsStringInVariable(variable,['J-THETA']) == True:
+		phaseprocess,phasevariable = VariableEnumerator(['PHASE'],rawdata_2D[l],header_2Dlist[l])
+	elif IsStringInVariable(variable,['J-TH(MAG)']) == True:
+		phaseprocess,phasevariable = VariableEnumerator(['J-TH(PHA)'],rawdata_2D[l],header_2Dlist[l])
+	else: 
+		return(profile)
+	#endif
+	
+	#Extract the appropriate phase data for the supplied variable
+	phasemap = ImageExtractor2D(Data[l][phaseprocess[0]],phasevariable[0])
+
+	#Convert from phase [0 --> 2pi] to relative azimuthal direction (0 --> -1 --> +1)
+	for i in range(0,len(phasemap)):
+		for j in range(0,len(phasemap[i])):
+			phasemap[i][j] = np.sin(phasemap[i][j])
+		#endfor
+	#endfor
+	
+	#Multiply azimuthal data amplitude by sin( azimuthal phase )
+	if len(profile.shape) == 2:
+		profile = profile*phasemap							# 2D data profile
+	elif len(profile.shape) == 1:
+		profile = profile*phasemap.flatten()				# 1D data profile
+	#endif													# !!! RM SJD, Not Tested 1D Yet!
+
+	return(profile)
+#enddef
+
+
 #Takes full directory list (Dir) and data filename type (e.g. .png, .txt)
 #Returns row-wise list of data and length of datafile.
 #rawdata, datalength = ExtractRawData(Dir,'.dat',l)
@@ -1045,7 +1238,7 @@ def ExtractPhaseData(folder=l,Variables=PhaseVariables):
 	#Movie1 has geometry at top, therefore len(header) != len(variables).
 	#Only the first encountered geometry is used to define variable zone.
 	VariableEndMarker,HeaderEndMarker, = 'GEOMETRY','ZONE'
-	variablelist,numvar = list(),0
+	Mov1Variablelist,numvar = list(),0
 	for i in range(2,filelength):
 		if HeaderEndMarker in str(rawdata[i]):
 			header = i+2	#plus 2 to skip to first data line.
@@ -1053,7 +1246,7 @@ def ExtractPhaseData(folder=l,Variables=PhaseVariables):
 		if VariableEndMarker in str(rawdata[i]) and numvar == 0:
 			numvar = (i-1-2)	#minus 1 for overshoot, minus 2 for starting at 2.
 		if len(rawdata[i]) > 1 and numvar == 0: 
-			variablelist.append(str(rawdata[i][:-2].strip(' \t\n\r\"')))
+			Mov1Variablelist.append(str(rawdata[i][:-2].strip(' \t\n\r\"')))
 		#endif
 	#endfor
 
@@ -1073,14 +1266,29 @@ def ExtractPhaseData(folder=l,Variables=PhaseVariables):
 	#Cycle through all phases for current datafile, appending per cycle.
 	#Variables R and Z only saved for first iteration, they are skipped if i == 0.
 	FolderData,Phaselist = list(),list()
-	for i in range(0,len(cycleloc)-1):	#### -1 IS A HACK TO ALIGN WITH OLD DATA ####
+	for i in range(0,len(cycleloc)-1):						# len(cycleloc)-1 as python starts at idx 0 #
+	
+		#R,Z arrays are saved only for first "Cycle", apply +2 variable index offset to ignore
 		if i == 0:
 			PhaseData = SDFileFormatConvertorHPEM(rawdata,cycleloc[i],numvar+2,offset=2)
+			#Convert data from CGS (HPEM DEFAULT) to user requested unit system
+			for j in range(0,len(Mov1Variablelist)):
+				PhaseData[j] = VariableUnitConversion(PhaseData[j],Mov1Variablelist[j])
+#				PhaseData[j] = AzimuthalPhaseConversion(PhaseData[j],Mov1Variablelist[j])	
+			#endfor
 			FolderData.append(PhaseData[0:numvar])
-		else:
+					
+		#Later cycles do not save R,Z arrays so no variable index offset is required.
+		elif i > 0:
 			PhaseData = SDFileFormatConvertorHPEM(rawdata,cycleloc[i],numvar)
+			for j in range(0,len(Mov1Variablelist)):
+				PhaseData[j] = VariableUnitConversion(PhaseData[j],Mov1Variablelist[j])
+#				PhaseData[j] = AzimuthalPhaseConversion(PhaseData[j],Mov1Variablelist[j])	
+			#endfor
 			FolderData.append(PhaseData)
 		#endif
+		
+		#Always update phaselist with cycle index
 		Phaselist.append('CYCL = '+str(i+1))
 	#endfor
 
@@ -1621,11 +1829,11 @@ def VariableLabelMaker(variablelist):
 			
 		#Explicit Power Deposition.
 		elif variablelist[i] in ['POW-TOT']:
-			Variable = 'Total Coupled RF-Power'
+			Variable = 'Total Power Density'
 			if Units=='SI': 	VariableUnit = '[Wm$^{-3}$]'
 			elif Units=='CGS':	VariableUnit = '[Wcm$^{-3}$]'
 		elif variablelist[i] in POWICPVars+['POW-ICP']:			#Note: 	POW-ICP:  total icp power
-			Variable = 'Inductively Coupled RF-Power'			#		POWICP-n: coilset #n icp power
+			Variable = 'Inductive Power Density'		#		POWICP-n: coilset #n icp power
 			if Units=='SI': 	VariableUnit = '[Wm$^{-3}$]'
 			elif Units=='CGS':	VariableUnit = '[Wcm$^{-3}$]'
 		elif variablelist[i] in ['POW-RF']:
@@ -1664,15 +1872,15 @@ def VariableLabelMaker(variablelist):
 			elif Units=='CGS':	VariableUnit = '[cm$^{-2}$s$^{-1}$]'
 		elif IsStringInVariable(variablelist[i],['POW-']) == True:
 			Variable = variablelist[i]
-			if Units=='SI': 	VariableUnit = '[Wm$^{-3}]'
+			if Units=='SI': 	VariableUnit = '[Wm$^{-3}$]'
 			elif Units=='CGS':	VariableUnit = '[Wcm$^{-3}$]'
 		elif variablelist[i] in [x.replace('^', '+') for x in AtomicSpecies]:
 			Variable = variablelist[i]
-			if Units=='SI': 	VariableUnit = '[m$^{-3}]'
+			if Units=='SI': 	VariableUnit = '[m$^{-3}$]'
 			elif Units=='CGS':	VariableUnit = '[cm$^{-3}$]'
 		elif variablelist[i] in AtomicSpecies:
 			Variable = variablelist[i]
-			if Units=='SI': 	VariableUnit = '[m$^{-3}]'
+			if Units=='SI': 	VariableUnit = '[m$^{-3}$]'
 			elif Units=='CGS':	VariableUnit = '[cm$^{-3}$]'
 
 		#Default if no fitting variable found.
@@ -1683,161 +1891,6 @@ def VariableLabelMaker(variablelist):
 		Variablelegends.append(Variable+' '+VariableUnit)
 	#endfor
 	return Variablelegends
-#enddef
-
-
-#Converts units and direction (sign) for input 1D array profiles.
-#Takes profile and variable name, returns profile in required SI unit.
-#Implicitly calculates for common variables, explicitly for densities.
-def VariableUnitConversion(profile,variable):
-
-	#For Pressures, convert to mTorr or Pa as requested, or retain as default Torr.
-	if IsStringInVariable(variable,['PRESSURE']) == True:
-		for i in range(0,len(profile)):
-			if Units == 'SI': 		profile[i] = profile[i]*133.333333333	#[Pa]
-			elif Units == 'CGS': 	profile[i] = profile[i]					#[Torr]
-		#endfor
-	#endif
-
-	#For ionisation rates, convert from [cm3 s-1] to [m3 s-1]
-	if IsStringInVariable(variable,['S-','SEB-']) == True:
-		for i in range(0,len(profile)):
-			if Units == 'SI': 		profile[i] = profile[i]*1.E6			#[m3 s-1]
-			elif Units == 'CGS': 	profile[i] = profile[i]					#[cm3 s-1]
-		#endfor
-	#endif
-
-	#For fluxes, convert from [cm-2] to [m-2]. (also reverse axial flux direction)
-	if IsStringInVariable(variable,['EFLUX-Z','EFLUX-R','FZ-','FR-']) == True:
-		for i in range(0,len(profile)):
-			if Units == 'SI': 		profile[i] = profile[i]*1.E4			#[m2 s-1]
-			elif Units == 'CGS': 	profile[i] = profile[i]					#[cm2 s-1]
-		#endfor
-	#endif
-	if IsStringInVariable(variable,['EFLUX-Z','FZ-']) == True:
-		for i in range(0,len(profile)):
-			profile[i] = profile[i]*(-1)
-		#endfor
-	#endif
-
-	#For velocities, convert from [cms-1] to [ms-1] or [kms-1]. (also reverse axial velocity)
-	if IsStringInVariable(variable,['VR-NEUTRAL','VZ-NEUTRAL']) == True:
-		for i in range(0,len(profile)):
-			if Units == 'SI': 		profile[i] = profile[i]*1.E-2			#[ms-1]
-			elif Units == 'CGS': 	profile[i] = profile[i]					#[cms-1]
-		#endfor
-	if IsStringInVariable(variable,['VR-ION+','VZ-ION+','VR-ION-','VZ-ION-']) == True:
-		for i in range(0,len(profile)):
-			if Units == 'SI': 		profile[i] = profile[i]*1.E-5			#[kms-1]
-			elif Units == 'CGS': 	profile[i] = profile[i]					#[cms-1]
-		#endfor
-	if IsStringInVariable(variable,['VZ-NEUTRAL','VZ-ION+','VZ-ION-']) == True:
-		for i in range(0,len(profile)):
-			profile[i] = profile[i]*(-1)
-		#endfor
-	#endif
-
-	#For B-field strengths, convert to Tesla or retain as default Gauss.
-	if IsStringInVariable(variable,['BR','BT','BZ','BRF','BTHETA']) == True:
-		for i in range(0,len(profile)):
-			if Units == 'SI': 		profile[i] = profile[i]/10000			#[T]
-			elif Units == 'CGS':	profile[i] = profile[i]					#[G]
-		#endfor
-	#~~~ AXIAL MAGNETIC FIELD IS NOT REVERSED HERE - RM: NEED TO LOOK INTO THIS... ~~~#
-	if IsStringInVariable(variable,['BZ','BZS']) == True:
-		for i in range(0,len(profile)):
-			if Units == 'SI': 		profile[i] = (profile[i]/10000)#*(-1)	#[T]
-			elif Units == 'CGS':	profile[i] = profile[i]					#[G]
-		#endfor
-	#endif
-
-	#For E-field strengths, convert from [V cm-1] to [V m-1]. (also reverse axial field)
-	if IsStringInVariable(variable,['EF-TOT','EAMB-R','EAMB-Z','ERADIAL','ETHETA','EAXIAL']) == True:
-		for i in range(0,len(profile)):
-			if Units == 'SI': 		profile[i] = profile[i]*100.			#[V m-1]
-			elif Units == 'CGS': 	profile[i] = profile[i]					#[V cm-1]
-		#endfor
-	if IsStringInVariable(variable,['EAMB-Z']) == True:
-		for i in range(0,len(profile)):
-			profile[i] = profile[i]*(-1)
-		#endfor
-	#endif
-	
-	#For plasma charge, convert from [C cm-3] to [C m-3]. (also reverse axial field)
-	if IsStringInVariable(variable,['RHO']) == True:
-		for i in range(0,len(profile)):
-			if Units == 'SI': 		profile[i] = profile[i]*1.E6			#[C m-3]
-			elif Units == 'CGS': 	profile[i] = profile[i]					#[C cm-3]
-		#endfor
-
-
-	#For Current Densities, convert from [A cm-2] to [mA cm-2]. (also reverse axial current)
-	if IsStringInVariable(variable,['JZ-NET','JR-NET','J-THETA','J-TH(MAG)']) == True:
-		for i in range(0,len(profile)):
-			if Units == 'SI': 		profile[i] = profile[i]/1000.			#[A m-2]
-			elif Units == 'CGS': 	profile[i] = profile[i]					#[A cm-2]
-		#endfor
-	if IsStringInVariable(variable,['JZ-NET']) == True:
-		for i in range(0,len(profile)):
-			profile[i] = profile[i]*(-1)
-		#endfor
-	#endif
-
-	#For power densities, convert from [Wcm-3] to [Wm-3].
-	if IsStringInVariable(variable,['POW-ALL','POW-TOT','POW-ICP','POWICP','POW-RF','POW-RF-E']) == True:	
-		for i in range(0,len(profile)):
-			if Units == 'SI': 		profile[i] = profile[i]*1.E6			#[W m-3]
-			elif Units == 'CGS': 	profile[i] = profile[i]					#[W cm-3]
-		#endfor
-	#endif
-
-	#For densities, convert from [cm-3] to [m-3]. (AtomicSpecies is defined in icp.nam input)
-	if variable in AtomicSpecies or variable in [x.replace('^', '+') for x in AtomicSpecies]:
-		for i in range(0,len(profile)):
-			if Units == 'SI': 		profile[i] = profile[i]*1.E6			#[m-3]
-			elif Units == 'CGS': 	profile[i] = profile[i]					#[cm-3]
-		#endfor
-	#endif
-
-	return(profile)
-#enddef
-
-
-#Applies field phase to sign of field amplitude for azimuthal data arrays.
-#Takes 2D image and variable string, returns image multiplied by sin(phase)
-#Only applicable to azimuthal fields, others will be returned unchanged.
-def AzimuthalPhaseConversion(image,variable):
-
-	#Global toggle to enforce plotting of magnitudes only if requested
-	if PlotAzimuthalDirection == False:	return(image)
-	
-	#=====#=====#
-	
-	#Only Azimuthally varying fields require phase conversion
-	elif IsStringInVariable(variable,['ETHETA']) == True:	
-		phaseprocess,phasevariable = VariableEnumerator(['PHASE'],rawdata_2D[l],header_2Dlist[l])
-	elif IsStringInVariable(variable,['J-THETA']) == True:
-		phaseprocess,phasevariable = VariableEnumerator(['PHASE'],rawdata_2D[l],header_2Dlist[l])
-	elif IsStringInVariable(variable,['J-TH(MAG)']) == True:
-		phaseprocess,phasevariable = VariableEnumerator(['J-TH(PHA)'],rawdata_2D[l],header_2Dlist[l])
-	else: 
-		return(image)
-	#endif
-	
-	#Extract the appropriate phase data for the supplied variable
-	phasemap = ImageExtractor2D(Data[l][phaseprocess[0]],phasevariable[0])
-
-	#Convert from phase [0 --> 2pi] to relative azimuthal direction (0 --> -1 --> +1)
-	for i in range(0,len(phasemap)):
-		for j in range(0,len(phasemap[i])):
-			phasemap[i][j] = np.sin(phasemap[i][j])
-		#endfor
-	#endfor
-
-	#Apply phasemap to image
-	image = image*phasemap
-	
-	return(image)
 #enddef
 
 
@@ -2289,53 +2342,51 @@ def ManualASTRONMesh(Ax=plt.gca()):
 
 	#Line Plotting Format
 	#	Ax.plot((Yend,Ystart),(Xend,Xstart))
+	
+	dZ = dz[l]*2
+	dR = dr[l]*2
 
 	#Plot Reactor Wall material dimensions.
-	Ax.plot((1.5*dz[l],1.5*dz[l]), (1.5*dr[l],17.5*dr[l]), '-', color='grey', linewidth=4)
-	Ax.plot((17.5*dz[l],17.5*dz[l]), (1.5*dr[l],17.5*dr[l]), '-', color='grey', linewidth=4)
-	Ax.plot((1.5*dz[l],17.5*dz[l]), (1.5*dr[l],1.5*dr[l]), '-', color='grey', linewidth=4)
-	Ax.plot((1.5*dz[l],17.5*dz[l]), (17.5*dr[l],17.5*dr[l]), '-', color='grey', linewidth=4)
-	#
-#	Ax.plot((2.0*dz[l],2.0*dz[l]), (2.0*dr[l],17.0*dr[l]), '-', color='grey', linewidth=4)
-#	Ax.plot((17.0*dz[l],17.0*dz[l]), (2.0*dr[l],17.0*dr[l]), '-', color='grey', linewidth=4)
-#	Ax.plot((2.0*dz[l],17.0*dz[l]), (2.0*dr[l],2.0*dr[l]), '-', color='grey', linewidth=4)
-#	Ax.plot((2.0*dz[l],17.0*dz[l]), (17.0*dr[l],17.0*dr[l]), '-', color='grey', linewidth=4)
+	Ax.plot((1.5*dZ,1.5*dZ), (1.5*dR,17.5*dR), '-', color='grey', linewidth=4)
+	Ax.plot((17.5*dZ,17.5*dZ), (1.5*dR,17.5*dR), '-', color='grey', linewidth=4)
+	Ax.plot((1.5*dZ,17.5*dZ), (1.5*dR,1.5*dR), '-', color='grey', linewidth=4)
+	Ax.plot((1.5*dZ,17.5*dZ), (17.5*dR,17.5*dR), '-', color='grey', linewidth=4)
 
 	#Plot Magnetic Ferrous Core material dimensions.
-	Ax.plot((8.0*dz[l],8.0*dz[l]), (8.0*dr[l],11.0*dr[l]), '-', color='green', linewidth=4)
-	Ax.plot((11.0*dz[l],11.0*dz[l]), (8.0*dr[l],11.0*dr[l]), '-', color='green', linewidth=4)
-	Ax.plot((8.0*dz[l],11.0*dz[l]), (8.0*dr[l],8.0*dr[l]), '-', color='green', linewidth=4)
-	Ax.plot((8.0*dz[l],11.0*dz[l]), (11.0*dr[l],11.0*dr[l]), '-', color='green', linewidth=4)
-	#Cross-Hatch
-#	Ax.plot((11.0*dz[l],8.0*dz[l]), (11.0*dr[l],8.0*dr[l]), '-', color='green', linewidth=2)
-#	Ax.plot((8.0*dz[l],11.0*dz[l]), (11.0*dr[l],8.0*dr[l]), '-', color='green', linewidth=2)
+	Ax.plot((8.0*dZ,8.0*dZ), (8.0*dR,11.0*dR), '-', color='green', linewidth=4)
+	Ax.plot((11.0*dZ,11.0*dZ), (8.0*dR,11.0*dR), '-', color='green', linewidth=4)
+	Ax.plot((8.0*dZ,11.0*dZ), (8.0*dR,8.0*dR), '-', color='green', linewidth=4)
+	Ax.plot((8.0*dZ,11.0*dZ), (11.0*dR,11.0*dR), '-', color='green', linewidth=4)
+	#Magnetic Material Cross-Hatch
+#	Ax.plot((11.0*dZ,8.0*dZ), (11.0*dR,8.0*dR), '-', color='green', linewidth=2)
+#	Ax.plot((8.0*dZ,11.0*dZ), (11.0*dR,8.0*dR), '-', color='green', linewidth=2)
 	
 	#Plot ICP Antenna Material Outline
-	Ax.plot((6.0*dz[l],6.0*dz[l]), (6.0*dr[l],13.0*dr[l]), '-', color='red', linewidth=4)
-	Ax.plot((13.0*dz[l],13.0*dz[l]), (6.0*dr[l],13.0*dr[l]), '-', color='red', linewidth=4)
-	Ax.plot((6.0*dz[l],13.0*dz[l]), (6.0*dr[l],6.0*dr[l]), '-', color='red', linewidth=4)
-	Ax.plot((6.0*dz[l],13.0*dz[l]), (13.0*dr[l],13.0*dr[l]), '-', color='red', linewidth=4)
+	Ax.plot((6.0*dZ,6.0*dZ), (6.0*dR,13.0*dR), '-', color='red', linewidth=4)
+	Ax.plot((13.0*dZ,13.0*dZ), (6.0*dR,13.0*dR), '-', color='red', linewidth=4)
+	Ax.plot((6.0*dZ,13.0*dZ), (6.0*dR,6.0*dR), '-', color='red', linewidth=4)
+	Ax.plot((6.0*dZ,13.0*dZ), (13.0*dR,13.0*dR), '-', color='red', linewidth=4)
 	
 	#Plot ICP Antenna Material Segmentation
-	Ax.plot((6.0*dz[l],8.0*dz[l]), (8.0*dr[l],8.0*dr[l]), '-', color='red', linewidth=2)
-	Ax.plot((6.0*dz[l],8.0*dz[l]), (8.0*dr[l],8.0*dr[l]), '-', color='red', linewidth=2)
-	Ax.plot((6.0*dz[l],8.0*dz[l]), (11.0*dr[l],11.0*dr[l]), '-', color='red', linewidth=2)
-	Ax.plot((6.0*dz[l],8.0*dz[l]), (11.0*dr[l],11.0*dr[l]), '-', color='red', linewidth=2)
+	Ax.plot((6.0*dZ,8.0*dZ), (8.0*dR,8.0*dR), '-', color='red', linewidth=2)
+	Ax.plot((6.0*dZ,8.0*dZ), (8.0*dR,8.0*dR), '-', color='red', linewidth=2)
+	Ax.plot((6.0*dZ,8.0*dZ), (11.0*dR,11.0*dR), '-', color='red', linewidth=2)
+	Ax.plot((6.0*dZ,8.0*dZ), (11.0*dR,11.0*dR), '-', color='red', linewidth=2)
 	
-	Ax.plot((11.0*dz[l],13.0*dz[l]), (8.0*dr[l],8.0*dr[l]), '-', color='red', linewidth=2)
-	Ax.plot((11.0*dz[l],13.0*dz[l]), (8.0*dr[l],8.0*dr[l]), '-', color='red', linewidth=2)
-	Ax.plot((11.0*dz[l],13.0*dz[l]), (11.0*dr[l],11.0*dr[l]), '-', color='red', linewidth=2)
-	Ax.plot((11.0*dz[l],13.0*dz[l]), (11.0*dr[l],11.0*dr[l]), '-', color='red', linewidth=2)
+	Ax.plot((11.0*dZ,13.0*dZ), (8.0*dR,8.0*dR), '-', color='red', linewidth=2)
+	Ax.plot((11.0*dZ,13.0*dZ), (8.0*dR,8.0*dR), '-', color='red', linewidth=2)
+	Ax.plot((11.0*dZ,13.0*dZ), (11.0*dR,11.0*dR), '-', color='red', linewidth=2)
+	Ax.plot((11.0*dZ,13.0*dZ), (11.0*dR,11.0*dR), '-', color='red', linewidth=2)
 
-	Ax.plot((8.0*dz[l],8.0*dz[l]), (11.0*dr[l],13.0*dr[l]), '-', color='red', linewidth=2)
-	Ax.plot((8.0*dz[l],8.0*dz[l]), (11.0*dr[l],13.0*dr[l]), '-', color='red', linewidth=2)
-	Ax.plot((11.0*dz[l],11.0*dz[l]), (11.0*dr[l],13.0*dr[l]), '-', color='red', linewidth=2)
-	Ax.plot((11.0*dz[l],11.0*dz[l]), (11.0*dr[l],13.0*dr[l]), '-', color='red', linewidth=2)
+	Ax.plot((8.0*dZ,8.0*dZ), (11.0*dR,13.0*dR), '-', color='red', linewidth=2)
+	Ax.plot((8.0*dZ,8.0*dZ), (11.0*dR,13.0*dR), '-', color='red', linewidth=2)
+	Ax.plot((11.0*dZ,11.0*dZ), (11.0*dR,13.0*dR), '-', color='red', linewidth=2)
+	Ax.plot((11.0*dZ,11.0*dZ), (11.0*dR,13.0*dR), '-', color='red', linewidth=2)
 	
-	Ax.plot((8.0*dz[l],8.0*dz[l]), (6.0*dr[l],8.0*dr[l]), '-', color='red', linewidth=2)
-	Ax.plot((8.0*dz[l],8.0*dz[l]), (6.0*dr[l],8.0*dr[l]), '-', color='red', linewidth=2)
-	Ax.plot((11.0*dz[l],11.0*dz[l]), (6.0*dr[l],8.0*dr[l]), '-', color='red', linewidth=2)
-	Ax.plot((11.0*dz[l],11.0*dz[l]), (6.0*dr[l],8.0*dr[l]), '-', color='red', linewidth=2)
+	Ax.plot((8.0*dZ,8.0*dZ), (6.0*dR,8.0*dR), '-', color='red', linewidth=2)
+	Ax.plot((8.0*dZ,8.0*dZ), (6.0*dR,8.0*dR), '-', color='red', linewidth=2)
+	Ax.plot((11.0*dZ,11.0*dZ), (6.0*dR,8.0*dR), '-', color='red', linewidth=2)
+	Ax.plot((11.0*dZ,11.0*dZ), (6.0*dR,8.0*dR), '-', color='red', linewidth=2)
 	
 #enddef
 
@@ -2390,17 +2441,23 @@ for l in tqdm(range(0,numfolders)):
 	rawdata_2D.append(rawdata)
 
 	#Read through all variables for each file and stop when list ends.
-	Variablelist,HeaderEndMarker = ['Radius','Height'],'ZONE'
+	TEC2DVariablelist,HeaderEndMarker = ['Radius','Height'],'ZONE'
 	for i in range(2,nn_2D):
 		if HeaderEndMarker in str(rawdata_2D[l][i]): break
-		else: Variablelist.append(str(rawdata_2D[l][i][:-2].strip(' \t\n\r\"')))
+		else: TEC2DVariablelist.append(str(rawdata_2D[l][i][:-2].strip(' \t\n\r\"')))
 		#endif
 	#endfor
-	numvariables_2D,header_2D = len(Variablelist),len(Variablelist)+2
+	numvariables_2D,header_2D = len(TEC2DVariablelist),len(TEC2DVariablelist)+2
 	header_2Dlist.append(header_2D)
 
 	#Seperate total 1D data array into sets of data for each variable.
 	CurrentFolderData = SDFileFormatConvertorHPEM(rawdata_2D[l],header_2D,numvariables_2D)
+	
+	#Convert data from CGS (HPEM DEFAULT) to user requested unit system
+	for i in range(0,len(TEC2DVariablelist)):
+		CurrentFolderData[i] = VariableUnitConversion(CurrentFolderData[i],TEC2DVariablelist[i])
+#		CurrentFolderData[i] = AzimuthalPhaseConversion(CurrentFolderData[i],TEC2DVariablelist[i])
+	#endfor
 
 	#Save all variables for folder[l] to Data.
 	#Data is now 3D array of form [folder,variable,datapoint(R,Z)]
@@ -2411,7 +2468,7 @@ for l in tqdm(range(0,numfolders)):
 #===================##===================#
 
 #	#Kinetics data readin - NOT CURRENTLY EMPLOYED IN ANY DIAGNOSTICS
-#	if True == True:
+#	if True in [True]:
 #
 #		#Load data from TECPLOT_KIN file and unpack into 1D array.
 #		rawdata, nn_kin = ExtractRawData(Dir,'TECPLOT_KIN.PDT',l)
@@ -2431,6 +2488,12 @@ for l in tqdm(range(0,numfolders)):
 #
 #		#Seperate total 1D data array into sets of data for each variable.
 #		CurrentFolderData = SDFileFormatConvertorHPEM(rawdata_kin[l],header_kin,numvariables_kin, Zmesh=I,Dimension='1D')
+#
+#		#Convert data from CGS (HPEM DEFAULT) to user requested unit system						!!! Not tested
+#		for i in range(0,len(KinVariablelist)):
+#			CurrentFolderData[i] = VariableUnitConversion(CurrentFolderData[i],KinVariablelist[i])
+#			CurrentFolderData[i] = AzimuthalPhaseConversion(CurrentFolderData[i],KinVariablelist[i])	
+#		#endfor
 #
 #		#Save all variables for folder[l] to Data.
 #		#Data is now 3D array of form [folder,variable,datapoint(R,Z)]
@@ -2477,6 +2540,12 @@ for l in tqdm(range(0,numfolders)):
 		#Seperate total 1D data array into sets of data for each variable.
 		#Data is stored in 2D array of shape: [EDFangle,EDFbins] or [I,J]
 		CurrentFolderData = SDFileFormatConvertorHPEM(rawdata_IEDF[l],header_IEDF,numvariables_IEDF,0,I,J)
+		
+		#Convert data from CGS (HPEM DEFAULT) to user requested unit system							!!! Not tested
+		for i in range(0,len(IEDFVariablelist)):
+			CurrentFolderData[i] = VariableUnitConversion(CurrentFolderData[i],IEDFVariablelist[i])
+#			CurrentFolderData[i] = AzimuthalPhaseConversion(CurrentFolderData[i],IEDFVariablelist[i])	
+		#endfor
 
 		#Save all variables for folder[l] to Data.
 		#Data is now 3D array of form [folder,variable,datapoint(R,Z)]
@@ -2487,8 +2556,8 @@ for l in tqdm(range(0,numfolders)):
 #===================##===================#
 #===================##===================#
 
-	#EEDF data readin.
-	if savefig_EEDF == True:
+	#EEDF data readin.											!!! UNDER DEVELOPMENT
+	if True in [savefig_EEDF]:
 
 		#Load data from MCS.PDT file and unpack into 1D array.
 		rawdata, nn_mcs = ExtractRawData(Dir,'boltz_tec.pdt',l)
@@ -2510,14 +2579,16 @@ for l in tqdm(range(0,numfolders)):
 				NaN_Value = 1
 			#endtry
 		#endfor
+		
+		
 		a,b = 0,5
 		for i in range(a,b):
 			plt.plot(DataEEDF[i][0],DataEEDF[i][1], lw=2)
 		plt.legend(EEDF_TDlist[a:b])
 		plt.xlabel('Energy [eV]')
-		plt.ylabel('F(e) [eV-3/2]')
+		plt.ylabel('f(e) [eV-3/2]')
 		plt.show()
-	#endif
+	#endif														!!! UNDER DEVELOPMENT
 
 
 #===================##===================#
@@ -2533,15 +2604,15 @@ for l in tqdm(range(0,numfolders)):
 		#movie_icp has geometry at top, therefore len(header) != len(variables).
 		#Only the first encountered geometry is used to define variable zone.
 		VariableEndMarker,HeaderEndMarker = 'GEOMETRY','ITER'
-		variablelist,numvar = list(),0
+		MovIcpVariablelist,numvar = list(),0
 		for i in range(2,nn_itermovie):
 			if HeaderEndMarker in str(rawdata[i]): 
-				header_iter = i+1		# +1 to skip to data row.
+				header_iter = i+1		# +1 to skip empty row below "ITER".
 				break
 			if VariableEndMarker in str(rawdata[i]) and numvar == 0:
-				numvar = (i-3)	# -3 to not include R,Z and remove overflow.
+				numvar = (i-3)			# -3 to ignore "R,Z" and remove overflow.
 			if len(rawdata[i]) > 1 and numvar == 0: 
-				variablelist.append(str(rawdata_itermovie[l][i][:-2].strip(' \t\n\r\"')))
+				MovIcpVariablelist.append(str(rawdata_itermovie[l][i][:-2].strip(' \t\n\r\"')))
 			#endif
 		#endfor
 		header_itermovie.append(header_iter)
@@ -2552,33 +2623,62 @@ for l in tqdm(range(0,numfolders)):
 		for i in range(0,len(rawdata)):
 			if "ITER=" in rawdata[i]:
 				Iterloc.append(i+1)
-
+				
 				IterStart=rawdata[i].find('ITER')
 				MovieIterlist[l].append(rawdata[i][IterStart:IterStart+9])
 			#endif
 		#endfor
-#		print( len(Iterloc))
+
+
+		#Initiate movie_icp.pdt 4D data array
+		#Data is saved in form: [folder,iteration,variable,datapoint(R,Z)]
+		if l == 0: 
+			A = numfolders; B = len(Iterloc)
+			C = len(MovIcpVariablelist); D= R_mesh[l]*Z_mesh[l]
+			IterMovieData = np.zeros([A,B,C,D], dtype=float)
+#			print(shape(IterMovieData))
+		#endif
+
 		#Cycle through all iterations for current datafile, appending per cycle.
 		CurrentFolderData,CurrentFolderIterlist = np.array([[]]),np.array([[]])
 		for i in range(0,len(Iterloc)):
+
+			#R,Z arrays are saved only for first "Cycle", apply +2 variable index offset to ignore
 			if i == 0:
 				CurrentIterData = SDFileFormatConvertorHPEM(rawdata,Iterloc[i],numvar+2,offset=2)
-#				print( 'option1, ITER DATA', len(CurrentIterData[l]))
+				#Convert data from CGS (HPEM DEFAULT) to user requested unit system
+				for j in range(0,len(MovIcpVariablelist)):
+					CurrentIterData[j] = VariableUnitConversion(CurrentIterData[j],MovIcpVariablelist[j])
+#					CurrentIterData[j] = AzimuthalPhaseConversion(CurrentIterData[j],MovIcpVariablelist[j])	
+				#endfor
+#				print(i, shape(CurrentIterData))
+#				print(shape(CurrentFolderData))
 				CurrentFolderData = np.array([CurrentIterData[0:numvar]])
-#				print( 'option1, Current Folder', len(CurrentFolderData[l]), len(CurrentFolderData[l][0]))
-			else:
+
+			#Later cycles do not save R,Z arrays so no variable index offset is required.
+			elif i > 0:
 				CurrentIterData = SDFileFormatConvertorHPEM(rawdata,Iterloc[i],numvar)
-#				print( 'option1, ITER DATA', len(CurrentIterData[l]))                
+				#Convert data from CGS (HPEM DEFAULT) to user requested unit system
+				for j in range(0,len(MovIcpVariablelist)):
+					CurrentIterData[j] = VariableUnitConversion(CurrentIterData[j],MovIcpVariablelist[j])
+#					CurrentIterData[j] = AzimuthalPhaseConversion(CurrentIterData[j],MovIcpVariablelist[j])	
+				#endfor
+#				print(i, shape(CurrentIterData))
+#				print(shape(CurrentFolderData))
 				CurrentFolderData = np.concatenate((CurrentFolderData, np.array([CurrentIterData])), axis=0)
-#				print( 'option2 Current Folder', len(CurrentFolderData[l]))
 			#endif
 		#endfor
-		if l == 0:        
-			IterMovieData = np.array([CurrentFolderData])
-		else:        
-			IterMovieData = np.concatenate((IterMovieData, np.array([CurrentFolderData])), axis=0)
-            
-#		print('final', IterMovieData, len(IterMovieData), len(IterMovieData[0]), len(IterMovieData[0][0]), len(IterMovieData[0][0][0]),type(IterMovieData))        
+		
+		#Save all variables for folder[l] to IterMovieData.
+		MaxIter = len(CurrentFolderData)				#Maximum Iter saved is always in order
+#		MaxVar = len(CurrentFolderData[0])				#Cant tell if variable ORDER has been affected
+#		MaxDim = len(CurrentFolderData[0,0])			#Can't tell which array elements are missing
+		
+#		print(shape(CurrentFolderData))					# Current folder may be missing some iteration data
+#		print(shape(IterMovieData[l,0:MaxIter]))		# IterMovieData arrays "sized" to missing iterations
+		#Write IterMovieData only to MaxIter to ensure correct array sizing
+		#Any IterMovieData[:,ITER,:,:] values after MaxIter will be zeros.
+		IterMovieData[l,0:MaxIter] = CurrentFolderData
 	#endif
 
 #===================##===================#
@@ -2597,7 +2697,7 @@ for l in range(0,numfolders):
 	Globalnumvars.append(numvars)
 #endfor
 
-#Find the folder with the fewest avaliable variables.
+#Find the folder with the fewest variables:
 val, idx = min((val, idx) for (idx, val) in enumerate(Globalnumvars))
 Comparisonlist = Globalvarlist[idx]
 
@@ -2863,10 +2963,10 @@ def ImageExtractor2D(Data,Variable=[],Rmesh=0,Zmesh=0):
 		#endfor
 	#endfor
 
-	#Convert units if required.
-	Image = VariableUnitConversion(Image,Variable)
+	#Convert units if required.								!!! RM SJD, CONVERSION PERFORMED AT READ-IN
+#	Image = VariableUnitConversion(Image,Variable)
 	
-	#Apply Azimuthal phase to Azimuthal field amplitudes if required.
+	#Convert Azimuthal phase if required.					!!! RM SJD, MOVE THIS CONVERSION TO READ-IN
 	Image = AzimuthalPhaseConversion(Image,Variable)
 
 	return(Image)
@@ -2946,6 +3046,22 @@ def figure(aspectratio=[],subplots=1,shareX=False):
 	return(fig,ax)
 #enddef
 
+#=========================#
+#=========================#
+
+def clearfigures(fig):
+
+	# Clear the current axes.
+	plt.cla() 
+	# Clear the current figure.
+	plt.clf() 
+	# Closes all the figure windows.
+	plt.close('all')   
+	plt.close(fig)
+	gc.collect()
+	
+	return()
+#enddef
 
 #=========================#
 #=========================#
@@ -3109,7 +3225,12 @@ def CbarMinMax(Image,PROES=False,Symmetry=image_plotsymmetry):
 	except: print( 'Image Filtering Warning - Cbar may be scaled incorrectly' )
 	
 	#Take min and max value from the filtered array to use as cbar limits
-	cropmin, cropmax = min(flatimage), max(flatimage)
+	if len(flatimage) > 0:
+		cropmin, cropmax = min(flatimage), max(flatimage)
+	else:
+		print('Cbar Limits Unspecified; Setting to 0,1')
+		cropmin, cropmax = 0,1
+	#endif
 	
 	#Return cropped values in list [min,max], as required by colourbar.
 	return([cropmin,cropmax])
@@ -3217,7 +3338,8 @@ def Colourbar(ax=plt.gca(),Label='',Ticks=5,Lim=[]):
 	#Create and define colourbar axis
 	divider = make_axes_locatable(ax)
 	cax = divider.append_axes("right", size="2%", pad=0.1)
-	cbar = plt.colorbar(im, cax=cax)
+	try: cbar = plt.colorbar(im, cax=cax)
+	except: return()
 
 	#Set number of ticks, label location and define scientific notation.
 	cbar.set_label(Label, rotation=Rotation,labelpad=Labelpad,fontsize=LabelFontSize)
@@ -3446,17 +3568,24 @@ def ImagePlotter2D(Image,extent,aspectratio=image_aspectratio,variable='N/A',fig
 	elif image_normalise == True:
 		Image = Normalise(Image)[0]
 	#endif
-
-	#Plot image with or without contour plots, (contour scale = 90% of cbar scale)
-	if image_plotcontours == True:
-		im = ax.contour(Image,extent=extent,origin="lower")
+	
+	#Plot image with colour fill and contour lines, here contour scale = 90% of cbar scale for clarity
+	if image_plotcolourfill == True and image_plotcontours == True:
+		im = ax.contour(Image,extent=extent,origin="lower",levels=image_contourlvls,lw=2.0)
 		im.set_clim(CbarMinMax(Image)[0]*0.90,CbarMinMax(Image)[1]*0.90)
 		im = ax.imshow(Image,extent=extent,origin="lower")
-	else:
-#		im = ax.imshow(Image,extent=extent,cmap=tecplotcmap,origin="lower")			!!! RM SJD: TECPLOT EXAMPLE
+		
+	#Plot image with only colour fill
+	elif image_plotcolourfill == True:
 		im = ax.imshow(Image,extent=extent,origin="lower")
-		#endif
+#		im = ax.imshow(Image,extent=extent,cmap=tecplotcmap,origin="lower")			!!! RM SJD: TECPLOT EXAMPLE
+
+	#Plot image with only contour lines
+	elif image_plotcontours == True:
+		im = ax.contour(Image,extent=extent,origin="lower",levels=image_contourlvls,lw=2.0)
+		#endtry
 	#endif
+
 	return(fig,ax,im,Image)
 #enddef
 
@@ -3541,11 +3670,11 @@ def ExtractRadialProfile(Data,process,variable,Profile,Rmesh='NaN',Isym='NaN'):
 		Zend = len(Data[process])-ZStart
 		Zstart = len(Data[process])-ZEnd
 		RProfile = Data[process][Zstart:Zend]
-		
 	#endif
 
-	#Convert units if required and plot.
-	RProfile = VariableUnitConversion(RProfile,variable)
+	#Convert units if required.								!!! RM SJD, CONVERSION PERFORMED AT READ-IN
+#	RProfile = VariableUnitConversion(RProfile,variable)
+	
 	return(RProfile)
 #enddef
 
@@ -3574,8 +3703,9 @@ def ExtractAxialProfile(Data,process,variable,lineout,Rmesh=0,Zmesh=0,Isym=0):
 		#endtry
 	#endfor
 
-	#Convert units if required
-	Zlineout = VariableUnitConversion(Zlineout,variable)
+	#Convert units if required.								!!! RM SJD, CONVERSION PERFORMED AT READ-IN
+#	Zlineout = VariableUnitConversion(Zlineout,variable)
+	
 	return(Zlineout)
 #enddef
 
@@ -3904,7 +4034,7 @@ def DCbiasMagnitude(PPOTlineout):
 		plt.legend(['PreBulk','PostBulk','Bulk'])
 		plt.title('DCBIAS_DEBUG'+str(l+electrodelocation))
 		plt.savefig(DirTrends+'DCBIAS_DEBUG'+str(l+electrodelocation)+'.png')
-		plt.close('all')
+		clearfigures(fig)
 	#endif
 
 	return DCbias
@@ -4157,6 +4287,9 @@ def CalcSheathExtent(folderidx=l,Orientation='Axial',Phase='NaN',Ne=list(),Ni=li
 		print( 'Sheath Location:',SheathWidth*10, 'mm')
 		print( 'Sheath Extent:',((sourcewidth[0]*dr[l])-SheathWidth)*10, 'mm')
 	#endif
+	
+	#Delete any intermediate arrays
+	del(Eproc,IONproc,Ne,Ni,Neff)
 
 	#Return sheath axis and sheath extent
 	return(Sx,SxAxis)
@@ -4247,7 +4380,7 @@ def PlotSheathExtent(SxAxis,Sx,ax=plt.gca(),ISymmetry=0):
 #====================================================================#
 
 #====================================================================#
-			  #STEADY STATE 2D FIGURES -- CYCLE AVERAGED#
+			  	   #STEADY STATE TECPLOT2D FIGURES#
 #====================================================================#
 
 #Generate and save image of required variable for given mesh size.
@@ -4267,6 +4400,22 @@ if savefig_plot2D == True:
 
 		#Reshape specific part of 1D Data array into 2D image for plotting.
 		for k in tqdm(range(0,len(processlist))):
+
+			#Special vector plot case for magnetic field
+#			if 'BR' in variablelist and 'BZ' in variablelist:
+#			
+#				BRprocess = variablelist.index('BR')
+#				BR =  ImageExtractor2D(Data[l][BRprocess],'BR')
+#				
+#				BZprocess = variablelist.index('BZ')
+#				BZ = ImageExtractor2D(Data[l][BZprocess],'BZ')
+#
+#				fig,ax = figure(image_aspectratio)
+#				
+#				# Need to add meshgrid, see tutorial
+#				ax.quiver(BR, BZ)
+			#endif
+
 
 			#Extract full 2D image for further processing.
 			Image = ImageExtractor2D(Data[l][processlist[k]],variablelist[k])
@@ -4318,7 +4467,7 @@ if savefig_plot2D == True:
 
 			#Save Figure
 			plt.savefig(Dir2Dplots+'2DPlot '+variablelist[k]+ext)
-			plt.close('all')
+			clearfigures(fig)
 		#endfor
 	#endfor
 
@@ -4351,8 +4500,8 @@ if savefig_convergence == True:
 		ConvergenceTrends,IterArray = list(),list()
 		for i in range(0,len(MovieIterlist[l])):
 			Iter = list(filter(lambda x: x.isdigit(), MovieIterlist[l][i]))		#List of digits within Iter
-			Iter =  int(''.join(Iter))									#Join digits into single integer
-			IterArray.append(Iter)										#Append to list of integers
+			Iter =  int(''.join(Iter))											#Join digits into single integer
+			IterArray.append(Iter)												#Append to list of integers
 		#endfor
 
 		#for all variables requested by the user.
@@ -4373,16 +4522,16 @@ if savefig_convergence == True:
 			#endtry
 			
 			#Reshape specific part of 1D Data array into 2D image for plotting.
-			if QuickConverge == False:
-				for k in range(0,len(MovieIterlist[l])):
-					#Extract full 2D image for further processing.
-					Image = ImageExtractor2D(IterMovieData[l][k][processlist[i]],variablelist[i])
-					Sx,SxAxis = CalcSheathExtent(folderidx=l)		#NB: CURRENTLY USES TECPLOT2D DATA
+			for k in range(0,len(MovieIterlist[l])):
+				#Extract full 2D image for further processing.
+				Image = ImageExtractor2D(IterMovieData[l][k][processlist[i]],variablelist[i])
+				Sx,SxAxis = CalcSheathExtent(folderidx=l)		#NB: CURRENTLY USES TECPLOT2D DATA
 
-					#Take MEAN value of image for general convergence trend.
-					ImageMean = sum(Image.flatten())/len(Image.flatten())
-					ConvergenceTrends[-1] = np.append(ConvergenceTrends[-1], ImageMean)
+				#Take MEAN value of image for general convergence trend.
+				ImageMean = sum(Image.flatten())/len(Image.flatten())
+				ConvergenceTrends[-1] = np.append(ConvergenceTrends[-1], ImageMean)
 
+				if QuickConverge == False:
 					#Generate and rotate figure as requested.
 					extent,aspectratio = DataExtent(l)
 					fig,ax,im,Image = ImagePlotter2D(Image,extent,aspectratio,variablelist[i])
@@ -4405,24 +4554,13 @@ if savefig_convergence == True:
 					#Save to seperate folders inside simulation folder.
 					#N.B. zfill(3) Asumes Iter never exceeds 999 (i.e. max(IterArray) < 1e4)
 					savefig(DirMovieplots+variablelist[i]+'_'+str(IterArray[k]).zfill(3)+ext)
-					plt.close('all')
-				#endfor
+					clearfigures(fig)
+				#endif
+			#endfor
 
-				#Create .mp4 movie from completed images.
-				Prefix = FolderNameTrimmer(Dirlist[l])
-				MakeMovie(DirMovieplots,Prefix+'_'+variablelist[i])
-
-
-			#Extract images for convergence trend plotting, but do not plot images.
-			if QuickConverge == True:
-				for k in range(0,len(MovieIterlist[l])):
-					#Extract full 2D image for further processing.
-					Image = ImageExtractor2D(IterMovieData[l][k][processlist[i]],variablelist[i])
-					#Take MEAN value of image for general convergence trend.
-					ImageMean = sum(Image.flatten())/len(Image.flatten())
-					ConvergenceTrends[-1] = np.append(ConvergenceTrends[-1], ImageMean)
-				#endfor
-			#endif
+			#Create .mp4 movie from completed images.
+			Prefix = FolderNameTrimmer(Dirlist[l])
+			MakeMovie(DirMovieplots,Prefix+'_'+variablelist[i])
 		#endfor
 
 		#=================#
@@ -4487,7 +4625,7 @@ if savefig_convergence == True:
 
 		#Save figure.
 		savefig(DirConvergence+FolderNameTrimmer(Dirlist[l])+'_Convergence'+ext)
-		plt.close('all')
+		clearfigures(fig)
 	#endfor
 
 	print('------------------------------------')
@@ -4603,7 +4741,7 @@ if savefig_monoprofiles == True:
 				plt.savefig(DirRlineouts+'1D_Radial_'+Variablelist[i]+'_Profiles'+ext)
 				plt.close(fig)
 			#endfor
-			plt.close('all')
+			clearfigures(fig)
 		#endif
 
 #===================##===================#
@@ -4647,7 +4785,7 @@ if savefig_monoprofiles == True:
 				plt.savefig(DirZlineouts+'1D_Axial_'+Variablelist[i]+'_Profiles'+ext)
 				plt.close(fig)
 			#endfor
-			plt.close('all')
+			clearfigures(fig)
 		#endif
 	#endfor
 
@@ -4729,7 +4867,7 @@ if savefig_compareprofiles == True:
 
 			#Save one image per variable with data from all simulations.
 			plt.savefig(DirProfile+Variablelist[k]+'@ Z='+str(round((radialprofiles[j])*dz[l], 2))+'cm profiles'+ext)
-			plt.close('all')
+			clearfigures(fig)
 		#endfor
 	#endfor
 
@@ -4792,7 +4930,7 @@ if savefig_compareprofiles == True:
 
 			#Save one image per variable with data from all simulations.
 			plt.savefig(DirProfile+Variablelist[k]+'@ R='+str(round((axialprofiles[j])*dr[l], 2))+'cm profiles'+ext)
-			plt.close('all')
+			clearfigures(fig)
 		#endfor
 	#endfor
 
@@ -4866,7 +5004,7 @@ if savefig_multiprofiles == True:
 					#Save figures in original folder.
 					R = 'R='+str(round((axialprofiles[j])*dr[l], 2))+'_'
 					plt.savefig(DirZlineouts+R+Variablelist[i]+'_MultiProfiles'+ext)
-					plt.close('all')
+					clearfigures(fig)
 				#endfor
 			#endfor
 		#endif
@@ -4920,7 +5058,7 @@ if savefig_multiprofiles == True:
 					#Save lines in previously created folder.
 					Z = 'Z='+str(round((radialprofiles[j])*dz[l], 2))+'_'
 					plt.savefig(DirRlineouts+Z+Variablelist[i]+'_MultiProfiles'+ext)
-					plt.close('all')
+					clearfigures(fig)
 				#endfor
 			#endfor
 		#endif
@@ -4989,7 +5127,7 @@ if savefig_temporalprofiles == True:
 
 			#Save figure.
 			savefig(DirMeshAve+'Temporal_'+variablelist[i]+ext)
-			plt.close('all')
+			clearfigures(fig)
 
 			#Write data to ASCII files if requested.
 			if write_ASCII == True:
@@ -5020,7 +5158,7 @@ if savefig_temporalprofiles == True:
 
 		#Save figure.
 		savefig(DirMeshAve+FolderNameTrimmer(Dirlist[l])+'_Normalised'+ext)
-		plt.close('all')
+		clearfigures(fig)
 	#endfor
 	print('----------------------------')
 	print('# Temporal Profiles Complete')
@@ -5151,7 +5289,7 @@ if savefig_IEDFangular == True:
 			ImageOptions(fig,ax[1],Xlabel,Ylabel,Crop=ImageCrop,Rotate=False)
 
 			plt.savefig(DirIEDF+variablelist[i]+'_EDF'+ext)
-			plt.close('all')
+			clearfigures(fig)
 
 			#Write data to ASCII files if requested.
 			if write_ASCII == True:
@@ -5401,7 +5539,7 @@ if savefig_IEDFtrends == True:
 		ImageOptions(fig,ax,Xlabel,Ylabel,Title,Legendlist,Crop=ImageCrop,Rotate=False)
 
 		plt.savefig(DirIEDFTrends+variablelist[i]+'_EDFprofiles'+ext)
-		plt.close('all')
+		clearfigures(fig)
 
 		##ENERGY ANALYSIS##
 		#=================#
@@ -5420,7 +5558,7 @@ if savefig_IEDFtrends == True:
 		ImageOptions(fig,ax,Xlabel,Ylabel,Title,Legend,Crop=ImageCrop,Rotate=False)
 
 		plt.savefig(DirIEDFTrends+variablelist[i]+'_AverageEnergies'+ext)
-		plt.close('all')
+		clearfigures(fig)
 	#endfor
 #endif
 
@@ -5563,7 +5701,7 @@ if savefig_trendphaseaveraged == True or print_generaltrends == True:
 		#Save one image per variable with data from all simulations.
 		if len(axialprofiles) > 0:
 			plt.savefig(DirAxialTrends+'Axial Trends in '+Variablelist[k]+ext)
-			plt.close('all')
+			clearfigures(fig)
 		#endif
 
 
@@ -5624,7 +5762,7 @@ if savefig_trendphaseaveraged == True or print_generaltrends == True:
 		#Save one image per variable with data from all simulations.
 		if len(radialprofiles) > 0:
 			plt.savefig(DirRadialTrends+'Radial Trends in '+Variablelist[k]+ext)
-			plt.close('all')
+			clearfigures(fig)
 		#endif
 	#endfor
 #endif
@@ -5714,7 +5852,7 @@ if savefig_trendphaseaveraged == True or print_DCbias == True:
 	ImageOptions(fig,ax,Xlabel,Ylabel,Title,Crop=False)
 
 	plt.savefig(DirTrends+'Powered Electrode DCbias'+ext)
-	plt.close('all')
+	clearfigures(fig)
 #endif
 
 
@@ -5752,9 +5890,8 @@ if savefig_trendphaseaveraged == True or print_totalpower == True:
 			#Create extract data for the neutral flux and neutral velocity.
 			processlist,Variablelist = VariableEnumerator(RequestedPowers,rawdata_2D[l],header_2Dlist[l])
 			
-			#Extract full 2D power density image. [W/m3]
+			#Extract 2D power density data array [W/m3]
 			PowerDensity = ImageExtractor2D(Data[l][processlist[k]])
-			PowerDensity = VariableUnitConversion(PowerDensity,Variablelist[k])
 
 			#=====#=====#
 
@@ -5825,7 +5962,7 @@ if savefig_trendphaseaveraged == True or print_totalpower == True:
 		ImageOptions(fig,ax,Xlabel,Ylabel,Title,Legend=RequestedPowers,Crop=False)
 
 		plt.savefig(DirTrends+RequestedPowers[k]+' Deposition Trends'+ext)
-		plt.close('all')
+		clearfigures(fig)
 	#endfor
 
 	#Write data to ASCII format datafile if requested.
@@ -5845,7 +5982,7 @@ if savefig_trendphaseaveraged == True or print_totalpower == True:
 	ImageOptions(fig,ax,Xlabel,Ylabel,Title,Legend=RequestedPowers,Crop=False)
 
 	plt.savefig(DirTrends+'Power Deposition Comparison'+ext)
-	plt.close('all')
+	clearfigures(fig)
 #endif
 
 
@@ -6055,7 +6192,7 @@ if 'AR3S' in list(set(FluidSpecies).intersection(Variables)):
 		ImageOptions(fig,ax1,Xlabel,Ylabel,Title,Crop=False)
 
 		plt.savefig(DirTrends+'Thrust Trends'+ext)
-		plt.close('all')
+		clearfigures(fig)
 
 		#=====#=====#
 
@@ -6072,7 +6209,7 @@ if 'AR3S' in list(set(FluidSpecies).intersection(Variables)):
 		ImageOptions(fig,ax1,Xlabel,Ylabel,Title,Crop=False)
 
 		plt.savefig(DirTrends+'Isp Trends'+ext)
-		plt.close('all')
+		clearfigures(fig)
 	#endif
 #endif
 
@@ -6159,9 +6296,8 @@ if savefig_trendphaseaveraged == True or print_sheath == True:
 	ImageOptions(fig,ax,Xlabel,Ylabel,Title,Legend=[],Crop=False)
 
 	plt.savefig(DirTrends+'Sheath Extension (Phase-Averaged)'+ext)
-	plt.close('all')
+	clearfigures(fig)
 #endif
-
 
 
 #====================================================================#
@@ -6204,7 +6340,9 @@ if bool(set(FluidSpecies).intersection(Variables)) == True:
 					Start = R_mesh[l]*j
 					Row = Z_mesh[l]-1-j
 
+					#Convert units to SI
 					LocalDensity = (Data[l][processlist[0]][Start+i])*1E6					#[m-3]
+					
 					try:
 						KnudsenNumber = (1/(LocalDensity*CrossSection*Dimentionality))		#[-]
 					except:
@@ -6242,7 +6380,7 @@ if bool(set(FluidSpecies).intersection(Variables)) == True:
 
 			#Save Figure
 			plt.savefig(Dir2Dplots+'2DPlot Kn'+ext)
-			plt.close('all')
+			clearfigures(fig)
 		#endfor
 
 
@@ -6265,7 +6403,7 @@ if bool(set(FluidSpecies).intersection(Variables)) == True:
 
 		#Save figure.
 		plt.savefig(DirTrends+'KnudsenNumber_Comparison'+ext)
-		plt.close('all')
+		clearfigures(fig)
 	#endif
 #endif
 
@@ -6355,7 +6493,7 @@ if bool(set(FluidSpecies).intersection(Variables)) == True:
 
 			#Save Figure
 			plt.savefig(Dir2Dplots+'2DPlot Cs'+ext)
-			plt.close('all')
+			clearfigures(fig)
 		#endfor
 		
 
@@ -6378,7 +6516,7 @@ if bool(set(FluidSpecies).intersection(Variables)) == True:
 
 		#Save figure.
 		plt.savefig(DirTrends+'SoundSpeed_Comparison'+ext)
-		plt.close('all')
+		clearfigures(fig)
 	#endif
 #endif
 
@@ -6499,7 +6637,7 @@ if savefig_phaseresolve1D == True:
 		ax.xaxis.set_major_locator(ticker.MultipleLocator(0.25))
 
 		plt.savefig(DirPhaseResolved+VariedValuelist[l]+' Waveform'+ext)
-		plt.close('all')
+		clearfigures(fig)
 
 		#Write waveform data in ASCII format if required.
 		if write_ASCII == True:
@@ -6600,7 +6738,7 @@ if savefig_phaseresolve1D == True:
 					fig.tight_layout()
 					plt.subplots_adjust(top=0.90)
 					plt.savefig(Dir1DProfiles+NameString+'_'+str(Phase).zfill(3)+ext)
-					plt.close('all')
+					clearfigures(fig)
 
 					#Write Phase data in ASCII format if required.
 					if write_ASCII == True:
@@ -6680,7 +6818,7 @@ if savefig_phaseresolve2D == True:
 		ax.xaxis.set_major_locator(ticker.MultipleLocator(0.25))
 
 		plt.savefig(DirPhaseResolved+VariedValuelist[l]+' Waveform'+ext)
-		plt.close('all')
+		clearfigures(fig)
 
 		#Write PROES data in ASCII format if required.
 		if write_ASCII == True:
@@ -6756,7 +6894,7 @@ if savefig_phaseresolve2D == True:
 				fig.tight_layout()
 				plt.subplots_adjust(top=0.90)
 				savefig(DirMovieplots+varlist[i]+'_'+str(Phase).zfill(3)+ext)
-				plt.close('all')
+				clearfigures(fig)
 
 
 				#Write Phase data in ASCII format if required.
@@ -6914,7 +7052,7 @@ if savefig_sheathdynamics == True:
 		ImageOptions(fig,ax[1],Xlabel,Ylabel,Crop=False)
 
 		plt.savefig(DirPhaseResolved+VariedValuelist[l]+' SheathDynamics'+ext)
-		plt.close('all')
+		clearfigures(fig)
 
 		#Write phase-resolved sheath dynamics to ASCII format datafile if requested.
 		if write_ASCII == True:
@@ -6944,7 +7082,7 @@ if savefig_sheathdynamics == True:
 	ImageOptions(fig,ax,Xlabel,Ylabel,Title,Crop=False)
 
 	plt.savefig(DirSheath+'Max Sheath Extension Trends'+ext)
-	plt.close('all')
+	clearfigures(fig)
 
 	#Plot mean sheath extension trend for all folders
 	fig,ax = figure(image_aspectratio)
@@ -6954,7 +7092,7 @@ if savefig_sheathdynamics == True:
 	ImageOptions(fig,ax,Xlabel,Ylabel,Title,Crop=False)
 
 	plt.savefig(DirSheath+'Mean Sheath Extension Trends'+ext)
-	plt.close('all')
+	clearfigures(fig)
 
 	#Plot sheath dynamic range (max-min extension) trend for all folders
 	fig,ax = figure(image_aspectratio)
@@ -6964,7 +7102,7 @@ if savefig_sheathdynamics == True:
 	ImageOptions(fig,ax,Xlabel,Ylabel,Title,Crop=False)
 
 	plt.savefig(DirSheath+'Sheath Dynamic Range Trends'+ext)
-	plt.close('all')
+	clearfigures(fig)
 
 	#Plot maximum sheath velocity trend for all folders
 	fig,ax = figure(image_aspectratio)
@@ -6974,7 +7112,7 @@ if savefig_sheathdynamics == True:
 	ImageOptions(fig,ax,Xlabel,Ylabel,Title,Crop=False)
 
 	plt.savefig(DirSheath+'Max Sheath Velocity Trends'+ext)
-	plt.close('all')
+	clearfigures(fig)
 
 	#Plot mean sheath velocity trend for all folders
 	fig,ax = figure(image_aspectratio)
@@ -6984,7 +7122,7 @@ if savefig_sheathdynamics == True:
 	ImageOptions(fig,ax,Xlabel,Ylabel,Title,Crop=False)
 
 	plt.savefig(DirSheath+'Mean Sheath Velocity Trends'+ext)
-	plt.close('all')
+	clearfigures(fig)
 
 
 	print('----------------------------------------')
@@ -7048,7 +7186,7 @@ if savefig_PROES == True:
 		ax.xaxis.set_major_locator(ticker.MultipleLocator(0.25))
 
 		plt.savefig(DirPROES+VariedValuelist[l]+' Waveform'+ext)
-		plt.close('all')
+		clearfigures(fig)
 
 		#Write PROES data in ASCII format if required.
 		if write_ASCII == True:
@@ -7203,7 +7341,7 @@ if savefig_PROES == True:
 				fig.tight_layout()
 				plt.subplots_adjust(top=0.85)
 				plt.savefig(DirPROESloc+VariedValuelist[l]+' '+NameString+' PROES'+ext)
-				plt.close('all')
+				clearfigures(fig)
 
 				#Write PROES data in ASCII format if required.
 				if write_ASCII == True:
@@ -7237,7 +7375,7 @@ if savefig_PROES == True:
 #				ax[1].set_xlim(x1,x2)
 
 				plt.savefig(DirPROESloc+VariedValuelist[l]+' '+NameString+' TemporalPROES'+ext)
-				plt.close('all')
+				clearfigures(fig)
 			
 				#=====#=====#
 				
@@ -7267,7 +7405,7 @@ if savefig_PROES == True:
 #				ImageOptions(fig,ax[1],Xlabel,Ylabel,Crop=False)
 
 #				plt.savefig(DirPROESloc+VariedValuelist[l]+' '+NameString+' SpatialPROES'+ext)
-#				plt.close('all')
+#				clearfigures(fig)
 
 				#==============##==============#
 
