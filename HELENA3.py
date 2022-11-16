@@ -59,6 +59,7 @@ import numpy as np
 import scipy as sp
 import math as m
 import subprocess
+import warnings
 import os, sys
 import os.path
 import re
@@ -95,8 +96,11 @@ IDEBUG = False						#Produces debug outputs for most diagnostics.
 
 #Warning suppressions
 np.seterr(divide='ignore', invalid='ignore')		#Suppresses divide by zero errors
-#Fix "can't invoke "event" command: application has been destroyed" error with PROES images
-#Fix "Exception KeyError: KeyError(<weakref at 0x7fc8723ca940; to 'tqdm' at 0x7fc85cd23910>,)" error
+#Fix: "can't invoke "event" command: application has been destroyed" error with PROES images
+#Fix: "Exception KeyError: KeyError(<weakref at 0x7fc8723ca940; to 'tqdm' at 0x7fc85cd23910>,)" error
+
+warnings.filterwarnings("ignore", message="No contour levels were found within the data range.")
+#Fix: Suppress above warning on plotting of empty contour plots
 
 #Numerical Calculation Methods:
 GlobSheathMethod = 'AbsDensity'			#Set Global Sheath Calculation Method.
@@ -136,16 +140,17 @@ ASTRONCOILEF = \
 ['ERADIAL-2','ETHETA-2','EAXIAL-2','PHASER-2','PHASEZ-2','ERADIAL-3','ETHETA-3','EAXIAL-3','PHASER-3','PHASEZ-3', \
  'ERADIAL-4','ETHETA-4','EAXIAL-4','PHASER-4','PHASEZ-4','ERADIAL-5','ETHETA-5','EAXIAL-5','PHASER-5','PHASEZ-5', \
  'ERADIAL-6','ETHETA-6','EAXIAL-6','PHASER-6','PHASEZ-6','ERADIAL-7','ETHETA-7','EAXIAL-7','PHASER-7','PHASEZ-7', \
- 'ERADIAL-8','ETHETA-8','EAXIAL-8','PHASER-8','PHASEZ-8',]
+ 'ERADIAL-8','ETHETA-8','EAXIAL-8','PHASER-8','PHASEZ-8']
 ASTRONCOILBF = \
 ['BT-2','BT-3','BT-4','BT-5','BT-6','BT-7','BT-8', \
  'BRF-2','BRF-3','BRF-4','BRF-5','BRF-6','BRF-7','BRF-8', \
- 'PHASEBT-2','PHASEBT-3','PHASEBT-4','PHASEBT-5','PHASEBT-6','PHASEBT-7','PHASEBT-8',]
+ 'PHASEBT-2','PHASEBT-3','PHASEBT-4','PHASEBT-5','PHASEBT-6','PHASEBT-7','PHASEBT-8']
 
 Ar = ['AR3S','AR4SM','AR4SR','AR4SPM','AR4SPR','AR4P','AR4D','AR','AR+','AR2+','AR2*','E','S-AR+','S-AR4P','SEB-AR+','SEB-AR4P','FZ-AR3S','FR-AR3S','FR-AR+','FZ-AR+','FZ-AR3S','FR-AR3S']
 O2 = ['O3','O2','O2+','O','O+','O-','S-O3','S-O2+','S-O+','S-O-','SEB-O3','SEB-O+','SEB-O2+','SEB-O-','FR-O+','FZ-O+','FR-O-','FZ-O-']+['O3P3P','O***','S-O3P3P','S-O***','SEB-O3P3P','SEB-O***']
 H2 = ['H','H*','H^','H-']
 N2 = ['N2','N2V','N2*','N2**','N2^','N','N*','N^']
+Cl = ['Cl2','Cl','CL^','CL-']		#'Cl2V','Cl2^','CL*','CL**','CL***',
 F = ['F2','F2*','F2^','F','F*','F^','F-','S-F','S-F^','S-F-','SEB-F','SEB-F^','SEB-F-','FZ-F','FR-F','FZ-F^','FR-F^','FZ-F-','FR-F-']
 NFx = ['NF3A','NF2A','NFA','NF3B','NF2B','NFB','NF3^','NF2^','NF^']
 
@@ -165,9 +170,9 @@ HYPII_PCMC = ['O^2.8P','EB-2.8P','ION-TOT2.8P','O^3.5Q','EB-3.5Q','ION-TOT3.5Q']
 EVgeny_PCMC = ['AR^0.1P','EB-0.1P','ION-TOT0.1P','AR^2.1Q','EB-2.1Q','ION-TOT2.1Q']
 TSHCOI2019_PCMC = ['AR^0.2S','ION-TOT0.2S','AR^4.4T','ION-TOT4.4T','AR^8.9U','ION-TOT8.9U']
 TSHCOI2020_PCMC = ['AR^0.2S','ION-TOT0.2S','AR^4.9T','ION-TOT4.9T','AR^9.8U','ION-TOT9.8U']
-MSHC2017Mk0_PCMC = ['AR^0.5S','EB-0.5S','ION-TOT0.5S','AR^1.1B','EB-1.1B','ION-TOT1.1B']
 SCCP2018Mk0_PCMC = ['AR^7.7J','ION-TOT7.7J','AR^5.1B','ION-TOT5.1B']
 ESCT2018Mk0_PCMC = ['AR^0.3S','EB-0.3S','ION-TOT0.3S']
+MSHC2017Mk0_PCMC = ['AR^0.5S','EB-0.5S','ION-TOT0.5S','AR^1.1B','EB-1.1B','ION-TOT1.1B']
 
 
 ####################
@@ -237,23 +242,23 @@ IEDFVariables = PRCCPAr_PCMC				#Requested iprofile_2d variables (no spaces)
 NEDFVariables = []							#Requested nprofile_2d variables (no spaces)
 
 #Requested movie1/movie_icp Variables.
-IterVariables = ['E','NF3A','F','F-','TG-AVE','TE','PPOT'] 	#Requested Movie_icp (iteration) Variables.			
+IterVariables = ['E','AR3S','NF3A','F','F-','CL','CL-','TG-AVE','TE','PPOT'] 	#Requested Movie_icp (iteration) Variables.			
 PhaseVariables = Ar_Phase							#Requested Movie1 (phase) Variables. +['E','AR+']
-electrodeloc = [29,44]	#PR[29,44]#THC[35,45]		#Cell location of powered electrode [R,Z].
+electrodeloc = [29,44]								#Cell location of powered electrode [R,Z].
 waveformlocs = []									#Cell locations of additional waveforms [R,Z].
 
 #Requested TECPLOT Variables and plotting locations.
-Variables = Phys+Ar+F+NFx +ASTRONCOILEF+ASTRONCOILBF
+Variables = Phys+Ar+F+NFx+Cl+O2+['N','N2'] +ASTRONCOILEF+ASTRONCOILBF
 multivar = []									#Additional variables plotted ontop of [Variables]
-radialprofiles = [46]	#PR[44]#THC[85]			#Radial 1D-Profiles to be plotted (fixed Z-mesh) --
-axialprofiles = [38]	#PR[0]#THC[20]			#Axial 1D-Profiles to be plotted (fixed R-mesh) |
-probeloc = [10,46]		#PR[0,44]#THC[20,85]	#Cell location For Trend Analysis [R,Z], ([] = min/max)
+radialprofiles = [27,82,117]					#Radial 1D-Profiles to be plotted (fixed Z-mesh) --
+axialprofiles = [9]								#Axial 1D-Profiles to be plotted (fixed R-mesh) |
+probeloc = [10,46]								#Cell location For Trend Analysis [R,Z], ([] = min/max)
 
 
 #Various Diagnostic Settings.
 phasecycles = 1.00						#Number of waveform phase cycles to be plotted. (float)
 DoFwidth = 10 							#PROES Depth of Field (symmetric about image plane) (cells)
-thrustloc = 45			#THC[10]		#Z-axis cell for thrust calculation  (cells)
+thrustloc = 45							#Z-axis cell for thrust calculation  (cells)
 sheathROI = [34,72]						#Sheath Region of Interest, (Start,End) [cells]				<<< OUTDATED
 sourcewidth = [12]						#Source Dimension at ROI, leave empty for auto. [cells]		<<< OUTDATED
 
@@ -261,12 +266,28 @@ sourcewidth = [12]						#Source Dimension at ROI, leave empty for auto. [cells]	
 #Requested diagnostics and plotting routines.
 savefig_convergence = True				#Single-Variables: iter-time axis			Requires movie_icp.pdt
 savefig_plot2D = True					#Single-Variables: converged				Requires TECPLOT2D.PDT
-#	ISSUE WITH READING movie_icp.pdt WITH EXCLUDED SPECIES!?
-#	DIFFERENT LENGTHS OF ARRAY IN SDFILEFORMAT WHEN READING EXC F-SIMS
+# 	STILL HAVE ISSUE WITH READING movie FILES OF DIFFERENT LENGTHS...
+#		NEED TO SIZE THE INITIAL DATA ARRAY TO THE SHAPE OF THE LARGEST MOVIE FILE, NOT THE FIRST.
+#		ValueError: could not broadcast input array from shape (100,41,8804) into shape (24,41,8804)
+
+#	ISSUE WITH READING movie_icp.pdt WHEN USING IEXCLUDE > 0
+#		DIFFERENT LENGTHS OF ARRAY IN SDFILEFORMAT WHEN READING movie_icp.pdt HEADER
+
+#	ISSUE WITH READING DATA FILES THAT AREN'T NAMED THE EXACT DEFAULT WAY...
+#		THE ONLY FILES THAT NEED TO BE EXACT ARE THE OUTPUT FILES
+#		ENSURE THAT PDT AND PLT EXTENSIONS ARE INCLUDED
+
+#	ISSUES CONVERTING "1D6" INTO AN INTEGER OR REAL
+#		STACK OVERFLOW FOR THIS ISSUE, PROBABLY A PLUGIN FOR IT
+
+#	savefig_temporalprofiles NEEDS TO TAKE 1D PROFILES FOR ALL VARIABLES AT EACH TIMESTEP
+#		ADD AN iterarray[] INPUT NEAR IterVariables THAT IS THE DESIRED ITERATIONS TO PLOT
+#		IF THIS IS EMPTY, THEN PLOT ALL ITERATIONS
+
 
 savefig_monoprofiles = False			#Single-Variables; fixed height/radius
 savefig_multiprofiles = False			#Multi-Variables; same folder					- NO ASCII OUTPUT
-savefig_compareprofiles = False			#Multi-Variables; all folders
+savefig_compareprofiles = True			#Multi-Variables; all folders
 savefig_temporalprofiles = False		#Single-Variables; real-time axis
 
 savefig_trendphaseaveraged = False		#RF-Averaged trends at axial/radial cells		# CHANGE TO 'ProbeLoc' cell
@@ -299,25 +320,26 @@ print_sheath = False					#Print sheath width at electrodeloc
 #Image plotting options.
 image_extension = '.png'				#Define image extension  ('.png', '.jpg', '.eps')		
 image_interp = 'bilinear'				#Define image smoothing  ('none', 'bilinear')
-image_cmap = 'plasma'					#Define global colourmap ('jet','plasma','inferno','gnuplot')
+image_cmap = 'plasma'					#Define global colourmap ('jet','plasma','inferno','gnuplot','tecmodern')
 
 image_aspectratio = [10,10]				#Real Size of [X,Y] in cm [Doesn't Rotate - X is always horizontal]
-image_radialcrop = []#[0.65]			#Crops 2D images to [R1,R2] in cm
-image_axialcrop = []#[1.0,4.0]			#Crops 2D images to [Z1,Z2] in cm
+image_radialcrop = []					#Crops 2D images to [R1,R2] in cm
+image_axialcrop = []					#Crops 2D images to [Z1,Z2] in cm
 image_cbarlimit = []					#[min,max] colourbar limits
+image_legendloc = 'best'				#Legend Location, "1-9" or 'best' for automatic
 
 image_plotcolourfill = True				#Plot 2D image colour fill
 image_plotcontours = True				#Plot 2D image contour lines
-image_plotsymmetry = False#True			#Plot radial symmetry - mirrors across the ISYM axis
+image_plotsymmetry = False				#Plot radial symmetry - mirrors across the ISYM axis
 image_plotoverlay = False				#Plot location(s) of 1D radial/axial profiles onto 2D images
 image_plotsheath = False				#Plot sheath extent onto 2D images
 image_plotgrid = False					#Plot major/minor gridlines on 1D profiles
-image_plotmesh = False#'ASTRON'#'PRCCP'		#Plot material mesh outlines ('Auto','PRCCP','PRCCPM','ESCT','GEC')
+image_plotmesh = False					#Plot material mesh outlines ('Auto','PRCCP','PRCCPM','ESCT','GEC')
 image_numericaxis = False				#### NOT implemented ####
 
 image_contourlvls = 20					#Number of contour levels
 
-image_rotate = False#True					#Rotate image 90 degrees to the right.			# MAKE [0000-1000, 0-2pi]
+image_rotate = False					#Rotate image 90 degrees to the right.		# MAKE [0000-1000, 0-2pi]
 image_normalise = False					#Normalise image/profiles to local max
 image_logplot = False					#Plot ln(Data), against linear axis.
 
@@ -2338,7 +2360,7 @@ def ManualGECMesh(Ax=plt.gca()):	#Greg's GEC overlay code
 
 #=============#
 
-def ManualASTRONMesh(Ax=plt.gca()):
+def ManualASTRONmk1Mesh(Ax=plt.gca()):
 
 	#Line Plotting Format
 	#	Ax.plot((Yend,Ystart),(Xend,Xstart))
@@ -2762,16 +2784,10 @@ else:
 				  #COMMONLY USED PLOTTING FUNCTIONS#
 #====================================================================#
 
-#Load IDL colourmap
-#Requires std_gamma_II.txt is modules directory
-Filename = 'Modules/std_gamma_II.txt'          
-map = np.loadtxt(Filename, delimiter=',')
-IDL_Gamma_II = col.ListedColormap(map.T, name='IDL_Gamma_II')
-
 #=========================#
 #=========================#
 
-def tecplot_cmap():
+def tecplot_cmap(NumLevels=256):
 #	Creates a colourmap closely approximating the Tecplot "modern" map
 #
 #		Python tutor:	https://matplotlib.org/3.1.0/tutorials/colors/colormap-manipulation.html
@@ -2822,7 +2838,7 @@ def tecplot_cmap():
 			           [1.00,		0.00,		0.00]]}
 	
 						#x1			#yleft		#yright
-	cdict = {'red':   [[0.00,		1.00,		1.00],
+	cdict1 = {'red':   [[0.00,		1.00,		1.00],
 	                   [0.14,		1.00,		0.26],
 			           [0.28,		0.26,		0.36],
 			           [0.42,		0.36,		0.00],
@@ -2849,17 +2865,57 @@ def tecplot_cmap():
 			           [0.84,		0.07,		0.00],
 			           [1.00,		0.00,		0.00]]}
 
+	cdict2 = {'red': [[0, 1.0, 1.0],
+						[1 / 7, 1.0, 35.0 / 255],
+						[2 / 7, 0.0, 35.0 / 255],
+						[3 / 7, 0.0, 35.0 / 255],
+						[4 / 7, 0.0, 100.0 / 255],
+						[5 / 7, 1.0, 85.0 / 255],
+						[6 / 7, 217.0 / 255, 100.0 / 255],
+						[7 / 7, 1.0, 1.0]],
+					'green': [[0, 35.0 / 255, 1.0],
+						[1 / 7, 0.0, 35.0 / 255],
+						[2 / 7, 0.0, 100.0 / 255],
+						[3 / 7, 1.0, 100.0 / 255],
+						[4 / 7, 1.0, 100.0 / 255],
+						[5 / 7, 1.0, 46.0 / 255],
+						[6 / 7, 117.0 / 255, 35.0 / 255],
+						[7 / 7, 0.0, 0.0]],
+					'blue': [[0, 100.0 / 255, 1.0],
+						[1 / 7, 1.0, 100.0 / 255],
+						[2 / 7, 1.0, 100.0 / 255],
+						[3 / 7, 1.0, 35.0 / 255],
+						[4 / 7, 0.0, 35.0 / 255],
+						[5 / 7, 0.0, 10.0 / 255],
+						[6 / 7, 26.0 / 255, 35.0 / 255],
+						[7 / 7, 0.0, 0.0]]}
 
-
-	cmap = LinearSegmentedColormap('testCmap', segmentdata=cdict, N=256)
+	cdict = cdict2
+	cmap = LinearSegmentedColormap('TecplotModern', segmentdata=cdict, N=NumLevels)
 	rgba = cmap(np.linspace(0, 1, 256))
 	
 	return(cmap,cdict)
 #enddef
 
-#Load TECPLOT colourmap
-#imshow(Array,cmap=tecplotcmap)
-tecplotcmap,tecplotcdict = tecplot_cmap()
+#=========================#
+#=========================#
+
+#Load any custom colourmaps
+
+#Load Tecplot Modern colourmap
+if image_cmap == 'tecmodern':
+	tecplotcmap,tecplotcdict = tecplot_cmap(NumLevels=256)
+	image_cmap = tecplotcmap
+#endif
+	
+#Load IDL colourmap (std_gamma_II.txt in modules dir)
+Filename = 'Modules/std_gamma_II.txt'          
+try: 
+	map = np.loadtxt(Filename, delimiter=',')
+	IDL_Gamma_II = col.ListedColormap(map.T, name='IDL_Gamma_II')
+except:
+	print('Warning: gamma_II colourmap not found')
+#endtry
 
 #=========================#
 #=========================#
@@ -3262,7 +3318,7 @@ def ImageOptions(fig,ax=plt.gca(),Xlabel='',Ylabel='',Title='',Legend=[],Crop=Tr
 	if len(Title) > 0:
 		ax.set_title(Title, fontsize=14, y=1.03)
 	if len(Legend) > 0:
-		ax.legend(Legend, loc=1, fontsize=16, frameon=False)
+		ax.legend(Legend, loc=image_legendloc, fontsize=16, frameon=False)
 	#endif
 
 	#Set labels and ticksize.
@@ -3299,8 +3355,8 @@ def ImageOptions(fig,ax=plt.gca(),Xlabel='',Ylabel='',Title='',Legend=[],Crop=Tr
 		ManualHyperionIMesh(ax)
 	elif image_plotmesh == 'HyperionII' and Crop == True:
 		ManualHyperionIIMesh(ax)
-	elif image_plotmesh == 'ASTRON' and Crop == True:
-		ManualASTRONMesh(ax)
+	elif image_plotmesh == 'ASTRONmk1' and Crop == True:
+		ManualASTRONmk1Mesh(ax)
 	#endif
 
 	#Crop image dimensions, use provided dimensions or default if not provided.
@@ -3553,8 +3609,8 @@ def ImagePlotter2D(Image,extent,aspectratio=image_aspectratio,variable='N/A',fig
 	#endif
 
 	#Apply image axis-symmetry, with negative values, if required.
-	Radial = IsRadialVariable(variable)  
-	Image = SymmetryConverter(Image,Radial)
+	RadialBool = IsRadialVariable(variable)  
+	Image = SymmetryConverter(Image,RadialBool)
 
 	#Rotate image if required
 	if image_rotate == True:
@@ -3571,7 +3627,7 @@ def ImagePlotter2D(Image,extent,aspectratio=image_aspectratio,variable='N/A',fig
 	
 	#Plot image with colour fill and contour lines, here contour scale = 90% of cbar scale for clarity
 	if image_plotcolourfill == True and image_plotcontours == True:
-		im = ax.contour(Image,extent=extent,origin="lower",levels=image_contourlvls,lw=2.0)
+		im = ax.contour(Image,extent=extent,origin="lower",levels=image_contourlvls)
 		im.set_clim(CbarMinMax(Image)[0]*0.90,CbarMinMax(Image)[1]*0.90)
 		im = ax.imshow(Image,extent=extent,origin="lower")
 		
@@ -3582,7 +3638,7 @@ def ImagePlotter2D(Image,extent,aspectratio=image_aspectratio,variable='N/A',fig
 
 	#Plot image with only contour lines
 	elif image_plotcontours == True:
-		im = ax.contour(Image,extent=extent,origin="lower",levels=image_contourlvls,lw=2.0)
+		im = ax.contour(Image,extent=extent,origin="lower",levels=image_contourlvls)
 		#endtry
 	#endif
 
@@ -4077,6 +4133,15 @@ def CalcSheathExtent(folderidx=l,Orientation='Axial',Phase='NaN',Ne=list(),Ni=li
 		return(Sx,SxAxis)
 	#endif
 
+	#Return NaN sheath array if diagnostic is not requested
+	if image_plotsheath == False:
+		SxAxis = GenerateAxis(Orientation,Isym=ISYMlist[l])
+		Sx = np.empty(len(SxAxis))
+		[np.nan for x in Sx]
+	
+		return(Sx,SxAxis)
+	#endif
+
 	#Identify charged species and alter names to suit TECPLOT2D nomenclature
 	for i in range(0,len(PosSpecies)): PosSpecies[i] = PosSpecies[i] = PosSpecies[i].replace('^','+')
 	for i in range(0,len(NegSpecies)): NegSpecies[i] = NegSpecies[i] = NegSpecies[i].replace('^','-')
@@ -4361,6 +4426,100 @@ def PlotSheathExtent(SxAxis,Sx,ax=plt.gca(),ISymmetry=0):
 
 
 
+"""
+for l in range(0,numfolders):
+	#Create new folder to keep output plots.
+	Dir2Dplots = CreateNewFolder(Dirlist[l],'2Dplots')
+	
+	#Create Etot arrays
+	Etot = list()
+	Btot = list()
+
+	#Create processlist for each folder as required.
+	processlist,variablelist = VariableEnumerator(Variables,rawdata_2D[l],header_2Dlist[l])
+
+	#Setting the radial ticks for beauty purposes ~HACKY~
+	R = Radius[l]
+	SymTicks = [round(-R, 1), round(-R/2, 1), 0, round(R/2, 1), round(R, 1)]
+	NoSymTicks = [0, round(R/2, 1), round(R, 1)]
+
+	#Reshape specific part of 1D Data array into 2D image for plotting.
+	for k in tqdm(range(0,len(processlist))):
+	
+		if 'EAXIAL' in variablelist[k] or 'ERADIAL' in variablelist[k]:
+
+			#Extract full 2D image for further processing.
+			Image = ImageExtractor2D(Data[l][processlist[k]],variablelist[k])
+
+			if len(Etot) > 0:
+				Etot = Etot + Image
+			else:
+				Etot = Image
+			#endif
+		#endif
+		
+		if 'BZ' in variablelist[k] or 'BR' in variablelist[k]:
+
+			#Extract full 2D image for further processing.
+			Image = ImageExtractor2D(Data[l][processlist[k]],variablelist[k])
+
+			if len(Btot) > 0:
+				Btot = Btot + Image
+			else:
+				Btot = Image
+			#endif
+		#endif
+		
+	#endfor
+	
+	extent,aspectratio = DataExtent(l)
+	fig,ax,im,Image = ImagePlotter2D(Etot,extent,aspectratio,variablelist[k])
+	
+	#Define image beautification variables.
+	if image_rotate == True:
+		Xlabel,Ylabel = 'Axial Distance Z [cm]','Radial Distance R [cm]'
+	elif image_rotate == False:
+		Xlabel,Ylabel = 'Radial Distance R [cm]','Axial Distance Z [cm]'
+		plt.gca().invert_yaxis()
+	#endif
+
+	#Image plotting details, invert Y-axis to fit 1D profiles.
+	Title = '2D Steady State Plot of Etot for \n'+Dirlist[l][2:-1]   #generic titles
+	#Add Colourbar (Axis, Label, Bins)
+	label,bins = VariableLabelMaker(variablelist),5
+	cax = Colourbar(ax,label[k],bins,Lim=CbarMinMax(Image))
+	#Finalize image
+	ImageOptions(fig,ax,Xlabel,Ylabel,Title)
+
+	plt.savefig('2DPlot Etot'+ext)
+	
+	
+	extent,aspectratio = DataExtent(l)
+	fig,ax,im,Image = ImagePlotter2D(Btot,extent,aspectratio,variablelist[k])
+	
+	#Define image beautification variables.
+	if image_rotate == True:
+		Xlabel,Ylabel = 'Axial Distance Z [cm]','Radial Distance R [cm]'
+	elif image_rotate == False:
+		Xlabel,Ylabel = 'Radial Distance R [cm]','Axial Distance Z [cm]'
+		plt.gca().invert_yaxis()
+	#endif
+
+	#Image plotting details, invert Y-axis to fit 1D profiles.
+	Title = '2D Steady State Plot of Etot for \n'+Dirlist[l][2:-1]   #generic titles
+	#Add Colourbar (Axis, Label, Bins)
+	label,bins = VariableLabelMaker(variablelist),5
+	cax = Colourbar(ax,label[k],bins,Lim=CbarMinMax(Image))
+	#Finalize image
+	ImageOptions(fig,ax,Xlabel,Ylabel,Title)
+
+	plt.savefig('2DPlot Btot'+ext)
+#endfor
+"""
+
+
+
+
 
 
 
@@ -4416,7 +4575,6 @@ if savefig_plot2D == True:
 #				ax.quiver(BR, BZ)
 			#endif
 
-
 			#Extract full 2D image for further processing.
 			Image = ImageExtractor2D(Data[l][processlist[k]],variablelist[k])
 			Sx,SxAxis = CalcSheathExtent(folderidx=l)
@@ -4442,7 +4600,7 @@ if savefig_plot2D == True:
 				#endfor
 			#endif
 
-			#Define image beautification variables.
+			#Define image beautification variables - must come after plotting to invert-yaxis correctly.
 			if image_rotate == True:
 				Xlabel,Ylabel = 'Axial Distance Z [cm]','Radial Distance R [cm]'
 			elif image_rotate == False:
@@ -4475,8 +4633,6 @@ if savefig_plot2D == True:
 	print('# 2D Steady-State Processing Complete')
 	print('-------------------------------------')
 #endif
-
-
 
 #====================================================================#
 			#CONVERGENCE CHECKING MOVIES -- ITERATION BASED#
