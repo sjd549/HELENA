@@ -242,13 +242,14 @@ IEDFVariables = PRCCPAr_PCMC				#Requested iprofile_2d variables (no spaces)
 NEDFVariables = []							#Requested nprofile_2d variables (no spaces)
 
 #Requested movie1/movie_icp Variables.
-IterVariables = ['E','AR3S','NF3A','F','F-','CL','CL-','TG-AVE','TE','PPOT'] 	#Requested Movie_icp (iteration) Variables.			
+IterVariables = ['E','AR3S','NF3A','F','F-','TG-AVE','TE','PPOT'] 	#Requested Movie_icp (iteration) Variables.
+iterstep = 4										#Iter index step size between movie_icp plots
 PhaseVariables = Ar_Phase							#Requested Movie1 (phase) Variables. +['E','AR+']
 electrodeloc = [29,44]								#Cell location of powered electrode [R,Z].
 waveformlocs = []									#Cell locations of additional waveforms [R,Z].
 
 #Requested TECPLOT Variables and plotting locations.
-Variables = Phys+Ar+F+NFx+Cl+O2+['N','N2'] +ASTRONCOILEF+ASTRONCOILBF
+Variables = Phys+Ar+F+NFx+Cl+O2+['N','N2']      +ASTRONCOILEF+ASTRONCOILBF
 multivar = []									#Additional variables plotted ontop of [Variables]
 radialprofiles = [27,82,117]					#Radial 1D-Profiles to be plotted (fixed Z-mesh) --
 axialprofiles = [9]								#Axial 1D-Profiles to be plotted (fixed R-mesh) |
@@ -273,22 +274,14 @@ savefig_plot2D = True					#Single-Variables: converged				Requires TECPLOT2D.PDT
 #	ISSUE WITH READING movie_icp.pdt WHEN USING IEXCLUDE > 0
 #		DIFFERENT LENGTHS OF ARRAY IN SDFILEFORMAT WHEN READING movie_icp.pdt HEADER
 
-#	ISSUE WITH READING DATA FILES THAT AREN'T NAMED THE EXACT DEFAULT WAY...
-#		THE ONLY FILES THAT NEED TO BE EXACT ARE THE OUTPUT FILES
-#		ENSURE THAT PDT AND PLT EXTENSIONS ARE INCLUDED
-
 #	ISSUES CONVERTING "1D6" INTO AN INTEGER OR REAL
 #		STACK OVERFLOW FOR THIS ISSUE, PROBABLY A PLUGIN FOR IT
 
-#	savefig_temporalprofiles NEEDS TO TAKE 1D PROFILES FOR ALL VARIABLES AT EACH TIMESTEP
-#		ADD AN iterarray[] INPUT NEAR IterVariables THAT IS THE DESIRED ITERATIONS TO PLOT
-#		IF THIS IS EMPTY, THEN PLOT ALL ITERATIONS
-
-
 savefig_monoprofiles = False			#Single-Variables; fixed height/radius
 savefig_multiprofiles = False			#Multi-Variables; same folder					- NO ASCII OUTPUT
-savefig_compareprofiles = True			#Multi-Variables; all folders
-savefig_temporalprofiles = False		#Single-Variables; real-time axis
+savefig_compareprofiles = False			#Multi-Variables; all folders
+savefig_temporalprofiles = False		#Single-Variables; fixed height/radius
+savefig_temporaltrends = False			#Single-Variables; real-time axis
 
 savefig_trendphaseaveraged = False		#RF-Averaged trends at axial/radial cells		# CHANGE TO 'ProbeLoc' cell
 savefig_trendphaseresolved = False		#RF-Resolved trends at axial/radial cells		# CHANGE TO 'ProbeLoc' cell
@@ -579,7 +572,7 @@ mem_gib = mem_bytes/(1024.**3)
 ext = image_extension
 
 #Define recognized output file data extensions that will be retained in "Dir"
-FileExtensions = ['.PDT','.pdt','.nam','.dat','.out']
+FileExtensions = ['.PDT','.pdt','PLT','plt','.nam','.dat','.out']
 
 #Create Directory lists and initialise numfolders to zero.
 Dirlist = list() 		#List containing all simulation folder directories relative to HELENA
@@ -633,11 +626,16 @@ if numfolders == 0:
 
 #Extract directories for all required data I/O files 
 #These directories are relative to HELENA.py directory
-icpnam = list(filter(lambda x: 'icp.nam' in x, Dir))
+icpnam = list(filter(lambda x: '.nam' in x, Dir))
 icpdat = list(filter(lambda x: 'icp.dat' in x, Dir))
 icpout = list(filter(lambda x: 'icp.out' in x, Dir))
 mesh = list(filter(lambda x: 'initmesh.out' in x, Dir))
-TEC2D = list(filter(lambda x: 'TECPLOT2D.PDT' in x, Dir))
+TEC2D = list(filter(lambda x: 'TECPLOT2D' in x, Dir))
+movieicp = list(filter(lambda x: 'movie_icp' in x, Dir))
+movie1 = list(filter(lambda x: 'movie1' in x, Dir))
+iprofiletec2d = list(filter(lambda x: 'iprofile_tec2d' in x, Dir))
+boltztec = list(filter(lambda x: 'boltz_tec' in x, Dir))
+
 
 #Loop over all folders and retrieve mesh sizes and SI sizes.
 for l in range(0,numfolders):
@@ -1253,8 +1251,9 @@ def SDFileFormatConvertorHPEM(Rawdata,header,numvariables,offset=0,Zmesh=0,Rmesh
 #Takes current folder, returns Data[phase][variable][datapoints,R/Z]
 #Data,Phaselist = ExtractPhaseData(folder=l,Variables=PhaseVariables)
 def ExtractPhaseData(folder=l,Variables=PhaseVariables):
-	#Load data from movie_icp file and unpack into 1D array.
-	rawdata,filelength = ExtractRawData(Dir,'movie1.pdt',folder)
+	#Load data from movie1 file and unpack into 1D array.
+	try: rawdata, filelength = ExtractRawData(Dir,movie1[l].split('/')[-1],l)
+	except: rawdata,filelength = ExtractRawData(Dir,'movie1.pdt',folder)
 
 	#Read through all variables for each file and stop when list ends. 
 	#Movie1 has geometry at top, therefore len(header) != len(variables).
@@ -2459,7 +2458,8 @@ print('----------------------')
 for l in tqdm(range(0,numfolders)):
 
 	#Load data from TECPLOT2D file and unpack into 1D array.
-	rawdata, nn_2D = ExtractRawData(Dir,'TECPLOT2D.PDT',l)
+	try: rawdata, nn_2D = ExtractRawData(Dir,TEC2D[l].split('/')[-1],l)
+	except: rawdata, nn_2D = ExtractRawData(Dir,'TECPLOT2D.PDT',l)
 	rawdata_2D.append(rawdata)
 
 	#Read through all variables for each file and stop when list ends.
@@ -2540,7 +2540,8 @@ for l in tqdm(range(0,numfolders)):
 		AutoConvProf('./conv_prof.exe',Args,DirAdditions)
 
 		#Load data from IEDFprofile file and unpack into 1D array.
-		rawdata, nn_IEDF = ExtractRawData(Dir,'iprofile_tec2d.pdt',l)
+		try: rawdata, nn_IEDF = ExtractRawData(Dir,iprofiletec2d[l].split('/')[-1],l)
+		except: rawdata, nn_IEDF = ExtractRawData(Dir,'iprofile_tec2d.pdt',l)
 		rawdata_IEDF.append(rawdata)
 
 		#Read through all variables for each file and stop when list ends.
@@ -2582,7 +2583,8 @@ for l in tqdm(range(0,numfolders)):
 	if True in [savefig_EEDF]:
 
 		#Load data from MCS.PDT file and unpack into 1D array.
-		rawdata, nn_mcs = ExtractRawData(Dir,'boltz_tec.pdt',l)
+		try: rawdata, nn_mcs = ExtractRawData(Dir,boltztec[l].split('/')[-1],l)
+		except: rawdata, nn_mcs = ExtractRawData(Dir,'boltz_tec.pdt',l)
 		rawdata_mcs.append(rawdata)
 
 		#Unpack each row of data points into single array of floats.
@@ -2616,10 +2618,11 @@ for l in tqdm(range(0,numfolders)):
 #===================##===================#
 #===================##===================#
 
-	if True in [savefig_convergence,savefig_temporalprofiles]:
+	if True in [savefig_convergence,savefig_temporalprofiles,savefig_temporaltrends]:
 
 		#Load data from movie_icp file and unpack into 1D array.
-		rawdata,nn_itermovie = ExtractRawData(Dir,'movie_icp.pdt',l)
+		try: rawdata, nn_itermovie = ExtractRawData(Dir,movieicp[l].split('/')[-1],l)
+		except: rawdata, nn_itermovie = ExtractRawData(Dir,'movie_icp.pdt',l)
 		rawdata_itermovie.append(rawdata)
 
 		#Read through all variables for each file and stop when list ends. 
@@ -2741,7 +2744,7 @@ del HomeDir,DirContents
 
 
 #Alert user that readin process has ended and continue with selected diagnostics.
-if any([savefig_plot2D, savefig_phaseresolve2D, savefig_convergence, savefig_monoprofiles, savefig_multiprofiles, savefig_compareprofiles, savefig_temporalprofiles, savefig_sheathdynamics, savefig_phaseresolve1D, savefig_PROES, savefig_trendphaseaveraged, print_generaltrends, print_Knudsennumber, print_totalpower, print_DCbias, print_thrust, savefig_IEDFangular, savefig_IEDFtrends, savefig_EEDF]) == True:
+if any([savefig_plot2D, savefig_phaseresolve2D, savefig_convergence, savefig_monoprofiles, savefig_multiprofiles, savefig_compareprofiles, savefig_temporalprofiles, savefig_temporaltrends, savefig_sheathdynamics, savefig_phaseresolve1D, savefig_PROES, savefig_trendphaseaveraged, print_generaltrends, print_Knudsennumber, print_totalpower, print_DCbias, print_thrust, savefig_IEDFangular, savefig_IEDFtrends, savefig_EEDF]) == True:
 	print( '----------------------------------------')
 	print( 'Data Readin Complete, Starting Analysis:')
 	print( '----------------------------------------')
@@ -4653,11 +4656,14 @@ if savefig_convergence == True:
 		for i in range(0,len(processlist)): processlist[i] = processlist[i]-2
 
 		#Extract saved iteration strings and create list for mean convergence trends
-		ConvergenceTrends,IterArray = list(),list()
+		ConvergenceTrends,IterArray,IterAxis = list(),list(),list()
 		for i in range(0,len(MovieIterlist[l])):
 			Iter = list(filter(lambda x: x.isdigit(), MovieIterlist[l][i]))		#List of digits within Iter
 			Iter =  int(''.join(Iter))											#Join digits into single integer
 			IterArray.append(Iter)												#Append to list of integers
+
+			#Note: len(IterAxis) == len(MovieIterlist)/iterstep
+			if i % iterstep == 0: IterAxis.append(Iter)							#X-axis for trend plotting
 		#endfor
 
 		#for all variables requested by the user.
@@ -4678,7 +4684,7 @@ if savefig_convergence == True:
 			#endtry
 			
 			#Reshape specific part of 1D Data array into 2D image for plotting.
-			for k in range(0,len(MovieIterlist[l])):
+			for k in range(0,len(MovieIterlist[l]),iterstep):
 				#Extract full 2D image for further processing.
 				Image = ImageExtractor2D(IterMovieData[l][k][processlist[i]],variablelist[i])
 				Sx,SxAxis = CalcSheathExtent(folderidx=l)		#NB: CURRENTLY USES TECPLOT2D DATA
@@ -4733,14 +4739,14 @@ if savefig_convergence == True:
 		#endfor
 
 		#Normalise and plot each variable in ConvergenceTrends to single figure.
-		for i in range(0,len(ConvergenceTrends)):           
+		for i in range(0,len(ConvergenceTrends),iterstep):           
 			ConvergenceTrends[i] = Normalise(ConvergenceTrends[i],NormFactor=FinalIterationValues[i])[0]
-			ax.plot(IterArray,ConvergenceTrends[i], lw=2)
+			ax.plot(IterAxis,ConvergenceTrends[i], lw=2)
 		#endfor
 		
 		#Calculate image Ylimits as (mean-0.25, mean+0.25)
 		MeanTrends = list()
-		for i in range(0,len(ConvergenceTrends)):
+		for i in range(0,len(ConvergenceTrends),iterstep):
 			MeanTrends.append( np.mean(ConvergenceTrends[i]) )
 		#endfor
 		Limits = [min(MeanTrends)-0.25,max(MeanTrends)+0.25]
@@ -4970,7 +4976,7 @@ if savefig_compareprofiles == True:
 	for j in range(0,len(radialprofiles)):
 
 		#Create new folder for each axial or radial slice.
-		ProfileFolder = 'Z='+str(round((radialprofiles[j])*dz[l], 2))+'cm'
+		ProfileFolder = 'Z='+str(round((radialprofiles[j])*dz[l], 1))+'cm'
 		DirProfile = CreateNewFolder(DirComparisons,ProfileFolder)
 
 		#For each requested comparison variable.
@@ -5008,7 +5014,7 @@ if savefig_compareprofiles == True:
 				#Write data to ASCII files if requested.
 				if write_ASCII == True:
 					if l == 0:
-						WriteFolder = 'Z='+str(round((radialprofiles[j])*dz[l], 2))+'cm_Data'
+						WriteFolder = 'Z='+str(round((radialprofiles[j])*dz[l], 1))+'cm_Data'
 						DirWrite = CreateNewFolder(DirComparisons, WriteFolder)
 						WriteDataToFile(Raxis+['\n'], DirWrite+Variablelist[k], 'w')
 					#endif
@@ -5022,7 +5028,7 @@ if savefig_compareprofiles == True:
 			#endfor
 
 			#Save one image per variable with data from all simulations.
-			plt.savefig(DirProfile+Variablelist[k]+'@ Z='+str(round((radialprofiles[j])*dz[l], 2))+'cm profiles'+ext)
+			plt.savefig(DirProfile+Variablelist[k]+'@ Z='+str(round((radialprofiles[j])*dz[l], 1))+'cm profiles'+ext)
 			clearfigures(fig)
 		#endfor
 	#endfor
@@ -5033,7 +5039,7 @@ if savefig_compareprofiles == True:
 	for j in range(0,len(axialprofiles)):
 
 		#Create new folder for each axial or radial slice.
-		ProfileFolder = 'R='+str(round((axialprofiles[j])*dr[l], 2))+'cm'
+		ProfileFolder = 'R='+str(round((axialprofiles[j])*dr[l], 1))+'cm'
 		DirProfile = CreateNewFolder(DirComparisons,ProfileFolder)
 
 		#For each requested comparison variable.
@@ -5071,7 +5077,7 @@ if savefig_compareprofiles == True:
 				#Write data to ASCII files if requested.
 				if write_ASCII == True:
 					if l == 0:
-						WriteFolder = 'R='+str(round((axialprofiles[j])*dr[l], 2))+'cm_Data'
+						WriteFolder = 'R='+str(round((axialprofiles[j])*dr[l], 1))+'cm_Data'
 						DirWrite = CreateNewFolder(DirComparisons, WriteFolder)
 						WriteDataToFile(Zaxis+['\n'], DirWrite+Variablelist[k], 'w')
 					#endif
@@ -5079,7 +5085,7 @@ if savefig_compareprofiles == True:
 				#endif
 
 				#Apply image options and axis labels.
-				Title = 'Comparison of '+Variablelist[k]+' Profiles at R='+str(round((axialprofiles[j])*dr[l], 2))+'cm for \n'+Dirlist[l][2:-1]
+				Title = 'Comparison of '+Variablelist[k]+' Profiles at R='+str(round((axialprofiles[j])*dr[l], 1))+'cm for \n'+Dirlist[l][2:-1]
 				Xlabel,Ylabel,Legend = 'Axial Distance Z [cm]',Ylabels[k],Legendlist
 				ImageOptions(fig,ax,Xlabel,Ylabel,Title,Legendlist,Crop=False)
 			#endfor
@@ -5131,7 +5137,7 @@ if savefig_multiprofiles == True:
 					fig,ax = figure(image_aspectratio,1)
 
 					#Create folder to keep output plots.
-					Slice = str(round((axialprofiles[j])*dr[l], 2))
+					Slice = str(round((axialprofiles[j])*dr[l], 1))
 					DirZlineouts = CreateNewFolder(Dirlineouts,'R='+Slice+'cm/')	
 
 					#Create legendlist
@@ -5184,7 +5190,7 @@ if savefig_multiprofiles == True:
 					fig,ax = figure(image_aspectratio,1)
 
 					#Create folder to keep output plots.
-					Slice = str(round((radialprofiles[j])*dz[l], 2))
+					Slice = str(round((radialprofiles[j])*dz[l], 1))
 					DirRlineouts = CreateNewFolder(Dirlineouts,'Z='+Slice+'cm/')
 
 					#Create legendlist
@@ -5228,19 +5234,204 @@ if savefig_multiprofiles == True:
 
 
 ##====================================================================#
-#			  #ITERMOVIE PROFILES - TEMPORAL ANALYSIS#
+#			  #ITERMOVIE 1D PROFILES - TEMPORAL ANALYSIS#			  #
 ##====================================================================#
 
 #Plot 1D profile of itervariables at desired locations
 if savefig_temporalprofiles == True:
+
+	#Create new diagnostic output folder and initiate required lists.
+	DirTemporal = CreateNewFolder(Dirlist[l],'Movieicp_Profiles/')
+
+	for l in range(0,numfolders):
+
+		#Create processlist for each folder as required.
+		processlist,Variablelist = VariableEnumerator(Variables,rawdata_itermovie[l],header_itermovie[l])
+		#Skip over the R and Z processes as they are not saved properly in iterdata.
+		for i in range(0,len(processlist)):
+			processlist[i] = processlist[i]-2
+		#endfor
+		
+		IterArray = list()
+		#Generate a numerical iteration array for save strings
+		for i in range(0,len(MovieIterlist[l])):
+			Iter = list(filter(lambda x: x.isdigit(), MovieIterlist[l][i]))		#List of digits within Iter
+			Iter =  int(''.join(Iter))											#Join digits into single integer
+			IterArray.append(Iter)												#Append to list of integers
+		#endfor
+
+		#Generate SI scale axes for lineout plots
+		Raxis = GenerateAxis('Radial',ISYMlist[l])
+		Zaxis = GenerateAxis('Axial',ISYMlist[l])
+
+		#=====#=====#
+
+		#Generate the radial (horizontal) lineouts for a specific height.
+		if len(radialprofiles) > 0:
+			#Create folder to keep output plots.
+			DirRlineouts = CreateNewFolder(DirTemporal,'Radial_Profiles/')
+
+			#Loop over all required variables and requested profile locations.
+			for i in tqdm(range(0,len(processlist))):
+				for j in range(0,len(radialprofiles)):
+
+					#Create new folder per radial profile
+					Slice = str(round((radialprofiles[j])*dz[l], 1))
+					DirProfile = CreateNewFolder(DirRlineouts,Variablelist[i]+'_Z='+Slice+'cm')
+
+					#Refresh lists
+					Rlineoutlist = list()
+
+					#For current profile location 'j', loop over all saved iterations
+					for k in range(0,len(MovieIterlist[l]),iterstep):
+					
+						#Create fig of desired size and refresh legend
+						fig,ax = figure(image_aspectratio,1)
+
+						#Plot all requested radial lines on single image per variable.
+						Rlineout=ExtractRadialProfile(IterMovieData[l][k],processlist[i],Variablelist[i],radialprofiles[j])
+						#Plot lines for each variable at each requested slice.
+						ImagePlotter1D(Raxis,Rlineout,image_aspectratio,fig,ax)
+						
+						#Append lineout to lineout list for overall plot
+						Rlineoutlist.append(Rlineout)
+
+						#Apply image options and axis labels.
+						Title = 'Radial Profiles of '+Variablelist[i]+' for \n'+Dirlist[l][2:-1]
+						Xlabel,Ylabel = 'Radial Distance R [cm]',VariableLabelMaker(Variablelist)[i]
+						ImageOptions(fig,ax,Xlabel,Ylabel,Title,[str(MovieIterlist[l][k])],Crop=False)
+
+						#Save profiles in variable and profile location named folder
+						plt.savefig(DirProfile+'1D_Z='+Slice+'_'+Variablelist[i]+'_'+str(IterArray[k]).zfill(3)+ext)
+						plt.close(fig)
+						
+						#Write data to ASCII files if requested.
+						if write_ASCII == True:
+							DirWrite = CreateNewFolder(DirProfile, 'Radial_Data')
+							SaveString1 = '_R='+str(round((radialprofiles[j])*dz[l], 2))+'cm'
+							SaveString2 = '_'+str(IterArray[k]).zfill(3)
+							SaveString = SaveString1+SaveString2
+							WriteDataToFile([Raxis,Rlineout], DirWrite+Variablelist[i]+SaveString, 'w')
+						#endif
+					#endfor
+					
+					#=====#=====#
+					
+					#Create fig of desired size and refresh legend
+					fig,ax = figure(image_aspectratio,1)
+
+					#Plot all temporal profiles for variablelist[i] in one figure
+					for k in range(0,len(Rlineoutlist)):
+						ImagePlotter1D(Raxis,Rlineoutlist[k],image_aspectratio,fig,ax)
+					#endfor
+					
+					#Apply image options and axis labels.
+					Title = 'Radial Profiles of '+Variablelist[i]+' for \n'+Dirlist[l][2:-1]
+					Xlabel,Ylabel = 'Radial Distance R [cm]',VariableLabelMaker(Variablelist)[i]
+					ImageOptions(fig,ax,Xlabel,Ylabel,Title,[],Crop=False)
+
+					#Save profiles Radial_Profiles folder.
+					plt.savefig(DirRlineouts+'1D_'+Slice+'_'+Variablelist[i]+'_Profiles'+ext)
+					plt.close(fig)
+					#endfor
+				#endfor
+			clearfigures(fig)
+		#endif
+
+		#===================##===================#
+
+		#Generate the vertical (height) lineouts for a given radius.
+		if len(axialprofiles) > 0:
+			#Create folder to keep output plots.
+			DirZlineouts = CreateNewFolder(DirTemporal,'Axial_Profiles/')
+
+			#Collect and plot required data.
+			for i in tqdm(range(0,len(processlist))):
+				for j in range(0,len(axialprofiles)):
+				
+					#Create new folder per axial profile
+					Slice = str(round((axialprofiles[j])*dr[l], 1))
+					DirProfile = CreateNewFolder(DirZlineouts,Variablelist[i]+'_R='+Slice+'cm')
+				
+					#Refresh lists
+					Zlineoutlist = list()
+
+					#For current profile location 'j', loop over all saved iterations
+					for k in range(0,len(MovieIterlist[l]),iterstep):
+					
+						#Create fig of desired size and refresh legend
+						fig,ax = figure(image_aspectratio,1)
+						
+						#Plot all requested radial lines on single image per variable.
+						Zlineout=ExtractAxialProfile(IterMovieData[l][k],processlist[i],Variablelist[i],axialprofiles[j])
+						#Plot lines for each variable at each requested slice.
+						ImagePlotter1D(Zaxis,Zlineout[::-1],image_aspectratio,fig,ax)
+						
+						#Append lineout to lineout list for overall plot
+						Zlineoutlist.append(Zlineout[::-1])
+						
+						#Apply image options and axis labels.
+						Title = 'Height Profiles of '+Variablelist[i]+' for \n'+Dirlist[l][2:-1]
+						Xlabel,Ylabel = 'Axial Distance Z [cm]',VariableLabelMaker(Variablelist)[i]
+						ImageOptions(fig,ax,Xlabel,Ylabel,Title,[str(MovieIterlist[l][k])],Crop=False)
+
+						#Save profiles in variable and profile location named folder
+						plt.savefig(DirProfile+'1D_R='+Slice+'_'+Variablelist[i]+'_'+str(IterArray[k]).zfill(3)+ext)
+						plt.close(fig)
+						
+						#Write data to ASCII files if requested.
+						if write_ASCII == True:
+							DirWrite = CreateNewFolder(DirProfile, 'Axial_Data')
+							SaveString1 = '_R='+str(round((axialprofiles[j])*dr[l], 2))+'cm'
+							SaveString2 = '_'+str(IterArray[k]).zfill(3)
+							SaveString = SaveString1+SaveString2
+							WriteDataToFile([Zaxis,Zlineout], DirWrite+Variablelist[i]+SaveString, 'w')
+						#endif
+					#endfor
+					
+					#=====#=====#
+					
+					#Create fig of desired size and refresh legend
+					fig,ax = figure(image_aspectratio,1)
+
+					#Plot all temporal profiles for variablelist[i] in one figure
+					for k in range(0,len(Zlineoutlist)):
+						ImagePlotter1D(Zaxis,Zlineoutlist[k],image_aspectratio,fig,ax)
+					#endfor
+					
+					#Apply image options and axis labels.
+					Title = 'Height Profiles for '+Variablelist[i]+' for \n'+Dirlist[l][2:-1]
+					Xlabel,Ylabel = 'Axial Distance Z [cm]',VariableLabelMaker(Variablelist)[i]
+					ImageOptions(fig,ax,Xlabel,Ylabel,Title,[],Crop=False)
+
+					#Save profiles Axial_Profiles folder.
+					plt.savefig(DirZlineouts+'1D_'+Slice+'_'+Variablelist[i]+'_Profiles'+ext)
+					plt.close(fig)
+				#endfor
+			#endfor
+			clearfigures(fig)
+		#endif
+	#endfor
+	print('----------------------------')
+	print('# Temporal Profiles Complete')
+	print('----------------------------')
+#endif
+
+
+
+##====================================================================#
+#			  #ITERMOVIE TRENDS - TEMPORAL ANALYSIS#
+##====================================================================#
+
+#Plot 1D profile of itervariables at desired locations
+if savefig_temporaltrends == True:
 
 	#for all folders being processed.
 	for l in range(0,numfolders):
 
 		#Create new folder and initiate required lists.
 		TemporalTrends,Xaxis = list(),list()
-		DirTemporal = CreateNewFolder(Dirlist[l],'Temporal_Profiles/')
-		DirMeshAve = CreateNewFolder(DirTemporal,'Mesh_Averaged/')
+		DirMeshAve = CreateNewFolder(DirTemporal,'MeshAvg_Profiles/')
 
 		#Create processlist for each folder as required.
 		processlist,variablelist = VariableEnumerator(Variables,rawdata_itermovie[l],header_itermovie[l])
@@ -5257,7 +5448,8 @@ if savefig_temporalprofiles == True:
 			IterDigits = list(filter(lambda x: x.isdigit(), MovieIterlist[l][i]))
 			IterDigits = float(''.join(IterDigits))
 			IterTime = IterDigits*DtActual
-			Xaxis.append(IterTime)
+#			Xaxis.append(IterTime)					### USING ITERATION NUMBER FOR NOW
+			Xaxis.append(IterDigits)				### USING ITERATION NUMBER FOR NOW
 		#endfor
 
 		#for all variables requested by the user.
@@ -5278,7 +5470,9 @@ if savefig_temporalprofiles == True:
 
 			#Image plotting details.
 			Title = 'Mesh-Averaged Temporal Profile of '+str(variablelist[i])+' for \n'+Dirlist[l][2:-1]
-			Xlabel,Ylabel = 'Simulation time [ms]',VariableLabelMaker(variablelist)[i]
+#			Xlabel = 'Simulation time [ms]'			### USING ITERATION NUMBER FOR NOW
+			Xlabel = 'Simulation Iteration []'		### USING ITERATION NUMBER FOR NOW
+			Ylabel =VariableLabelMaker(variablelist)[i]
 			ImageOptions(fig,ax,Xlabel,Ylabel,Title,Legend=[],Crop=False)
 
 			#Save figure.
@@ -5287,7 +5481,7 @@ if savefig_temporalprofiles == True:
 
 			#Write data to ASCII files if requested.
 			if write_ASCII == True:
-				DirWrite = CreateNewFolder(DirTemporal, 'Temporal_Data')
+				DirWrite = CreateNewFolder(DirMeshAve, 'MeshAvg_Data')
 				DirWriteMeshAve = CreateNewFolder(DirWrite, 'MeshAveraged_Data')
 				WriteDataToFile(Xaxis, DirWriteMeshAve+variablelist[i], 'w')
 				WriteDataToFile(['\n']+TemporalProfile, DirWriteMeshAve+variablelist[i], 'a')
@@ -5316,9 +5510,9 @@ if savefig_temporalprofiles == True:
 		savefig(DirMeshAve+FolderNameTrimmer(Dirlist[l])+'_Normalised'+ext)
 		clearfigures(fig)
 	#endfor
-	print('----------------------------')
-	print('# Temporal Profiles Complete')
-	print('----------------------------')
+	print('--------------------------')
+	print('# Temporal Trends Complete')
+	print('--------------------------')
 #endif
 
 #=====================================================================#
