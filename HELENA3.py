@@ -770,6 +770,12 @@ for l in range(0,numfolders):
 	#=====#=====#
 	
 	#Material Namelist Inputs (frequencies/voltages/powers)
+	#	NUMMETALS,NUMCOILS					::	Integer, [-]
+	#	CMETALS,CCOILS						::	1D list, [String]
+	#	FREQM,FREQM2,FREQC,FREQGLOB 		::	1D list, [Hz]
+	#	VRFM,VRFM2 							::	1D list, [V]
+	#	IRFPOW 								::	1D list, [W]
+	#	PRESOUT 							::	1D list, [Torr]
 	try:
 		NUMMETALS = list(filter(lambda x:'IMETALS' in x,NamelistData))[0].strip(' \t\n\r,=IMETALS')
 		NUMMETALS = int(NUMMETALS)+1
@@ -784,18 +790,37 @@ for l in range(0,numfolders):
 		for i in range(0,len(CCOILS)): CCOILS[i] = str(CCOILS[i].strip(','))
 		##
 		VRFM.append( list(filter(lambda x: 'VRFM=' in x, NamelistData))[0].split()[1:NUMMETALS] )
-		for i in range(0,len(VRFM[-1])): VRFM[-1][i] = float(VRFM[-1][i].strip(','))
+		for i in range(0,len(VRFM[-1])): 
+			VRFM[-1][i] = VRFM[-1][i].strip(',')
+			VRFM[-1][i] = float(VRFM[-1][i].replace('D','E'))
+		#endfor
+		##
 		VRFM2.append( list(filter(lambda x: 'VRFM_2=' in x, NamelistData))[0].split()[1:NUMMETALS] )
-		for i in range(0,len(VRFM2[-1])): VRFM2[-1][i] = float(VRFM2[-1][i].strip(','))
+		for i in range(0,len(VRFM2[-1])): 
+			VRFM2[-1][i] = VRFM2[-1][i].strip(',')
+			VRFM2[-1][i] = float(VRFM2[-1][i].replace('D','E'))
+		#endfor
+		##
 		FREQM.append( list(filter(lambda x: 'FREQM=' in x, NamelistData))[0].split()[1:NUMMETALS] )
-		for i in range(0,len(FREQM[-1])): FREQM[-1][i] = float(FREQM[-1][i].strip(','))
+		for i in range(0,len(FREQM[-1])): 
+			FREQM[-1][i] = FREQM[-1][i].strip(',')
+			FREQM[-1][i] = float(FREQM[-1][i].replace('D','E'))
+		#endfor
 		FREQM2.append( list(filter(lambda x: 'FREQM_2=' in x, NamelistData))[0].split()[1:NUMMETALS] )
-		for i in range(0,len(FREQM2[-1])): FREQM2[-1][i] = float(FREQM2[-1][i].strip(','))
-		FREQGLOB.append( list(filter(lambda x:'FREQ=' in x, NamelistData))[0].split() )
-		FREQGLOB[l] = float( FREQGLOB[l][0].strip(' \t\n\r,=FREQ') )	#NOTE: Assumes 1 entry for "FREQ="
+		for i in range(0,len(FREQM2[-1])): 
+			FREQM2[-1][i] = FREQM2[-1][i].strip(',')
+			FREQM2[-1][i] = float(FREQM2[-1][i].replace('D','E'))		
+		#endfor
 		##
 		FREQC.append( list(filter(lambda x: 'FREQC=' in x, NamelistData))[0].split(',')[0:-1] )
-		for i in range(0,len(FREQC[-1])): FREQC[-1][i] = float(FREQC[-1][i].strip(' \t\n\r,=FREQC'))
+		for i in range(0,len(FREQC[l])): 
+			FREQC[-1][i] = FREQC[l][i].strip(' \t\n\r,=FREQC')
+			FREQC[-1][i] = float(FREQC[l][i].replace('D','E'))
+		#endfor
+		##
+		FREQGLOB.append( list(filter(lambda x:'FREQ=' in x, NamelistData))[0].split() )
+		FREQGLOB[l] = FREQGLOB[l][0].strip(' \t\n\r,=FREQ')				#NOTE: Assumes 1 entry for "FREQ="
+		FREQGLOB[l] = float(FREQGLOB[l][0].replace('D','E'))			#NOTE: Assumes 1 entry for "FREQ="		
 		##
 		IRFPOW.append( list(filter(lambda x:'IRFPOW=' in x, NamelistData))[0].strip(' \t\n\r,=IRFPOW'))
 		IRFPOW[l] = float( IRFPOW[l].split('!!!')[0].strip(' \t\n\r,') )
@@ -803,15 +828,9 @@ for l in range(0,numfolders):
 		PRESOUT.append( list(filter(lambda x:'PRESOUT=' in x, NamelistData))[0].strip(' \t\n\r,=PRESOUT'))
 		PRESOUT[l] = float( PRESOUT[l].split('!!!')[0].strip(' \t\n\r,') )
 	except:
-		print( 'ERR: ICP.NAM MATERIAL DEFINITIONS READIN, USING DEFAULT MATERIAL PROPERTIES')
-		FREQM.append(13.56E6)		#[Hz]
-		FREQM2.append(13.56E6)		#[Hz]
-		FREQC.append(13.56E6)		#[Hz]
-		FREQGLOB.append(13.56E6)	#[Hz]
-		VRFM.append(300.0)			#[Volts]
-		VRFM2.append(150.0)			#[Volts]
-		IRFPOW.append(100.0)		#[Watts]
-		PRESOUT.append(0.85)		#[Torr]
+		print( 'ERR: ICP.NAM MATERIAL DEFINITIONS FAILED TO READ IN')
+		print( 'SEE "#Material Namelist Inputs (frequencies/voltages/powers)"' )
+		exit()
 	#endtry
 
 	#No ICP coils are on - Ignore ICP frequencies in FREQALL
