@@ -68,7 +68,7 @@ import gc
 #Enforce matplotlib to avoid instancing undisplayed windows
 #matplotlib-tcl-asyncdelete-async-handler-deleted-by-the-wrong-thread
 import matplotlib
-#matplotlib.use('Agg')			# SSH memory leak fix, but disables GUI backend (so can't show figures)
+matplotlib.use('Agg')			# SSH memory leak fix, but disables GUI backend (so can't show figures)
 
 #Import additional modules
 from mpl_toolkits.axes_grid1 import make_axes_locatable
@@ -90,7 +90,6 @@ from pylab import *
 
 #Various debug and streamlining options.
 Magmesh = 1							#initmesh.exe magnification factor. (Obsolete - legacy)
-QuickConverge = False				#Supresses 2D Convergence images in savefig_convergence
 ffmpegMovies = False				#If False: Suppresses ffmpeg routines, saves RAM.
 IDEBUG = False						#Produces debug outputs for most diagnostics.
 
@@ -116,6 +115,10 @@ DCbiasaxis = 'Auto'							#Force Direction Over Which DCBias is Calculated
 SheathIonSpecies = ['AR+']					#Force Sheath Ion Species (blank for auto)
 #['AR+'] #['O+']
 
+#Ratio of electrons to ions that determines the edge of the sheath
+#Ideally this should be 1.00, but in practice it's slightly over 1 at lower resolutions
+Sheath_IonRatio_Threshold = 1.03
+
 #Data Filtering and Smoothing Methods:
 KineticFiltering = True						#Pre-fit kinetic data employing a SavGol filter
 PlotKineticFiltering = False				#Plot Filtered Profiles, or employ only in trends.
@@ -129,18 +132,18 @@ ConvAzimuthalPhase = True
 EDF_Threshold = 0.01						# i.e. = 0.0 to plot all
 
 #Define units for particular variables
-Units = 'CGS'								#'SI','CGS'					
+Units = 'SI'								#'SI','CGS'					
 											# FUNCTION MATHS ASSUMES SI, CGS WILL GIVE INCORRECT RESULTS
 
 ####################
 
 #Commonly used variable sets.
-Phys = ['P-POT','TE','EF-TOT','ERADIAL','ETHETA','EAXIAL','PHASER','PHASE','PHASEZ','EAMB-Z','EAMB-R','RHO','BR','BRS','BZ','BZS','BT','BTS','BRF','VR-NEUTRAL','VZ-NEUTRAL','VR-ION+','VZ-ION+','EFLUX-R','EFLUX-Z','JZ-NET','JR-NET','J-THETA','J-TH(MAG)','J-TH(PHA)','TG-AVE','PRESSURE','POW-RF','POW-RF-E','POW-ICP','POW-ALL','EB-ESORC','COLF','SIGMA']
+Phys = ['P-POT','TE','EF-TOT','ERADIAL','ETHETA','EAXIAL','PHASEER','PHASE','PHASEEZ','EAMB-Z','EAMB-R','RHO','BR','BRS','BZ','BZS','BT','BTS','BRF','PHASEBR','PHASEBT','PHASEBZ','VR-NEUTRAL','VZ-NEUTRAL','VR-ION+','VZ-ION+','EFLUX-R','EFLUX-Z','JZ-NET','JR-NET','J-THETA','J-TH(MAG)','J-TH(PHA)','TG-AVE','PRESSURE','POW-RF','POW-RF-E','POW-ICP','POW-ALL','EB-ESORC','COLF','SIGMA']
 ASTRONCOILEF = \
-['ERADIAL-2','ETHETA-2','EAXIAL-2','PHASER-2','PHASEZ-2','ERADIAL-3','ETHETA-3','EAXIAL-3','PHASER-3','PHASEZ-3', \
- 'ERADIAL-4','ETHETA-4','EAXIAL-4','PHASER-4','PHASEZ-4','ERADIAL-5','ETHETA-5','EAXIAL-5','PHASER-5','PHASEZ-5', \
- 'ERADIAL-6','ETHETA-6','EAXIAL-6','PHASER-6','PHASEZ-6','ERADIAL-7','ETHETA-7','EAXIAL-7','PHASER-7','PHASEZ-7', \
- 'ERADIAL-8','ETHETA-8','EAXIAL-8','PHASER-8','PHASEZ-8']
+['ERADIAL-2','ETHETA-2','EAXIAL-2','PHASEER-2','PHASEEZ-2','ERADIAL-3','ETHETA-3','EAXIAL-3','PHASEER-3','PHASEEZ-3', \
+ 'ERADIAL-4','ETHETA-4','EAXIAL-4','PHASEER-4','PHASEEZ-4','ERADIAL-5','ETHETA-5','EAXIAL-5','PHASEER-5','PHASEEZ-5', \
+ 'ERADIAL-6','ETHETA-6','EAXIAL-6','PHASEER-6','PHASEEZ-6','ERADIAL-7','ETHETA-7','EAXIAL-7','PHASEER-7','PHASEEZ-7', \
+ 'ERADIAL-8','ETHETA-8','EAXIAL-8','PHASEER-8','PHASEEZ-8']
 ASTRONCOILBF = \
 ['BT-2','BT-3','BT-4','BT-5','BT-6','BT-7','BT-8', \
  'BRF-2','BRF-3','BRF-4','BRF-5','BRF-6','BRF-7','BRF-8', \
@@ -154,7 +157,7 @@ Cl = ['Cl2','Cl','CL^','CL-']		#'Cl2V','Cl2^','CL*','CL**','CL***',
 F = ['F2','F2*','F2^','F','F*','F^','F-','S-F','S-F^','S-F-','SEB-F','SEB-F^','SEB-F-','FZ-F','FR-F','FZ-F^','FR-F^','FZ-F-','FR-F-']
 NFx = ['NF3A','NF2A','NFA','NF3B','NF2B','NFB','NF3^','NF2^','NF^']
 
-Ar_Phase = ['S-E','S-AR+','S-AR4P','SEB-AR+','SEB-AR4P','SRCE-2437','TE','PPOT','FR-E','FZ-E']
+Ar_Phase = ['S-E','S-AR+','S-AR4P','SEB-E','SEB-AR+','SEB-AR4P','SRCE-2437','FR-E','FZ-E','TE','PPOT','POW-ICP1','POW-ICP2']
 O2_Phase = ['S-E','S-O+','S-O-','S-O2+','SEB-O+','SEB-O-','SEB-O2+','TE','PPOT','FR-E','FZ-E']+['S-O3P3P','SEB-O3P3P']
 
 PRCCPAr_PCMC = ['AR^0.35','EB-0.35','ION-TOT0.35']
@@ -212,12 +215,14 @@ MSHC2017Mk0_PCMC = ['AR^0.5S','EB-0.5S','ION-TOT0.5S','AR^1.1B','EB-1.1B','ION-T
 #### TSHC ####
 #electrodeloc = 	[5,20]
 #waveformlocs = 	[]
-#DoFwidth = 		R;20,Z;6
-#TrendLoc =  		H[1,22,44,60];R[35,40,44]	#[40] For PROES
-#thrustloc = 		[60]
+#DoFwidth = 		R;20,Z;6			# vvv For 4.6cm inter-electrode mesh, use [78,77,76] for relative cells
+#radialprofiles = 	[55,54,53]			#56 is grounded electrode surface (reducing number goes into bulk)
+#axialprofiles =	[]					# ^^^ TECPLOT uses cell 14 (53 in HELENA notation) or Z = 5.4cm
+#probeloc =			[]
+#thrustloc = 		[]
 #sheathROI = 		[]
 #sourcewidth = 		[5]
-#Crop = 			R[0,15];Z[7,14]					#Mk3: R[0,15];Z[10,17.5]
+#Crop = 			R[0,15];Z[7,14]
 
 #### SERPENT ####	
 #electrodeloc = 	[33,33]			#Coil V
@@ -243,30 +248,37 @@ NEDFVariables = []							#Requested nprofile_2d variables (no spaces)
 
 #Requested movie1/movie_icp Variables.
 IterVariables = ['E','AR3S','NF3A','F','F-','TG-AVE','TE','PPOT'] 	#Requested Movie_icp (iteration) Variables.
-iterstep = 4										#Iter index step size between movie_icp plots
+iterstep = 1										#Iter index step size between movie_icp plots
 PhaseVariables = Ar_Phase							#Requested Movie1 (phase) Variables. +['E','AR+']
-electrodeloc = [29,44]								#Cell location of powered electrode [R,Z].
+electrodeloc = [3,26]#[22,37]#[29,44]								#Cell location of powered electrode [R,Z].
 waveformlocs = []									#Cell locations of additional waveforms [R,Z].
 
 #Requested TECPLOT Variables and plotting locations.
 Variables = Phys+Ar+F+NFx+Cl+O2+['N','N2']      +ASTRONCOILEF+ASTRONCOILBF
+#['ERADIAL','ERADIAL-2','PHASEER','PHASEER-2','EAXIAL','EAXIAL-2','PHASEEZ','PHASEEZ-2',]
 multivar = []									#Additional variables plotted ontop of [Variables]
-radialprofiles = []								#Radial 1D-Profiles to be plotted (fixed Z-mesh) --
-axialprofiles = []								#Axial 1D-Profiles to be plotted (fixed R-mesh) |
-probeloc = [10,46]								#Cell location For Trend Analysis [R,Z], ([] = min/max)
+radialprofiles = [38]#[53,54,55]#[38]								#Radial 1D-Profiles to be plotted (fixed Z-mesh) --
+axialprofiles = []#[45]								#Axial 1D-Profiles to be plotted (fixed R-mesh) |
+probeloc = []#[10,46]							#Cell location For Trend Analysis [R,Z], ([] = min/max)
 
 
 #Various Diagnostic Settings.
-phasecycles = 1.00						#Number of waveform phase cycles to be plotted. (float)
-DoFwidth = 10 							#PROES Depth of Field (symmetric about image plane) (cells)
+phasecycles = 2.01						#Number of waveform phase cycles to be plotted. (float)
+DoFwidth = 0 							#PROES Depth of Field (symmetric about image plane) (cells)
 thrustloc = 45							#Z-axis cell for thrust calculation  (cells)
 sheathROI = []							#Sheath Region of Interest, (Start,End) [cells]				<<< OUTDATED
 sourcewidth = []						#Source Dimension at ROI, leave empty for auto. [cells]		<<< OUTDATED
 
 
 #Requested diagnostics and plotting routines.
-savefig_convergence = False				#Single-Variables: iter-time axis			Requires movie_icp.pdt
-savefig_plot2D = False					#Single-Variables: converged				Requires TECPLOT2D.PDT
+savefig_convergence = False				#1D Single-Variables: movie_icp.pdt
+savefig_temporal2D = False				#2D Single-Variables: movie_icp.pdt
+savefig_plot2D = True					#2D Single-Variables: TECPLOT2D.PDT
+
+#	MAJOR ISSUE WITH THE CBARMINMAX FUNCTION...
+#		CBARMINMAX FUNCTION NEEDS AN OVERHAUL...
+#		CROP FUNCTION NEEDS AN OVERHAUL AS WELL...
+
 # 	STILL HAVE ISSUE WITH READING movie FILES OF DIFFERENT LENGTHS...
 #		NEED TO SIZE THE INITIAL DATA ARRAY TO THE SHAPE OF THE LARGEST MOVIE FILE, NOT THE FIRST.
 #		ValueError: could not broadcast input array from shape (100,41,8804) into shape (24,41,8804)
@@ -278,8 +290,14 @@ savefig_plot2D = False					#Single-Variables: converged				Requires TECPLOT2D.PD
 #		NOTE, RADIAL SHEATH CALC SCANS FROM R=0 INCREASING, I.E ASSUMES BULK IS ON-AXIS AT R=0 (mostly true)
 #		NOTE, AXIAL SHEATH CALC SCANS FROM Z=0 INCREASING< I.E. ASSUMES BULK IS NOT AT Z=0 (always true)
 #		image_plotsheath DOESN'T WORK VERY WELL WITH PROES IMAGES... NEEDS SPECIAL CASES!!!
+#		SHEATHCALC FUNCTION IS A LITTLE DODGY WHEN image_plotsheath IS NOT IN 'radial' or 'axial'
+#			NEED TO ENSURE THAT IT RETURNS NaN ARRAYS OF PROPER SIZE WHEN NOT CALLED EXPLICITLY
 
-savefig_monoprofiles = False			#Single-Variables; fixed height/radius
+#	VARIABLE NAMES CONTAINING "PHASE" ARE ALL CAUGHT TOGETHER
+#		NEED TO DIFFERENTIATE BETWEEN E, B PHASES AND ALSO R,Z,THETA PHASES
+#		CTRL+F FOR RM SJD AND SCROLL DOWN TO SEE NOTES IN VARIABLE NAMING FUNCTION
+
+savefig_monoprofiles = False				#Single-Variables; fixed height/radius
 savefig_multiprofiles = False			#Multi-Variables; same folder					- NO ASCII OUTPUT
 savefig_compareprofiles = False			#Multi-Variables; all folders
 savefig_temporalprofiles = False		#Single-Variables; fixed height/radius
@@ -289,14 +307,14 @@ savefig_temporaltrends = False			#Single-Variables; real-time axis
 #		PLOT2D PLOTS USING J INDICES FROM THE BOTTOM UP					(SAME AS IN THE CODE)
 
 savefig_trendphaseaveraged = False		#RF-Averaged trends at axial/radial cells		# CHANGE TO 'ProbeLoc' cell
-savefig_trendphaseresolved = False		#RF-Resolved trends at axial/radial cells		# CHANGE TO 'ProbeLoc' cell
+savefig_trendPHASEEResolved = False		#RF-Resolved trends at axial/radial cells		# CHANGE TO 'ProbeLoc' cell
 #	FLIP THE SOUND SPEED DIAGNOSTIC, ALSO CHECK THE KNUDSEN DIAGNOSTIC
 #	CHECK THE J INDICE START POINT
 #		IN HPEM Z=0 IS DEFINED AS THE TOP LEFT OF THE MESH
 #		SYNC ALL DIAGNOSTICS IN HERE TO AGREE WITH THAT.
 
-savefig_phaseresolve1D = False			#1D Phase Resolved Images
-savefig_phaseresolve2D = False			#2D Phase Resolved Images
+savefig_PHASEEResolve1D = False			#1D Phase Resolved Images
+savefig_PHASEEResolve2D = False			#2D Phase Resolved Images
 savefig_sheathdynamics = False			#1D and 2D sheath dynamics images
 savefig_PROES =	False					#Simulated PROES Diagnostic
 #	SAVEFIG_SHEATHDYNAMICS USES THE ABSOLUTE SHEATH LOCATION, RATHER THAN THE SHEATH EXTENT
@@ -324,27 +342,27 @@ print_sheath = False					#Print sheath width at electrodeloc
 
 #Image plotting options.
 image_extension = '.png'				#Define image extension  ('.png', '.jpg', '.eps')		
-image_interp = 'bilinear'				#Define image smoothing  ('none', 'bilinear')
+image_interp = 'spline36'				#Define image smoothing  ('none', 'bilinear','quadric','spline36')
 image_cmap = 'plasma'					#Define global colourmap ('jet','plasma','inferno','gnuplot','tecmodern')
 
 image_aspectratio = [10,10]				#Real Size of [X,Y] in cm [Doesn't Rotate - X is always horizontal]
-image_radialcrop = []#[0.65]			#Crops 2D images to [R1,R2] in cm
-image_axialcrop = []#[1,4]				#Crops 2D images to [Z1,Z2] in cm
+image_radialcrop = [0.65]			#Crops 2D images to [R1,R2] in cm
+image_axialcrop = [1,4]#[5,17.5]#[1,4]				#Crops 2D images to [Z1,Z2] in cm
 image_cbarlimit = []					#[min,max] colourbar limits
 image_legendloc = 'best'				#Legend Location, "1-9" or 'best' for automatic
 
 image_plotcolourfill = True				#Plot 2D image colour fill
 image_plotcontours = True				#Plot 2D image contour lines
-image_plotsymmetry = False				#Plot radial symmetry - mirrors across the ISYM axis
-image_plotoverlay = False				#Plot location(s) of 1D radial/axial profiles onto 2D images
-image_plotsheath = False				#Plot sheath extent onto 2D images 'Axial','Radial'
-image_plotgrid = False					#Plot major/minor gridlines on 1D profiles
-image_plotmesh = False					#Plot material mesh outlines ('Auto','PRCCP','PRCCPM','ESCT','GEC')
-image_numericaxis = False				#### NOT implemented ####
-
 image_contourlvls = 20					#Number of contour levels
 
-image_rotate = False					#Rotate image 90 degrees to the right.
+image_plotsymmetry = True				#Plot radial symmetry - mirrors across the ISYM axis
+image_plotoverlay = False				#Plot location(s) of 1D radial/axial profiles onto 2D images
+image_plotsheath = 'Radial'				#Plot sheath extent onto 2D images 'Axial','Radial'
+image_plotgrid = False					#Plot major/minor gridlines on 1D profiles
+image_plotmesh = 'PRCCP'					#Plot material mesh outlines ('Auto','PRCCP','PRCCPM','ESCT','GEC')
+image_numericaxis = False				#### NOT implemented ####
+
+image_rotate = True					#Rotate image 90 degrees to the right.
 image_normalise = False					#Normalise image/profiles to local max
 image_logplot = False					#Plot ln(Data), against linear axis.
 
@@ -555,11 +573,11 @@ print( 'The following diagnostics were requested:')
 print( '-----------------------------------------')
 if savefig_plot2D == True:
 	print('# 2D Steady-State Image Processing')
-if savefig_convergence == True:
-	print('# 2D Convergence Movie Processing')
-if True in [savefig_phaseresolve2D,savefig_PROES]:
+if True in [savefig_temporal2D,savefig_convergence]:
+	print('# 2D Time-Resolved Image Processing')
+if True in [savefig_PHASEEResolve2D,savefig_PROES]:
 	print('# 2D Phase-Resolved Movie Processing')
-if True in [savefig_phaseresolve1D]:
+if True in [savefig_PHASEEResolve1D]:
 	print('# 1D Phase-Resolved Profile Processing')
 if True in [savefig_monoprofiles,savefig_multiprofiles,savefig_compareprofiles,savefig_temporalprofiles]:
 	print('# 1D Steady-State Profile Processing')
@@ -807,24 +825,44 @@ for l in range(0,numfolders):
 		for i in range(0,len(CMETALS)): CMETALS[i] = str(CMETALS[i].strip(','))
 		IETRODEM.append( list(filter(lambda x:'IETRODEM=' in x, NamelistData))[0].split()[1:NUMMETALS])
 		for i in range(0,len(IETRODEM[l])): IETRODEM[l][i] = int(IETRODEM[l][i].strip(','))
+	except:
+		print( 'ERROR: FAILED TO READ IMETALS, CMETAL, IETRODEM')
+		print( 'SEE "#Material Namelist Inputs (frequencies/voltages/powers)"' )
+		exit()
 		##
-		NUMCOILS = list(filter(lambda x:'ICOILS' in x,NamelistData))[0]
+	try:
+		NUMCOILS = list(filter(lambda x:'ICOILS' in x,NamelistData))
+		for i in range(0,len(NUMCOILS)):
+			if 'ICOILSOL' not in NUMCOILS[i]:
+				NUMCOILS = NUMCOILS[i]
+				break
+			#endif
+		#endfor
 		NUMCOILS = int( NUMCOILS.split('!!!')[0].strip(' \t\n\r,=ICOILS') )
 		CCOILS = list(filter(lambda x: 'CCOIL=' in x, NamelistData))[0].strip(' \t\n\r,').split()[1:NUMCOILS]
 		for i in range(0,len(CCOILS)): CCOILS[i] = str(CCOILS[i].strip(','))
+	except:
+		print( 'ERROR: FAILED TO READ ICOILS, CCOIL')
+		print( 'SEE "#Material Namelist Inputs (frequencies/voltages/powers)"' )
+		exit()
 		##
+	try:
 		VRFM.append( list(filter(lambda x: 'VRFM=' in x, NamelistData))[0].split()[1:NUMMETALS] )
 		for i in range(0,len(VRFM[-1])): 
 			VRFM[-1][i] = VRFM[-1][i].strip(',')
 			VRFM[-1][i] = float(VRFM[-1][i].replace('D','E'))
 		#endfor
-		##
 		VRFM2.append( list(filter(lambda x: 'VRFM_2=' in x, NamelistData))[0].split()[1:NUMMETALS] )
 		for i in range(0,len(VRFM2[-1])): 
 			VRFM2[-1][i] = VRFM2[-1][i].strip(',')
 			VRFM2[-1][i] = float(VRFM2[-1][i].replace('D','E'))
 		#endfor
+	except:
+		print( 'ERROR: FAILED TO READ VRFM, VRFM_2')
+		print( 'SEE "#Material Namelist Inputs (frequencies/voltages/powers)"' )
+		exit()
 		##
+	try:
 		FREQM.append( list(filter(lambda x: 'FREQM=' in x, NamelistData))[0].split()[1:NUMMETALS] )
 		for i in range(0,len(FREQM[-1])): 
 			FREQM[-1][i] = FREQM[-1][i].strip(',')
@@ -835,12 +873,22 @@ for l in range(0,numfolders):
 			FREQM2[-1][i] = FREQM2[-1][i].strip(',')
 			FREQM2[-1][i] = float(FREQM2[-1][i].replace('D','E'))		
 		#endfor
+	except:
+		print( 'ERROR: FAILED TO READ FREQM, FREQM_2')
+		print( 'SEE "#Material Namelist Inputs (frequencies/voltages/powers)"' )
+		exit()
 		##
+	try:
 		FREQC.append( list(filter(lambda x: 'FREQC=' in x, NamelistData))[0].split(',')[0:-1] )
 		for i in range(0,len(FREQC[l])): 
 			FREQC[-1][i] = FREQC[l][i].strip(' \t\n\r,=FREQC')
 			FREQC[-1][i] = float(FREQC[l][i].replace('D','E'))
 		#endfor
+	except:
+		print( 'ERROR: FAILED TO READ FREQC')
+		print( 'SEE "#Material Namelist Inputs (frequencies/voltages/powers)"' )
+		exit()
+	try:
 		##
 		FREQGLOB.append( list(filter(lambda x:'FREQ=' in x, NamelistData))[0].split() )
 		FREQGLOB[l] = FREQGLOB[l][0].strip(' \t\n\r,=FREQ')				#NOTE: Assumes 1 entry for "FREQ="
@@ -852,7 +900,7 @@ for l in range(0,numfolders):
 		PRESOUT.append( list(filter(lambda x:'PRESOUT=' in x, NamelistData))[0].strip(' \t\n\r,=PRESOUT'))
 		PRESOUT[l] = float( PRESOUT[l].split('!!!')[0].strip(' \t\n\r,') )
 	except:
-		print( 'ERR: ICP.NAM MATERIAL DEFINITIONS FAILED TO READ IN')
+		print( 'ERROR: FAILED TO CONVERT FREQ')
 		print( 'SEE "#Material Namelist Inputs (frequencies/voltages/powers)"' )
 		exit()
 	#endtry
@@ -898,7 +946,7 @@ for l in range(0,numfolders):
 		EMAXIPCMC = EMAXIPCMC[0].split('!!!')[0]
 		EMAXIPCMC = float(EMAXIPCMC.split()[0].strip(' \t\n\r,=EMAXIPCMC'))
 	except:
-		print( 'ERR: ICP.NAM PCMC READIN, USING DEFAULT PCMC PROPERTIES')
+		print( 'ERROR: ICP.NAM PCMC READIN, USING DEFAULT PCMC PROPERTIES')
 		IEBINSPCMC = 1000
 		EMAXIPCMC = 50
 	#endtry
@@ -909,7 +957,7 @@ for l in range(0,numfolders):
 		imovie_frames = imovie_frames[0].split('!!!')[0]
 		IMOVIE_FRAMES.append( int(imovie_frames.strip(' \t\n\r,=IMOVIE_FRAMES')) )
 	except:
-		print( 'ERR: ICP.NAM IMOVIE READIN, USING DEFAULT PHASE RESOLVED PROPERTIES')
+		print( 'ERROR: ICP.NAM IMOVIE READIN, USING DEFAULT PHASE RESOLVED PROPERTIES')
 		IMOVIE_FRAMES.append(180)
 	#endtry
 
@@ -966,7 +1014,7 @@ for l in range(0,numfolders):
 			#endif
 		#endfor
 	except:
-		print( 'ERR: ICP.COM ATOMIC SPECIES READIN, USING DEFAULT ATOMIC PROPERTIES')
+		print( 'ERROR: ICP.COM ATOMIC SPECIES READIN, USING DEFAULT ATOMIC PROPERTIES')
 		#List of dafault recognised neutral/metastable atomic sets, add new sets as required.
 		ArgonReduced = ['AR','AR+','AR*']
 		ArgonFull = ['AR3S','AR4SM','AR4SR','AR4SPM','AR4SPR','AR4P','AR4D','AR+','AR2+','AR2*']
@@ -999,6 +1047,8 @@ def VariableEnumerator(Variables,Rawdata,Header):
 	#For all requested variables, in the requested data header, find which match.
 	for j in range(0,len(Variables)):
 		for i in range(0,Header):
+
+#			print(Variables[j],Rawdata[i].strip(' ,"\n').replace(' ',''))					!!! RM SJD VARIABLE DEBUG
 
 			#Compare variables and if they match, add to the process list.
 			#Default uses [1:-3] slice for the variable string.
@@ -1137,13 +1187,19 @@ def VariableUnitConversion(profile,variable):
 		#endfor
 	#endif
 	
-	#For plasma charge, convert from [C cm-3] to [C m-3]. (also reverse axial field)
+	#For surface charge, convert from [C cm-3] to [C m-3].
 	if IsStringInVariable(variable,['RHO']) == True:
 		for i in range(0,len(profile)):
 			if Units == 'SI': 		profile[i] = profile[i]*1.E6			#[C m-3]
 			elif Units == 'CGS': 	profile[i] = profile[i]					#[C cm-3]
 		#endfor
 
+	#For plasma conductivity, convert from [S cm-1] to [S m-1].
+	if IsStringInVariable(variable,['SIGMA']) == True:
+		for i in range(0,len(profile)):
+			if Units == 'SI': 		profile[i] = profile[i]*1.E2			#[S m-1]
+			elif Units == 'CGS': 	profile[i] = profile[i]					#[S cm-1]
+		#endfor
 
 	#For Current Densities, convert from [A cm-2] to [mA cm-2]. (also reverse axial current)
 	if IsStringInVariable(variable,['JZ-NET','JR-NET','J-THETA','J-TH(MAG)']) == True:
@@ -1656,12 +1712,12 @@ def VariableLabelMaker(variablelist):
 	RegEx = re.compile('EAXIAL.')
 	EAXIALVars = ['EAXIAL']+[string for string in variablelist if re.match(RegEx, string)]
 
-	RegEx = re.compile('PHASER.')
-	PHASERVars = ['PHASER']+[string for string in variablelist if re.match(RegEx, string)]
+	RegEx = re.compile('PHASEER.')
+	PHASEERVars = ['PHASEER']+[string for string in variablelist if re.match(RegEx, string)]
 	RegEx = re.compile('PHASE.')
 	PHASEVars = ['PHASE']+[string for string in variablelist if re.match(RegEx, string)]
-	RegEx = re.compile('PHASEZ.')
-	PHASEZVars = ['PHASEZ']+[string for string in variablelist if re.match(RegEx, string)]
+	RegEx = re.compile('PHASEEZ.')
+	PHASEEZVars = ['PHASEEZ']+[string for string in variablelist if re.match(RegEx, string)]
 	
 	RegEx = re.compile('BR.')
 	BRVars = ['BR']+[string for string in variablelist if re.match(RegEx, string)]
@@ -1805,6 +1861,10 @@ def VariableLabelMaker(variablelist):
 		elif variablelist[i] in ['PPOT','P-POT']:
 			Variable = 'Plasma Potential V$_{p}$'
 			VariableUnit = '[V]'
+		elif variablelist[i] in ['SIGMA']:
+			Variable = 'Conductivity $\\sigma$'
+			if Units=='SI': 	VariableUnit = '[S m$^{-1}$]'
+			elif Units=='CGS':	VariableUnit = '[S cm$^{-1}$]'
 			
 		elif variablelist[i] in ['EF-TOT']:
 			Variable = 'Absolute E-Field Amplitude'
@@ -1822,13 +1882,13 @@ def VariableLabelMaker(variablelist):
 			Variable = 'Axial E-Field Amplitude $E_{Z}$'
 			if Units=='SI': 	VariableUnit = '[Vm$^{-1}$]'
 			elif Units=='CGS':	VariableUnit = '[Vcm$^{-1}$]'
-		elif variablelist[i] in PHASERVars:
+		elif variablelist[i] in PHASEERVars:
 			Variable = 'Radial E-Field Phase'
 			VariableUnit = '[Radians]'
-		elif variablelist[i] in PHASEVars:
+		elif variablelist[i] in PHASEVars:							# RM SJD, CATCHES ALL PHASE VARIABLES
 			Variable = 'Azimuthal E-Field Phase'
 			VariableUnit = '[Radians]'
-		elif variablelist[i] in PHASEZVars:
+		elif variablelist[i] in PHASEEZVars:							# RM SJD, CATCHES ALL PHASE VARIABLES
 			Variable = 'Axial E-Field Phase'
 			VariableUnit = '[Radians]'
 
@@ -2662,7 +2722,7 @@ for l in tqdm(range(0,numfolders)):
 #===================##===================#
 
 	#Movie1 phase-resolved data readin
-	if True in [savefig_sheathdynamics,savefig_phaseresolve1D,savefig_phaseresolve2D,savefig_PROES]:
+	if True in [savefig_sheathdynamics,savefig_PHASEEResolve1D,savefig_PHASEEResolve2D,savefig_PROES]:
 
 		#Load data from movie_icp file and unpack into 1D array.
 		try: rawdata, nn_movie1 = ExtractRawData(Dir,movie1[l].split('/')[-1],l)
@@ -2703,7 +2763,7 @@ for l in tqdm(range(0,numfolders)):
 #===================##===================#
 #===================##===================#
 
-	if True in [savefig_convergence,savefig_temporalprofiles,savefig_temporaltrends]:
+	if True in [savefig_temporal2D,savefig_temporalprofiles,savefig_temporaltrends,savefig_convergence]:
 
 		#Load data from movie_icp file and unpack into 1D array.
 		try: rawdata, nn_itermovie = ExtractRawData(Dir,movieicp[l].split('/')[-1],l)
@@ -2829,7 +2889,7 @@ del HomeDir,DirContents
 
 
 #Alert user that readin process has ended and continue with selected diagnostics.
-if any([savefig_plot2D, savefig_phaseresolve2D, savefig_convergence, savefig_monoprofiles, savefig_multiprofiles, savefig_compareprofiles, savefig_temporalprofiles, savefig_temporaltrends, savefig_sheathdynamics, savefig_phaseresolve1D, savefig_PROES, savefig_trendphaseaveraged, print_generaltrends, print_Knudsennumber, print_totalpower, print_DCbias, print_thrust, savefig_IEDFangular, savefig_IEDFtrends, savefig_EEDF]) == True:
+if any([savefig_plot2D, savefig_PHASEEResolve2D, savefig_temporal2D, savefig_convergence, savefig_monoprofiles, savefig_multiprofiles, savefig_compareprofiles, savefig_temporalprofiles, savefig_temporaltrends, savefig_sheathdynamics, savefig_PHASEEResolve1D, savefig_PROES, savefig_trendphaseaveraged, print_generaltrends, print_Knudsennumber, print_totalpower, print_DCbias, print_thrust, savefig_IEDFangular, savefig_IEDFtrends, savefig_EEDF]) == True:
 	print( '----------------------------------------')
 	print( 'Data Readin Complete, Starting Analysis:')
 	print( '----------------------------------------')
@@ -3365,8 +3425,11 @@ def CbarMinMax(Image,PROES=False,Symmetry=image_plotsymmetry):
 	flatimage = [float(x) for x in flatimage]
 	
 	#Filtered 1D array, removing any nan's or inf's
-	try: flatimage = [x for x in flatimage if not (m.isinf(x) or m.isnan(x))]
-	except: print( 'Image Filtering Warning - Cbar may be scaled incorrectly' )
+	try: 
+		flatimage = [x for x in flatimage if not (m.isinf(x) or m.isnan(x))]
+	except: 
+		print( 'Image Filtering Warning - Cbar may be scaled incorrectly' )
+	#endtry
 	
 	#Take min and max value from the filtered array to use as cbar limits
 	if len(flatimage) > 0:
@@ -3539,7 +3602,7 @@ def GenerateAxis(Orientation,Isym=ISYMlist[l],PhaseFrames=range(0,IMOVIE_FRAMES[
 #Raxis=GenerateAxis('Radial',Isym=ISYMlist[l])
 
 	#Create axis list and extract the number of phaseframes
-	PhaseResolution = len(PhaseFrames)
+	PHASEEResolution = len(PhaseFrames)
 	axis = list()
 	if Orientation == 'Radial':
 		if int(Isym) == 1:
@@ -3556,8 +3619,8 @@ def GenerateAxis(Orientation,Isym=ISYMlist[l],PhaseFrames=range(0,IMOVIE_FRAMES[
 			axis.append(i*dz[l])
 		#endfor
 	elif Orientation == 'Phase':
-		for i in range(0,int(phasecycles*PhaseResolution)):
-			axis.append(  (np.pi*(i*2)/PhaseResolution)/(2*np.pi)  )
+		for i in range(0,int(phasecycles*PHASEEResolution)):
+			axis.append(  (np.pi*(i*2)/PHASEEResolution)/(2*np.pi)  )
 		#endfor
 	#endif
 	return(axis)
@@ -3713,10 +3776,10 @@ def ImagePlotter2D(Image,extent,aspectratio=image_aspectratio,variable='N/A',fig
 		Image = Normalise(Image)[0]
 	#endif
 	
-	#Plot image with colour fill and contour lines, here contour scale = 90% of cbar scale for clarity
+	#Plot image with colour fill and contour lines, here contour scale = 95% of cbar scale for clarity
 	if image_plotcolourfill == True and image_plotcontours == True:
 		im = ax.contour(Image,extent=extent,origin="lower",levels=image_contourlvls)
-		im.set_clim(CbarMinMax(Image)[0]*0.90,CbarMinMax(Image)[1]*0.90)
+		im.set_clim(CbarMinMax(Image)[0]*0.95,CbarMinMax(Image)[1]*0.95)
 		im = ax.imshow(Image,extent=extent,origin="lower")
 		
 	#Plot image with only colour fill
@@ -4212,6 +4275,9 @@ def CalcSheathExtent(folderidx=l,Orientation='Radial',Phase='NaN',Ne=list(),Ni=l
 		PosSpecies = SheathIonSpecies
 		NegSpecies = []
 	#endif
+	
+	#Import global sheath ratio threshold
+	Ratio_Threshold = Sheath_IonRatio_Threshold
 
 	#Return NaN sheath array if no appropriate species are detected
 	if len(PosSpecies)+len(NegSpecies) == 0:
@@ -4339,32 +4405,28 @@ def CalcSheathExtent(folderidx=l,Orientation='Radial',Phase='NaN',Ne=list(),Ni=l
 	#=======#	#=======#	#=======#
 	#=======#	#=======#	#=======#
 
-	### CURRENTLY ONLY AXIAL METHOD IS EMPLOYED ###
-	#Axial sheath array (Sx) is calculated exmploying radial integrations for all axial locations
 	#Radial sheath array (Sx) is calculated employing axial integrations for all radial locations
-	### CURRENTLY ONLY AXIAL METHOD IS EMPLOYED ###
 	if Orientation == 'Radial':
-	
-		#Find radial index where plasma zone ends
-		for i in range(0,len(Neff)):
-			#Define wall radius to integrate ions into bulk from.
-			for j in range(0,len(Neff[i])):
-
-				#if ion density drops to zero, we've hit a material surface.
-				if Neff[i][j] == 0.0 and j == 0:		
-					RadialPlasmaExtent = 0
-					break
-				elif Neff[i][j] == 0.0 and j > 0:
-					RadialPlasmaExtent = j-1
-					break
-				#endif
-			#endfor
-#			RadialPlasmaExtent = len(Neff[i])	#DEBUG OPTION: Sets RadialPlasmaExtent to max for all Z
-		#endfor
 
 		#Determine sheath edge through integration of charge density:
 		#Sheath extension: integral_(R0->Rwall) ne dR == integral_(Rwall->R0) ni dR
 		if SheathMethod == 'IntDensity':
+		
+			#Find radial index where plasma zone ends
+			for i in range(0,len(Neff)):
+				#Define wall radius to integrate ions into bulk from.
+				for j in range(0,len(Neff[i])):
+
+					#if ion density drops to zero, we've hit a material surface.
+					if Neff[i][j] == 0.0 and j == 0:		
+						RadialPlasmaExtent = 0
+						break
+					elif Neff[i][j] == 0.0 and j > 0:
+						RadialPlasmaExtent = j-1
+						break
+					#endif
+				#endfor
+	#			RadialPlasmaExtent = len(Neff[i])	#DEBUG OPTION: Sets RadialPlasmaExtent to max for all Z
 
 				#No plasma, all radii are solids, append 'nan' to avoid plotting.
 				if RadialPlasmaExtent == 0: 
@@ -4377,11 +4439,11 @@ def CalcSheathExtent(folderidx=l,Orientation='Radial',Phase='NaN',Ne=list(),Ni=l
 						#Sum density radially for ions and electrons.
 						reversed_j = RadialPlasmaExtent-j-1
 						Neff_sum += Neff[i][reversed_j]		#Sum from R=wall to R=0	[reversed_j]
-						Ne_sum += Ne[i][j]			#Sum from R=0 to R=wall [j]
+						Ne_sum += Ne[i][j]					#Sum from R=0 to R=wall [j]
 
 						#If ion sum is greater than electron, sheath has begun.
-						if Neff_sum/Ne_sum >= 1.01:					#### RM Slightly Increased Threshold ####
-							Sx.append(j*dr[l])						#[cm]								
+						if Neff_sum/Ne_sum >= Ratio_Threshold:		#~1.00 - 1.03 is good
+							Sx.append(j*dr[l])						#[cm]
 							break
 						#If no sheath found within plasma region, append wall location (i.e. Sx=Rwall)
 						if j == (RadialPlasmaExtent-1):
@@ -4401,7 +4463,7 @@ def CalcSheathExtent(folderidx=l,Orientation='Radial',Phase='NaN',Ne=list(),Ni=l
 				for R in range(0,len(Neff[Z])):
 				
 					#Sheath starts when ion density exceeds electron density.
-					if Neff[Z][R]/Ne[Z][R] >= 1.00:
+					if Neff[Z][R]/Ne[Z][R] >= Ratio_Threshold:		#~1.00 - 1.03 is good
 						Sx.append(R*dr[l])
 						break
 					#If no sheath found, append 'NaN' to avoid plotting.
@@ -4421,30 +4483,31 @@ def CalcSheathExtent(folderidx=l,Orientation='Radial',Phase='NaN',Ne=list(),Ni=l
 	#=======#	#=======#	#=======#
 	#=======#	#=======#	#=======#
 
-	#NEED TO APPLY RADIAL METHOD!!! FOR NOW THIS IS SET TO ZERO EVERYWHERE#
+	#Axial sheath array (Sx) is calculated exmploying radial integrations for all axial locations
 	if Orientation == 'Axial':
-
-		#Find axial index where plasma zone ends
-		for i in range(0,len(Neff)):
-			#Define wall height to integrate ions into bulk from.
-			for j in range(0,len(Neff[i])):
-
-				#if ion density drops to zero, we've hit a material surface.
-				if Neff[i][j] == 0.0 and j == 0:									#RM SJD Finish
-					AxialPlasmaExtent = 0
-					break
-				elif Neff[i][j] == 0.0 and j > 0:									#RM SJD Finish
-					AxialPlasmaExtent = j-1
-					break
-				#endif
-			#endfor
-#			AxialPlasmaExtent = len(Neff)	#DEBUG OPTION: Sets AxialPlasmaExtent to max for all R
-		#endfor
 	
 		#Determine sheath edge through integration of charge density:
 		if SheathMethod == 'IntDensity':
+		
+			#Find axial index where plasma zone ends
+			for i in range(0,len(Neff)):
+				#Define wall height to integrate ions into bulk from.
+				for j in range(0,len(Neff[i])):
+
+					#if ion density drops to zero, we've hit a material surface.
+					if Neff[i][j] == 0.0 and j == 0:						#### RM TO BE COMPLETED ####
+						AxialPlasmaExtent = 0
+						break
+					elif Neff[i][j] == 0.0 and j > 0:						#### RM TO BE COMPLETED ####
+						AxialPlasmaExtent = j-1
+						break
+					#endif
+				#endfor
+	#			AxialPlasmaExtent = len(Neff)	#DEBUG OPTION: Sets AxialPlasmaExtent to max for all R
+			#endfor	
+		
 			#Sheath extension: integral_(R0->Rwall) ne dR == integral_(Rwall->R0) ni dR
-			for i in range(0,len(Neff[0])):							#### RM TO BE COMPLETED ####
+			for i in range(0,len(Neff[0])):									#### RM TO BE COMPLETED ####
 				Sx.append(np.nan)
 			#endfor
 
@@ -4457,8 +4520,8 @@ def CalcSheathExtent(folderidx=l,Orientation='Radial',Phase='NaN',Ne=list(),Ni=l
 					#Sheath starts at axial index where ion density exceeds electron density.
 					# NOTE: Inequality is reversed as axial method calculates from the sheath edge
 					#		to the bulk, and therefore Neff/Ne REDUCES from a maximum value.
-					if Neff[Z][R]/Ne[Z][R] <= 1.00:
-						Sx.append(Z*dz[l])
+					if Neff[Z][R]/Ne[Z][R] <= Ratio_Threshold:		# RM NEED TO CHECK IF 1.03 IS GOOD...
+						Sx.append(Z*dz[l])							# ... OR IF IT NEEDS TO BE BELOW 1
 						break
 					#If no sheath found over all axial profiles, append 'NaN' to avoid plotting.
 					elif Z == (len(Neff)-1):					
@@ -4821,6 +4884,10 @@ if savefig_plot2D == True:
 			#Finalize image
 			ImageOptions(fig,ax,Xlabel,Ylabel,Title)
 
+			#Save Figure
+			plt.savefig(Dir2Dplots+'2DPlot '+variablelist[k]+ext)
+			clearfigures(fig)
+			
 			#Write data to ASCII files if requested.
 			if write_ASCII == True:
 				DirWrite = CreateNewFolder(Dir2Dplots, '2Dplots_Data')
@@ -4829,10 +4896,6 @@ if savefig_plot2D == True:
 					WriteDataToFile(Sx, DirWrite+'Sx-EXT')
 				#endif
 			#endif
-
-			#Save Figure
-			plt.savefig(Dir2Dplots+'2DPlot '+variablelist[k]+ext)
-			clearfigures(fig)
 		#endfor
 	#endfor
 
@@ -4842,17 +4905,17 @@ if savefig_plot2D == True:
 #endif
 
 #====================================================================#
-			#CONVERGENCE CHECKING MOVIES -- ITERATION BASED#
+			  #TEMPORALLY RESOLVED MOVIE_ICP.PDT FIGURES#
 #====================================================================#
 
-#Plot 2D images at different iterations towards convergence from movie_icp.
-if savefig_convergence == True:
+#Plot temporally resolved 2D images from movie_icp.pdt
+if savefig_temporal2D == True:
 
 	#for all folders being processed.
 	for l in range(0,numfolders):
 
 		#Create new folder to keep convergence variable folders in.
-		DirConvergence = CreateNewFolder(Dirlist[l],'Convergence/')
+		DirMovieicp = CreateNewFolder(Dirlist[l],'Movieicp_2Dplots/')
 
 		#Create processlist for each folder as required.
 		processlist,variablelist = VariableEnumerator(IterVariables,rawdata_itermovie[l],header_itermovie[l])
@@ -4860,7 +4923,7 @@ if savefig_convergence == True:
 		for i in range(0,len(processlist)): processlist[i] = processlist[i]-2
 
 		#Extract saved iteration strings and create list for mean convergence trends
-		ConvergenceTrends,IterArray,IterAxis = list(),list(),list()
+		IterArray,IterAxis = list(),list()
 		for i in range(0,len(MovieIterlist[l])):
 			Iter = list(filter(lambda x: x.isdigit(), MovieIterlist[l][i]))		#List of digits within Iter
 			Iter =  int(''.join(Iter))											#Join digits into single integer
@@ -4874,9 +4937,7 @@ if savefig_convergence == True:
 		for i in tqdm(range(0,len(processlist))):
 
 			#Create new folder to keep output plots.
-			DirMovieplots = CreateNewFolder(DirConvergence,variablelist[i]+'_2DConvergence/')
-			#Append new list to convergenceTrends for each variable.
-			ConvergenceTrends.append(list())
+			DirMoviePlots = CreateNewFolder(DirMovieicp,variablelist[i]+'_2Diterplots/')
 
 			#Create empty image array based on mesh size and symmetry options.
 			try: 
@@ -4891,123 +4952,58 @@ if savefig_convergence == True:
 			for k in range(0,len(MovieIterlist[l]),iterstep):
 				#Extract full 2D image for further processing.
 				Image = ImageExtractor2D(IterMovieData[l][k][processlist[i]],variablelist[i])
-				Sx,SxAxis = CalcSheathExtent(folderidx=l)		#NB: CURRENTLY USES TECPLOT2D DATA
+				Sx,SxAxis = CalcSheathExtent(folderidx=l)				#RM: CURRENTLY USES TECPLOT2D DATA
 
-				#Take MEAN value of image for general convergence trend.
-				ImageMean = sum(Image.flatten())/len(Image.flatten())
-				ConvergenceTrends[-1] = np.append(ConvergenceTrends[-1], ImageMean)
+				#Generate and rotate figure as requested.
+				extent,aspectratio = DataExtent(l)
+				fig,ax,im,Image = ImagePlotter2D(Image,extent,aspectratio,variablelist[i])
+				if image_plotsheath in ['Radial','Axial']:
+					PlotSheathExtent(SxAxis,Sx,ax,ISYMlist[l],Orientation=image_plotsheath)
+				#endif
+				
+				#Define image axis labels.
+				if image_rotate == True:
+					Xlabel,Ylabel = 'Axial Distance Z [cm]','Radial Distance R [cm]'
+				elif image_rotate == False:
+					Xlabel,Ylabel = 'Radial Distance R [cm]','Axial Distance Z [cm]'
+					plt.gca().invert_yaxis()
+				#endif
 
-				if QuickConverge == False:
-					#Generate and rotate figure as requested.
-					extent,aspectratio = DataExtent(l)
-					fig,ax,im,Image = ImagePlotter2D(Image,extent,aspectratio,variablelist[i])
-					if image_plotsheath in ['Radial','Axial']:
-						PlotSheathExtent(SxAxis,Sx,ax,ISYMlist[l],Orientation=image_plotsheath)
+				#Add title, legends, Colourbar (Axis, Label, Bins), etc...
+				Title = str(MovieIterlist[l][k])
+				label,bins = VariableLabelMaker(variablelist),5
+				cax = Colourbar(ax,label[i],bins,Lim=CbarMinMax(Image))
+				ImageOptions(fig,ax,Xlabel,Ylabel,Title)
+
+				#Save to seperate folders inside simulation folder.
+				#N.B. zfill(4) Asumes Iter never exceeds 999 (i.e. max(IterArray) < 1e5)
+				savefig(DirMoviePlots+variablelist[i]+'_'+str(IterArray[k]).zfill(4)+ext)
+				clearfigures(fig)
+
+				#Write data to ASCII files if requested.
+				if write_ASCII == True:
+					DirWrite = CreateNewFolder(DirMovieicp, '2Diterplots_Data')
+					DirWriteVar = CreateNewFolder(DirWrite, variablelist[i]+'_Data')
+					WriteDataToFile(Image, DirWriteVar+variablelist[i]+'_'+str(IterArray[k]).zfill(4))
+					if image_plotsheath in ['Radial','Axial'] and k == len(processlist)-1: 
+						WriteDataToFile(Sx, DirWriteVar+'Sx-EXT')
 					#endif
-					
-					#Define image axis labels.
-					if image_rotate == True:
-						Xlabel,Ylabel = 'Axial Distance Z [cm]','Radial Distance R [cm]'
-					elif image_rotate == False:
-						Xlabel,Ylabel = 'Radial Distance R [cm]','Axial Distance Z [cm]'
-						plt.gca().invert_yaxis()
-					#endif
-
-					#Add title, legends, Colourbar (Axis, Label, Bins), etc...
-					Title = str(MovieIterlist[l][k])
-					label,bins = VariableLabelMaker(variablelist),5
-					cax = Colourbar(ax,label[i],bins,Lim=CbarMinMax(Image))
-					ImageOptions(fig,ax,Xlabel,Ylabel,Title)
-
-					#Save to seperate folders inside simulation folder.
-					#N.B. zfill(3) Asumes Iter never exceeds 999 (i.e. max(IterArray) < 1e4)
-					savefig(DirMovieplots+variablelist[i]+'_'+str(IterArray[k]).zfill(3)+ext)
-					clearfigures(fig)
 				#endif
 			#endfor
 
 			#Create .mp4 movie from completed images.
 			Prefix = FolderNameTrimmer(Dirlist[l])
-			MakeMovie(DirMovieplots,Prefix+'_'+variablelist[i])
+			MakeMovie(DirMoviePlots,Prefix+'_'+variablelist[i])
 		#endfor
+	#endif
 
-		#=================#
-
-		#Plot a convergence check for all variables in each folder.
-		Legend = VariableLabelMaker(variablelist)
-		fig, ax = plt.subplots(1, figsize=(10,10))
-
-		#Obtain final iteration values for use as normalisation factors
-		FinalIterationValues = list()
-		for i in range(0,len(processlist)):
-			Image = ImageExtractor2D(IterMovieData[l][-1][processlist[i]],variablelist[i])
-			FinalIterationValues.append( sum(Image.flatten())/len(Image.flatten()) )
-		#endfor
-
-		#Normalise and plot each variable in ConvergenceTrends to single figure.
-		for i in range(0,len(ConvergenceTrends),iterstep):           
-			ConvergenceTrends[i] = Normalise(ConvergenceTrends[i],NormFactor=FinalIterationValues[i])[0]
-			ax.plot(IterAxis,ConvergenceTrends[i], lw=2)
-		#endfor
-		
-		#Calculate image Ylimits as (mean-0.25, mean+0.25)
-		MeanTrends = list()
-		for i in range(0,len(ConvergenceTrends),iterstep):
-			MeanTrends.append( np.mean(ConvergenceTrends[i]) )
-		#endfor
-		Limits = [min(MeanTrends)-0.25,max(MeanTrends)+0.25]
-		
-		#Various debug outputs
-		if IDEBUG == True: 
-			print(' ')
-			print('Convergence Limits:',Limits)
-			print(' ')
-		#endif
-
-		#Image plotting details.
-		Title = 'Convergence of '+str(variablelist)+' for \n'+Dirlist[l][2:-1]
-		Xlabel,Ylabel = 'Simulation Iteration','Normalised Mesh-Average Value'
-		ImageOptions(fig,ax,Xlabel,Ylabel,Title,Legend,Crop=False)
-		ax.set_ylim(Limits[0],Limits[1])
-		plt.tight_layout()
-
-		#Write data to ASCII files if requested.
-		if write_ASCII == True:
-			DirASCII = CreateNewFolder(DirConvergence, 'Convergence_Data')
-			SaveString = FolderNameTrimmer(Dirlist[l])+'_ConvergenceData'
-			WriteDataToFile(variablelist+['\n'], DirASCII+SaveString, 'w')
-			#endif
-			for i in range(0,len(ConvergenceTrends)):
-				WriteDataToFile('%s \n' %(ConvergenceTrends[i]), DirASCII+SaveString, 'a')
-			#endfor
-		#endif
-
-		#Print convergence data to terminal if required
-		print('')
-		print('Percentage Variation At Final Iteration:')
-		for i in range(0,len(ConvergenceTrends)):
-			ConvergenceFraction = 1-abs( ConvergenceTrends[i][-1]/ConvergenceTrends[i][-2] )
-			ConvergencePercentage = round( (ConvergenceFraction*100), 6)
-			print( variablelist[i], '\t', ConvergencePercentage, '%')
-		#endfor
-
-		#Save figure.
-		savefig(DirConvergence+FolderNameTrimmer(Dirlist[l])+'_Convergence'+ext)
-		clearfigures(fig)
-	#endfor
-
-	print('------------------------------------')
-	print('# 2D Convergence Processing Complete')
-	print('------------------------------------')
+	print('-------------------------------------')
+	print('# 2D Temporal Image Plotting Complete')
+	print('-------------------------------------')
 #endif
 
 #=====================================================================#
 #=====================================================================#
-
-
-
-
-
 
 
 
@@ -5508,14 +5504,14 @@ if savefig_temporalprofiles == True:
 						ImageOptions(fig,ax,Xlabel,Ylabel,Title,[str(MovieIterlist[l][k])],Crop=False)
 
 						#Save profiles in variable and profile location named folder
-						plt.savefig(DirProfile+'1D_Z='+Slice+'_'+Variablelist[i]+'_'+str(IterArray[k]).zfill(3)+ext)
+						plt.savefig(DirProfile+'1D_Z='+Slice+'_'+Variablelist[i]+'_'+str(IterArray[k]).zfill(4)+ext)
 						plt.close(fig)
 						
 						#Write data to ASCII files if requested.
 						if write_ASCII == True:
 							DirWrite = CreateNewFolder(DirProfile, 'Radial_Data')
 							SaveString1 = '_R='+str(round((radialprofiles[j])*dz[l], 2))+'cm'
-							SaveString2 = '_'+str(IterArray[k]).zfill(3)
+							SaveString2 = '_'+str(IterArray[k]).zfill(4)
 							SaveString = SaveString1+SaveString2
 							WriteDataToFile([Raxis,Rlineout], DirWrite+Variablelist[i]+SaveString, 'w')
 						#endif
@@ -5582,14 +5578,14 @@ if savefig_temporalprofiles == True:
 						ImageOptions(fig,ax,Xlabel,Ylabel,Title,[str(MovieIterlist[l][k])],Crop=False)
 
 						#Save profiles in variable and profile location named folder
-						plt.savefig(DirProfile+'1D_R='+Slice+'_'+Variablelist[i]+'_'+str(IterArray[k]).zfill(3)+ext)
+						plt.savefig(DirProfile+'1D_R='+Slice+'_'+Variablelist[i]+'_'+str(IterArray[k]).zfill(4)+ext)
 						plt.close(fig)
 						
 						#Write data to ASCII files if requested.
 						if write_ASCII == True:
 							DirWrite = CreateNewFolder(DirProfile, 'Axial_Data')
 							SaveString1 = '_R='+str(round((axialprofiles[j])*dr[l], 2))+'cm'
-							SaveString2 = '_'+str(IterArray[k]).zfill(3)
+							SaveString2 = '_'+str(IterArray[k]).zfill(4)
 							SaveString = SaveString1+SaveString2
 							WriteDataToFile([Zaxis,Zlineout], DirWrite+Variablelist[i]+SaveString, 'w')
 						#endif
@@ -5686,9 +5682,8 @@ if savefig_temporaltrends == True:
 			#Write data to ASCII files if requested.
 			if write_ASCII == True:
 				DirWrite = CreateNewFolder(DirMeshAve, 'MeshAvg_Data')
-				DirWriteMeshAve = CreateNewFolder(DirWrite, 'MeshAveraged_Data')
-				WriteDataToFile(Xaxis, DirWriteMeshAve+variablelist[i], 'w')
-				WriteDataToFile(['\n']+TemporalProfile, DirWriteMeshAve+variablelist[i], 'a')
+				WriteDataToFile(Xaxis, DirWrite+variablelist[i], 'w')
+				WriteDataToFile(['\n']+TemporalProfile, DirWrite+variablelist[i], 'a')
 			#endif
 		#endfor
 
@@ -5717,6 +5712,108 @@ if savefig_temporaltrends == True:
 	print('--------------------------')
 	print('# Temporal Trends Complete')
 	print('--------------------------')
+#endif
+
+
+
+##====================================================================#
+#			  #ITERMOVIE TRENDS - CONVERGENCE ANALYSIS#
+##====================================================================#
+
+#Perform convergence checking from movie_icp.pdt.
+if savefig_convergence == True:
+
+	#for all folders being processed.
+	for l in range(0,numfolders):
+
+		#Create new folder to keep convergence variable folders in.
+		DirConvergence = CreateNewFolder(Dirlist[l],'Movieicp_Profiles/')
+
+		#Create processlist for each folder as required.
+		processlist,variablelist = VariableEnumerator(IterVariables,rawdata_itermovie[l],header_itermovie[l])
+		#Skip over the R and Z processes as they are not saved properly in iterdata.
+		for i in range(0,len(processlist)): processlist[i] = processlist[i]-2
+
+		#Extract saved iteration strings and create list for mean convergence trends
+		ConvergenceTrends,IterArray,IterAxis = list(),list(),list()
+		for i in range(0,len(MovieIterlist[l])):
+			Iter = list(filter(lambda x: x.isdigit(), MovieIterlist[l][i]))		#List of digits within Iter
+			Iter =  int(''.join(Iter))											#Join digits into single integer
+			IterArray.append(Iter)												#Append to list of integers
+
+			#Note: len(IterAxis) == len(MovieIterlist)/iterstep
+			if i % iterstep == 0: IterAxis.append(Iter)							#X-axis for trend plotting
+		#endfor
+
+		#for all variables requested by the user.
+		for i in tqdm(range(0,len(processlist))):
+		
+			#Append new list to convergenceTrends for each variable.
+			ConvergenceTrends.append(list())
+			
+			#for each iteration
+			for k in range(0,len(MovieIterlist[l]),iterstep):
+
+				#Extract full 2D image for further processing.
+				Image = ImageExtractor2D(IterMovieData[l][k][processlist[i]],variablelist[i])
+
+				#If probeloc is provided, take convergence trend from that location		
+				#Else use the MESH AVERAGED VALUE for general convergence trend
+				if len(probeloc) == 2:
+					ConvergenceVal = Image[probeloc[0],probeloc[1]]
+					labelstring = 'Normalised Values @ R='+str(round(probeloc[0]*dr[l],2))+', Z='+str(round(probeloc[1]*dz[l],2))+' cm'
+				else:
+					ConvergenceVal = sum(Image.flatten())/len(Image.flatten())
+					labelstring = 'Normalised Mesh-Averaged Values'
+				#endif
+				
+				ConvergenceTrends[i] = np.append(ConvergenceTrends[i], ConvergenceVal)
+			#endfor
+		#endfor
+
+		#=================#
+
+		#Plot a convergence check for all variables in each folder.
+		Legend = VariableLabelMaker(variablelist)
+		fig, ax = plt.subplots(1, figsize=(10,10))
+
+		#Normalise and plot each variable in ConvergenceTrends to single figure.
+		for i in range(0,len(ConvergenceTrends)):
+			NormFactor=max(max(ConvergenceTrends[i]),abs(min(ConvergenceTrends[i])))
+			ConvergenceTrends[i] = Normalise(ConvergenceTrends[i],NormFactor)[0]
+			ax.plot(IterAxis,ConvergenceTrends[i], lw=2)
+		#endfor
+		
+		#Various debug outputs
+		if IDEBUG == True: 
+			print(' ')
+			print('Convergence Limits:',Limits)
+			print(' ')
+		#endif
+
+		#Image plotting details.
+		Title = 'Convergence of '+str(variablelist)+' for \n'+Dirlist[l][2:-1]
+		Xlabel,Ylabel = 'Simulation Iteration [-]',labelstring
+		ImageOptions(fig,ax,Xlabel,Ylabel,Title,Legend,Crop=False)
+		plt.tight_layout()
+
+		#Print convergence data to terminal if required
+		print('')
+		print('Percentage Variation At Final Iteration:')
+		for i in range(0,len(ConvergenceTrends)):
+			ConvergenceFraction = 1-abs( ConvergenceTrends[i][-1]/ConvergenceTrends[i][-2] )
+			ConvergencePercentage = round( (ConvergenceFraction*100), 6)
+			print( variablelist[i], '\t', ConvergencePercentage, '%')
+		#endfor
+
+		#Save figure.
+		savefig(DirConvergence+FolderNameTrimmer(Dirlist[l])+'_Convergence'+ext)
+		clearfigures(fig)
+	#endfor
+
+	print('-------------------------------')
+	print('# Convergence Checking Complete')
+	print('-------------------------------')
 #endif
 
 #=====================================================================#
@@ -7147,7 +7244,7 @@ if any([savefig_trendphaseaveraged, print_generaltrends, print_Knudsennumber, pr
 #====================================================================#
 
 #Plot Phase-Resolved profiles with electrode voltage and requested variables.
-if savefig_phaseresolve1D == True:
+if savefig_PHASEEResolve1D == True:
 
 	#Tnitiate any required lists.
 	VoltageWaveforms,WaveformBiases,VariedValuelist = list(),list(),list()
@@ -7156,7 +7253,7 @@ if savefig_phaseresolve1D == True:
 	for l in range(0,numfolders):
 
 		#Create global folders to keep output plots and collect graph title.
-		DirPhaseResolved = CreateNewFolder(Dirlist[l],'1DPhase')
+		DirPHASEEResolved = CreateNewFolder(Dirlist[l],'1DPhase')
 		VariedValuelist.append( FolderNameTrimmer(Dirlist[l]) )
 
 		#Create processlist for each folder as required. (Always get 'E','AR+','PPOT')
@@ -7194,7 +7291,7 @@ if savefig_phaseresolve1D == True:
 		ImageOptions(fig,ax,Xlabel,Ylabel,Title,Legend,Crop=False)
 		ax.xaxis.set_major_locator(ticker.MultipleLocator(0.25))
 
-		plt.savefig(DirPhaseResolved+VariedValuelist[l]+' Waveform'+ext)
+		plt.savefig(DirPHASEEResolved+VariedValuelist[l]+' Waveform'+ext)
 		clearfigures(fig)
 
 		#Write waveform data in ASCII format if required.
@@ -7203,7 +7300,7 @@ if savefig_phaseresolve1D == True:
 			for j in range(0,len(waveformlocs)):
 				ASCIIWaveforms.append(VoltageWaveforms[j])
 			#endfor
-			DirASCIIPhase = CreateNewFolder(DirPhaseResolved,'1DPhase_Data')
+			DirASCIIPhase = CreateNewFolder(DirPHASEEResolved,'1DPhase_Data')
 			WriteDataToFile(ASCIIWaveforms, DirASCIIPhase+'VoltageWaveforms')
 		#endif
 
@@ -7213,7 +7310,7 @@ if savefig_phaseresolve1D == True:
 		for i in tqdm(range(0,len(proclist))):
 
 			#Create new folder to keep specific plots.
-			DirMovieplots = CreateNewFolder(DirPhaseResolved,varlist[i]+'_1DPhaseResolved')
+			DirMovieplots = CreateNewFolder(DirPHASEEResolved,varlist[i]+'_1DPHASEEResolved')
 
 			#Refresh lineout lists between variables.
 			Lineouts,ProfileOrientation = list(),list()
@@ -7239,7 +7336,7 @@ if savefig_phaseresolve1D == True:
 					NameString= varlist[i]+'_'+str(round(Lineouts[k]*dr[l],2))+'cm[R]'
 				if ProfileOrientation[k] == 'Radial':
 					NameString= varlist[i]+'_'+str(round(Lineouts[k]*dz[l],2))+'cm[Z]'
-				if savefig_phaseresolve1D == True:
+				if savefig_PHASEEResolve1D == True:
 					Dir1DProfiles = CreateNewFolder(DirMovieplots,NameString)
 				#endif
 
@@ -7265,12 +7362,12 @@ if savefig_phaseresolve1D == True:
 
 					if ProfileOrientation[k] == 'Axial':
 						ZlineoutLoc,axis = Lineouts[k],Zaxis
-						PhaseResolvedProfile = ExtractAxialProfile(PhaseData[j],proclist[i],varlist[i],ZlineoutLoc,R_mesh[l],Z_mesh[l],ISYMlist[l])[::-1]
+						PHASEEResolvedProfile = ExtractAxialProfile(PhaseData[j],proclist[i],varlist[i],ZlineoutLoc,R_mesh[l],Z_mesh[l],ISYMlist[l])[::-1]
 						ProfileString = ' @ R='+str(round(Lineouts[k]*dr[l],2))+'cm \n'
 						Xlabel = 'Axial Distance Z [cm]'
 					elif ProfileOrientation[k] == 'Radial':
 						RlineoutLoc,axis = Lineouts[k],Raxis
-						PhaseResolvedProfile = ExtractRadialProfile(PhaseData[j],proclist[i],varlist[i],RlineoutLoc,R_mesh[l],ISYMlist[l])
+						PHASEEResolvedProfile = ExtractRadialProfile(PhaseData[j],proclist[i],varlist[i],RlineoutLoc,R_mesh[l],ISYMlist[l])
 						ProfileString = ' @ Z='+str(round(Lineouts[k]*dz[l],2))+'cm \n'
 						Xlabel = 'Radial Distance R [cm]'
 					#endif
@@ -7281,7 +7378,7 @@ if savefig_phaseresolve1D == True:
 					fig.suptitle('Phase-Resolved '+varlist[i]+' for '+VariedValuelist[l]+ProfileString+str(Phaselist[j]), y=0.97, fontsize=16)
 
 					#Plot profile and apply image options.
-					ax[0].plot(axis, PhaseResolvedProfile, lw=2)
+					ax[0].plot(axis, PHASEEResolvedProfile, lw=2)
 					ImageOptions(fig,ax[0],Xlabel,Ylabel[i],Crop=False)
 					ax[0].set_ylim(VariableMin,VariableMax*1.02)
 
@@ -7292,19 +7389,19 @@ if savefig_phaseresolve1D == True:
 					ImageOptions(fig,ax[1],Xlabel,Ylabel,Crop=False)
 
 					#Clean up image and save with relevent filename.
-					#NOTE:	zfill assumes phase < 999 degrees	(i.e. < 1e4)
+					#NOTE:	zfill assumes phase < 999 degrees	(i.e. < 1e5)
 					fig.tight_layout()
 					plt.subplots_adjust(top=0.90)
-					plt.savefig(Dir1DProfiles+NameString+'_'+str(Phase).zfill(3)+ext)
+					plt.savefig(Dir1DProfiles+NameString+'_'+str(Phase).zfill(4)+ext)
 					clearfigures(fig)
 
 					#Write Phase data in ASCII format if required.
 					if write_ASCII == True:
-						DirASCIIPhase = CreateNewFolder(DirPhaseResolved,'1DPhase_Data')
+						DirASCIIPhase = CreateNewFolder(DirPHASEEResolved,'1DPhase_Data')
 						DirASCIIPhaseloc = CreateNewFolder(DirASCIIPhase,ProfileString[3:-2])
 						Cycle = str( Phaselist[j].replace(" ", "") )
 						SaveString = DirASCIIPhaseloc+varlist[i]+'_'+Cycle
-						WriteDataToFile(PhaseResolvedProfile[::-1], SaveString)
+						WriteDataToFile(PHASEEResolvedProfile[::-1], SaveString)
 					#endif
 				#endfor
 
@@ -7328,7 +7425,7 @@ if savefig_phaseresolve1D == True:
 #====================================================================#
 
 #Plot 2D images over all saved phase cycles with included wavevform guide.
-if savefig_phaseresolve2D == True:
+if savefig_PHASEEResolve2D == True:
 
 	#Initialize required lists.
 	VoltageWaveforms,WaveformBiases,VariedValuelist = list(),list(),list()
@@ -7337,7 +7434,7 @@ if savefig_phaseresolve2D == True:
 	for l in range(0,numfolders):
 
 		#Create global folder to keep output plots and collect graph title.
-		DirPhaseResolved = CreateNewFolder(Dirlist[l],'2DPhase/')
+		DirPHASEEResolved = CreateNewFolder(Dirlist[l],'2DPhase/')
 		VariedValuelist.append( FolderNameTrimmer(Dirlist[l]) )
 
 		#Create processlist for each folder as required. (Always get 'E','AR+','PPOT')
@@ -7375,7 +7472,7 @@ if savefig_phaseresolve2D == True:
 		ImageOptions(fig,ax,Xlabel,Ylabel,Title,Legend,Crop=False)
 		ax.xaxis.set_major_locator(ticker.MultipleLocator(0.25))
 
-		plt.savefig(DirPhaseResolved+VariedValuelist[l]+' Waveform'+ext)
+		plt.savefig(DirPHASEEResolved+VariedValuelist[l]+' Waveform'+ext)
 		clearfigures(fig)
 
 		#Write PROES data in ASCII format if required.
@@ -7384,7 +7481,7 @@ if savefig_phaseresolve2D == True:
 			for j in range(0,len(waveformlocs)):
 				ASCIIWaveforms.append(VoltageWaveforms[j])
 			#endfor
-			DirASCIIPhase = CreateNewFolder(DirPhaseResolved,'2DPhase_Data')
+			DirASCIIPhase = CreateNewFolder(DirPHASEEResolved,'2DPhase_Data')
 			WriteDataToFile(ASCIIWaveforms, DirASCIIPhase+'VoltageWaveforms')
 		#endif
 
@@ -7394,7 +7491,7 @@ if savefig_phaseresolve2D == True:
 		for i in tqdm(range(0,len(proclist))):
 
 			#Create new folder to keep specific plots.
-			DirMovieplots = CreateNewFolder(DirPhaseResolved,varlist[i]+'_2DPhaseResolved/')
+			DirMovieplots = CreateNewFolder(DirPHASEEResolved,varlist[i]+'_2DPHASEEResolved/')
 
 			#Obtain maximum and minimum values of current variable over all phases.
 			MinLim,MaxLim = list(),list()
@@ -7402,8 +7499,9 @@ if savefig_phaseresolve2D == True:
 				Image = ImageExtractor2D(PhaseData[j][proclist[i]],varlist[i])
 				MinLim.append( CbarMinMax(Image,Symmetry=False)[0] )
 				MaxLim.append( CbarMinMax(Image,Symmetry=False)[1] )
+				print(MinLim,MaxLim)
 			#endfor
-			Limits = [min(MinLim),max(MaxLim)]
+			CbarLimits = [min(MinLim),max(MaxLim)]
 
 			#Reshape specific part of 1D Data array into 2D image for plotting.
 			for j in range(0,len(Phaselist)):
@@ -7437,7 +7535,7 @@ if savefig_phaseresolve2D == True:
 				#Add Colourbar (Axis, Label, Bins)
 				ImageOptions(fig,ax[0],Xlabel,Ylabel,Crop=True)
 				Ylabel = VariableLabelMaker(varlist)
-				cax = Colourbar(ax[0],Ylabel[i],5,Lim=Limits)
+				cax = Colourbar(ax[0],Ylabel[i],5,Lim=CbarLimits)
 
 				#Plot waveform and apply image options.
 				ax[1].plot(Phaseaxis, ElectrodeWaveform, lw=2)
@@ -7449,16 +7547,16 @@ if savefig_phaseresolve2D == True:
 				InvisibleColourbar(ax[0])
 				
 				#Clean up image and save with relevent filename.
-				#NOTE:	zfill assumes phase < 999 degrees	(i.e. < 1e4)
+				#NOTE:	zfill assumes phase < 999 degrees	(i.e. < 1e5)
 				fig.tight_layout()
 				plt.subplots_adjust(top=0.90)
-				savefig(DirMovieplots+varlist[i]+'_'+str(Phase).zfill(3)+ext)
+				savefig(DirMovieplots+varlist[i]+'_'+str(Phase).zfill(4)+ext)
 				clearfigures(fig)
 
 
 				#Write Phase data in ASCII format if required.
 				if write_ASCII == True:
-					DirASCIIPhase = CreateNewFolder(DirPhaseResolved,'2DPhase_Data')
+					DirASCIIPhase = CreateNewFolder(DirPHASEEResolved,'2DPhase_Data')
 					DirASCIIPhaseVar = CreateNewFolder(DirASCIIPhase,varlist[i])
 					Cycle = str( Phaselist[j].replace(" ", "") )
 					SaveString = DirASCIIPhaseVar+varlist[i]+'_'+Cycle
@@ -7500,7 +7598,7 @@ if savefig_sheathdynamics == True:
 		#Create global folders to keep output plots.
 		TrendVariable = list(filter(lambda x: x.isalpha(), FolderNameTrimmer(Dirlist[0])))	#List of discrete chars
 		TrendVariable = ''.join(TrendVariable)												#Single string of chars
-		DirPhaseResolved = CreateNewFolder(Dirlist[l],'2DPhase/')
+		DirPHASEEResolved = CreateNewFolder(Dirlist[l],'2DPhase/')
 		DirTrends = CreateNewFolder(os.getcwd()+'/',TrendVariable+' Trends')
 		DirSheath = CreateNewFolder(DirTrends,'Sheath Trends')
 
@@ -7567,8 +7665,8 @@ if savefig_sheathdynamics == True:
 		Extended,ExtendedPhase = max(SxLoc),SxLoc.index(max(SxLoc))
 
 		SheathExtension = (Extended-Collapsed)/1000.0  					#[m]
-		PhaseResolution = 1.0/(FREQMIN[l]*len(Phaseaxis))				#[s]
-		SheathTime = (ExtendedPhase-CollapsedPhase)*PhaseResolution		#[s]
+		PHASEEResolution = 1.0/(FREQMIN[l]*len(Phaseaxis))				#[s]
+		SheathTime = (ExtendedPhase-CollapsedPhase)*PHASEEResolution		#[s]
 		try:
 			MaxSheathVelocity = SheathExtension/SheathTime				#[m/s]
 			SxMaxVelTrend.append(MaxSheathVelocity/1000.0)				#[km/s]
@@ -7610,12 +7708,12 @@ if savefig_sheathdynamics == True:
 		Xlabel,Ylabel = 'Phase [$\omega$t/2$\pi$]','Electrode Potential [V]'
 		ImageOptions(fig,ax[1],Xlabel,Ylabel,Crop=False)
 
-		plt.savefig(DirPhaseResolved+VariedValuelist[l]+' SheathDynamics'+ext)
+		plt.savefig(DirPHASEEResolved+VariedValuelist[l]+' SheathDynamics'+ext)
 		clearfigures(fig)
 
 		#Write phase-resolved sheath dynamics to ASCII format datafile if requested.
 		if write_ASCII == True:
-			DirASCII = CreateNewFolder(DirPhaseResolved,'2DPhase_Data')
+			DirASCII = CreateNewFolder(DirPHASEEResolved,'2DPhase_Data')
 			DirASCIISheath = CreateNewFolder(DirASCII,'SheathDynamics')
 			WriteDataToFile(Phaseaxis+['\n']+SxLoc, DirASCIISheath+VariedValuelist[l]+'SheathDynamics')
 		#endif
@@ -7711,8 +7809,15 @@ if savefig_PROES == True:
 
 		#Create processlist for each folder as required. (Always get 'E','AR+','PPOT')
 		PhaseData,Phaselist,proclist,varlist = ExtractPhaseData(folder=l,Variables=PhaseVariables)
-		SxData,SxPhase,Sxproc,Sxvar = ExtractPhaseData(folder=l,Variables=['E','AR+'])
-		PPOT = ExtractPhaseData(folder=l,Variables=['PPOT'])[2][0]
+		try:
+			PPOT = ExtractPhaseData(folder=l,Variables=['PPOT'])[2][0]
+		except:
+			PPOT = list()
+			for i in range(0,180): PPOT.append(i)
+		#endtry
+		if image_plotsheath in ['Radial','Axial']:
+			SxData,SxPhase,Sxproc,Sxvar = ExtractPhaseData(folder=l,Variables=['E','AR+'])
+		#endif
 
 		#Generate SI scale axes for lineout plots.
 		Phaseaxis = GenerateAxis('Phase',ISYMlist[l],Phaselist)		#[omega*t/2pi]
@@ -7726,7 +7831,13 @@ if savefig_PROES == True:
 			VoltageWaveforms.append(WaveformExtractor(PhaseData,PPOT,waveformlocs[j])[0])
 			WaveformBiases.append(WaveformExtractor(PhaseData,PPOT,waveformlocs[j])[1])
 		#endfor
-		ElectrodeWaveform,ElectrodeBias,ElectrodeVpp = WaveformExtractor(PhaseData,PPOT)
+		try:
+			ElectrodeWaveform,ElectrodeBias,ElectrodeVpp = WaveformExtractor(PhaseData,PPOT)
+		except:
+			ElectrodeWaveform = list()
+			for i in range(0,180): ElectrodeWaveform.append(i)
+		#endtry
+
 
 		#Plot the phase-resolved waveform.
 		fig,ax = figure(image_aspectratio,1)
@@ -7849,7 +7960,8 @@ if savefig_PROES == True:
 				#Create figure and rotate PROES such that phaseaxis aligns with waveform.
 				fig,ax = figure(image_aspectratio,2,shareX=True)
 				PROES = ndimage.rotate(PROES, 90)
-				#Choose correct axial or radial distance axis and create associated folder.
+				
+				#Set phase axis and determine labels depending on image orientation
 				x1,x2 = Phaseaxis[0],Phaseaxis[-1]
 				if ProfileOrientation[k] == 'Axial':
 					ProfileString = ' @ R='+str(round(Lineouts[k]*dr[l],2))+'cm'
@@ -7870,20 +7982,23 @@ if savefig_PROES == True:
 					Crop = [image_radialcrop,image_axialcrop]
 					y1,y2 = Raxis[-1],0
 				#endif
+				
+				#Create output folder for current profile
 				DirPROESloc = CreateNewFolder(DirPROES,ProfileString[3::])
 
 				#Create PROES image along line of sight with phase-locked waveform.
 				fig.suptitle( 'Simulated '+varlist[i]+' PROES for '+VariedValuelist[l]+ProfileString+'\n DoF = '+str(round(((2*DoFwidth)+1)*dz[l],2))+' cm', y=0.95, fontsize=18)
 				im = ax[0].contour(PROES,extent=[x1,x2,y1,y2],origin='lower')
-				im = ax[0].imshow(PROES,extent=[x1,x2,y1,y2],origin='bottom',aspect='auto')
+				im = ax[0].imshow(PROES,extent=[x1,x2,y1,y2],origin='lower',aspect='auto')
 				if image_plotsheath in ['Radial','Axial']:
 					PlotSheathExtent(Phaseaxis,PhaseSx,ax[0],ISYMlist[l],Orientation=image_plotsheath)
 				#endif
 				
-				#Beautify Image
+				#Apply image options and set axes size
 				ImageOptions(fig,ax[0],Xlabel='',Ylabel=Ylabel,Crop=Crop)
 				ax[0].set_xticks([])
 				ax[0].set_xlim(x1,x2)
+				ax[0].set_ylim(y1,y2)
 				#Add Colourbar (Axis, Label, Bins)
 				label = VariableLabelMaker(varlist)
 				Colourbar(ax[0],label[i],5,Lim=CbarMinMax(PROES,ProfileOrientation[k]))
@@ -7981,7 +8096,7 @@ if savefig_PROES == True:
 
 #===============================#
 
-if any([savefig_sheathdynamics, savefig_phaseresolve1D, savefig_phaseresolve2D, savefig_PROES]) == True:
+if any([savefig_sheathdynamics, savefig_PHASEEResolve1D, savefig_PHASEEResolve2D, savefig_PROES]) == True:
 	print('----------------------------------')
 	print('# Phase Resolved Profiles Complete')
 	print('----------------------------------')
@@ -8175,11 +8290,11 @@ if any([savefig_sheathdynamics, savefig_phaseresolve1D, savefig_phaseresolve2D, 
 #	btnlist[0].grid(row=1, column=0)
 #
 #	btnlist[1] = tk.Button(text=btnlist[1], width=12, fg='red')
-#	btnlist[1]["command"] = lambda: toggle('savefig_convergence',1)
+#	btnlist[1]["command"] = lambda: toggle('savefig_temporal2D',1)
 #	btnlist[1].grid(row=1, column=1)
 #
 #	btnlist[2] = tk.Button(text=btnlist[2], width=12, fg='red')
-#	btnlist[2]["command"] = lambda: toggle('savefig_phaseresolve',2)
+#	btnlist[2]["command"] = lambda: toggle('savefig_PHASEEResolve',2)
 #	btnlist[2].grid(row=1, column=2)
 #
 #	#Add run button, disables GUI and progresses to the main program.
