@@ -1214,7 +1214,7 @@ def VariableUnitConversion(profile,variable):
 	#endif
 
 	#For power densities, convert from [Wcm-3] to [Wm-3].
-	if IsStringInVariable(variable,['POW-ALL','POW-TOT','POW-ICP','POWICP','POW-RF','POW-RF-E']) == True:	
+	if IsStringInVariable(variable,['POW-ALL','POWALL','POW-TOT','POW-ICP','POWICP','POW-RF','POW-RF-E']) == True:	
 		for i in range(0,len(profile)):
 			if Units == 'SI': 		profile[i] = profile[i]*1.E6			#[W m-3]
 			elif Units == 'CGS': 	profile[i] = profile[i]					#[W cm-3]
