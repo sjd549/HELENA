@@ -2801,7 +2801,7 @@ for l in tqdm(range(0,numfolders)):
 
 
 		#Initiate movie_icp.pdt 4D data array
-		#Data is saved in form: [folder,iteration,variable,datapoint(R,Z)]
+		#IterMovieData is saved in form: [folder,iteration,variable,datapoint(R,Z)]
 		if l == 0: 
 			A = numfolders; B = len(Iterloc)
 			C = len(MovIcpVariablelist); D= R_mesh[l]*Z_mesh[l]
@@ -2814,27 +2814,57 @@ for l in tqdm(range(0,numfolders)):
 		for i in range(0,len(Iterloc)):
 
 			#R,Z arrays are saved only for first "Cycle", apply +2 variable index offset to ignore
+			#CurrentFolderData is saved in form: [iteration,variable,datapoint(R,Z)]
+			#CurrentIterData is saved in form: [variable,datapoint(R,Z)]
 			if i == 0:
 				CurrentIterData = SDFileFormatConvertorHPEM(rawdata,Iterloc[i],numvar+2,offset=2)
+#				print(i, shape(CurrentIterData))
+#				print(shape(CurrentFolderData))
+			
 				#Convert data from CGS (HPEM DEFAULT) to user requested unit system
 				for j in range(0,len(MovIcpVariablelist)):
 					CurrentIterData[j] = VariableUnitConversion(CurrentIterData[j],MovIcpVariablelist[j])
 #					CurrentIterData[j] = AzimuthalPhaseConversion(CurrentIterData[j],MovIcpVariablelist[j])	
 				#endfor
-#				print(i, shape(CurrentIterData))
-#				print(shape(CurrentFolderData))
+
+				#Check if any variables exist in header that do not exist in data
+				#HERE WE ASSUME THE FIRST DATA ARRAY (default variable 'R') IS THE CORRECT SIZE
+				NumLoadedVariables = size(CurrentIterData)
+				for i in range(1,NumLoadedVariables):
+					ExpectedDataLength = size(CurrentIterData[0])
+					ReadinDataLength = size(CurrentIterData[:][i])
+
+					if ReadinDataLength != ExpectedDataLength:
+						CurrentIterData[i] = np.zeros([ExpectedDataLength])
+					#endif
+				#endfor
 				CurrentFolderData = np.array([CurrentIterData[0:numvar]])
 
 			#Later cycles do not save R,Z arrays so no variable index offset is required.
+			#CurrentFolderData is saved in form: [iteration,variable,datapoint(R,Z)]
+			#CurrentIterData is saved in form: [variable,datapoint(R,Z)]
 			elif i > 0:
 				CurrentIterData = SDFileFormatConvertorHPEM(rawdata,Iterloc[i],numvar)
+#				print(i, shape(CurrentIterData))
+#				print(shape(CurrentFolderData))
+	
 				#Convert data from CGS (HPEM DEFAULT) to user requested unit system
 				for j in range(0,len(MovIcpVariablelist)):
 					CurrentIterData[j] = VariableUnitConversion(CurrentIterData[j],MovIcpVariablelist[j])
 #					CurrentIterData[j] = AzimuthalPhaseConversion(CurrentIterData[j],MovIcpVariablelist[j])	
 				#endfor
-#				print(i, shape(CurrentIterData))
-#				print(shape(CurrentFolderData))
+
+				#Check if any variables exist in header that do not exist in data
+				#HERE WE ASSUME THE FIRST DATA ARRAY (default variable 'R') IS THE CORRECT SIZE
+				NumLoadedVariables = size(CurrentIterData)
+				for i in range(1,NumLoadedVariables):
+					ExpectedDataLength = size(CurrentIterData[0])
+					ReadinDataLength = size(CurrentIterData[:][i])
+
+					if ReadinDataLength != ExpectedDataLength:
+						CurrentIterData[i] = np.zeros([ExpectedDataLength])
+					#endif
+				#endfor
 				CurrentFolderData = np.concatenate((CurrentFolderData, np.array([CurrentIterData])), axis=0)
 			#endif
 		#endfor
