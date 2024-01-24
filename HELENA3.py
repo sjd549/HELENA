@@ -138,22 +138,24 @@ Units = 'SI'								#'SI','CGS'
 ####################
 
 #Commonly used variable sets.
-Phys = ['P-POT','TE','EF-TOT','ERADIAL','ETHETA','EAXIAL','PHASEER','PHASE','PHASEEZ','EAMB-Z','EAMB-R','RHO','BR','BRS','BZ','BZS','BT','BTS','BRF','PHASEBR','PHASEBT','PHASEBZ','VR-NEUTRAL','VZ-NEUTRAL','VR-ION+','VZ-ION+','EFLUX-R','EFLUX-Z','JZ-NET','JR-NET','J-THETA','J-TH(MAG)','J-TH(PHA)','TG-AVE','PRESSURE','POW-RF','POW-RF-E','POW-ICP','POW-ALL','EB-ESORC','COLF','SIGMA']
-ASTRONCOILEF = \
+Phys = ['E','TE','PPOT','P-POT','POW-RF','POW-RF-E','POW-ICP','POW-ALL','EB-ESORC','COLF','SIGMA','EF-TOT', 'ERADIAL','ETHETA','EAXIAL','PHASEER','PHASE','PHASEEZ','EAMB-Z','EAMB-R','RHO','BR','BRS','BZ','BZS','BT','BTS','BRF', 'PHASEBR','PHASEBT','PHASEBZ','VR-ION+','VZ-ION+','EFLUX-R','EFLUX-Z','JZ-NET','JR-NET','J-THETA','J-TH(MAG)','J-TH(PHA)','PRESSURE','TG-AVE','VR-NEUTRAL','VZ-NEUTRAL']
+TransCoilEF = \
 ['ERADIAL-2','ETHETA-2','EAXIAL-2','PHASEER-2','PHASEEZ-2','ERADIAL-3','ETHETA-3','EAXIAL-3','PHASEER-3','PHASEEZ-3', \
  'ERADIAL-4','ETHETA-4','EAXIAL-4','PHASEER-4','PHASEEZ-4','ERADIAL-5','ETHETA-5','EAXIAL-5','PHASEER-5','PHASEEZ-5', \
  'ERADIAL-6','ETHETA-6','EAXIAL-6','PHASEER-6','PHASEEZ-6','ERADIAL-7','ETHETA-7','EAXIAL-7','PHASEER-7','PHASEEZ-7', \
  'ERADIAL-8','ETHETA-8','EAXIAL-8','PHASEER-8','PHASEEZ-8']
-ASTRONCOILBF = \
+TransCoilBF = \
 ['BT-2','BT-3','BT-4','BT-5','BT-6','BT-7','BT-8', \
  'BRF-2','BRF-3','BRF-4','BRF-5','BRF-6','BRF-7','BRF-8', \
  'PHASEBT-2','PHASEBT-3','PHASEBT-4','PHASEBT-5','PHASEBT-6','PHASEBT-7','PHASEBT-8']
+ 
+ConvCheck = ['E','TE','PPOT','TG-AVE']
 
-Ar = ['AR3S','AR4SM','AR4SR','AR4SPM','AR4SPR','AR4P','AR4D','AR','AR+','AR2+','AR2*','E','S-AR+','S-AR4P','SEB-AR+','SEB-AR4P','FZ-AR3S','FR-AR3S','FR-AR+','FZ-AR+','FZ-AR3S','FR-AR3S']
+Ar = ['AR3S','AR4SM','AR4SR','AR4SPM','AR4SPR','AR4P','AR4D','AR','AR+','AR2+','AR2*','S-AR+','S-AR4P','SEB-AR+','SEB-AR4P','FZ-AR3S','FR-AR3S','FR-AR+','FZ-AR+','FZ-AR3S','FR-AR3S']
 O2 = ['O3','O2','O2+','O','O+','O-','S-O3','S-O2+','S-O+','S-O-','SEB-O3','SEB-O+','SEB-O2+','SEB-O-','FR-O+','FZ-O+','FR-O-','FZ-O-']+['O3P3P','O***','S-O3P3P','S-O***','SEB-O3P3P','SEB-O***']
 H2 = ['H','H*','H^','H-']
 N2 = ['N2','N2V','N2*','N2**','N2^','N','N*','N^']
-Cl = ['Cl2','Cl','CL^','CL-']		#'Cl2V','Cl2^','CL*','CL**','CL***',
+Cl = ['Cl2','Cl','CL^','CL-','Cl2V','Cl2^','CL*','CL**','CL***']
 F = ['F2','F2*','F2^','F','F*','F^','F-','S-F','S-F^','S-F-','SEB-F','SEB-F^','SEB-F-','FZ-F','FR-F','FZ-F^','FR-F^','FZ-F-','FR-F-']
 NFx = ['NF3A','NF2A','NFA','NF3B','NF2B','NFB','NF3^','NF2^','NF^']
 
@@ -176,6 +178,7 @@ TSHCOI2020_PCMC = ['AR^0.2S','ION-TOT0.2S','AR^4.9T','ION-TOT4.9T','AR^9.8U','IO
 SCCP2018Mk0_PCMC = ['AR^7.7J','ION-TOT7.7J','AR^5.1B','ION-TOT5.1B']
 ESCT2018Mk0_PCMC = ['AR^0.3S','EB-0.3S','ION-TOT0.3S']
 MSHC2017Mk0_PCMC = ['AR^0.5S','EB-0.5S','ION-TOT0.5S','AR^1.1B','EB-1.1B','ION-TOT1.1B']
+
 
 
 ####################
@@ -247,20 +250,17 @@ IEDFVariables = PRCCPAr_PCMC				#Requested iprofile_2d variables (no spaces)
 NEDFVariables = []							#Requested nprofile_2d variables (no spaces)
 
 #Requested movie1/movie_icp Variables.
-IterVariables = ['E','AR3S','NF3A','F','F-','TG-AVE','TE','PPOT'] 	#Requested Movie_icp (iteration) Variables.
 iterstep = 1										#Iter index step size between movie_icp plots
 PhaseVariables = Ar_Phase							#Requested Movie1 (phase) Variables. +['E','AR+']
 electrodeloc = [3,26]#[22,37]#[29,44]								#Cell location of powered electrode [R,Z].
 waveformlocs = []									#Cell locations of additional waveforms [R,Z].
 
-#Requested TECPLOT Variables and plotting locations.
-Variables = Phys+Ar+F+NFx+Cl+O2+['N','N2']      +ASTRONCOILEF+ASTRONCOILBF
-#['ERADIAL','ERADIAL-2','PHASEER','PHASEER-2','EAXIAL','EAXIAL-2','PHASEEZ','PHASEEZ-2',]
+#Requested variables and plotting locations.
+Variables = Phys+Ar+F+NFx+Cl+O2+N2
 multivar = []									#Additional variables plotted ontop of [Variables]
 radialprofiles = [38]#[53,54,55]#[38]								#Radial 1D-Profiles to be plotted (fixed Z-mesh) --
 axialprofiles = []#[45]								#Axial 1D-Profiles to be plotted (fixed R-mesh) |
 probeloc = []#[10,46]							#Cell location For Trend Analysis [R,Z], ([] = min/max)
-
 
 #Various Diagnostic Settings.
 phasecycles = 2.01						#Number of waveform phase cycles to be plotted. (float)
@@ -275,9 +275,9 @@ savefig_convergence = False				#1D Single-Variables: movie_icp.pdt
 savefig_temporal2D = False				#2D Single-Variables: movie_icp.pdt
 savefig_plot2D = True					#2D Single-Variables: TECPLOT2D.PDT
 
-#	MAJOR ISSUE WITH THE CBARMINMAX FUNCTION...
-#		CBARMINMAX FUNCTION NEEDS AN OVERHAUL...
-#		CROP FUNCTION NEEDS AN OVERHAUL AS WELL...
+#	DEFINITION OF header_2Dlist NEEDS AN OVERHAUL
+#		IT SHOULD CONTAIN THE ACTUAL HEADER, RATHER THAN THE LENGTH OF THE HEADER
+#		REDEFINE THIS AND THEN REPLACE len(header_2Dlist) WHEREVER IT WAS PREVIOUSLY USED
 
 # 	STILL HAVE ISSUE WITH READING movie FILES OF DIFFERENT LENGTHS...
 #		NEED TO SIZE THE INITIAL DATA ARRAY TO THE SHAPE OF THE LARGEST MOVIE FILE, NOT THE FIRST.
@@ -293,7 +293,7 @@ savefig_plot2D = True					#2D Single-Variables: TECPLOT2D.PDT
 #		SHEATHCALC FUNCTION IS A LITTLE DODGY WHEN image_plotsheath IS NOT IN 'radial' or 'axial'
 #			NEED TO ENSURE THAT IT RETURNS NaN ARRAYS OF PROPER SIZE WHEN NOT CALLED EXPLICITLY
 
-#	VARIABLE NAMES CONTAINING "PHASE" ARE ALL CAUGHT TOGETHER
+#	ANY VARIABLE NAMES CONTAINING "PHASE" ARE ALL READ IN TOGETHER
 #		NEED TO DIFFERENTIATE BETWEEN E, B PHASES AND ALSO R,Z,THETA PHASES
 #		CTRL+F FOR RM SJD AND SCROLL DOWN TO SEE NOTES IN VARIABLE NAMING FUNCTION
 
@@ -326,10 +326,8 @@ savefig_IEDFangular = False				#2D images of angular IEDF; single folders
 savefig_IEDFtrends = False				#1D IEDF trends; all folders
 savefig_EEDF = False					#NO PLOTTING ROUTINE							#IN DEVELOPMENT#
 
-
 #Write processed data to ASCII files.
 write_ASCII = True						#All diagnostic output written to ASCII.
-
 
 #Steady-State diagnostics terminal output toggles.
 print_generaltrends = False				#Verbose Min/Max Trend Outputs.
@@ -346,8 +344,8 @@ image_interp = 'spline36'				#Define image smoothing  ('none', 'bilinear','quadr
 image_cmap = 'plasma'					#Define global colourmap ('jet','plasma','inferno','gnuplot','tecmodern')
 
 image_aspectratio = [10,10]				#Real Size of [X,Y] in cm [Doesn't Rotate - X is always horizontal]
-image_radialcrop = [0.65]			#Crops 2D images to [R1,R2] in cm
-image_axialcrop = [1,4]#[5,17.5]#[1,4]				#Crops 2D images to [Z1,Z2] in cm
+image_radialcrop = []#[0.65]			#Crops 2D images to [R1,R2] in cm
+image_axialcrop = []#[1,4]#[5,17.5]#[1,4]				#Crops 2D images to [Z1,Z2] in cm
 image_cbarlimit = []					#[min,max] colourbar limits
 image_legendloc = 'best'				#Legend Location, "1-9" or 'best' for automatic
 
@@ -355,14 +353,14 @@ image_plotcolourfill = True				#Plot 2D image colour fill
 image_plotcontours = True				#Plot 2D image contour lines
 image_contourlvls = 20					#Number of contour levels
 
-image_plotsymmetry = True				#Plot radial symmetry - mirrors across the ISYM axis
+image_plotsymmetry = False#True				#Plot radial symmetry - mirrors across the ISYM axis
 image_plotoverlay = False				#Plot location(s) of 1D radial/axial profiles onto 2D images
-image_plotsheath = 'Radial'				#Plot sheath extent onto 2D images 'Axial','Radial'
+image_plotsheath = False#'Radial'				#Plot sheath extent onto 2D images 'Axial','Radial'
 image_plotgrid = False					#Plot major/minor gridlines on 1D profiles
-image_plotmesh = 'PRCCP'					#Plot material mesh outlines ('Auto','PRCCP','PRCCPM','ESCT','GEC')
+image_plotmesh = False#'PRCCP'					#Plot material mesh outlines ('Auto','PRCCP','PRCCPM','ESCT','GEC')
 image_numericaxis = False				#### NOT implemented ####
 
-image_rotate = True					#Rotate image 90 degrees to the right.
+image_rotate = False#True					#Rotate image 90 degrees to the right.
 image_normalise = False					#Normalise image/profiles to local max
 image_logplot = False					#Plot ln(Data), against linear axis.
 
@@ -389,7 +387,11 @@ ylabeloverride = []
 #	NEED TO ADD ICOILP-n TOT OPTION WITH ALL COILSETS OVERLAYED
 #
 #	NEED TO FINISH B-FIELD QUIVER PLOT IN savefig_plot2D AND MAKE SEPARATE FUNCTION
-#			- ADD KNUDSEN, REYNOLDS, ETC... TO SEPARATE FUNCTION CALLS
+#		- ADD KNUDSEN, REYNOLDS, ETC... TO SEPARATE FUNCTION CALLS
+#
+#	NEED TO OVERHAUL THE IMAGE CROPPING FUNCTION
+#		- NEEDS TO BE SIMPLIFIED...
+#		- IMAGE GETS SENT, IMAGE ARRAY GETS CROPPED USING CELL SIZES, SMALL IMAGE GETS RETURNED
 #
 #	NEED to examine all maths in all trends to check for CGS or SI units
 #		- Each "trend" that employs a calculation will need an initial branch to
@@ -2810,7 +2812,6 @@ for l in tqdm(range(0,numfolders)):
 		#endif
 
 		#Cycle through all iterations for current datafile, appending per cycle.
-		CurrentFolderData,CurrentFolderIterlist = np.array([[]]),np.array([[]])
 		for i in range(0,len(Iterloc)):
 
 			#R,Z arrays are saved only for first "Cycle", apply +2 variable index offset to ignore
@@ -2820,7 +2821,7 @@ for l in tqdm(range(0,numfolders)):
 				CurrentIterData = SDFileFormatConvertorHPEM(rawdata,Iterloc[i],numvar+2,offset=2)
 #				print(i, shape(CurrentIterData))
 #				print(shape(CurrentFolderData))
-			
+				
 				#Convert data from CGS (HPEM DEFAULT) to user requested unit system
 				for j in range(0,len(MovIcpVariablelist)):
 					CurrentIterData[j] = VariableUnitConversion(CurrentIterData[j],MovIcpVariablelist[j])
@@ -2828,13 +2829,16 @@ for l in tqdm(range(0,numfolders)):
 				#endfor
 
 				#Check if any variables exist in header that do not exist in data
-				#HERE WE ASSUME THE FIRST DATA ARRAY (default variable 'R') IS THE CORRECT SIZE
 				NumLoadedVariables = size(CurrentIterData)
 				for i in range(1,NumLoadedVariables):
-					ExpectedDataLength = size(CurrentIterData[0])
+					ExpectedDataLength = R_mesh[l]*Z_mesh[l]
 					ReadinDataLength = size(CurrentIterData[:][i])
 
 					if ReadinDataLength != ExpectedDataLength:
+						print('')
+						print('WARNING:',MovIcpVariablelist[i],'ARRAY SIZE IS INCORRECT')
+						print('ZEROING',MovIcpVariablelist[i],'DATA AND CONTINUING READIN')
+						print('')
 						CurrentIterData[i] = np.zeros([ExpectedDataLength])
 					#endif
 				#endfor
@@ -2855,10 +2859,9 @@ for l in tqdm(range(0,numfolders)):
 				#endfor
 
 				#Check if any variables exist in header that do not exist in data
-				#HERE WE ASSUME THE FIRST DATA ARRAY (default variable 'R') IS THE CORRECT SIZE
 				NumLoadedVariables = size(CurrentIterData)
 				for i in range(1,NumLoadedVariables):
-					ExpectedDataLength = size(CurrentIterData[0])
+					ExpectedDataLength = R_mesh[l]*Z_mesh[l]
 					ReadinDataLength = size(CurrentIterData[:][i])
 
 					if ReadinDataLength != ExpectedDataLength:
@@ -4295,7 +4298,8 @@ def CalcSheathExtent(folderidx=l,Orientation='Radial',Phase='NaN',Ne=list(),Ni=l
 	NPos,NNeg = list(),list()
 	SxAxis,Sx = list(),list()
 	
-	#Import global sheath calculation method and charged particle species names
+	#Import global sheath calculation method, ratio threshold, and charged species names
+	Ratio_Threshold = Sheath_IonRatio_Threshold
 	SheathMethod=GlobSheathMethod
 	if len(SheathIonSpecies) == 0:
 		global PosSpecies
@@ -4306,11 +4310,15 @@ def CalcSheathExtent(folderidx=l,Orientation='Radial',Phase='NaN',Ne=list(),Ni=l
 		NegSpecies = []
 	#endif
 	
-	#Import global sheath ratio threshold
-	Ratio_Threshold = Sheath_IonRatio_Threshold
+	MinimumSpeciesExist = False
+	#Check relevant datafile to confirm that positive and negative species exist
+	if PosSpecies in rawdata_2D[folderidx][0:header_2Dlist[folderidx]] and \
+	   NegSpecies in rawdata_2D[folderidx][0:header_2Dlist[folderidx]]:
+		MinimumSpeciesExist = True
+	#endif
 
 	#Return NaN sheath array if no appropriate species are detected
-	if len(PosSpecies)+len(NegSpecies) == 0:
+	if MinimumSpeciesExist == False:
 		SxAxis = GenerateAxis(Orientation,Isym=ISYMlist[l])
 		Sx = np.empty(len(SxAxis))
 		[np.nan for x in Sx]
@@ -4421,7 +4429,7 @@ def CalcSheathExtent(folderidx=l,Orientation='Radial',Phase='NaN',Ne=list(),Ni=l
 		IONproc = VariableEnumerator(PosSpecies,rawdata_2D[folderidx],header_2Dlist[folderidx])[0][0]
 		Eproc = VariableEnumerator(['E'],rawdata_2D[folderidx],header_2Dlist[folderidx])[0][0]
 		Ne,Ni = Data[folderidx][Eproc], Data[folderidx][IONproc]
-	#If phase is supplied, use phase data format.		#DOESN'T WORK ANYMORE, REMOVE.
+	#If phase is supplied, use phase data format.		#RM SJD, DOESN'T WORK ANYMORE, TO BE REMOVED.
 #	elif Phase != 'NaN' and len(Ne) == 0:
 #		IONproc = VariableEnumerator(PosSpecies,rawdata_phasemovie[folderidx],header_phasemovie[folderidx])[0][0]
 #		Eproc = VariableEnumerator(['E'],rawdata_phasemovie[folderidx],header_phasemovie[folderidx])[0][0]
@@ -4948,7 +4956,7 @@ if savefig_temporal2D == True:
 		DirMovieicp = CreateNewFolder(Dirlist[l],'Movieicp_2Dplots/')
 
 		#Create processlist for each folder as required.
-		processlist,variablelist = VariableEnumerator(IterVariables,rawdata_itermovie[l],header_itermovie[l])
+		processlist,variablelist = VariableEnumerator(Variables,rawdata_itermovie[l],header_itermovie[l])
 		#Skip over the R and Z processes as they are not saved properly in iterdata.
 		for i in range(0,len(processlist)): processlist[i] = processlist[i]-2
 
@@ -5469,7 +5477,7 @@ if savefig_multiprofiles == True:
 #			  #ITERMOVIE 1D PROFILES - TEMPORAL ANALYSIS#			  #
 ##====================================================================#
 
-#Plot 1D profile of itervariables at desired locations
+#Plot 1D profile of requested Variables at desired locations
 if savefig_temporalprofiles == True:
 
 	#Create new diagnostic output folder and initiate required lists.
@@ -5655,7 +5663,7 @@ if savefig_temporalprofiles == True:
 #			  #ITERMOVIE TRENDS - TEMPORAL ANALYSIS#
 ##====================================================================#
 
-#Plot 1D profile of itervariables at desired locations
+#Plot 1D profile of requested Variables at desired locations
 if savefig_temporaltrends == True:
 
 	#Create new diagnostic output folder and initiate required lists.
@@ -5760,7 +5768,7 @@ if savefig_convergence == True:
 		DirConvergence = CreateNewFolder(Dirlist[l],'Movieicp_Profiles/')
 
 		#Create processlist for each folder as required.
-		processlist,variablelist = VariableEnumerator(IterVariables,rawdata_itermovie[l],header_itermovie[l])
+		processlist,variablelist = VariableEnumerator(Variables,rawdata_itermovie[l],header_itermovie[l])
 		#Skip over the R and Z processes as they are not saved properly in iterdata.
 		for i in range(0,len(processlist)): processlist[i] = processlist[i]-2
 
