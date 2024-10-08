@@ -157,6 +157,7 @@ N2 = ['N2','N2V','N2*','N2**','N2^','N','N*','N^']
 Cl = ['Cl2','Cl','CL^','CL-','Cl2V','Cl2^','CL*','CL**','CL***']
 F = ['F2','F2*','F2^','F','F*','F^','F-','S-F','S-F^','S-F-','SEB-F','SEB-F^','SEB-F-','FZ-F','FR-F','FZ-F^','FR-F^','FZ-F-','FR-F-']
 NFx = ['NF3A','NF2A','NFA','NF3B','NF2B','NFB','NF3^','NF2^','NF^']
+Be = ['BE','BE1','BE2','BE3','BE4','BE5','BE6','BE7','BE8','BE9','BE+']
 
 Ar_Phase = ['S-E','S-AR+','S-AR4P','SEB-E','SEB-AR+','SEB-AR4P','SRCE-2437','FR-E','FZ-E','TE','PPOT','POW-ICP1','POW-ICP2']
 O2_Phase = ['S-E','S-O+','S-O-','S-O2+','SEB-O+','SEB-O-','SEB-O2+','TE','PPOT','FR-E','FZ-E']+['S-O3P3P','SEB-O3P3P']
@@ -218,7 +219,7 @@ MSHC2017Mk0_PCMC = ['AR^0.5S','EB-0.5S','ION-TOT0.5S','AR^1.1B','EB-1.1B','ION-T
 #electrodeloc = 	[5,20]
 #waveformlocs = 	[]
 #DoFwidth = 		R;20,Z;6			# vvv For 4.6cm inter-electrode mesh, use [78,77,76] for relative cells
-#radialprofiles = 	[55,54,53]			#56 is grounded electrode surface (reducing number goes into bulk)
+#radialprofiles = 	[55,54,53,38]		#56 is grounded electrode surface (reducing number goes into bulk)
 #axialprofiles =	[]					# ^^^ TECPLOT uses cell 14 (53 in HELENA notation) or Z = 5.4cm
 #probeloc =			[]
 #thrustloc = 		[]
@@ -249,14 +250,14 @@ IEDFVariables = PRCCPAr_PCMC				#Requested iprofile_2d variables (no spaces)
 NEDFVariables = []							#Requested nprofile_2d variables (no spaces)
 
 #Requested movie1/movie_icp Variables.
-PhaseVariables = ['E']#Ar_Phase					#Requested Movie1 (phase) Variables. +['E','AR+']
+PhaseVariables = ['E']#Ar_Phase				#Requested Movie1 (phase) Variables.
 electrodeloc = [3,26]						#Cell location of powered electrode [R,Z].
 waveformlocs = []							#Cell locations of additional waveforms [R,Z].
 
 #Requested variables and plotting locations.
-Variables = ['E','TG-AVE']#Phys+Ar
+Variables = Phys+Ar+Be					#['E','P-POT','BT']
 multivar = []							#Additional variables plotted ontop of [Variables]
-radialprofiles = [38]					#Radial 1D-Profiles to be plotted (fixed Z-mesh) --
+radialprofiles = [38,53]#[55,54,53]					#Radial 1D-Profiles to be plotted (fixed Z-mesh) --
 axialprofiles = []						#Axial 1D-Profiles to be plotted (fixed R-mesh) |
 probeloc = []							#Cell location For Trend Analysis [R,Z], ([] = min/max)
 
@@ -265,15 +266,15 @@ sheathROI = []							#Sheath Region of Interest, (Start,End) [cells]
 sourcewidth = []						#Source Dimension at ROI, leave empty for auto. [cells]
 
 #Requested diagnostics and plotting routines.
-savefig_tecplot2D = True				#2D Single-Variables: TECPLOT2D.PDT
+savefig_tecplot2D = False				#2D Single-Variables: TECPLOT2D.PDT
 
-savefig_movieicp2D = False				#2D Single-Variables: movie_icp.pdt
-savefig_movieicp1D = False				#1D Single-Variables: movie_icp.pdt
+savefig_movieicp2D = False				#2D Single-Variables: movie_icp.pdt		<<< MAXITER SHOULD BE AN ARRAY...
+savefig_movieicp1D = False				#1D Single-Variables: movie_icp.pdt		<<< MAXITER SHOULD BE AN ARRAY...
 savefig_convergence = False				#1D Single-Variables: movie_icp.pdt
 iterstep = 1							#movie_icp.pdt iteration step size
 
 savefig_monoprofiles = False			#Single-Variables; fixed height/radius
-savefig_multiprofiles = False			#Multi-Variables; same folder					- NO ASCII OUTPUT
+savefig_multiprofiles = False			#Multi-Variables; same folder			<<< NO ASCII OUTPUT
 savefig_compareprofiles = False			#Multi-Variables; all folders
 savefig_temporalprofiles = False		#Single-Variables; fixed height/radius
 
@@ -290,7 +291,7 @@ DoFwidth = 0 							#PROES Depth of Field (symmetric about image plane) [Cells]
 
 savefig_IEDFangular = False				#2D images of angular IEDF; single folders
 savefig_IEDFtrends = False				#1D IEDF trends; all folders
-savefig_EEDF = False					#NO PLOTTING ROUTINE							#IN DEVELOPMENT#
+savefig_EEDF = False					#NO PLOTTING ROUTINE					<<< NO ROUTINE
 
 #Write processed data to ASCII files.
 write_ASCII = True						#All diagnostic output written to ASCII.
@@ -309,9 +310,9 @@ image_extension = '.png'				#Define image extension  ('.png', '.jpg', '.eps')
 image_interp = 'spline36'				#Define image smoothing  ('none', 'bilinear','quadric','spline36')
 image_cmap = 'plasma'					#Define global colourmap ('jet','plasma','inferno','gnuplot','tecmodern')
 
-image_aspectratio = [10,10]				#Real Size of [X,Y] in cm [Doesn't Rotate - X is always horizontal]
-image_radialcrop = []					#Crops 2D images to [R1,R2] in cm
-image_axialcrop = [30,5]				#Crops 2D images to [Z1,Z2] in cm
+image_aspectratio = [14,8]				#Real Size of [X,Y] in cm [Doesn't Rotate - X is always horizontal]
+image_radialcrop = []#[0,12]		#Crops 2D images to [R1,R2] in cm
+image_axialcrop = []#[30,5]				#Crops 2D images to [Z1,Z2] in cm
 image_cbarlimit = []					#[min,max] colourbar limits
 image_legendloc = 'best'				#Legend Location, "1-9" or 'best' for automatic
 
@@ -323,12 +324,12 @@ image_plotsymmetry = False				#Plot radial symmetry - mirrors across the ISYM ax
 image_plotoverlay = False				#Plot location(s) of 1D radial/axial profiles onto 2D images
 image_plotsheath = False				#Plot sheath extent onto 2D images 'Axial','Radial'
 image_plotgrid = False					#Plot major/minor gridlines on 1D profiles
-image_plotmesh = False					#Plot material mesh outlines ('Auto','PRCCP','PRCCPM','ESCT','GEC')
+image_plotmesh = False					#Plot material mesh outlines ('True' == Auto,'PRCCP','PRCCPM','ESCT','GEC')
 image_numericaxis = False				#### NOT implemented ####
 
 image_rotate = False					#Rotate image 90 degrees to the right.
 image_normalise = False					#Normalise image/profiles to local max
-image_logplot = False					#Plot ln(Data), against linear axis.
+image_logplot = False					#Take log10(Data) for both 1D and 2D profiles
 
 #Overrides the automatic image labelling.
 titleoverride = []
@@ -729,17 +730,6 @@ for l in range(0,numfolders):
 		#endif
 	#endtry
 
-	#Retrieve entire mesh for plotting if requested.	#MESH PLOTTING NOT WORKING#
-	if image_plotmesh == True:							#MESH PLOTTING NOT WORKING#
-		image_plotmesh = False
-		print( 'WARNING: AUTOMESH PLOTTING IS NOT CURRENTLY SUPPORTED')
-		print( 'SETTING image_plotmesh = False')
-		print( '')
-		#Extract mesh data from initmesh.out			#MESH PLOTTING NOT WORKING#
-#		mesh = open(mesh[l]).readlines()				#MESH PLOTTING NOT WORKING#
-	#endif
-
-
 	#==========##===== ICP.NAM READIN =====##==========#
 	#==========##==========================##==========#
 
@@ -1057,7 +1047,7 @@ def VariableEnumerator(Variables,Rawdata,Header):
 	for j in range(0,len(Variables)):
 		for i in range(0,Header):
 
-#			print(Variables[j],Rawdata[i].strip(' ,"\n').replace(' ',''))				!!! RM SJD VARIABLE DEBUG
+#			print(Variables[j],Rawdata[i].strip(' ,"\n').replace(' ',''))				#!!! RM SJD VARIABLE DEBUG
 
 			#Compare variables and if they match, add to the process list.
 			#Default uses [1:-3] slice for the variable string.
@@ -1074,38 +1064,28 @@ def VariableEnumerator(Variables,Rawdata,Header):
 
 #Identifies if variable exists in all simulations, rejects if not.
 #Allows for the comparison of datasets with different icp.dat files.
-#Takes VariableIndices, VariableStrings, globalcomparisonlist
+#Takes VariableIndices, VariableStrings, globalMinSharedVariables
 #Returns VariableIndices and VariableStrings with largest commonly shared variables.
-#proclist,varlist = VariableInterpolator(VariableIndices,VariableStrings,Comparisonlist):
-def VariableInterpolator(VariableIndices,VariableStrings,Comparisonlist):
+#proclist,varlist = VariableInterpolator(VariableIndices,VariableStrings,MinSharedVariables):
+def VariableInterpolator(VariableIndices,VariableStrings,MinSharedVariables):
 
 	#No interpolation needed if variable count is the same for all datasets.
 #	if all(map(lambda x: x == Globalnumvars[0], Globalnumvars)) == True:		#Py2.x.x Lambda Method
 	if Globalnumvars.count(Globalnumvars[0]) == len(Globalnumvars):				#Py3.x.x Count Method
 		return(VariableIndices, VariableStrings)
 	#endif
+	
+	#Identify elements in each VariableStrings which are not in the MinSharedVariables list
+	inter = set(MinSharedVariables).symmetric_difference(VariableStrings)
+	inter = list(inter)
 
-	#Identify elements in each VariableStrings which are not in comparison list.
-	interpolation = list()
-	for i in range(0,numfolders):
-		VariableStrings = VariableEnumerator(Variables,rawdata_2D[i],header_2Dlist[i])[1]
-		inter = set(Comparisonlist).symmetric_difference(VariableStrings)
-		inter = list(inter)
-		#Collect list of all variables not present in all folders.
+	#If at least one element not present in all folders, remove from lists to be plotted
+	if len(inter) != 0:
 		for i in range(0,len(inter)):
-			if inter[i] not in interpolation:
-				interpolation.append(inter[i])
-			#endif
-		#endfor
-	#endfor
-
-	#If at least one element not present in all folders, remove from all Proc and Var lists.
-	if len(interpolation) != 0:
-		for i in range(0,len(interpolation)):
 			j = 0
 			while j < len(VariableStrings):
 				#Check for exact string match, e.g to avoid "AR in AR+".
-				if interpolation[i] == VariableStrings[j]:
+				if inter[i] == VariableStrings[j]:
 					del VariableStrings[j]
 					del VariableIndices[j]
 				else:
@@ -1115,6 +1095,7 @@ def VariableInterpolator(VariableIndices,VariableStrings,Comparisonlist):
 		#endfor
 	#endif
 
+	#Return lists to be plotted
 	return(VariableIndices, VariableStrings)
 #enddef
 
@@ -1173,13 +1154,13 @@ def VariableUnitConversion(profile,variable):
 	#For B-field strengths, convert to Tesla or retain as default Gauss.
 	if IsStringInVariable(variable,['BR','BT','BZ','BRF','BTHETA']) == True:
 		for i in range(0,len(profile)):
-			if Units == 'SI': 		profile[i] = profile[i]/10000			#[T]
+			if Units == 'SI': 		profile[i] = profile[i]					#[G]
 			elif Units == 'CGS':	profile[i] = profile[i]					#[G]
 		#endfor
 	#~~~ AXIAL MAGNETIC FIELD IS NOT REVERSED HERE - RM: NEED TO LOOK INTO THIS... ~~~#
 	if IsStringInVariable(variable,['BZ','BZS']) == True:
 		for i in range(0,len(profile)):
-			if Units == 'SI': 		profile[i] = (profile[i]/10000)#*(-1)	#[T]
+			if Units == 'SI': 		profile[i] = profile[i]*(-1)			#[G]
 			elif Units == 'CGS':	profile[i] = profile[i]					#[G]
 		#endfor
 	#endif
@@ -1382,7 +1363,7 @@ def ExtractPhaseData(folder=l,Variables=PhaseVariables):
 	#Enumerate VariableIndices and VariableStrings, interpolate variables against globalvarlist.
 	proclist,varlist = VariableEnumerator(Variables,rawdata,header)
 	for i in range(0,len(proclist)): proclist[i] -= 2	#R&Z not included, shift back by two.
-	proclist,varlist = VariableInterpolator(proclist,varlist,Comparisonlist)
+	proclist,varlist = VariableInterpolator(proclist,varlist,MinSharedVariables)
 
 	#Rough method of obtaining the movie1.pdt cycle locations for data extraction.
 	cycleloc = list()
@@ -1767,148 +1748,154 @@ def VariableLabelMaker(VariableStrings):
 	#=====#=====#
 	#=====#=====#
 	
+	if image_logplot == True:
+		LogString = 'Log$_{10}$'
+	else:
+		LogString = ''
+	#endif
+	
 	Variablelegends = list()
 	for i in range(0,len(VariableStrings)):
 		#Explicit Pressure and Species Densities.
 		if VariableStrings[i] in ['PRESSURE']:
 			Variable = 'Pressure'
-			if Units=='SI': 	VariableUnit = '[Pa]'
-			elif Units=='CGS': VariableUnit = '[Torr]'
+			if Units=='SI': 	VariableUnit = LogString+'[Pa]'
+			elif Units=='CGS': VariableUnit = LogString+'[Torr]'
 		elif VariableStrings[i] in ['AR','AR3S']:
 			Variable = 'Neutral Ar Density'
-			if Units=='SI': 	VariableUnit = '[m$^{-3}$]'
-			elif Units=='CGS':	VariableUnit = '[cm$^{-3}$]'
+			if Units=='SI': 	VariableUnit = LogString+'[m$^{-3}$]'
+			elif Units=='CGS':	VariableUnit = LogString+'[cm$^{-3}$]'
 		elif VariableStrings[i] in ['E']:
 			Variable = 'Electron Density n$_{e}$'
-			if Units=='SI': 	VariableUnit = '[m$^{-3}$]'
-			elif Units=='CGS':	VariableUnit = '[cm$^{-3}$]'
+			if Units=='SI': 	VariableUnit = LogString+'[m$^{-3}$]'
+			elif Units=='CGS':	VariableUnit = LogString+'[cm$^{-3}$]'
 		elif VariableStrings[i] in ['AR+']:
 			Variable = 'Ar+ Density'
-			if Units=='SI': 	VariableUnit = '[m$^{-3}$]'
-			elif Units=='CGS':	VariableUnit = '[cm$^{-3}$]'
+			if Units=='SI': 	VariableUnit = LogString+'[m$^{-3}$]'
+			elif Units=='CGS':	VariableUnit = LogString+'[cm$^{-3}$]'
 
 		#Explicit Ionization Rates.
 		elif VariableStrings[i] == 'S-E':
 			Variable = 'Bulk e$^-$ Source Rate \n'
-			if Units=='SI': 	VariableUnit = '[m$^{-3}$s$^{-1}$]'
-			elif Units=='CGS':	VariableUnit = '[cm$^{-3}$s$^{-1}$]'
+			if Units=='SI': 	VariableUnit = LogString+'[m$^{-3}$s$^{-1}$]'
+			elif Units=='CGS':	VariableUnit = LogString+'[cm$^{-3}$s$^{-1}$]'
 		elif VariableStrings[i] == 'SEB-E':
 			Variable = 'Secondry e$^-$ Source Rate \n'
-			if Units=='SI': 	VariableUnit = '[m$^{-3}$s$^{-1}$]'
-			elif Units=='CGS':	VariableUnit = '[cm$^{-3}$s$^{-1}$]'
+			if Units=='SI': 	VariableUnit = LogString+'[m$^{-3}$s$^{-1}$]'
+			elif Units=='CGS':	VariableUnit = LogString+'[cm$^{-3}$s$^{-1}$]'
 		elif VariableStrings[i] == 'EB-ESORC':
 			Variable = 'Secondry e$^-$ Relaxation Rate \n'
-			if Units=='SI': 	VariableUnit = '[m$^{-3}$s$^{-1}$]'
-			elif Units=='CGS':	VariableUnit = '[cm$^{-3}$s$^{-1}$]'
+			if Units=='SI': 	VariableUnit = LogString+'[m$^{-3}$s$^{-1}$]'
+			elif Units=='CGS':	VariableUnit = LogString+'[cm$^{-3}$s$^{-1}$]'
 		elif VariableStrings[i] == 'S-AR+':
 			Variable = 'Bulk Ar+ Ionization Rate \n'
-			if Units=='SI': 	VariableUnit = '[m$^{-3}$s$^{-1}$]'
-			elif Units=='CGS':	VariableUnit = '[cm$^{-3}$s$^{-1}$]'
+			if Units=='SI': 	VariableUnit = LogString+'[m$^{-3}$s$^{-1}$]'
+			elif Units=='CGS':	VariableUnit = LogString+'[cm$^{-3}$s$^{-1}$]'
 		elif VariableStrings[i] == 'SEB-AR+':
 			Variable = 'Secondry Ar+ Ionization Rate \n'
-			if Units=='SI': 	VariableUnit = '[m$^{-3}$s$^{-1}$]'
-			elif Units=='CGS':	VariableUnit = '[cm$^{-3}$s$^{-1}$]'
+			if Units=='SI': 	VariableUnit = LogString+'[m$^{-3}$s$^{-1}$]'
+			elif Units=='CGS':	VariableUnit = LogString+'[cm$^{-3}$s$^{-1}$]'
 		
 		#Explicit Vibrational States.
 		elif VariableStrings[i] == 'GSH2V1':
 			Variable = '1st Vibrational Excited State \n'
-			VariableUnit = '[cm$^{-3}$]'
+			VariableUnit = LogString+'[cm$^{-3}$]'
 		elif VariableStrings[i] == 'GSH2V4':
 			Variable = '4th Vibrational Excited State \n'
-			VariableUnit = '[cm$^{-3}$]'
+			VariableUnit = LogString+'[cm$^{-3}$]'
 		elif VariableStrings[i] == 'GSH2V14':
 			Variable = '14th Vibrational Excited State \n'
-			VariableUnit = '[cm$^{-3}$]'
+			VariableUnit = LogString+'[cm$^{-3}$]'
 
 		#Explicit Species Temperatures.
 		elif VariableStrings[i] == 'TE':
 			Variable = 'Electron Temperature T$_{e}$'
-			VariableUnit = '[eV]'
+			VariableUnit = LogString+'[eV]'
 		elif VariableStrings[i] == 'TG-AVE':
 			Variable = 'Neutral Gas Temperature'
-			VariableUnit = '[K]'
+			VariableUnit = LogString+'[K]'
 
 		#Explicit Species Velocities.
 		elif VariableStrings[i] == 'VZ-NEUTRAL':
 			Variable = 'Neutral Axial Velocity'
-			if Units=='SI': 	VariableUnit = '[ms$^{-1}$]'
-			elif Units=='CGS':	VariableUnit = '[cms$^{-1}$]'
+			if Units=='SI': 	VariableUnit = LogString+'[ms$^{-1}$]'
+			elif Units=='CGS':	VariableUnit = LogString+'[cms$^{-1}$]'
 		elif VariableStrings[i] == 'VR-NEUTRAL':
 			Variable = 'Neutral Radial Velocity'
-			if Units=='SI': 	VariableUnit = '[ms$^{-1}$]'
-			elif Units=='CGS':	VariableUnit = '[cms$^{-1}$]'
+			if Units=='SI': 	VariableUnit = LogString+'[ms$^{-1}$]'
+			elif Units=='CGS':	VariableUnit = LogString+'[cms$^{-1}$]'
 		elif VariableStrings[i] == 'VZ-ION+':
 			Variable = '+Ion Axial Velocity'
-			if Units=='SI': 	VariableUnit = '[kms$^{-1}$]'
-			elif Units=='CGS':	VariableUnit = '[cms$^{-1}$]'
+			if Units=='SI': 	VariableUnit = LogString+'[kms$^{-1}$]'
+			elif Units=='CGS':	VariableUnit = LogString+'[cms$^{-1}$]'
 		elif VariableStrings[i] == 'VR-ION+':
 			Variable = '+Ion Radial Velocity'
-			if Units=='SI': 	VariableUnit = '[kms$^{-1}$]'
-			elif Units=='CGS':	VariableUnit = '[cms$^{-1}$]'
+			if Units=='SI': 	VariableUnit = LogString+'[kms$^{-1}$]'
+			elif Units=='CGS':	VariableUnit = LogString+'[cms$^{-1}$]'
 		elif VariableStrings[i] == 'VZ-ION-':
 			Variable = '-Ion Axial Velocity'
-			if Units=='SI': 	VariableUnit = '[kms$^{-1}$]'
-			elif Units=='CGS':	VariableUnit = '[cms$^{-1}$]'
+			if Units=='SI': 	VariableUnit = LogString+'[kms$^{-1}$]'
+			elif Units=='CGS':	VariableUnit = LogString+'[cms$^{-1}$]'
 		elif VariableStrings[i] == 'VR-ION-':
 			Variable = '-Ion Radial Velocity'
-			if Units=='SI': 	VariableUnit = '[kms$^{-1}$]'
-			elif Units=='CGS':	VariableUnit = '[cms$^{-1}$]'
+			if Units=='SI': 	VariableUnit = LogString+'[kms$^{-1}$]'
+			elif Units=='CGS':	VariableUnit = LogString+'[cms$^{-1}$]'
 
 		#Explicit Species Fluxes.
 		elif VariableStrings[i] == 'EFLUX-Z':
 			Variable = 'Electron Axial Flux'
-			if Units=='SI': 	VariableUnit = '[m$^{-2}$s$^{-1}$]'
-			elif Units=='CGS':	VariableUnit = '[cm$^{-2}$s$^{-1}$]'
+			if Units=='SI': 	VariableUnit = LogString+'[m$^{-2}$s$^{-1}$]'
+			elif Units=='CGS':	VariableUnit = LogString+'[cm$^{-2}$s$^{-1}$]'
 		elif VariableStrings[i] == 'EFLUX-R':
 			Variable = 'Electron Radial Flux'
-			if Units=='SI': 	VariableUnit = '[m$^{-2}$s$^{-1}$]'
-			elif Units=='CGS':	VariableUnit = '[cm$^{-2}$s$^{-1}$]'
+			if Units=='SI': 	VariableUnit = LogString+'[m$^{-2}$s$^{-1}$]'
+			elif Units=='CGS':	VariableUnit = LogString+'[cm$^{-2}$s$^{-1}$]'
 		elif VariableStrings[i] == 'FZ-AR+':
 			Variable = 'Ar+ Axial Flux'
-			if Units=='SI': 	VariableUnit = '[m$^{-2}$s$^{-1}$]'
-			elif Units=='CGS':	VariableUnit = '[cm$^{-2}$s$^{-1}$]'
+			if Units=='SI': 	VariableUnit = LogString+'[m$^{-2}$s$^{-1}$]'
+			elif Units=='CGS':	VariableUnit = LogString+'[cm$^{-2}$s$^{-1}$]'
 		elif VariableStrings[i] == 'FR-AR+':
 			Variable = 'Ar+ Radial Flux'
-			if Units=='SI': 	VariableUnit = '[m$^{-2}$s$^{-1}$]'
-			elif Units=='CGS':	VariableUnit = '[cm$^{-2}$s$^{-1}$]'
+			if Units=='SI': 	VariableUnit = LogString+'[m$^{-2}$s$^{-1}$]'
+			elif Units=='CGS':	VariableUnit = LogString+'[cm$^{-2}$s$^{-1}$]'
 		elif VariableStrings[i] == 'FZ-AR':
 			Variable = 'Ar Axial Flux'
-			if Units=='SI': 	VariableUnit = '[m$^{-2}$s$^{-1}$]'
-			elif Units=='CGS':	VariableUnit = '[cm$^{-2}$s$^{-1}$]'
+			if Units=='SI': 	VariableUnit = LogString+'[m$^{-2}$s$^{-1}$]'
+			elif Units=='CGS':	VariableUnit = LogString+'[cm$^{-2}$s$^{-1}$]'
 		elif VariableStrings[i] == 'FR-AR':
 			Variable = 'Ar Radial Flux'
-			if Units=='SI': 	VariableUnit = '[m$^{-2}$s$^{-1}$]'
-			elif Units=='CGS':	VariableUnit = '[cm$^{-2}$s$^{-1}$]'
+			if Units=='SI': 	VariableUnit = LogString+'[m$^{-2}$s$^{-1}$]'
+			elif Units=='CGS':	VariableUnit = LogString+'[cm$^{-2}$s$^{-1}$]'
 
 		#Explicit Electrodynamic Properties
 		elif VariableStrings[i] in ['RHO']:
 			Variable = 'Charge Density $\\rho$'
-			if Units=='SI': 	VariableUnit = '[C m$^{-3}$]'
-			elif Units=='CGS':	VariableUnit = '[C cm$^{-3}$]'
+			if Units=='SI': 	VariableUnit = LogString+'[C m$^{-3}$]'
+			elif Units=='CGS':	VariableUnit = LogString+'[C cm$^{-3}$]'
 		elif VariableStrings[i] in ['PPOT','P-POT']:
 			Variable = 'Plasma Potential V$_{p}$'
-			VariableUnit = '[V]'
+			VariableUnit = LogString+'[V]'
 		elif VariableStrings[i] in ['SIGMA']:
 			Variable = 'Conductivity $\\sigma$'
-			if Units=='SI': 	VariableUnit = '[S m$^{-1}$]'
-			elif Units=='CGS':	VariableUnit = '[S cm$^{-1}$]'
+			if Units=='SI': 	VariableUnit = LogString+'[S m$^{-1}$]'
+			elif Units=='CGS':	VariableUnit = LogString+'[S cm$^{-1}$]'
 			
 		elif VariableStrings[i] in ['EF-TOT']:
 			Variable = 'Absolute E-Field Amplitude'
-			if Units=='SI': 	VariableUnit = '[Vm$^{-1}$]'
-			elif Units=='CGS':	VariableUnit = '[Vcm$^{-1}$]'
+			if Units=='SI': 	VariableUnit = LogString+'[Vm$^{-1}$]'
+			elif Units=='CGS':	VariableUnit = LogString+'[Vcm$^{-1}$]'
 		elif VariableStrings[i] in ERADIALVars+['ER','EAMB-R']:
 			Variable = 'Radial E-Field Amplitude $E_{R}$'
-			if Units=='SI': 	VariableUnit = '[Vm$^{-1}$]'
-			elif Units=='CGS':	VariableUnit = '[Vcm$^{-1}$]'
+			if Units=='SI': 	VariableUnit = LogString+'[Vm$^{-1}$]'
+			elif Units=='CGS':	VariableUnit = LogString+'[Vcm$^{-1}$]'
 		elif VariableStrings[i] in ETHETAVars+['ET','EAMB-T']:
 			Variable = 'Azimuthal E-Field Amplitude $E_{\\theta}$'
-			if Units=='SI': 	VariableUnit = '[Vm$^{-1}$]'
-			elif Units=='CGS':	VariableUnit = '[Vcm$^{-1}$]'
+			if Units=='SI': 	VariableUnit = LogString+'[Vm$^{-1}$]'
+			elif Units=='CGS':	VariableUnit = LogString+'[Vcm$^{-1}$]'
 		elif VariableStrings[i] in EAXIALVars+['EZ','EAMB-Z']:
 			Variable = 'Axial E-Field Amplitude $E_{Z}$'
-			if Units=='SI': 	VariableUnit = '[Vm$^{-1}$]'
-			elif Units=='CGS':	VariableUnit = '[Vcm$^{-1}$]'
+			if Units=='SI': 	VariableUnit = LogString+'[Vm$^{-1}$]'
+			elif Units=='CGS':	VariableUnit = LogString+'[Vcm$^{-1}$]'
 		elif VariableStrings[i] in PHASEERVars:
 			Variable = 'Radial E-Field Phase'
 			VariableUnit = '[Radians]'
@@ -1920,34 +1907,34 @@ def VariableLabelMaker(VariableStrings):
 			VariableUnit = '[Radians]'
 
 		elif VariableStrings[i] == 'BRS':
-			Variable = 'Radial Static B-field Magnitude $B_{R}$'
-			if Units=='SI': 	VariableUnit = '[T]'
-			elif Units=='CGS':	VariableUnit = '[G]'
+			Variable = 'Radial Static \n B-field Magnitude $B_{R}$'
+			if Units=='SI': 	VariableUnit = LogString+'[G]'
+			elif Units=='CGS':	VariableUnit = LogString+'[G]'
 		elif VariableStrings[i] == 'BTS':
-			Variable = 'Azimuthal Static B-field Magnitude $B_{\\theta}$'
-			if Units=='SI': 	VariableUnit = '[T]'
-			elif Units=='CGS':	VariableUnit = '[G]'
+			Variable = 'Azimuthal Static \n B-field Magnitude $B_{\\theta}$'
+			if Units=='SI': 	VariableUnit = LogString+'[G]'
+			elif Units=='CGS':	VariableUnit = LogString+'[G]'
 		elif VariableStrings[i] == 'BZS':
-			Variable = 'Axial Static B-field Magnitude $B_{Z}$'
-			if Units=='SI': 	VariableUnit = '[T]'
-			elif Units=='CGS':	VariableUnit = '[G]'
+			Variable = 'Axial Static \n B-field Magnitude $B_{Z}$'
+			if Units=='SI': 	VariableUnit = LogString+'[G]'
+			elif Units=='CGS':	VariableUnit = LogString+'[G]'
 			
 		elif VariableStrings[i] in BRVars:
-			Variable = 'Radial Induced B-field Magnitude $B_{R}$'
-			if Units=='SI': 	VariableUnit = '[T]'
-			elif Units=='CGS':	VariableUnit = '[G]'
+			Variable = 'Radial Induced \n B-field Magnitude $B_{R}$'
+			if Units=='SI': 	VariableUnit = LogString+'[G]'
+			elif Units=='CGS':	VariableUnit = LogString+'[G]'
 		elif VariableStrings[i] in BTVars+['BTHETA']:
-			Variable = 'Azimuthal Induced B-field Magnitude $B_{\\theta}$'
-			if Units=='SI': 	VariableUnit = '[T]'
-			elif Units=='CGS':	VariableUnit = '[G]'
+			Variable = 'Azimuthal Induced \n B-field Magnitude $B_{\\theta}$'
+			if Units=='SI': 	VariableUnit = LogString+'[G]'
+			elif Units=='CGS':	VariableUnit = LogString+'[G]'
 		elif VariableStrings[i] in BZVars:
-			Variable = 'Axial Induced B-field Magnitude $B_{Z}$'
-			if Units=='SI': 	VariableUnit = '[T]'
-			elif Units=='CGS':	VariableUnit = '[G]'
+			Variable = 'Axial Induced \n B-field Magnitude $B_{Z}$'
+			if Units=='SI': 	VariableUnit = LogString+'[G]'
+			elif Units=='CGS':	VariableUnit = LogString+'[G]'
 		elif VariableStrings[i] in BRFVars:
 			Variable = 'Induced B-field Magnitude $B_{RF}$'
-			if Units=='SI': 	VariableUnit = '[T]'
-			elif Units=='CGS':	VariableUnit = '[G]'
+			if Units=='SI': 	VariableUnit = LogString+'[G]'
+			elif Units=='CGS':	VariableUnit = LogString+'[G]'
 		elif VariableStrings[i] in PHASEBRVars:
 			Variable = 'Radial Induced B-field Phase'
 			VariableUnit = '[Radians]'
@@ -1960,84 +1947,84 @@ def VariableLabelMaker(VariableStrings):
 			
 		elif VariableStrings[i] in ['JZ-NET']:
 			Variable = 'Axial Net Current Density $J_{Z}$'
-			if Units=='SI': 	VariableUnit = '[A m$^{-2}$]'
-			elif Units=='CGS':	VariableUnit = '[A cm$^{-2}$]'
+			if Units=='SI': 	VariableUnit = LogString+'[A m$^{-2}$]'
+			elif Units=='CGS':	VariableUnit = LogString+'[A cm$^{-2}$]'
 		elif VariableStrings[i] in ['JR-NET']:
 			Variable = 'Radial Net Current Density $J_{R}$'
-			if Units=='SI': 	VariableUnit = '[A m$^{-2}$]'
-			elif Units=='CGS':	VariableUnit = '[A cm$^{-2}$]'
+			if Units=='SI': 	VariableUnit = LogString+'[A m$^{-2}$]'
+			elif Units=='CGS':	VariableUnit = LogString+'[A cm$^{-2}$]'
 		elif VariableStrings[i] in JTHETAVars:
 			Variable = 'Azimuthal Net Current Density $J_{\\theta}$'
-			if Units=='SI': 	VariableUnit = '[A m$^{-2}$]'
-			elif Units=='CGS':	VariableUnit = '[A cm$^{-2}$]'
+			if Units=='SI': 	VariableUnit = LogString+'[A m$^{-2}$]'
+			elif Units=='CGS':	VariableUnit = LogString+'[A cm$^{-2}$]'
 		elif VariableStrings[i] in ['J-TH(MAG)']:
 			Variable = 'Azimuthal MCS Electron Current Density $J_{e\\theta}$'
-			if Units=='SI': 	VariableUnit = '[A m$^{-2}$]'
-			elif Units=='CGS':	VariableUnit = '[A cm$^{-2}$]'
+			if Units=='SI': 	VariableUnit = LogString+'[A m$^{-2}$]'
+			elif Units=='CGS':	VariableUnit = LogString+'[A cm$^{-2}$]'
 		elif VariableStrings[i] in ['J-TH(PHA)']:
-			Variable = 'Azimuthal MCS Electron Current Phase $J_{e\\theta}$'
+			Variable = 'Azimuthal MCS Electron \n Current Phase $J_{e\\theta}$'
 			VariableUnit = '[Radians]'
 			
 		#Explicit Power Deposition.
 		elif VariableStrings[i] in ['POW-TOT']:
 			Variable = 'Total Power Density'
-			if Units=='SI': 	VariableUnit = '[Wm$^{-3}$]'
-			elif Units=='CGS':	VariableUnit = '[Wcm$^{-3}$]'
+			if Units=='SI': 	VariableUnit = LogString+'[Wm$^{-3}$]'
+			elif Units=='CGS':	VariableUnit = LogString+'[Wcm$^{-3}$]'
 		elif VariableStrings[i] in POWICPVars+['POW-ICP']:			#Note: 	POW-ICP:  total icp power
-			Variable = 'Inductive Power Density'		#		POWICP-n: coilset #n icp power
-			if Units=='SI': 	VariableUnit = '[Wm$^{-3}$]'
-			elif Units=='CGS':	VariableUnit = '[Wcm$^{-3}$]'
+			Variable = 'Inductive Power Density'					#		POWICP-n: coilset #n icp power
+			if Units=='SI': 	VariableUnit = LogString+'[Wm$^{-3}$]'
+			elif Units=='CGS':	VariableUnit = LogString+'[Wcm$^{-3}$]'
 		elif VariableStrings[i] in ['POW-RF']:
 			Variable = 'RF Power Density'
-			if Units=='SI': 	VariableUnit = '[Wm$^{-3}$]'
-			elif Units=='CGS':	VariableUnit = '[Wcm$^{-3}$]'
+			if Units=='SI': 	VariableUnit = LogString+'[Wm$^{-3}$]'
+			elif Units=='CGS':	VariableUnit = LogString+'[Wcm$^{-3}$]'
 		elif VariableStrings[i] in ['POW-RF-E']:
 			Variable = 'RF Electron Power Density'
-			if Units=='SI': 	VariableUnit = '[Wm$^{-3}$]'
-			elif Units=='CGS':	VariableUnit = '[Wcm$^{-3}$]'
+			if Units=='SI': 	VariableUnit = LogString+'[Wm$^{-3}$]'
+			elif Units=='CGS':	VariableUnit = LogString+'[Wcm$^{-3}$]'
 
 		#Explicit Collision Rates.
 		elif VariableStrings[i] == 'COLF':
 			Variable = 'Electron Collision Frequency'
-			VariableUnit = '[s$^{-1}$]'
+			VariableUnit = LogString+'[s$^{-1}$]'
 
 		#Implicit Variables.
 		elif IsStringInVariable(VariableStrings[i],Ionisationlist) == True:
 			Variable = VariableStrings[i]
-			if Units=='SI': 	VariableUnit = '[m$^{-3}$s$^{-1}$]'
-			elif Units=='CGS':	VariableUnit = '[cm$^{-3}$s$^{-1}$]'
+			if Units=='SI': 	VariableUnit = LogString+'[m$^{-3}$s$^{-1}$]'
+			elif Units=='CGS':	VariableUnit = LogString+'[cm$^{-3}$s$^{-1}$]'
 		elif IsStringInVariable(VariableStrings[i],['SRCE-']) == True:
 			Variable = VariableStrings[i]
-			if Units=='SI': 	VariableUnit = '[m$^{-3}$s$^{-1}$]'
-			elif Units=='CGS':	VariableUnit = '[cm$^{-3}$s$^{-1}$]'
+			if Units=='SI': 	VariableUnit = LogString+'[m$^{-3}$s$^{-1}$]'
+			elif Units=='CGS':	VariableUnit = LogString+'[cm$^{-3}$s$^{-1}$]'
 		elif IsStringInVariable(VariableStrings[i],['T-']) == True:
 			Variable = VariableStrings[i]
 			VariableUnit = '[K]'
 		elif IsStringInVariable(VariableStrings[i],Velocitylist) == True:
 			Variable = VariableStrings[i]
-			if Units=='SI': 	VariableUnit = '[kms$^{-1}$]'
-			elif Units=='CGS':	VariableUnit = '[cms$^{-1}$]'
+			if Units=='SI': 	VariableUnit = LogString+'[kms$^{-1}$]'
+			elif Units=='CGS':	VariableUnit = LogString+'[cms$^{-1}$]'
 		elif IsStringInVariable(VariableStrings[i],Fluxlist) == True:
 			Variable = VariableStrings[i]
-			if Units=='SI': 	VariableUnit = '[m$^{-2}$s$^{-1}$]'
-			elif Units=='CGS':	VariableUnit = '[cm$^{-2}$s$^{-1}$]'
+			if Units=='SI': 	VariableUnit = LogString+'[m$^{-2}$s$^{-1}$]'
+			elif Units=='CGS':	VariableUnit = LogString+'[cm$^{-2}$s$^{-1}$]'
 		elif IsStringInVariable(VariableStrings[i],['POW-']) == True:
 			Variable = VariableStrings[i]
-			if Units=='SI': 	VariableUnit = '[Wm$^{-3}$]'
-			elif Units=='CGS':	VariableUnit = '[Wcm$^{-3}$]'
+			if Units=='SI': 	VariableUnit = LogString+'[Wm$^{-3}$]'
+			elif Units=='CGS':	VariableUnit = LogString+'[Wcm$^{-3}$]'
 		elif VariableStrings[i] in [x.replace('^', '+') for x in AtomicSpecies]:
 			Variable = VariableStrings[i]
-			if Units=='SI': 	VariableUnit = '[m$^{-3}$]'
-			elif Units=='CGS':	VariableUnit = '[cm$^{-3}$]'
+			if Units=='SI': 	VariableUnit = LogString+'[m$^{-3}$]'
+			elif Units=='CGS':	VariableUnit = LogString+'[cm$^{-3}$]'
 		elif VariableStrings[i] in AtomicSpecies:
 			Variable = VariableStrings[i]
-			if Units=='SI': 	VariableUnit = '[m$^{-3}$]'
-			elif Units=='CGS':	VariableUnit = '[cm$^{-3}$]'
+			if Units=='SI': 	VariableUnit = LogString+'[m$^{-3}$]'
+			elif Units=='CGS':	VariableUnit = LogString+'[cm$^{-3}$]'
 
 		#Default if no fitting variable found.
 		else:
 			Variable = 'Variable'
-			VariableUnit = '[Unit]'
+			VariableUnit = LogString+'[Unit]'
 		#endif
 		Variablelegends.append(Variable+' '+VariableUnit)
 	#endfor
@@ -2615,6 +2602,79 @@ for l in tqdm(range(0,numfolders)):
 	#Data is now 3D array of form [folder,variable,datapoint(R,Z)]
 	Data.append(CurrentFolderData)
 
+#===================##===================#
+#===================##===================#
+
+
+
+
+
+		##### 	UNDER CONSTRUCTION	 #####
+		
+	#Retrieve entire mesh for plotting if requested.
+	if image_plotmesh == True:
+
+		#Read through TECPLOT2D and extract "GEOMETRY" zone at the bottom
+		GeometryStartMarker = 'GEOMETRY'
+		for i in range(0,nn_2D):
+			if GeometryStartMarker in str(rawdata_2D[l][i]): 
+				GeometryStartIndex = i
+				break
+			#endif
+		#endfor
+		TEC2DGeometry = rawdata_2D[l][GeometryStartIndex::]
+		
+		#Geometry elements are written in batches of max size 25, determine batch spacing
+		MeshElementArray = list()						# FOR FOLDER [l], NEED TO ADD EXTRA DIMENSION
+		for i in range(0,len(TEC2DGeometry)):
+			#Identify Batch Header line and extract plotting information
+			if "GEOMETRY" in TEC2DGeometry[i]:
+				M = "Grid"
+				C = "Black"
+				Origin = (0,0)
+				T = "Line"
+				F = "Point"
+				#Identify element batch length and save batch start and end indices
+				BatchLen = int(TEC2DGeometry[i+1])		# Save current element batch length
+				BatchStart = i+2						# Skip line under GEOMETRY, containing batch length
+				BatchEnd = BatchStart + BatchLen*3		# Length of current batch
+			#endif
+			
+			#From Current "GEOMETRY" line to next "GEOMETRY" line, extract all elements and save arrays of size 2
+			if BatchStart < i < BatchEnd:
+				SplitElements = TEC2DGeometry[i].split()
+				if len(SplitElements) == 2:
+					MeshElementArray.append([ float(SplitElements[0]),float(SplitElements[1]) ])
+				#endif
+			#endif
+		#endfor
+		
+		#Reverse origin from top left to bottom left by subtracting max height from J(Z)-coordinates
+		for i in range(0,len(MeshElementArray),1):	
+	#		MeshElementArray[i][0] = ((R_mesh[l])*dr[l])-MeshElementArray[i][0]			#Reverse I(R)-coordinates
+			MeshElementArray[i][1] = ((Z_mesh[l]-2)*dz[l])-MeshElementArray[i][1]		#Reverse J(Z)-coordinates
+		#endfor		
+
+	#	for i in range(0,len(MeshElementArray),1):
+	#		print(MeshElementArray[i])
+	#		plt.plot(MeshElementArray[i][0],MeshElementArray[i][1], 'ko-', lw=2)
+		#endfor
+	#	plt.show()
+
+	#	for i in range(0,len(MeshElementArray),2):
+	#		print(MeshElementArray[i])
+	#		plt.plot(MeshElementArray[i],MeshElementArray[i+1], 'ko-', lw=2)
+		#endfor
+	#	plt.show()
+		
+	#	exit()
+	#endfor
+#endif
+
+		##### 	UNDER CONSTRUCTION	 #####
+
+
+
 
 #===================##===================#
 #===================##===================#
@@ -2928,7 +2988,7 @@ for l in range(0,numfolders):
 
 #Find the folder with the fewest variables:
 val, idx = min((val, idx) for (idx, val) in enumerate(Globalnumvars))
-Comparisonlist = Globalvarlist[idx]
+MinSharedVariables = Globalvarlist[idx]
 
 #===================##===================#
 #===================##===================#
@@ -3541,8 +3601,10 @@ def ImageOptions(fig,ax,Xlabel='',Ylabel='',Title='',Legend=[],Crop=True,Rotate=
 	#endif
 
 	#Plot mesh outline if requested.
-	if image_plotmesh == True:
-		mesh_auto_plot = 1 								# !! NOT IMPLEMENTED !! 
+	if image_plotmesh == True:												#!!! RM SJD TO COMPLETE
+		for i in range(0,len(MeshElementArray),1):
+			ax.plot(MeshElementArray[i][0],MeshElementArray[i][1], 'ko-', lw=2)
+		#endfor
 	elif image_plotmesh == 'PRCCP' and Crop == True:	
 		ManualPRCCPMesh(ax)
 	elif image_plotmesh == 'PRCCPM' and Crop == True:	
@@ -3779,7 +3841,7 @@ def ImagePlotter1D(axis,profile,aspectratio,fig=111,ax=111):
 
 	#Apply any required numerical changes to the profile.
 	if image_logplot == True:
-		profile = np.log(profile)
+		profile = np.log10(profile)
 	if image_normalise == True:
 		profile = Normalise(profile)[0]
 	#endif
@@ -3820,7 +3882,7 @@ def ImagePlotter2D(Image,extent,aspectratio=image_aspectratio,variable='N/A',fig
 
 	#Apply any required numerical changes to the image.
 	if image_logplot == True:
-		Image = np.log(Image)
+		Image = np.log10(Image)
 	elif image_normalise == True:
 		Image = Normalise(Image)[0]
 	#endif
@@ -4091,7 +4153,7 @@ def MinMaxTrends(lineout,Orientation,process):
 
 		#Create and correct VariableIndices for each folder as required.
 		VariableIndices,VariableStrings = VariableEnumerator(Variables,rawdata_2D[l],header_2Dlist[l])
-		VariableIndices,VariableStrings = VariableInterpolator(VariableIndices,VariableStrings,Comparisonlist)
+		VariableIndices,VariableStrings = VariableInterpolator(VariableIndices,VariableStrings,MinSharedVariables)
 
 		#Update X-axis with folder information.
 		Xaxis.append( FolderNameTrimmer(Dirlist[l]) )
@@ -5251,9 +5313,9 @@ if savefig_compareprofiles == True:
 
 				#Create VariableIndices for each folder as required.
 				VariableIndices,VariableStrings = VariableEnumerator(Variables,rawdata_2D[l],header_2Dlist[l])
-
+				
 				#Correct VariableIndices for folders containing different icp.dat.
-				VariableIndices,VariableStrings = VariableInterpolator(VariableIndices,VariableStrings,Comparisonlist)
+				VariableIndices,VariableStrings = VariableInterpolator(VariableIndices,VariableStrings,MinSharedVariables)
 
 				#Update legend with folder information.
 				Legendlist.append( FolderNameTrimmer(Dirlist[l]) )
@@ -5316,7 +5378,7 @@ if savefig_compareprofiles == True:
 				VariableIndices,VariableStrings = VariableEnumerator(Variables,rawdata_2D[l],header_2Dlist[l])
 
 				#Correct VariableIndices for folders containing different icp.dat.
-				VariableIndices,VariableStrings = VariableInterpolator(VariableIndices,VariableStrings,Comparisonlist)
+				VariableIndices,VariableStrings = VariableInterpolator(VariableIndices,VariableStrings,MinSharedVariables)
 
 				#Update legend with folder information.
 				Legendlist.append( FolderNameTrimmer(Dirlist[l]) )
@@ -6337,7 +6399,7 @@ if savefig_trendphaseaveraged == True or print_generaltrends == True:
 
 		#Create VariableIndices for largest output, only compare variables shared between all folders.
 		VariableIndices,VariableStrings = VariableEnumerator(Variables,max(rawdata_2D),max(header_2Dlist))
-		VariableIndices,VariableStrings = VariableInterpolator(VariableIndices,VariableStrings,Comparisonlist)
+		VariableIndices,VariableStrings = VariableInterpolator(VariableIndices,VariableStrings,MinSharedVariables)
 
 		#Create Y-axis legend for each variable to be plotted.
 		YaxisLegend = VariableLabelMaker(VariableStrings)
@@ -6581,7 +6643,7 @@ if savefig_trendphaseaveraged == True or print_totalpower == True:
 
 	#Create list of requested power variables and ensure they also exist in all compared folders
 	for i in range(0,len(Variables)):
-		if 'POW-' in Variables[i] and Variables[i] in Comparisonlist:
+		if 'POW-' in Variables[i] and Variables[i] in MinSharedVariables:
 			RequestedPowers.append(Variables[i])
 		#endif
 	#endfor
