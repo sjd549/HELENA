@@ -137,13 +137,13 @@ Units = 'SI'								#'SI','CGS'
 ####################
 
 #Commonly used variable sets.
-Phys = ['E','TE','PPOT','P-POT','POW-RF','POW-RF-E','POW-ICP','POW-ALL','EB-ESORC','COLF','SIGMA','EF-TOT', 'ERADIAL','ETHETA','EAXIAL','PHASEER','PHASE','PHASEEZ','EAMB-Z','EAMB-R','RHO','BR','BRS','BZ','BZS','BT','BTS','BRF', 'PHASEBR','PHASEBT','PHASEBZ','VR-ION+','VZ-ION+','EFLUX-R','EFLUX-Z','JZ-NET','JR-NET','J-THETA','J-TH(MAG)','J-TH(PHA)','PRESSURE','TG-AVE','VR-NEUTRAL','VZ-NEUTRAL']
-TransCoilEF = \
+Phys = ['E','TE','PPOT','P-POT','POW-RF','POW-RF-E','POW-ICP','POW-ICP1','POW-ICP2','POW-ICP3','POW-ICP4','POW-ALL','EB-ESORC','COLF','SIGMA','EF-TOT', 'ERADIAL','ETHETA','EAXIAL','PHASEER','PHASE','PHASEEZ','EAMB-Z','EAMB-R','RHO','BR','BRS','BZ','BZS','BT','BTS','BRF', 'PHASEBR','PHASEBT','PHASEBZ','VR-ION+','VZ-ION+','EFLUX-R','FR-E','EFLUX-Z','FZ-E','JZ-NET','JR-NET','J-THETA','J-TH(MAG)','J-TH(PHA)','PRESSURE','TG-AVE','VR-NEUTRAL','VZ-NEUTRAL']
+PhysCoilsEF = \
 ['ERADIAL-2','ETHETA-2','EAXIAL-2','PHASEER-2','PHASEEZ-2','ERADIAL-3','ETHETA-3','EAXIAL-3','PHASEER-3','PHASEEZ-3', \
  'ERADIAL-4','ETHETA-4','EAXIAL-4','PHASEER-4','PHASEEZ-4','ERADIAL-5','ETHETA-5','EAXIAL-5','PHASEER-5','PHASEEZ-5', \
  'ERADIAL-6','ETHETA-6','EAXIAL-6','PHASEER-6','PHASEEZ-6','ERADIAL-7','ETHETA-7','EAXIAL-7','PHASEER-7','PHASEEZ-7', \
  'ERADIAL-8','ETHETA-8','EAXIAL-8','PHASEER-8','PHASEEZ-8']
-TransCoilBF = \
+PhysCoilsBF = \
 ['BT-2','BT-3','BT-4','BT-5','BT-6','BT-7','BT-8', \
  'BRF-2','BRF-3','BRF-4','BRF-5','BRF-6','BRF-7','BRF-8', \
  'PHASEBT-2','PHASEBT-3','PHASEBT-4','PHASEBT-5','PHASEBT-6','PHASEBT-7','PHASEBT-8']
@@ -159,27 +159,11 @@ F = ['F2','F2*','F2^','F','F*','F^','F-','S-F','S-F^','S-F-','SEB-F','SEB-F^','S
 NFx = ['NF3A','NF2A','NFA','NF3B','NF2B','NFB','NF3^','NF2^','NF^']
 Be = ['BE','BE1','BE2','BE3','BE4','BE5','BE6','BE7','BE8','BE9','BE+']
 
-Ar_Phase = ['S-E','S-AR+','S-AR4P','SEB-E','SEB-AR+','SEB-AR4P','SRCE-2437','FR-E','FZ-E','TE','PPOT','POW-ICP1','POW-ICP2']
-O2_Phase = ['S-E','S-O+','S-O-','S-O2+','SEB-O+','SEB-O-','SEB-O2+','TE','PPOT','FR-E','FZ-E']+['S-O3P3P','SEB-O3P3P']
+Ar_Phase = ['S-E','S-AR+','S-AR4P','SEB-E','SEB-AR+','SEB-AR4P','SRCE-2437','FR-E','FZ-E','TE','PPOT','POW-ALL']
+O2_Phase = ['S-E','S-O+','S-O-','S-O2+','SEB-O+','SEB-O-','SEB-O2+','S-O3P3P','SEB-O3P3P','TE','PPOT','FR-E','FZ-E']
 
 PRCCPAr_PCMC = ['AR^0.35','EB-0.35','ION-TOT0.35']
 PRCCPO2_PCMC = ['O^0.35','EB-0.35','ION-TOT0.35']
-ESCTAr_PCMC = ['TO BE COMPLETED']
-TSHCAr_PCMC = ['AR^0.2S','EB-0.2S','ION-TOT0.2S','AR^0.2T','EB-0.2T','ION-TOT0.2T','AR^4.9U','EB-4.9U','ION-TOT4.9U','AR^9.8V','EB-9.8V','ION-TOT9.8V']					#RM-OUTDATED
-ParallelPlatePCMC = ['AR^2.67', 'ION-TOT2.67']				#RM-OUTDATED
-
-
-#Archived variable sets
-HYPI_PCMC = ['O^0.2P','EB-0.2P','ION-TOT0.2P','O^4.1Q','EB-4.1Q','ION-TOT4.1Q','O^4.15','EB-4.15','ION-TOT4.15']
-HYPII_PCMC = ['O^2.8P','EB-2.8P','ION-TOT2.8P','O^3.5Q','EB-3.5Q','ION-TOT3.5Q']
-EVgeny_PCMC = ['AR^0.1P','EB-0.1P','ION-TOT0.1P','AR^2.1Q','EB-2.1Q','ION-TOT2.1Q']
-TSHCOI2019_PCMC = ['AR^0.2S','ION-TOT0.2S','AR^4.4T','ION-TOT4.4T','AR^8.9U','ION-TOT8.9U']
-TSHCOI2020_PCMC = ['AR^0.2S','ION-TOT0.2S','AR^4.9T','ION-TOT4.9T','AR^9.8U','ION-TOT9.8U']
-SCCP2018Mk0_PCMC = ['AR^7.7J','ION-TOT7.7J','AR^5.1B','ION-TOT5.1B']
-ESCT2018Mk0_PCMC = ['AR^0.3S','EB-0.3S','ION-TOT0.3S']
-MSHC2017Mk0_PCMC = ['AR^0.5S','EB-0.5S','ION-TOT0.5S','AR^1.1B','EB-1.1B','ION-TOT1.1B']
-
-
 
 ####################
 
@@ -195,7 +179,7 @@ MSHC2017Mk0_PCMC = ['AR^0.5S','EB-0.5S','ION-TOT0.5S','AR^1.1B','EB-1.1B','ION-T
 #Crop =				R[0.65];Z[1.0,4.0] 
 
 #### PRICP ####	
-#electrodeloc = 	[33,33]			#Coil V
+#electrodeloc = 	[33,33]			# Coil V
 #waveformlocs = 	[]
 #DoFwidth = 		[]
 #TrendLoc = 		H[0];R[36,50]
@@ -209,7 +193,7 @@ MSHC2017Mk0_PCMC = ['AR^0.5S','EB-0.5S','ION-TOT0.5S','AR^1.1B','EB-1.1B','ION-T
 #electrodeloc = 	[0,5]
 #waveformlocs = 	[]
 #DoFwidth = 		R;??,Z;??
-#TrendLoc =  		H[0];R[??]		#[??] For PROES
+#TrendLoc =  		H[0];R[??]		# [??] For PROES
 #thrustloc = 		[??]
 #sheathROI = 		[]
 #sourcewidth = 		[??]
@@ -227,8 +211,21 @@ MSHC2017Mk0_PCMC = ['AR^0.5S','EB-0.5S','ION-TOT0.5S','AR^1.1B','EB-1.1B','ION-T
 #sourcewidth = 		[5]
 #Crop = 			R[0,15];Z[7,14]
 
+#### GEC-CCPmk2 ####
+#electrodeloc = 	[10,45]			# CCP
+#waveformlocs = 	[]
+#DoFwidth = 		R;xx,Z;x
+#radialprofiles = 	[20]
+#axialprofiles =	[]
+#probeloc =			[]
+#thrustloc = 		[]
+#sheathROI = 		[]
+#sourcewidth = 		[]
+#AspectRatio =      [14,8]
+#Crop = 			R[];Z[]
+
 #### SERPENT ####	
-#electrodeloc = 	[33,33]			#Coil V
+#electrodeloc = 	[33,33]			# Coil V
 #waveformlocs = 	[]
 #DoFwidth = 		[]
 #TrendLoc = 		H[0];R[36,50]
@@ -250,16 +247,16 @@ IEDFVariables = PRCCPAr_PCMC				#Requested iprofile_2d variables (no spaces)
 NEDFVariables = []							#Requested nprofile_2d variables (no spaces)
 
 #Requested movie1/movie_icp Variables.
-PhaseVariables = ['E']#Ar_Phase				#Requested Movie1 (phase) Variables.
-electrodeloc = [3,26]						#Cell location of powered electrode [R,Z].
+PhaseVariables = ['S-AR4P']#Ar_Phase		#Requested Movie1 (phase) Variables.
+electrodeloc = [29,44]#[10,45]#[3,26]		#Cell location of powered electrode [R,Z].
 waveformlocs = []							#Cell locations of additional waveforms [R,Z].
 
 #Requested variables and plotting locations.
 Variables = Phys+Ar+Be					#['E','P-POT','BT']
 multivar = []							#Additional variables plotted ontop of [Variables]
-radialprofiles = [38,53]#[55,54,53]					#Radial 1D-Profiles to be plotted (fixed Z-mesh) --
+radialprofiles = [20]#[38,53]#[55,54,53]		#Radial 1D-Profiles to be plotted (fixed Z-mesh) --
 axialprofiles = []						#Axial 1D-Profiles to be plotted (fixed R-mesh) |
-probeloc = []							#Cell location For Trend Analysis [R,Z], ([] = min/max)
+probeloc = []							#Cell location For Trend Analysis [R,Z], (leave empty for global min/max)
 
 #Various Diagnostic Settings			>>> OUTDATED, TO BE RETIRED <<<
 sheathROI = []							#Sheath Region of Interest, (Start,End) [cells]
@@ -283,10 +280,10 @@ savefig_trendphaseresolved = False		#Phase resolved trends at axial/radial cells
 thrustloc = 45							#Z-axis cell for thrust calculation  [Cells]
 
 savefig_phaseresolve1D = False			#1D Phase Resolved Images
-savefig_phaseresolve2D = False			#2D Phase Resolved Images				<<< CROP BREAKS AFTER ImageOptions[ax0]
+savefig_phaseresolve2D = True			#2D Phase Resolved Images				<<< CROP BREAKS AFTER ImageOptions[ax0]
 savefig_sheathdynamics = False			#1D and 2D sheath dynamics images
 savefig_PROES =	False					#Simulated PROES Diagnostic
-phasecycles = 2.01						#Vaveform phase cycles to be plotted. 				[Float]
+phasecycles = 1.01						#Vaveform phase cycles to be plotted. 				[Float]
 DoFwidth = 0 							#PROES Depth of Field (symmetric about image plane) [Cells]
 
 savefig_IEDFangular = False				#2D images of angular IEDF; single folders
@@ -310,9 +307,9 @@ image_extension = '.png'				#Define image extension  ('.png', '.jpg', '.eps')
 image_interp = 'spline36'				#Define image smoothing  ('none', 'bilinear','quadric','spline36')
 image_cmap = 'plasma'					#Define global colourmap ('jet','plasma','inferno','gnuplot','tecmodern')
 
-image_aspectratio = [14,8]				#Real Size of [X,Y] in cm [Doesn't Rotate - X is always horizontal]
-image_radialcrop = []#[0,12]		#Crops 2D images to [R1,R2] in cm
-image_axialcrop = []#[30,5]				#Crops 2D images to [Z1,Z2] in cm
+image_aspectratio = [10,10]#[14,8]		#Real Size of [X,Y] in cm [Doesn't Rotate - X is always horizontal]
+image_radialcrop = [0.65]#[0,12]		#Crops 2D images to [R1,R2] in cm
+image_axialcrop = [1.0,4.0]#[30,5]		#Crops 2D images to [Z1,Z2] in cm
 image_cbarlimit = []					#[min,max] colourbar limits
 image_legendloc = 'best'				#Legend Location, "1-9" or 'best' for automatic
 
@@ -320,14 +317,15 @@ image_plotcolourfill = True				#Plot 2D image colour fill
 image_plotcontours = True				#Plot 2D image contour lines
 image_contourlvls = 20					#Number of contour levels
 
-image_plotsymmetry = False				#Plot radial symmetry - mirrors across the ISYM axis
+image_plotsymmetry = True#False			#Plot radial symmetry - mirrors across the ISYM axis
 image_plotoverlay = False				#Plot location(s) of 1D radial/axial profiles onto 2D images
-image_plotsheath = False				#Plot sheath extent onto 2D images 'Axial','Radial'
+image_plotsheath = 'Radial'#False		#Plot sheath extent onto 2D images 'Axial','Radial'
 image_plotgrid = False					#Plot major/minor gridlines on 1D profiles
-image_plotmesh = False					#Plot material mesh outlines ('True' == Auto,'PRCCP','PRCCPM','ESCT','GEC')
+image_plotmesh = 'PRCCP'#False			#Plot material mesh outlines ('True' == Auto,'PRCCP','PRCCPM','ESCT','GEC')
 image_numericaxis = False				#### NOT implemented ####
+image_plotphasewaveform = True#False	#Plot waveform sub-figure on phaseresolve2D images
 
-image_rotate = False					#Rotate image 90 degrees to the right.
+image_rotate = True#False				#Rotate image 90 degrees to the right.
 image_normalise = False					#Normalise image/profiles to local max
 image_logplot = False					#Take log10(Data) for both 1D and 2D profiles
 
@@ -337,9 +335,6 @@ legendoverride = []
 xaxisoverride = []
 xlabeloverride = []
 ylabeloverride = []
-
-
-
 
 #============================#
 
@@ -819,11 +814,11 @@ for l in range(0,numfolders):
 	#	PRESOUT 							::	1D list, [Torr]
 	try:
 		NUMMETALS = list(filter(lambda x:'IMETALS' in x,NamelistData))[0].strip(' \t\n\r,=IMETALS')
-		NUMMETALS = int(NUMMETALS)+1
-		CMETALS = list(filter(lambda x: 'CMETAL=' in x, NamelistData))[0].strip(' \t\n\r,').split()[1:NUMMETALS]
+		NUMMETALS = int( NUMMETALS.split('!!!')[0].strip(' \t\n\r,=IMETALS') )
+		CMETALS = list(filter(lambda x: 'CMETAL=' in x, NamelistData))[0].strip(' \t\n\r,').split()[1:NUMMETALS+1]
 		for i in range(0,len(CMETALS)): CMETALS[i] = str(CMETALS[i].strip(','))
-		IETRODEM.append( list(filter(lambda x:'IETRODEM=' in x, NamelistData))[0].split()[1:NUMMETALS])
-		for i in range(0,len(IETRODEM[l])): IETRODEM[l][i] = int(IETRODEM[l][i].strip(','))
+		IETRODEM =  list(filter(lambda x:'IETRODEM=' in x, NamelistData))[0].split()[1:NUMMETALS+1]
+		for i in range(0,len(IETRODEM)): IETRODEM[i] = int(IETRODEM[i].strip(','))
 	except:
 		print( 'ERROR: FAILED TO READ IMETALS, CMETAL, IETRODEM')
 		print( 'SEE "#Material Namelist Inputs (frequencies/voltages/powers)"' )
@@ -3887,12 +3882,14 @@ def ImagePlotter2D(Image,extent,aspectratio=image_aspectratio,variable='N/A',fig
 		Image = Normalise(Image)[0]
 	#endif
 	
-	#Plot image with colour fill and contour lines, here contour scale = 95% of cbar scale for clarity
+	#Plot image with colour fill and contour lines
 	if image_plotcolourfill == True and image_plotcontours == True:
 		im2 = ax.contour(Image,extent=extent,origin="lower",levels=image_contourlvls)
 		im = ax.imshow(Image,extent=extent,origin="lower")
-		ContourMin,ContourMax = CbarMinMax(ax,Image)
-		im2.set_clim(ContourMin*0.95,ContourMax*0.95)
+		#Contour scale = 95% of cbar scale for clarity
+		ContourMin,ContourMax = im2.get_clim()
+		FillMin,FillMax = im.get_clim()
+		im2.set_clim(FillMin*0.95,FillMax*0.95)
 		
 	#Plot image with only colour fill
 	elif image_plotcolourfill == True:
@@ -4610,10 +4607,10 @@ def CalcSheathExtent(folderidx=l,Orientation='Radial',Phase='NaN',Ne=list(),Ni=l
 				for j in range(0,len(Neff[i])):
 
 					#if ion density drops to zero, we've hit a material surface.
-					if Neff[i][j] == 0.0 and j == 0:						#### RM TO BE COMPLETED ####
+					if Neff[i][j] == 0.0 and j == 0:						#### SJD TO BE COMPLETED ####
 						AxialPlasmaExtent = 0
 						break
-					elif Neff[i][j] == 0.0 and j > 0:						#### RM TO BE COMPLETED ####
+					elif Neff[i][j] == 0.0 and j > 0:						#### SJD TO BE COMPLETED ####
 						AxialPlasmaExtent = j-1
 						break
 					#endif
@@ -4622,7 +4619,7 @@ def CalcSheathExtent(folderidx=l,Orientation='Radial',Phase='NaN',Ne=list(),Ni=l
 			#endfor	
 		
 			#Sheath extension: integral_(R0->Rwall) ne dR == integral_(Rwall->R0) ni dR
-			for i in range(0,len(Neff[0])):									#### RM TO BE COMPLETED ####
+			for i in range(0,len(Neff[0])):									#### SJD TO BE COMPLETED ####
 				Sx.append(np.nan)
 			#endfor
 
@@ -5818,7 +5815,7 @@ if savefig_movieicp1D == True:
 		Title = 'Mesh-Averaged Temporal Profiles of '+str(VariableStrings)+' for \n'+Dirlist[l][2:-1]
 		Xlabel,Ylabel = 'Simulation time [ms]','Normalised Mesh-Average Value'
 		ImageOptions(fig,ax,Xlabel,Ylabel,Title,Legend,Crop=False)
-		ax.set_ylim(0,1.01+(len(Legend)*0.05))
+		ax.set_ylim(0,1)
 
 		#Save figure.
 		savefig(DirMeshAve+FolderNameTrimmer(Dirlist[l])+'_Normalised'+ext)
@@ -7477,7 +7474,9 @@ if savefig_phaseresolve1D == True:
 
 					if ProfileOrientation[k] == 'Axial':
 						ZlineoutLoc,axis = Lineouts[k],Zaxis
-						phaseresolvedProfile = ExtractAxialProfile(PhaseData[j],proclist[i],varlist[i],ZlineoutLoc,R_mesh[l],Z_mesh[l],ISYMlist[l])[::-1]
+						# SJD MAY NEED TO REMOVE THE [::-1], THE DATA MAY BE REVERSED AT READIN, 
+						# I CAN'T REMEMBER... THE 2D VERSION DOESN'T HAVE THIS ANYMORE
+						phaseresolvedProfile = ExtractAxialProfile(PhaseData[j],proclist[i],varlist[i],ZlineoutLoc,R_mesh[l],Z_mesh[l],ISYMlist[l])[::-1]	
 						ProfileString = ' @ R='+str(round(Lineouts[k]*dr[l],2))+'cm \n'
 						Xlabel = 'Axial Distance Z [cm]'
 					elif ProfileOrientation[k] == 'Radial':
@@ -7488,25 +7487,35 @@ if savefig_phaseresolve1D == True:
 					#endif
 
 					#Create figures and plot the 1D profiles. (ax[0]=variable, ax[1]=waveform)
-					fig,ax = figure(image_aspectratio,2)
+					if image_plotphasewaveform == True:
+						fig,ax = figure(image_aspectratio,2)
+						ax0 = ax[0]							# Image Sub-Fig (top fig)
+						ax1 = ax[1]							# Waveform Sub-Fig (bottom fig)
+					else:
+						fix,ax = figure(image_aspectratio,1)
+						ax0 = ax							# Image Sub-Fig (top fig)
+					#endif
 					Ylabel = VariableLabelMaker(varlist)
 					fig.suptitle('Phase-Resolved '+varlist[i]+' for '+VariedValuelist[l]+ProfileString+str(Phaselist[j]), y=0.97, fontsize=16)
 
 					#Plot profile and apply image options.
-					ax[0].plot(axis, phaseresolvedProfile, lw=2)
-					ImageOptions(fig,ax[0],Xlabel,Ylabel[i],Crop=False)
-					ax[0].set_ylim(VariableMin,VariableMax*1.02)
+					ax0.plot(axis, phaseresolvedProfile, lw=2)
+					ImageOptions(fig,ax0,Xlabel,Ylabel[i],Crop=False)
+					ax0.set_ylim(VariableMin,VariableMax*1.02)
 
-					#Plot waveform and apply image options.
-					ax[1].plot(Phaseaxis, ElectrodeWaveform, lw=2)
-					ax[1].axvline(Phaseaxis[j], color='k', linestyle='--', lw=2)
-					Xlabel,Ylabel = 'Phase [$\omega$t/2$\pi$]','Electrode Potential [V]'
-					ImageOptions(fig,ax[1],Xlabel,Ylabel,Crop=False)
+					if image_plotphasewaveform == True:
+						#Plot waveform and apply image options.
+						ax1.plot(Phaseaxis, ElectrodeWaveform, lw=2)
+						ax1.axvline(Phaseaxis[j], color='k', linestyle='--', lw=2)
+						Xlabel,Ylabel = 'Phase [$\omega$t/2$\pi$]','Electrode Potential [V]'
+						ImageOptions(fig,ax1,Xlabel,Ylabel,Crop=False)
+						
+						#Clean up image subfigures
+						fig.tight_layout()
+						plt.subplots_adjust(top=0.90)
+					#endif
 
-					#Clean up image and save with relevent filename.
 					#NOTE:	zfill assumes phase < 999 degrees	(i.e. < 1e5)
-					fig.tight_layout()
-					plt.subplots_adjust(top=0.90)
 					plt.savefig(Dir1DProfiles+NameString+'_'+str(Phase).zfill(4)+ext)
 					clearfigures(fig)
 
@@ -7556,7 +7565,7 @@ if savefig_phaseresolve2D == True:
 		PhaseData,Phaselist,proclist,varlist = ExtractPhaseData(folder=l,Variables=PhaseVariables)
 		SxData,SxPhase,Sxproc,Sxvar = ExtractPhaseData(folder=l,Variables=['E','AR+'])
 		PPOT = ExtractPhaseData(folder=l,Variables=['PPOT'])[2][0]
-
+		
 		#Generate SI scale axes for lineout plots. ([omega*t/2pi] and [cm] respectively)
 		Phaseaxis = GenerateAxis('Phase',ISYMlist[l],Phaselist)
 		Raxis = GenerateAxis('Radial',ISYMlist[l])
@@ -7614,7 +7623,6 @@ if savefig_phaseresolve2D == True:
 				Image = ImageExtractor2D(PhaseData[j][proclist[i]],varlist[i])
 				MinLim.append( CbarMinMax(ax,Image,Symmetry=False)[0] )
 				MaxLim.append( CbarMinMax(ax,Image,Symmetry=False)[1] )
-				print(MinLim,MaxLim)
 			#endfor
 			CbarLimits = [min(MinLim),max(MaxLim)]
 
@@ -7623,7 +7631,7 @@ if savefig_phaseresolve2D == True:
 				Phase = int( round(Phaseaxis[j]*360.0,3) )		#[Deg]
 
 				#Extract full 2D image for further processing.
-				Image = ImageExtractor2D(PhaseData[j][proclist[i]],varlist[i])[::-1]		# RM REVERSE AT READIN
+				Image = ImageExtractor2D(PhaseData[j][proclist[i]],varlist[i])				# SJD REMOVED [::-1]
 				#Extract Ni and Ne variables for sheath processing.
 				if image_plotsheath in ['Radial','Axial']:
 					Ne = SxData[j][Sxproc[Sxvar.index('E')]]
@@ -7635,39 +7643,49 @@ if savefig_phaseresolve2D == True:
 				Xlabel,Ylabel = 'Radial Distance R [cm]','Axial Distance Z [cm]'
 				if image_rotate == True: Xlabel,Ylabel = Ylabel,Xlabel
 				extent,aspectratio = DataExtent(l)
-
+				
 				#Create figure and axes, plot image on top and waveform underneath.
-				fig,ax = figure(aspectratio,2)
+				if image_plotphasewaveform == True:
+					fig,ax = figure(aspectratio,2)
+					ax0 = ax[0]							# Image Sub-Fig (top fig)
+					ax1 = ax[1]							# Waveform Sub-Fig (bottom fig)
+				else:
+					fix,ax = figure(aspectratio,1)
+					ax0 = ax							# Image Sub-Fig (top fig)
+				#endif
 				Title = 'Phase-Resolved '+varlist[i]+'\n'+str(Phaselist[j])
 				fig.suptitle(Title, y=0.97, fontsize=18)
 
 				#Plot 2D image, applying image options and cropping as required.
-				fig,ax[0],im,Image = ImagePlotter2D(Image,extent,aspectratio,varlist[i],fig,ax[0])
+				fig,ax0,im,Image = ImagePlotter2D(Image,extent,aspectratio,varlist[i],fig,ax0)
 				if image_plotsheath in ['Radial','Axial']:
-					PlotSheathExtent(SxAxis,Sx,ax[0],ISYMlist[l],Orientation=image_plotsheath)
+					PlotSheathExtent(SxAxis,Sx,ax0,ISYMlist[l],Orientation=image_plotsheath)
 				#endif
 				
 				#Add Colourbar (Axis, Label, Bins)
-				ImageOptions(fig,ax[0],Xlabel,Ylabel,Crop=True)
+				ImageOptions(fig,ax0,Xlabel,Ylabel,Crop=True)
 				Ylabel = VariableLabelMaker(varlist)
-				cax = Colourbar(ax[0],Ylabel[i],5,Lim=CbarLimits)
+				cax = Colourbar(ax0,Ylabel[i],5,Lim=CbarLimits)
 
-				#Plot waveform and apply image options.
-				ax[1].plot(Phaseaxis, ElectrodeWaveform, lw=2)
-				ax[1].axvline(Phaseaxis[j], color='k', linestyle='--', lw=2)
-				Xlabel,Ylabel = 'Phase [$\omega$t/2$\pi$]','Electrode Potential [V]'
-				ImageOptions(fig,ax[1],Xlabel,Ylabel,Crop=False)
-				ax[1].xaxis.set_major_locator(ticker.MultipleLocator(0.25))
-				#Add Invisible Colourbar to sync X-axis
-				InvisibleColourbar(ax[0])
+				if image_plotphasewaveform == True:
+					#Plot waveform and apply image options.
+					ax1.plot(Phaseaxis, ElectrodeWaveform, lw=2)
+					ax1.axvline(Phaseaxis[j], color='k', linestyle='--', lw=2)
+					Xlabel,Ylabel = 'Phase [$\omega$t/2$\pi$]','Electrode Potential [V]'
+					ImageOptions(fig,ax1,Xlabel,Ylabel,Crop=False)
+					ax1.xaxis.set_major_locator(ticker.MultipleLocator(0.25))
+					
+					#Add Invisible Colourbar to sync X-axis
+					InvisibleColourbar(ax0)
+					
+					#Clean up image subfigures
+					fig.tight_layout()
+					plt.subplots_adjust(top=0.90)
+				#endif
 				
-				#Clean up image and save with relevent filename.
 				#NOTE:	zfill assumes phase < 999 degrees	(i.e. < 1e5)
-				fig.tight_layout()
-				plt.subplots_adjust(top=0.90)
 				savefig(DirMovieplots+varlist[i]+'_'+str(Phase).zfill(4)+ext)
 				clearfigures(fig)
-
 
 				#Write Phase data in ASCII format if required.
 				if write_ASCII == True:
