@@ -61,6 +61,7 @@ import subprocess
 import warnings
 import os, sys
 import os.path
+import csv
 import re
 import gc
 
@@ -148,15 +149,17 @@ PhysCoilsBF = \
  'BRF-2','BRF-3','BRF-4','BRF-5','BRF-6','BRF-7','BRF-8', \
  'PHASEBT-2','PHASEBT-3','PHASEBT-4','PHASEBT-5','PHASEBT-6','PHASEBT-7','PHASEBT-8']
  
-ConvCheck = ['E','TE','PPOT','TG-AVE']
+Conv = ['E','TE','PPOT','POW-RF','SIGMA','EF-TOT','TG-AVE']
 
 Ar = ['AR3S','AR4SM','AR4SR','AR4SPM','AR4SPR','AR4P','AR4D','AR','AR+','AR2+','AR2*','S-AR+','S-AR4P','SEB-AR+','SEB-AR4P','FZ-AR3S','FR-AR3S','FR-AR+','FZ-AR+','FZ-AR3S','FR-AR3S']
 O2 = ['O3','O2','O2+','O','O+','O-','S-O3','S-O2+','S-O+','S-O-','SEB-O3','SEB-O+','SEB-O2+','SEB-O-','FR-O+','FZ-O+','FR-O-','FZ-O-']+['O3P3P','O***','S-O3P3P','S-O***','SEB-O3P3P','SEB-O***']
-H2 = ['H','H*','H^','H-']
+H2 = ['H2V0','H2V1','H2V2','H2V3','H1','H*','H**','H2+','H+','H-','S-H+','SEB-H+','S-2H+','SEB-2H+','S-H-','SEB-H-','FZ-H2V0','FR-H2V0','FZ-H1','FR-H1','FZ-H+','FR-H+','FZ-H2+','FR-H2+','FZ-H-','FR-H-',]
 N2 = ['N2','N2V','N2*','N2**','N2^','N','N*','N^']
 Cl = ['Cl2','Cl','CL^','CL-','Cl2V','Cl2^','CL*','CL**','CL***']
 F = ['F2','F2*','F2^','F','F*','F^','F-','S-F','S-F^','S-F-','SEB-F','SEB-F^','SEB-F-','FZ-F','FR-F','FZ-F^','FR-F^','FZ-F-','FR-F-']
 NFx = ['NF3A','NF2A','NFA','NF3B','NF2B','NFB','NF3^','NF2^','NF^']
+SFx = ['SF6','SF5','SF4','SF3','SF2','SF','S','SF5+','SF4+','SF3+','SF2+','SF+','S+','SF6-','SF5-']
+Al = ['AL','AL*','AL**','AL+','S-AL','SEB-AL','S-AL*','SEB-AL*','S-AL**','SEB-AL**','S-AL+','SEB-AL+','FZ-AL+','FR-AL+']
 Be = ['BE','BE1','BE2','BE3','BE4','BE5','BE6','BE7','BE8','BE9','BE+']
 
 Ar_Phase = ['S-E','S-AR+','S-AR4P','SEB-E','SEB-AR+','SEB-AR4P','SRCE-2437','FR-E','FZ-E','TE','PPOT','POW-ALL']
@@ -243,91 +246,92 @@ PRCCPO2_PCMC = ['O^0.35','EB-0.35','ION-TOT0.35']
 #====================================================================#
 
 #Requested IEDF/NEDF Variables.
-IEDFVariables = PRCCPAr_PCMC				#Requested iprofile_2d variables (no spaces)
-NEDFVariables = []							#Requested nprofile_2d variables (no spaces)
+IEDFVariables = PRCCPAr_PCMC			#Requested Variables from iprofile_2d.pdt
+NEDFVariables = []						#Requested Variables from nprofile_2d.pdt
 
 #Requested movie1/movie_icp Variables.
-PhaseVariables = ['S-AR4P']#Ar_Phase		#Requested Movie1 (phase) Variables.
-electrodeloc = [29,44]#[10,45]#[3,26]		#Cell location of powered electrode [R,Z].
-waveformlocs = []							#Cell locations of additional waveforms [R,Z].
+PhaseVariables = Ar_Phase				# Requested Movie1 (phase) Variables.
+electrodeloc = [0,0]					# Cell location of powered electrode [R,Z].
+waveformlocs = []						# Cell locations of additional waveforms [R,Z].
 
 #Requested variables and plotting locations.
-Variables = Phys+Ar+Be					#['E','P-POT','BT']
-multivar = []							#Additional variables plotted ontop of [Variables]
-radialprofiles = [20]#[38,53]#[55,54,53]		#Radial 1D-Profiles to be plotted (fixed Z-mesh) --
-axialprofiles = []						#Axial 1D-Profiles to be plotted (fixed R-mesh) |
-probeloc = []							#Cell location For Trend Analysis [R,Z], (leave empty for global min/max)
+Variables = Phys+H2#Phys+Ar+Be			# Requested Variables from Tecplot2D.pdt, tecplot_kin.pdt, and movie_icp.pdt 
+multivar = []							# Additional variables plotted ontop of [Variables]
+radialprofiles = []						# Radial 1D-Profiles to be plotted (fixed Z-mesh) --
+axialprofiles = []						# Axial 1D-Profiles to be plotted (fixed R-mesh) |
+probeloc = []							# Cell location For Trend Analysis [R,Z], (leave empty for global min/max)
 
 #Various Diagnostic Settings			>>> OUTDATED, TO BE RETIRED <<<
-sheathROI = []							#Sheath Region of Interest, (Start,End) [cells]
-sourcewidth = []						#Source Dimension at ROI, leave empty for auto. [cells]
+sheathROI = []							# Sheath Region of Interest, (Start,End) [cells]
+sourcewidth = []						# Source Dimension at ROI, leave empty for auto. [cells]
 
 #Requested diagnostics and plotting routines.
-savefig_tecplot2D = False				#2D Single-Variables: TECPLOT2D.PDT
+savefig_tecplot2D = True				# 2D Single-Variables: TECPLOT2D.PDT		<<< .csv File Save
 
-savefig_movieicp2D = False				#2D Single-Variables: movie_icp.pdt		<<< MAXITER SHOULD BE AN ARRAY...
-savefig_movieicp1D = False				#1D Single-Variables: movie_icp.pdt		<<< MAXITER SHOULD BE AN ARRAY...
-savefig_convergence = False				#1D Single-Variables: movie_icp.pdt
-iterstep = 1							#movie_icp.pdt iteration step size
+savefig_movieicp2D = False				# 2D Single-Variables: movie_icp.pdt		<<< MAXITER SHOULD BE AN ARRAY...
+savefig_movieicp1D = False				# 1D Single-Variables: movie_icp.pdt		<<< MAXITER SHOULD BE AN ARRAY...
+savefig_convergence = False				# 1D Single-Variables: movie_icp.pdt
+iterstep = 1							# movie_icp.pdt iteration step size
 
-savefig_monoprofiles = False			#Single-Variables; fixed height/radius
-savefig_multiprofiles = False			#Multi-Variables; same folder			<<< NO ASCII OUTPUT
-savefig_compareprofiles = False			#Multi-Variables; all folders
-savefig_temporalprofiles = False		#Single-Variables; fixed height/radius
+savefig_monoprofiles = False			# Single-Variables; fixed height/radius		<<< .csv File Save
+savefig_multiprofiles = False			# Multi-Variables; same folder
+savefig_compareprofiles = False			# Multi-Variables; all folders
+savefig_temporalprofiles = False		# Single-Variables; fixed height/radius
 
-savefig_trendphaseaveraged = False		#Phase averaged trends at axial/radial cells		# CHANGE TO 'ProbeLoc' cell
-savefig_trendphaseresolved = False		#Phase resolved trends at axial/radial cells		# CHANGE TO 'ProbeLoc' cell
-thrustloc = 45							#Z-axis cell for thrust calculation  [Cells]
+savefig_trendphaseaveraged = False		# Phase averaged trends at axial/radial cells		# CHANGE TO 'ProbeLoc' cell
+savefig_trendphaseresolved = False		# Phase resolved trends at axial/radial cells		# CHANGE TO 'ProbeLoc' cell
+thrustloc = 45							# Z-axis cell for thrust calculation  [Cells]
 
-savefig_phaseresolve1D = False			#1D Phase Resolved Images
-savefig_phaseresolve2D = True			#2D Phase Resolved Images				<<< CROP BREAKS AFTER ImageOptions[ax0]
-savefig_sheathdynamics = False			#1D and 2D sheath dynamics images
-savefig_PROES =	False					#Simulated PROES Diagnostic
-phasecycles = 1.01						#Vaveform phase cycles to be plotted. 				[Float]
-DoFwidth = 0 							#PROES Depth of Field (symmetric about image plane) [Cells]
+savefig_phaseresolve1D = False			# 1D Phase Resolved Images
+savefig_phaseresolve2D = False			# D Phase Resolved Images				<<< CROP BREAKS AFTER ImageOptions[ax0]
+savefig_sheathdynamics = False			# 1D and 2D sheath dynamics images
+savefig_PROES =	False					# Simulated PROES Diagnostic
+phasecycles = 1.01						# Vaveform phase cycles to be plotted. 				[Float]
+DoFwidth = 0 							# PROES Depth of Field (symmetric about image plane) [Cells]
 
-savefig_IEDFangular = False				#2D images of angular IEDF; single folders
-savefig_IEDFtrends = False				#1D IEDF trends; all folders
-savefig_EEDF = False					#NO PLOTTING ROUTINE					<<< NO ROUTINE
+savefig_IEDFangular = False				# 2D images of angular IEDF; single folders
+savefig_IEDFtrends = False				# 1D IEDF trends; all folders
+savefig_EEDF = False					# NO PLOTTING ROUTINE					<<< NO ROUTINE
 
 #Write processed data to ASCII files.
-write_ASCII = True						#All diagnostic output written to ASCII.
+write_ASCII = False						# Data underpinning figs written in ASCII format
+Write_CSV = True						# Data underpinning figs written in .csv format
 
 #Steady-State diagnostics terminal output toggles.
-print_generaltrends = False				#Verbose Min/Max Trend Outputs.
-print_Knudsennumber = False				#Print cell averaged Knudsen Number
-print_totalpower = False				#Print all requested total powers
-print_Reynolds = False					#Print cell averaged sound speed
-print_DCbias = False					#Print DC bias at electrodeloc
-print_thrust = False					#Print neutral, ion and total thrust
-print_sheath = False					#Print sheath width at electrodeloc						
+print_generaltrends = False				# Verbose Min/Max Trend Outputs.
+print_Knudsennumber = False				# Print cell averaged Knudsen Number
+print_totalpower = False				# Print all requested total powers
+print_Reynolds = False					# Print cell averaged sound speed
+print_DCbias = False					# Print DC bias at electrodeloc
+print_thrust = False					# Print neutral, ion and total thrust
+print_sheath = False					# Print sheath width at electrodeloc						
 
 #Image plotting options.
-image_extension = '.png'				#Define image extension  ('.png', '.jpg', '.eps')		
-image_interp = 'spline36'				#Define image smoothing  ('none', 'bilinear','quadric','spline36')
-image_cmap = 'plasma'					#Define global colourmap ('jet','plasma','inferno','gnuplot','tecmodern')
+image_extension = '.png'				# Define image extension  ('.png', '.jpg', '.eps')		
+image_interp = 'spline36'				# Define image smoothing  ('none', 'bilinear','quadric','spline36')
+image_cmap = 'plasma'					# Define global colourmap ('jet','plasma','inferno','gnuplot','tecmodern')
 
-image_aspectratio = [10,10]#[14,8]		#Real Size of [X,Y] in cm [Doesn't Rotate - X is always horizontal]
-image_radialcrop = [0.65]#[0,12]		#Crops 2D images to [R1,R2] in cm
-image_axialcrop = [1.0,4.0]#[30,5]		#Crops 2D images to [Z1,Z2] in cm
-image_cbarlimit = []					#[min,max] colourbar limits
-image_legendloc = 'best'				#Legend Location, "1-9" or 'best' for automatic
+image_aspectratio = [8,10]				# Real Size of [X,Y] in cm [Doesn't Rotate - X is always horizontal]
+image_radialcrop = []					# Crops 2D images to [R1,R2] in cm
+image_axialcrop = [1,5]					# Crops 2D images to [Z1,Z2] in cm
+image_cbarlimit = []					# [min,max] colourbar limits
+image_legendloc = 'best'				# Legend Location, "1-9" or 'best' for automatic
 
-image_plotcolourfill = True				#Plot 2D image colour fill
-image_plotcontours = True				#Plot 2D image contour lines
-image_contourlvls = 20					#Number of contour levels
+image_plotcolourfill = True				# Plot 2D image colour fill
+image_plotcontours = True				# Plot 2D image contour lines
+image_contourlvls = 20					# Number of contour levels
 
-image_plotsymmetry = True#False			#Plot radial symmetry - mirrors across the ISYM axis
-image_plotoverlay = False				#Plot location(s) of 1D radial/axial profiles onto 2D images
-image_plotsheath = 'Radial'#False		#Plot sheath extent onto 2D images 'Axial','Radial'
-image_plotgrid = False					#Plot major/minor gridlines on 1D profiles
-image_plotmesh = 'PRCCP'#False			#Plot material mesh outlines ('True' == Auto,'PRCCP','PRCCPM','ESCT','GEC')
+image_plotsymmetry = True				# Plot radial symmetry - mirrors across the ISYM axis
+image_plotoverlay = False				# Plot location(s) of 1D radial/axial profiles onto 2D images
+image_plotsheath = False				# Plot sheath extent onto 2D images 'Axial','Radial'
+image_plotgrid = False					# Plot major/minor gridlines on 1D profiles
+image_plotmesh = 'PRCCPM'				# Plot material mesh outlines ('True' == Auto,'PRCCP','PRCCPM','ESCT','GEC')
 image_numericaxis = False				#### NOT implemented ####
-image_plotphasewaveform = True#False	#Plot waveform sub-figure on phaseresolve2D images
+image_plotphasewaveform = False			# Plot waveform sub-figure on phaseresolve2D images
 
-image_rotate = True#False				#Rotate image 90 degrees to the right.
-image_normalise = False					#Normalise image/profiles to local max
-image_logplot = False					#Take log10(Data) for both 1D and 2D profiles
+image_rotate = True						# Rotate image 90 degrees to the right.
+image_normalise = False					# Normalise image/profiles to local max
+image_logplot = False					# Take log10(Data) for both 1D and 2D profiles
 
 #Overrides the automatic image labelling.
 titleoverride = []
@@ -1401,11 +1405,48 @@ def ExtractPhaseData(folder=l,Variables=PhaseVariables):
 #enddef
 
 
+def WriteToCSV(Data, Directory, Filename, Header=[], Mode='w'):
+#Takes 1D or 2D array and writes to a datafile in .csv format
+#Inputs,
+#		Data = Data to be written, Array (real) :: 1D or 2D
+#		Directory = Folder to write to, String
+#		Filename = Data file will be named "Filename.csv", String
+#		Header = Array of Header information, String
+#		Mode = "w" to write new file or "a" to append to existing file
+#Returns,
+#		()
+###########
+
+	#Write array length and SI dimension to file
+	with open(CSVDir+CSVFilename, Mode) as file:
+	
+		# Open Header
+		file.write( '*START HEADER*' )
+		file.write('\n')
+		# Write supplied header information
+		for i in range(0,len(CSVHeader)):
+			file.write( CSVHeader[i] )
+			file.write('\n')
+		#endfor
+		
+		# Close Header
+		file.write( '*END HEADER*' )
+		file.write('\n')
+		
+		# Append CSV formatted data after header
+		writer = csv.writer(file)
+		writer.writerows(Data)
+	#endwith
+	
+	return()
+#enddef
+
+
+def WriteDataToFile(data,filename,structure='w'):
 #Takes a 1D or 2D array and writes to a datafile in ASCII format.
 #Three imputs, Data to be written, Filename, 'w'rite or 'a'ppend.
 #Data is written orientated as plotted (i.e. j=z=0 is zero at origin)
 #WriteDataToFile(Image, FolderNameTrimmer(Dirlist[l])+VariableStrings[k])
-def WriteDataToFile(data,filename,structure='w'):
 
 	#Determine dimensionality of profile.
 	if isinstance(data[0], (list, np.ndarray) ) == True:
@@ -2405,13 +2446,109 @@ def ManualEVgenyMeshOLD(Ax=plt.gca()):
 
 #=============#
 
-def ManualGECMesh(Ax=plt.gca()):	#Greg's GEC overlay code
+def ManualGECMesh(Ax=plt.gca()):
+
+#	Notes, 	these apply to the 0.1R 0.2Z resolution mesh
+#			These are arranged for zero rotation, the other PR meshes assume rotation=True
+
+	Thick = 4		
+
+	# Vacuum Chamber Walls (outer boundary)
+	Ax.plot((0.0*dr[l],59.0*dr[l]), (0.0*dz[l],0.0*dz[l]), '-', color='dimgrey', linewidth=Thick)
+	Ax.plot((-0.0*dr[l],-59.0*dr[l]), (0.0*dz[l],0.0*dz[l]), '-', color='dimgrey', linewidth=Thick)
+	Ax.plot((0.0*dr[l],59.0*dr[l]), (119.0*dz[l],119.0*dz[l]),  '-', color='dimgrey', linewidth=Thick)
+	Ax.plot((-0.0*dr[l],-59.0*dr[l]), (119.0*dz[l],119.0*dz[l]),  '-', color='dimgrey', linewidth=Thick)
+	Ax.plot((59.0*dr[l],59.0*dr[l]), (0.0*dz[l],119.0*dz[l]),  '-', color='dimgrey', linewidth=Thick)	
+	Ax.plot((-59.0*dr[l],-59.0*dr[l]), (0.0*dz[l],119.0*dz[l]),  '-', color='dimgrey', linewidth=Thick)
+
+	# Vacuum Chamber Walls (inner boundary)
+	Ax.plot((0.0*dr[l],57.0*dr[l]), (4.0*dz[l],4.0*dz[l]), '-', color='dimgrey', linewidth=Thick)
+	Ax.plot((-0.0*dr[l],-57.0*dr[l]), (4.0*dz[l],4.0*dz[l]), '-', color='dimgrey', linewidth=Thick)
+	Ax.plot((0.0*dr[l],57.0*dr[l]), (115.0*dz[l],115.0*dz[l]),  '-', color='dimgrey', linewidth=Thick)
+	Ax.plot((-0.0*dr[l],-57.0*dr[l]), (115.0*dz[l],115.0*dz[l]),  '-', color='dimgrey', linewidth=Thick)
+	Ax.plot((57.0*dr[l],57.0*dr[l]), (4.0*dz[l],115.0*dz[l]),  '-', color='dimgrey', linewidth=Thick)	
+	Ax.plot((-57.0*dr[l],-57.0*dr[l]), (4.0*dz[l],115.0*dz[l]),  '-', color='dimgrey', linewidth=Thick)		
+
+	# Upper ICP Antenna Housing
+	Ax.plot((35.0*dr[l],35.0*dr[l]), (4.0*dz[l],32.0*dz[l]), '-', color='dimgrey', linewidth=Thick)		#Outboard Vertical
+	Ax.plot((-35.0*dr[l],-35.0*dr[l]), (4.0*dz[l],32.0*dz[l]), '-', color='dimgrey', linewidth=Thick)	#Outboard Vertical
+	Ax.plot((35.0*dr[l],41.0*dr[l]), (32.0*dz[l],32.0*dz[l]), '-', color='dimgrey', linewidth=Thick)	#Top of lip
+	Ax.plot((-35.0*dr[l],-41.0*dr[l]), (32.0*dz[l],32.0*dz[l]), '-', color='dimgrey', linewidth=Thick)	#Top of lip
+	Ax.plot((41.0*dr[l],41.0*dr[l]), (32.0*dz[l],43.0*dz[l]), '-', color='dimgrey', linewidth=Thick)	#Outboard lip
+	Ax.plot((-41.0*dr[l],-41.0*dr[l]), (32.0*dz[l],43.0*dz[l]), '-', color='dimgrey', linewidth=Thick)	#Outboard lip
+	Ax.plot((28.0*dr[l],41.0*dr[l]), (43.0*dz[l],43.0*dz[l]), '-', color='dimgrey', linewidth=Thick)	#Bottom of Lip
+	Ax.plot((-28.0*dr[l],-41.0*dr[l]), (43.0*dz[l],43.0*dz[l]), '-', color='dimgrey', linewidth=Thick)	#Bottom of lip
+	Ax.plot((28.0*dr[l],28.0*dr[l]), (43.0*dz[l],37.0*dz[l]), '-', color='dimgrey', linewidth=Thick)	#Inboard Vertical
+	Ax.plot((-28.0*dr[l],-28.0*dr[l]), (43.0*dz[l],37.0*dz[l]), '-', color='dimgrey', linewidth=Thick)	#Inboard Vertical
+
+	# Upper ICP Dielectric Window
+	Ax.plot((0.0*dr[l],32.0*dr[l]), (26.0*dz[l],26.0*dz[l]), '-', color='orange', linewidth=Thick)
+	Ax.plot((-0.0*dr[l],-32.0*dr[l]), (26.0*dz[l],26.0*dz[l]), '-', color='orange', linewidth=Thick)
+	Ax.plot((0.0*dr[l],32.0*dr[l]), (37.0*dz[l],37.0*dz[l]), '-', color='orange', linewidth=Thick)
+	Ax.plot((-0.0*dr[l],-32.0*dr[l]), (37.0*dz[l],37.0*dz[l]), '-', color='orange', linewidth=Thick)
+	Ax.plot((32.0*dr[l],32.0*dr[l]), (26.0*dz[l],37.0*dz[l]), '-', color='orange', linewidth=Thick)
+	Ax.plot((-32.0*dr[l],-32.0*dr[l]), (26.0*dz[l],37.0*dz[l]), '-', color='orange', linewidth=Thick)
+	
+	# Upper ICP Antennae
+	Antenna1 = [1.5,3.0,22.0,25.0]			# R1, R2, Z1, Z2 [Cells]
+	Antenna2 = [7.5,9.0,22.0,25.0]			# R1, R2, Z1, Z2 [Cells]
+	Antenna3 = [13.5,15.0,22.0,25.0]		# R1, R2, Z1, Z2 [Cells]
+	Antenna4 = [19.5,21.0,22.0,25.0]		# R1, R2, Z1, Z2 [Cells]
+	Ants = [Antenna1,Antenna2,Antenna3,Antenna4]
+	for i in range(0,4):
+		Ax.plot((Ants[i][0]*dr[l],Ants[i][1]*dr[l]), (22.0*dz[l],22.0*dz[l]), '-', color='red', linewidth=Thick)
+		Ax.plot((-Ants[i][0]*dr[l],-Ants[i][1]*dr[l]), (22.0*dz[l],22.0*dz[l]), '-', color='red', linewidth=Thick)
+		Ax.plot((Ants[i][0]*dr[l],Ants[i][1]*dr[l]), (25.0*dz[l],25.0*dz[l]), '-', color='red', linewidth=Thick)
+		Ax.plot((-Ants[i][0]*dr[l],-Ants[i][1]*dr[l]), (25.0*dz[l],25.0*dz[l]), '-', color='red', linewidth=Thick)
+		Ax.plot((Ants[i][0]*dr[l],Ants[i][0]*dr[l]), (22.0*dz[l],25.0*dz[l]), '-', color='red', linewidth=Thick)
+		Ax.plot((-Ants[i][0]*dr[l],-Ants[i][0]*dr[l]), (22.0*dz[l],25.0*dz[l]), '-', color='red', linewidth=Thick)
+		Ax.plot((Ants[i][1]*dr[l],Ants[i][1]*dr[l]), (22.0*dz[l],25.0*dz[l]), '-', color='red', linewidth=Thick)	
+		Ax.plot((-Ants[i][1]*dr[l],-Ants[i][1]*dr[l]), (22.0*dz[l],25.0*dz[l]), '-', color='red', linewidth=Thick)	
+	#endfor
+
+	# Upper ICP Antenna, MANUAL CENTRAL ANTENNA PAIR
+#	Ax.plot((1.5*dr[l],3.0*dr[l]), (22.0*dz[l],22.0*dz[l]), '-', color='red', linewidth=Thick)
+#	Ax.plot((-1.5*dr[l],-3.0*dr[l]), (22.0*dz[l],22.0*dz[l]), '-', color='red', linewidth=Thick)
+#	Ax.plot((1.5*dr[l],3.0*dr[l]), (25.0*dz[l],25.0*dz[l]), '-', color='red', linewidth=Thick)
+#	Ax.plot((-1.5*dr[l],-3.0*dr[l]), (25.0*dz[l],25.0*dz[l]), '-', color='red', linewidth=Thick)
+#	Ax.plot((1.5*dr[l],1.0*dr[l]), (22.0*dz[l],25.0*dz[l]), '-', color='red', linewidth=Thick)
+#	Ax.plot((-1.5*dr[l],-1.0*dr[l]), (22.0*dz[l],25.0*dz[l]), '-', color='red', linewidth=Thick)
+#	Ax.plot((3.0*dr[l],3.0*dr[l]), (22.0*dz[l],25.0*dz[l]), '-', color='red', linewidth=Thick)	
+#	Ax.plot((-3.0*dr[l],-3.0*dr[l]), (22.0*dz[l],25.0*dz[l]), '-', color='red', linewidth=Thick)
+
+	# Lower CCP Electrode Housing
+	Ax.plot((28.0*dr[l],28.0*dr[l]), (82.0*dz[l],115.0*dz[l]), '-', color='dimgrey', linewidth=Thick)	#Outboard Vertical
+	Ax.plot((-28.0*dr[l],-28.0*dr[l]), (82.0*dz[l],115.0*dz[l]), '-', color='dimgrey', linewidth=Thick)	#Outboard Vertical
+	Ax.plot((0.0*dr[l],28.0*dr[l]), (82.0*dz[l],82.0*dz[l]), '-', color='dimgrey', linewidth=Thick)		#Top of platform
+	Ax.plot((-0.0*dr[l],-28.0*dr[l]), (82.0*dz[l],82.0*dz[l]), '-', color='dimgrey', linewidth=Thick)	#Top of platform	
+	Ax.plot((25.0*dr[l],25.0*dr[l]), (82.0*dz[l],115.0*dz[l]), '-', color='dimgrey', linewidth=Thick)	#Inboard Vertical
+	Ax.plot((-25.0*dr[l],-25.0*dr[l]), (82.0*dz[l],115.0*dz[l]), '-', color='dimgrey', linewidth=Thick)	#Inboard Vertical
+
+	# Lower CCP Electrode
+	Ax.plot((0.0*dr[l],25.0*dr[l]), (82.0*dz[l],82.0*dz[l]), '-', color='red', linewidth=Thick)
+	Ax.plot((-0.0*dr[l],-25.0*dr[l]), (82.0*dz[l],82.0*dz[l]), '-', color='red', linewidth=Thick)
+	Ax.plot((0.0*dr[l],25.0*dr[l]), (97.0*dz[l],97.0*dz[l]), '-', color='red', linewidth=Thick)
+	Ax.plot((-0.0*dr[l],-25.0*dr[l]), (97.0*dz[l],97.0*dz[l]), '-', color='red', linewidth=Thick)
+	Ax.plot((25.0*dr[l],25.0*dr[l]), (82.0*dz[l],97.0*dz[l]), '-', color='red', linewidth=Thick)
+	Ax.plot((-25.0*dr[l],-25.0*dr[l]), (82.0*dz[l],97.0*dz[l]), '-', color='red', linewidth=Thick)	
+
+	# Wafer
+	Ax.plot((0.0*dr[l],25.5*dr[l]), (80.0*dz[l],80.0*dz[l]), '-', color='cyan', linewidth=Thick)
+	Ax.plot((-0.0*dr[l],-25.5*dr[l]), (80.0*dz[l],80.0*dz[l]), '-', color='cyan', linewidth=Thick)
+	Ax.plot((0.0*dr[l],25.5*dr[l]), (81.0*dz[l],81.0*dz[l]), '-', color='cyan', linewidth=Thick)
+	Ax.plot((-0.0*dr[l],-25.5*dr[l]), (81.0*dz[l],81.0*dz[l]), '-', color='cyan', linewidth=Thick)
+
+#enddef
+
+#=============#
+
+def ManualGECMesh_GS(Ax=plt.gca()):		#Greg's GEC overlay code
     thin = 2
-    thick = 2
-    verythik = 2
-    superthick = 3
+    thick = 3
+    verythik = 4
+    superthick = 5
     
-    #Plot upstream ICP material dimensions.
+    #Upstream ICP material dimensions.
     Ax.plot((56.5*dz[l],56.5*dz[l]), (1.5*dr[l],55.5*dr[l]), '-', color='dimgrey', linewidth=thin)  #vertical right edge
     Ax.plot((34.5*dz[l],34.5*dz[l]), (1.5*dr[l],14.75*dr[l]), '-', color='dimgrey', linewidth=thin)  #vertical left edge coil house
     Ax.plot((30.5*dz[l],30.5*dz[l]), (1.5*dr[l],12.5*dr[l]), '-', color='dimgrey', linewidth=thin)  #vertical internal edge coil house
@@ -2468,6 +2605,8 @@ def ManualGECMesh(Ax=plt.gca()):	#Greg's GEC overlay code
     Ax.plot((26.5*dz[l],26.5*dz[l]),   (10*dr[l],12.25*dr[l]), '-', color='red', linewidth=thick)		#5th coilright
     
     Ax.plot((0.01*dz[l], 0.2*dz[l]), (57*dr[l],57*dr[l]), color= 'black', linewidth = 14)
+
+#enddef
 
 #=============#
 
@@ -5000,7 +5139,29 @@ if savefig_tecplot2D == True:
 			plt.savefig(Dir2Dplots+'2DPlot '+VariableStrings[k]+ext)
 			clearfigures(fig)
 			
-			#Write data to ASCII files if requested.
+			#Write data underpinning current figure in .csv format
+			if Write_CSV == True:
+				CSVDir = CreateNewFolder(Dir2Dplots, '2Dplots_Data')
+				CSVRMesh = 'R_Mesh [Cells] '+str(R_mesh[l])+'  :: dR [cm/cell] '+str(dr[l])
+				CSVZMesh = 'Z_Mesh [Cells] '+str(Z_mesh[l])+'  :: dZ [cm/cell] '+str(dz[l])
+				CSVFilename = VariableStrings[k]+'.csv'
+				CSVTitle = str(Dirlist[l])
+				CSVLabel = str(label[k])
+				CSVISYM = 'ISYM='+str(ISYMlist[l])
+				CSVRotate = 'Rotate='+str(image_rotate)
+				CSVHeader = [CSVTitle,CSVLabel,CSVISYM,CSVRotate,CSVRMesh,CSVZMesh]
+				
+				# Write to .csv
+				WriteToCSV(Image, CSVDir, CSVFilename, CSVHeader)
+				
+				# Write Sheath Data separately as it is not included in the VariableList format
+				if image_plotsheath in ['Radial','Axial'] and k == len(VariableIndices)-1:
+					np.savetxt(Filename, [p for p in zip(SxAxis,Sx)], delimiter=',', fmt='%s')
+					WriteDataToFile(Sx, Dirctory+'Sx.csv')
+				#endif
+			#endif
+			
+			#Write data to ASCII files [OUTDATED FORMAT, TO BE REMOVED]
 			if write_ASCII == True:
 				DirWrite = CreateNewFolder(Dir2Dplots, '2Dplots_Data')
 				WriteDataToFile(Image, DirWrite+VariableStrings[k])
@@ -5008,6 +5169,7 @@ if savefig_tecplot2D == True:
 					WriteDataToFile(Sx, DirWrite+'Sx-EXT')
 				#endif
 			#endif
+			
 		#endfor
 	#endfor
 
@@ -5186,8 +5348,13 @@ if savefig_monoprofiles == True:
 
 			#Loop over all required variables and requested profile locations.
 			for i in tqdm(range(0,len(VariableIndices))):
+
 				#Create fig of desired size.
 				fig,ax = figure(image_aspectratio,1)
+				
+				# Create lists to store output for writing to file
+				CSVCells = list()
+				CSVProfiles = list()
 
 				for j in range(0,len(radialprofiles)):
 					#Update legend with location of each lineout.
@@ -5197,6 +5364,11 @@ if savefig_monoprofiles == True:
 
 					#Plot all requested radial lines on single image per variable.
 					Rlineout=ExtractRadialProfile(Data[l],VariableIndices[i],VariableStrings[i],radialprofiles[j])
+					
+					# Record profile and cell location for saving to file
+					CSVCells.append(radialprofiles[j])
+					CSVProfiles.append(Rlineout)
+					
 					#Plot lines for each variable at each requested slice.
 					ImagePlotter1D(Raxis,Rlineout,image_aspectratio,fig,ax)
 
@@ -5216,6 +5388,23 @@ if savefig_monoprofiles == True:
 				#Save profiles in previously created folder.
 				plt.savefig(DirRlineouts+'1D_Radial_'+VariableStrings[i]+'_Profiles'+ext)
 				plt.close(fig)
+				
+				# Write data underpinning current figure in .csv format
+				if Write_CSV == True:
+					CSVDir = CreateNewFolder(DirRlineouts, '1Dplots_Data')
+					CSVRMesh = 'R_Mesh [Cells] '+str(R_mesh[l])+'  :: dR [cm/cell] '+str(dr[l])
+					CSVZMesh = 'Z_Mesh [Cells] '+str(Z_mesh[l])+'  :: dZ [cm/cell] '+str(dz[l])
+					CSVFilename = VariableStrings[i]+'.csv'
+					CSVTitle = str(Dirlist[l])
+					CSVLabel = str(Ylabel)
+					CSVISYM = 'ISYM='+str(ISYMlist[l])
+					CSVRotate = 'Rotate='+str(image_rotate)
+					CSVCells = 'Rcells='+str(CSVCells)
+					CSVHeader = [CSVTitle,CSVLabel,CSVISYM,CSVRotate,CSVCells,CSVRMesh,CSVZMesh]
+					
+					# Write to .csv file
+					WriteToCSV(CSVProfiles, CSVDir, CSVFilename, CSVHeader)
+				#endif
 			#endfor
 			clearfigures(fig)
 		#endif
@@ -5230,8 +5419,13 @@ if savefig_monoprofiles == True:
 
 			#Collect and plot required data.
 			for i in tqdm(range(0,len(VariableIndices))):
+			
 				#Create fig of desired size.
 				fig,ax = figure(image_aspectratio,1)
+
+				# Create lists to store output for writing to file
+				CSVCells = list()
+				CSVProfiles = list()
 
 				for j in range(0,len(axialprofiles)):
 					#Perform SI conversion and save to legend.
@@ -5241,6 +5435,11 @@ if savefig_monoprofiles == True:
 
 					#Plot all requested radial lines on single image per variable.
 					Zlineout=ExtractAxialProfile(Data[l],VariableIndices[i],VariableStrings[i],axialprofiles[j])
+					
+					# Record profile and cell location for saving to file
+					CSVCells.append(axialprofiles[j])
+					CSVProfiles.append(Zlineout)
+
 					#Plot lines for each variable at each requested slice.
 					ImagePlotter1D(Zaxis,Zlineout[::-1],image_aspectratio,fig,ax)
 
@@ -5260,6 +5459,23 @@ if savefig_monoprofiles == True:
 				#Save profiles in previously created folder.
 				plt.savefig(DirZlineouts+'1D_Axial_'+VariableStrings[i]+'_Profiles'+ext)
 				plt.close(fig)
+				
+				# Write data underpinning current figure in .csv format
+				if Write_CSV == True:
+					CSVDir = CreateNewFolder(DirZlineouts, '1Dplots_Data')
+					CSVRMesh = 'R_Mesh [Cells] '+str(R_mesh[l])+'  :: dR [cm/cell] '+str(dr[l])
+					CSVZMesh = 'Z_Mesh [Cells] '+str(Z_mesh[l])+'  :: dZ [cm/cell] '+str(dz[l])
+					CSVFilename = VariableStrings[i]+'.csv'
+					CSVTitle = str(Dirlist[l])
+					CSVLabel = str(Ylabel)
+					CSVISYM = 'ISYM='+str(ISYMlist[l])
+					CSVRotate = 'Rotate='+str(image_rotate)
+					CSVCells = 'Zcells='+str(CSVCells)
+					CSVHeader = [CSVTitle,CSVLabel,CSVISYM,CSVRotate,CSVCells,CSVRMesh,CSVZMesh]
+					
+					# Write to .csv file
+					WriteToCSV(CSVProfiles, CSVDir, CSVFilename, CSVHeader)
+				#endif
 			#endfor
 			clearfigures(fig)
 		#endif
