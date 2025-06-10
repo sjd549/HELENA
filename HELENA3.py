@@ -52,7 +52,7 @@ if 'True' in str(options):
 
 #==============#
 
-#Import core modules
+#Import Core Modules
 import matplotlib.cm as cm
 import numpy as np
 import scipy as sp
@@ -67,10 +67,10 @@ import gc
 
 #Enforce matplotlib to avoid instancing undisplayed windows
 #matplotlib-tcl-asyncdelete-async-handler-deleted-by-the-wrong-thread
-import matplotlib
+import matplotlib as mpl
 #matplotlib.use('Agg')			# Uncomment to fix mem leak, disables GUI backend and "plot()"
 
-#Import additional modules
+#Import Additional Modules
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from scipy.signal import savgol_filter
 from subprocess import Popen, PIPE
@@ -152,11 +152,12 @@ PhysCoilsBF = \
 Conv = ['E','TE','PPOT','POW-RF','SIGMA','EF-TOT','TG-AVE']
 
 Ar = ['AR3S','AR4SM','AR4SR','AR4SPM','AR4SPR','AR4P','AR4D','AR','AR+','AR2+','AR2*','S-AR+','S-AR4P','SEB-AR+','SEB-AR4P','FZ-AR3S','FR-AR3S','FR-AR+','FZ-AR+','FZ-AR3S','FR-AR3S']
-O2 = ['O3','O2','O2+','O','O+','O-','S-O3','S-O2+','S-O+','S-O-','SEB-O3','SEB-O+','SEB-O2+','SEB-O-','FR-O+','FZ-O+','FR-O-','FZ-O-']+['O3P3P','O***','S-O3P3P','S-O***','SEB-O3P3P','SEB-O***']
-H2 = ['H2V0','H2V1','H2V2','H2V3','H1','H*','H**','H2+','H+','H-','S-H+','SEB-H+','S-2H+','SEB-2H+','S-H-','SEB-H-','FZ-H2V0','FR-H2V0','FZ-H1','FR-H1','FZ-H+','FR-H+','FZ-H2+','FR-H2+','FZ-H-','FR-H-',]
+O2 = ['O3','O2','O2V','O2*','O2*1S','O2+','O','O1S','O+','O-','O*','S-O3','S-O2+','S-O+','S-O-','SEB-O3','SEB-O+','SEB-O2+','SEB-O-','FR-O+','FZ-O+','FR-O-','FZ-O-']
+H2 = ['H2V0','H2V1','H2V2','H2V3','H1','H*','H**','H2+','H+','H-','S-H+','SEB-H+','S-2H+','SEB-2H+','S-H-','SEB-H-','FZ-H2V0','FR-H2V0','FZ-H1','FR-H1','FZ-H+','FR-H+','FZ-H2+','FR-H2+','FZ-H-','FR-H-']
+H2O = ['H2O','H2O+','OH','OH-','H2OV','H2O2']
 N2 = ['N2','N2V','N2*','N2**','N2^','N','N*','N^']
 Cl = ['Cl2','Cl','CL^','CL-','Cl2V','Cl2^','CL*','CL**','CL***']
-F = ['F2','F2*','F2^','F','F*','F^','F-','S-F','S-F^','S-F-','SEB-F','SEB-F^','SEB-F-','FZ-F','FR-F','FZ-F^','FR-F^','FZ-F-','FR-F-']
+F = ['F2','F2*','F2+','F','F*','F+','F-','S-F','S-F+','S-F-','SEB-F','SEB-F+','SEB-F-','FZ-F','FR-F','FZ-F+','FR-F+','FZ-F-','FR-F-']
 NFx = ['NF3A','NF2A','NFA','NF3B','NF2B','NFB','NF3^','NF2^','NF^']
 SFx = ['SF6','SF5','SF4','SF3','SF2','SF','S','SF5+','SF4+','SF3+','SF2+','SF+','S+','SF6-','SF5-']
 Al = ['AL','AL*','AL**','AL+','S-AL','SEB-AL','S-AL*','SEB-AL*','S-AL**','SEB-AL**','S-AL+','SEB-AL+','FZ-AL+','FR-AL+']
@@ -319,7 +320,8 @@ image_legendloc = 'best'				# Legend Location, "1-9" or 'best' for automatic
 
 image_plotcolourfill = True				# Plot 2D image colour fill
 image_plotcontours = True				# Plot 2D image contour lines
-image_contourlvls = 20					# Number of contour levels
+image_contourlvls = 10					# Number of contour levels
+image_contouroffset = 0.98				# Scale contourplot values relative to colourfill
 
 image_plotsymmetry = True				# Plot radial symmetry - mirrors across the ISYM axis
 image_plotoverlay = False				# Plot location(s) of 1D radial/axial profiles onto 2D images
@@ -1286,8 +1288,8 @@ def ExtractRawData(Dir,NameString,ListIndex=l):
 #Requires rawdata(2D/3D), header and variable number and mesh dimensions.
 #Allows for an optional offset in 'starting' variable number.
 #Returns 2D array of form [Variables,datapoint(R,Z)]
-#CurrentFolderData = SDFileFormatConvertorHPEM(rawdata_2D[l],header_2D,numvariables_2D)
-def SDFileFormatConvertorHPEM(Rawdata,header,numvariables,offset=0,Zmesh=0,Rmesh=0,Dimension='2D'):
+#CurrentFolderData = ReadTEC2D(rawdata_2D[l],header_2D,numvariables_2D)
+def ReadTEC2D(Rawdata,header,numvariables,offset=0,Zmesh=0,Rmesh=0,Dimension='2D'):
 
 	#If no mesh sizes supplied, collect sizes for current global folder.
 	if Rmesh == 0 and Zmesh == 0:
@@ -1337,8 +1339,8 @@ def SDFileFormatConvertorHPEM(Rawdata,header,numvariables,offset=0,Zmesh=0,Rmesh
 #Extracts all phase and variable data for the provided folder ID.
 #Initial R and Z for CYCL=1 are skipped over and not saved.
 #Takes current folder, returns Data[phase][variable][datapoints,R/Z]
-#Data,Phaselist = ExtractPhaseData(folder=l,Variables=PhaseVariables)
-def ExtractPhaseData(folder=l,Variables=PhaseVariables):
+#Data,Phaselist = ReadTEC2DPhase(folder=l,Variables=PhaseVariables)
+def ReadTEC2DPhase(folder=l,Variables=PhaseVariables):
 	#Load data from movie1 file and unpack into 1D array.
 	try: 	rawdata,filelength = ExtractRawData(Dir,movie1[l].split('/')[-1],folder)
 	except: rawdata,filelength = ExtractRawData(Dir,'movie1.pdt',folder)
@@ -1379,7 +1381,7 @@ def ExtractPhaseData(folder=l,Variables=PhaseVariables):
 	
 		#R,Z arrays are saved only for first "Cycle", apply +2 variable index offset to ignore
 		if i == 0:
-			PhaseData = SDFileFormatConvertorHPEM(rawdata,cycleloc[i],numvar+2,offset=2)
+			PhaseData = ReadTEC2D(rawdata,cycleloc[i],numvar+2,offset=2)
 			#Convert data from CGS (HPEM DEFAULT) to user requested unit system
 			for j in range(0,len(Mov1VariableStrings)):
 				PhaseData[j] = VariableUnitConversion(PhaseData[j],Mov1VariableStrings[j])
@@ -1389,7 +1391,7 @@ def ExtractPhaseData(folder=l,Variables=PhaseVariables):
 					
 		#Later cycles do not save R,Z arrays so no variable index offset is required.
 		elif i > 0:
-			PhaseData = SDFileFormatConvertorHPEM(rawdata,cycleloc[i],numvar)
+			PhaseData = ReadTEC2D(rawdata,cycleloc[i],numvar)
 			for j in range(0,len(Mov1VariableStrings)):
 				PhaseData[j] = VariableUnitConversion(PhaseData[j],Mov1VariableStrings[j])
 #				PhaseData[j] = AzimuthalPhaseConversion(PhaseData[j],Mov1VariableStrings[j])	
@@ -1418,14 +1420,14 @@ def WriteToCSV(Data, Directory, Filename, Header=[], Mode='w'):
 ###########
 
 	#Write array length and SI dimension to file
-	with open(CSVDir+CSVFilename, Mode) as file:
+	with open(Directory+Filename, Mode) as file:
 	
 		# Open Header
 		file.write( '*START HEADER*' )
 		file.write('\n')
 		# Write supplied header information
-		for i in range(0,len(CSVHeader)):
-			file.write( CSVHeader[i] )
+		for i in range(0,len(Header)):
+			file.write( Header[i] )
 			file.write('\n')
 		#endfor
 		
@@ -1439,6 +1441,56 @@ def WriteToCSV(Data, Directory, Filename, Header=[], Mode='w'):
 	#endwith
 	
 	return()
+#enddef
+
+
+def ReadFromCSV(Directory, Filename, Mode='r'):
+#Reads a .csv formatted file and returns a 1D or 2D data array and 1D header array
+#Inputs,
+#		Directory = Folder to write to, String
+#		Filename = Data file will be named "Filename.csv", String
+#		Mode = "w" to write new file or "a" to append to existing file
+#Returns,
+#		Header = 1D array containing each row of header data
+#		Data = 1D or 2D array of data following Header
+###########
+
+	#Write array length and SI dimension to file
+	with open(Directory+Filename, Mode) as file:
+
+		# Initiate any required lists
+		Header = list()
+		Data = list()
+
+		# Read Header sequentially
+		RawData = file.readlines()
+		for i in range(0,len(RawData)):
+		
+			# Strip "new line" character (\n) from each entry
+			Header.append(RawData[i].strip('\n'))
+			# Stop once "*END HEADER*" is reached
+			if "*END HEADER*" in RawData[i]:
+				LenHeader = i+1
+				break
+			#endif
+		#endfor
+
+		# Read Data and append to output array in row-wise fashion
+		for i in range(LenHeader,len(RawData)):
+			
+			# Split each row into scalars, assuming comma delimination 
+			SplitRow = RawData[i].split(',')
+			# Convert each scalar from .csv dtype U8 to dtype U16 float
+			for j in range(0,len(SplitRow)): 
+				SplitRow[j] = float(SplitRow[j])
+			#endfor
+			
+			# Append Row-wise to output data array
+			Data.append(SplitRow)
+		#endfor
+	#endwith
+	
+	return(Data,Header)
 #enddef
 
 
@@ -2724,7 +2776,7 @@ for l in tqdm(range(0,numfolders)):
 	header_2Dlist.append(header_2D)
 
 	#Seperate total 1D data array into sets of data for each variable.
-	CurrentFolderData = SDFileFormatConvertorHPEM(rawdata_2D[l],header_2D,numvariables_2D)
+	CurrentFolderData = ReadTEC2D(rawdata_2D[l],header_2D,numvariables_2D)
 	
 	#Convert data from CGS (HPEM DEFAULT) to user requested unit system
 	for i in range(0,len(TEC2DVariableStrings)):
@@ -2833,7 +2885,7 @@ for l in tqdm(range(0,numfolders)):
 #		header_kinlist.append(header_kin)
 #
 #		#Seperate total 1D data array into sets of data for each variable.
-#		CurrentFolderData = SDFileFormatConvertorHPEM(rawdata_kin[l],header_kin,numvariables_kin, Zmesh=I,Dimension='1D')
+#		CurrentFolderData = ReadTEC2D(rawdata_kin[l],header_kin,numvariables_kin, Zmesh=I,Dimension='1D')
 #
 #		#Convert data from CGS (HPEM DEFAULT) to user requested unit system						!!! Not tested
 #		for i in range(0,len(KinVariableStrings)):
@@ -2886,7 +2938,7 @@ for l in tqdm(range(0,numfolders)):
 
 		#Seperate total 1D data array into sets of data for each variable.
 		#Data is stored in 2D array of shape: [EDFangle,EDFbins] or [I,J]
-		CurrentFolderData = SDFileFormatConvertorHPEM(rawdata_IEDF[l],header_IEDF,numvariables_IEDF,0,I,J)
+		CurrentFolderData = ReadTEC2D(rawdata_IEDF[l],header_IEDF,numvariables_IEDF,0,I,J)
 		
 		#Convert data from CGS (HPEM DEFAULT) to user requested unit system							!!! Not tested
 		for i in range(0,len(IEDFVariableStrings)):
@@ -3038,7 +3090,7 @@ for l in tqdm(range(0,numfolders)):
 			#CurrentFolderData is saved in form: [iteration,variable,datapoint(R,Z)]
 			#CurrentIterData is saved in form: [variable,datapoint(R,Z)]
 			if i == 0:
-				CurrentIterData = SDFileFormatConvertorHPEM(rawdata,Iterloc[i],numvar+2,offset=2)
+				CurrentIterData = ReadTEC2D(rawdata,Iterloc[i],numvar+2,offset=2)
 #				print(i, shape(CurrentIterData))
 #				print(shape(CurrentFolderData))
 				
@@ -3068,7 +3120,7 @@ for l in tqdm(range(0,numfolders)):
 			#CurrentFolderData is saved in form: [iteration,variable,datapoint(R,Z)]
 			#CurrentIterData is saved in form: [variable,datapoint(R,Z)]
 			elif i > 0:
-				CurrentIterData = SDFileFormatConvertorHPEM(rawdata,Iterloc[i],numvar)
+				CurrentIterData = ReadTEC2D(rawdata,Iterloc[i],numvar)
 #				print(i, shape(CurrentIterData))
 #				print(shape(CurrentFolderData))
 	
@@ -4016,23 +4068,22 @@ def ImagePlotter2D(Image,extent,aspectratio=image_aspectratio,variable='N/A',fig
 
 	#Apply any required numerical changes to the image.
 	if image_logplot == True:
-		Image = np.log10(Image)
-	elif image_normalise == True:
+#		Image = np.log10(Image)								# ln(0) NaN issues in materials
+		Image = where(Image != 0, np.log10(Image), 0)		# Avoids ln(0) in images
+	#endif
+
+	if image_normalise == True:
 		Image = Normalise(Image)[0]
 	#endif
-	
+
 	#Plot image with colour fill and contour lines
 	if image_plotcolourfill == True and image_plotcontours == True:
-		im2 = ax.contour(Image,extent=extent,origin="lower",levels=image_contourlvls)
-		im = ax.imshow(Image,extent=extent,origin="lower")
-		#Contour scale = 95% of cbar scale for clarity
-		ContourMin,ContourMax = im2.get_clim()
-		FillMin,FillMax = im.get_clim()
-		im2.set_clim(FillMin*0.95,FillMax*0.95)
-		
+		im = ax.contourf(Image,extent=extent,origin="lower",levels=image_contourlvls)
+		im2 = ax.contour(Image,extent=extent,origin="lower",levels=image_contourlvls,cmap='Greys',alpha=0.25)
+
 	#Plot image with only colour fill
 	elif image_plotcolourfill == True:
-		im = ax.imshow(Image,extent=extent,origin="lower")
+		im = ax.contourf(Image,extent=extent,origin="lower",levels=1000)
 
 	#Plot image with only contour lines
 	elif image_plotcontours == True:
@@ -7585,9 +7636,9 @@ if savefig_phaseresolve1D == True:
 		VariedValuelist.append( FolderNameTrimmer(Dirlist[l]) )
 
 		#Create VariableIndices for each folder as required. (Always get 'E','AR+','PPOT')
-		PhaseData,Phaselist,proclist,varlist = ExtractPhaseData(folder=l,Variables=PhaseVariables)
-		SxData,SxPhase,Sxproc,Sxvar = ExtractPhaseData(folder=l,Variables=['E','AR+'])
-		PPOT = ExtractPhaseData(folder=l,Variables=['PPOT'])[2][0]
+		PhaseData,Phaselist,proclist,varlist = ReadTEC2DPhase(folder=l,Variables=PhaseVariables)
+		SxData,SxPhase,Sxproc,Sxvar = ReadTEC2DPhase(folder=l,Variables=['E','AR+'])
+		PPOT = ReadTEC2DPhase(folder=l,Variables=['PPOT'])[2][0]
 
 		#Generate SI scale axes for lineout plots. ([omega*t/2pi] and [cm] respectively)
 		Phaseaxis = GenerateAxis('Phase',ISYMlist[l],Phaselist)
@@ -7778,9 +7829,9 @@ if savefig_phaseresolve2D == True:
 		VariedValuelist.append( FolderNameTrimmer(Dirlist[l]) )
 
 		#Create VariableIndices for each folder as required. (Always get 'E','AR+','PPOT')
-		PhaseData,Phaselist,proclist,varlist = ExtractPhaseData(folder=l,Variables=PhaseVariables)
-		SxData,SxPhase,Sxproc,Sxvar = ExtractPhaseData(folder=l,Variables=['E','AR+'])
-		PPOT = ExtractPhaseData(folder=l,Variables=['PPOT'])[2][0]
+		PhaseData,Phaselist,proclist,varlist = ReadTEC2DPhase(folder=l,Variables=PhaseVariables)
+		SxData,SxPhase,Sxproc,Sxvar = ReadTEC2DPhase(folder=l,Variables=['E','AR+'])
+		PPOT = ReadTEC2DPhase(folder=l,Variables=['PPOT'])[2][0]
 		
 		#Generate SI scale axes for lineout plots. ([omega*t/2pi] and [cm] respectively)
 		Phaseaxis = GenerateAxis('Phase',ISYMlist[l],Phaselist)
@@ -7952,7 +8003,7 @@ if savefig_sheathdynamics == True:
 		DirSheath = CreateNewFolder(DirTrends,'Sheath Trends')
 
 		#Create VariableIndices for each folder as required. (Always get 'E','AR+','PPOT')
-		SxData,SxPhase,Sxproc,Sxvar = ExtractPhaseData(folder=l,Variables=PhaseVariables+['E','AR+','PPOT'])
+		SxData,SxPhase,Sxproc,Sxvar = ReadTEC2DPhase(folder=l,Variables=PhaseVariables+['E','AR+','PPOT'])
 		VariedValuelist.append( FolderNameTrimmer(Dirlist[l]) )
 
 		#Extract waveforms from desired electrode locations.
@@ -8157,15 +8208,15 @@ if savefig_PROES == True:
 		VariedValuelist.append( FolderNameTrimmer(Dirlist[l]) )
 
 		#Create VariableIndices for each folder as required. (Always get 'E','AR+','PPOT')
-		PhaseData,Phaselist,proclist,varlist = ExtractPhaseData(folder=l,Variables=PhaseVariables)
+		PhaseData,Phaselist,proclist,varlist = ReadTEC2DPhase(folder=l,Variables=PhaseVariables)
 		try:
-			PPOT = ExtractPhaseData(folder=l,Variables=['PPOT'])[2][0]
+			PPOT = ReadTEC2DPhase(folder=l,Variables=['PPOT'])[2][0]
 		except:
 			PPOT = list()
 			for i in range(0,180): PPOT.append(i)
 		#endtry
 		if image_plotsheath in ['Radial','Axial']:
-			SxData,SxPhase,Sxproc,Sxvar = ExtractPhaseData(folder=l,Variables=['E','AR+'])
+			SxData,SxPhase,Sxproc,Sxvar = ReadTEC2DPhase(folder=l,Variables=['E','AR+'])
 		#endif
 
 		#Generate SI scale axes for lineout plots.
