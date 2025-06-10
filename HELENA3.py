@@ -138,7 +138,7 @@ Units = 'SI'								#'SI','CGS'
 ####################
 
 #Commonly used variable sets.
-Phys = ['E','TE','PPOT','P-POT','POW-RF','POW-RF-E','POW-ICP','POW-ICP1','POW-ICP2','POW-ICP3','POW-ICP4','POW-ALL','EB-ESORC','COLF','SIGMA','EF-TOT', 'ERADIAL','ETHETA','EAXIAL','PHASEER','PHASE','PHASEEZ','EAMB-Z','EAMB-R','RHO','BR','BRS','BZ','BZS','BT','BTS','BRF', 'PHASEBR','PHASEBT','PHASEBZ','VR-ION+','VZ-ION+','EFLUX-R','FR-E','EFLUX-Z','FZ-E','JZ-NET','JR-NET','J-THETA','J-TH(MAG)','J-TH(PHA)','PRESSURE','TG-AVE','VR-NEUTRAL','VZ-NEUTRAL']
+Phys = ['E','S-E','SEB-E','TE','PPOT','P-POT','POW-RF','POW-RF-E','POW-ICP','POW-ICP1','POW-ICP2','POW-ICP3','POW-ICP4','POW-ALL','EB-ESORC','COLF','SIGMA','EF-TOT', 'ERADIAL','ETHETA','EAXIAL','PHASEER','PHASE','PHASEEZ','EAMB-Z','EAMB-R','RHO','BR','BRS','BZ','BZS','BT','BTS','BRF', 'PHASEBR','PHASEBT','PHASEBZ','VR-ION+','VZ-ION+','EFLUX-R','FR-E','EFLUX-Z','FZ-E','JZ-NET','JR-NET','J-THETA','J-TH(MAG)','J-TH(PHA)','PRESSURE','TG-AVE','VR-NEUTRAL','VZ-NEUTRAL']
 PhysCoilsEF = \
 ['ERADIAL-2','ETHETA-2','EAXIAL-2','PHASEER-2','PHASEEZ-2','ERADIAL-3','ETHETA-3','EAXIAL-3','PHASEER-3','PHASEEZ-3', \
  'ERADIAL-4','ETHETA-4','EAXIAL-4','PHASEER-4','PHASEEZ-4','ERADIAL-5','ETHETA-5','EAXIAL-5','PHASEER-5','PHASEEZ-5', \
@@ -252,13 +252,13 @@ NEDFVariables = []						#Requested Variables from nprofile_2d.pdt
 
 #Requested movie1/movie_icp Variables.
 PhaseVariables = Ar_Phase				# Requested Movie1 (phase) Variables.
-electrodeloc = [0,0]					# Cell location of powered electrode [R,Z].
+electrodeloc = [10,90]					# Cell location of powered electrode [R,Z].
 waveformlocs = []						# Cell locations of additional waveforms [R,Z].
 
 #Requested variables and plotting locations.
-Variables = Phys+H2#Phys+Ar+Be			# Requested Variables from Tecplot2D.pdt, tecplot_kin.pdt, and movie_icp.pdt 
+Variables = ['E']#Phys+Ar#Phys+H2+H2O			# Requested Variables from Tecplot2D.pdt, tecplot_kin.pdt, and movie_icp.pdt 
 multivar = []							# Additional variables plotted ontop of [Variables]
-radialprofiles = []						# Radial 1D-Profiles to be plotted (fixed Z-mesh) --
+radialprofiles = [38]						# Radial 1D-Profiles to be plotted (fixed Z-mesh) --
 axialprofiles = []						# Axial 1D-Profiles to be plotted (fixed R-mesh) |
 probeloc = []							# Cell location For Trend Analysis [R,Z], (leave empty for global min/max)
 
@@ -267,7 +267,7 @@ sheathROI = []							# Sheath Region of Interest, (Start,End) [cells]
 sourcewidth = []						# Source Dimension at ROI, leave empty for auto. [cells]
 
 #Requested diagnostics and plotting routines.
-savefig_tecplot2D = True				# 2D Single-Variables: TECPLOT2D.PDT		<<< .csv File Save
+savefig_tecplot2D = False				# 2D Single-Variables: TECPLOT2D.PDT		<<< .csv File Save
 
 savefig_movieicp2D = False				# 2D Single-Variables: movie_icp.pdt		<<< MAXITER SHOULD BE AN ARRAY...
 savefig_movieicp1D = False				# 1D Single-Variables: movie_icp.pdt		<<< MAXITER SHOULD BE AN ARRAY...
@@ -278,16 +278,20 @@ savefig_monoprofiles = False			# Single-Variables; fixed height/radius		<<< .csv
 savefig_multiprofiles = False			# Multi-Variables; same folder
 savefig_compareprofiles = False			# Multi-Variables; all folders
 savefig_temporalprofiles = False		# Single-Variables; fixed height/radius
+# NOTE: IMAGEPLOTTER1D RETURNS ARRAY ORDERED AS [0,height]  <<< REVERSED RELATIVE TO HPEM
+# 		IMAGEPLOTTER2D RETURNS ARRAY ORDERED AS [height,0] 	<<< SAME ORIENTATION AS HPEM
+#		1D PROFILES ARE MANUALLY REVERSED ([::-1]) IN THE 1D DIAGNOSTICS TO ACCOUNT FOR THIS
+#		IT WOULD BE BETTER TO USE "DataExtent" TO PROVIDE THE CORRECT ORIENTATION
 
 savefig_trendphaseaveraged = False		# Phase averaged trends at axial/radial cells		# CHANGE TO 'ProbeLoc' cell
 savefig_trendphaseresolved = False		# Phase resolved trends at axial/radial cells		# CHANGE TO 'ProbeLoc' cell
 thrustloc = 45							# Z-axis cell for thrust calculation  [Cells]
 
 savefig_phaseresolve1D = False			# 1D Phase Resolved Images
-savefig_phaseresolve2D = False			# D Phase Resolved Images				<<< CROP BREAKS AFTER ImageOptions[ax0]
+savefig_phaseresolve2D = False			# 2D Phase Resolved Images
 savefig_sheathdynamics = False			# 1D and 2D sheath dynamics images
 savefig_PROES =	False					# Simulated PROES Diagnostic
-phasecycles = 1.01						# Vaveform phase cycles to be plotted. 				[Float]
+phasecycles = 1.01						# Vaveform phase cycles to be plotted. 				 [Float]
 DoFwidth = 0 							# PROES Depth of Field (symmetric about image plane) [Cells]
 
 savefig_IEDFangular = False				# 2D images of angular IEDF; single folders
@@ -312,26 +316,25 @@ image_extension = '.png'				# Define image extension  ('.png', '.jpg', '.eps')
 image_interp = 'spline36'				# Define image smoothing  ('none', 'bilinear','quadric','spline36')
 image_cmap = 'plasma'					# Define global colourmap ('jet','plasma','inferno','gnuplot','tecmodern')
 
-image_aspectratio = [8,10]				# Real Size of [X,Y] in cm [Doesn't Rotate - X is always horizontal]
+image_aspectratio = [12,8]#[8,10]				# Real Size of [X,Y] in cm [Doesn't Rotate - X is always horizontal]
 image_radialcrop = []					# Crops 2D images to [R1,R2] in cm
-image_axialcrop = [1,5]					# Crops 2D images to [Z1,Z2] in cm
+image_axialcrop = []#[1,5]					# Crops 2D images to [Z1,Z2] in cm
 image_cbarlimit = []					# [min,max] colourbar limits
 image_legendloc = 'best'				# Legend Location, "1-9" or 'best' for automatic
 
 image_plotcolourfill = True				# Plot 2D image colour fill
 image_plotcontours = True				# Plot 2D image contour lines
-image_contourlvls = 10					# Number of contour levels
-image_contouroffset = 0.98				# Scale contourplot values relative to colourfill
+image_contourlvls = 20					# Number of contour levels
 
-image_plotsymmetry = True				# Plot radial symmetry - mirrors across the ISYM axis
+image_plotsymmetry = False				# Plot radial symmetry - mirrors across the ISYM axis
 image_plotoverlay = False				# Plot location(s) of 1D radial/axial profiles onto 2D images
 image_plotsheath = False				# Plot sheath extent onto 2D images 'Axial','Radial'
 image_plotgrid = False					# Plot major/minor gridlines on 1D profiles
-image_plotmesh = 'PRCCPM'				# Plot material mesh outlines ('True' == Auto,'PRCCP','PRCCPM','ESCT','GEC')
+image_plotmesh = False#'GEC'				# Plot material mesh outlines ('True' == Auto,'PRCCP','PRCCPM','ESCT','GEC')
 image_numericaxis = False				#### NOT implemented ####
 image_plotphasewaveform = False			# Plot waveform sub-figure on phaseresolve2D images
 
-image_rotate = True						# Rotate image 90 degrees to the right.
+image_rotate = False						# Rotate image 90 degrees to the right.
 image_normalise = False					# Normalise image/profiles to local max
 image_logplot = False					# Take log10(Data) for both 1D and 2D profiles
 
@@ -3993,15 +3996,15 @@ def DataExtent(folder=l,aspectratio=image_aspectratio):
 	if image_rotate == True:
 		aspectratio = aspectratio[::-1]
 		if Isym == 1: 
-			extent= [0,height, -radius, radius]
+			extent= [height,0, -radius, radius]
 		elif Isym == 0: 
-			extent=[0,height, 0,radius]
+			extent= [height,0,  0,      radius]
 		#endif
 
 	#Default mesh orientation: [X,Y] = [Radius,Height]
 	elif image_rotate == False:
-		if Isym == 1: extent = [-radius,radius, 0,height]
-		elif Isym == 0: extent=[0,radius, 0,height]
+		if Isym == 1: extent = [-radius,radius,  height,0]
+		elif Isym == 0: extent=[0      ,radius,  height,0]
 		#endif
 	#endif
 	return(extent,aspectratio)
@@ -5048,10 +5051,9 @@ for l in range(0,numfolders):
 		Xlabel,Ylabel = 'Axial Distance Z [cm]','Radial Distance R [cm]'
 	elif image_rotate == False:
 		Xlabel,Ylabel = 'Radial Distance R [cm]','Axial Distance Z [cm]'
-		plt.gca().invert_yaxis()
 	#endif
 
-	#Image plotting details, invert Y-axis to fit 1D profiles.
+	#Image plotting details.
 	Title = '2D Steady State Plot of Etot for \n'+Dirlist[l][2:-1]   #generic titles
 	#Add Colourbar (Axis, Label, Bins)
 	label,bins = VariableLabelMaker(VariableStrings),5
@@ -5070,10 +5072,9 @@ for l in range(0,numfolders):
 		Xlabel,Ylabel = 'Axial Distance Z [cm]','Radial Distance R [cm]'
 	elif image_rotate == False:
 		Xlabel,Ylabel = 'Radial Distance R [cm]','Axial Distance Z [cm]'
-		plt.gca().invert_yaxis()
 	#endif
 
-	#Image plotting details, invert Y-axis to fit 1D profiles.
+	#Image plotting details
 	Title = '2D Steady State Plot of Etot for \n'+Dirlist[l][2:-1]   #generic titles
 	#Add Colourbar (Axis, Label, Bins)
 	label,bins = VariableLabelMaker(VariableStrings),5
@@ -5170,15 +5171,14 @@ if savefig_tecplot2D == True:
 				#endfor
 			#endif
 
-			#Define image beautification variables - must come after plotting to invert-yaxis correctly.
+			#Define image beautification variables
 			if image_rotate == True:
 				Xlabel,Ylabel = 'Axial Distance Z [cm]','Radial Distance R [cm]'
 			elif image_rotate == False:
 				Xlabel,Ylabel = 'Radial Distance R [cm]','Axial Distance Z [cm]'
-				plt.gca().invert_yaxis()
 			#endif
 
-			#Image plotting details, invert Y-axis to fit 1D profiles.
+			#Image plotting details
 			Title = '2D Steady State Plot of '+VariableStrings[k]+' for \n'+Dirlist[l][2:-1]   #generic titles
 			#Add Colourbar (Axis, Label, Bins)
 			label,bins = VariableLabelMaker(VariableStrings),5
@@ -5291,7 +5291,6 @@ if savefig_movieicp2D == True:
 					Xlabel,Ylabel = 'Axial Distance Z [cm]','Radial Distance R [cm]'
 				elif image_rotate == False:
 					Xlabel,Ylabel = 'Radial Distance R [cm]','Axial Distance Z [cm]'
-					plt.gca().invert_yaxis()
 				#endif
 
 				#Add title, legends, Colourbar (Axis, Label, Bins), etc...
@@ -7404,7 +7403,7 @@ if bool(set(FluidSpecies).intersection(Variables)) == True:
 				PlotSheathExtent(SxAxis,Sx,ax,ISYMlist[l],Orientation=image_plotsheath)
 			#endif
 
-			#Image plotting details, invert Y-axis to fit 1D profiles.
+			#Image plotting details
 			Title = 'Knudsen Number Image for \n'+Dirlist[l][2:-1]
 			Xlabel,Ylabel = 'Radial Distance R [cm]','Axial Distance Z [cm]'
 			cax = Colourbar(ax,'Knudsen Number $K_{n}$',5,Lim=CbarMinMax(ax,Image))
@@ -7518,7 +7517,7 @@ if bool(set(FluidSpecies).intersection(Variables)) == True:
 				PlotSheathExtent(SxAxis,Sx,ax,ISYMlist[l],Orientation=image_plotsheath)
 			#endif
 
-			#Image plotting details, invert Y-axis to fit 1D profiles.
+			#Image plotting details
 			#ERROR WITH IMAGE LIMIT - LIKELY DUE TO NANS - #Lim=CbarMinMax(ax,Image)
 			Title = 'Sound Speed Image for \n'+Dirlist[l][2:-1]
 			Xlabel,Ylabel = 'Radial Distance R [cm]','Axial Distance Z [cm]'
@@ -7930,7 +7929,7 @@ if savefig_phaseresolve2D == True:
 				#endif
 				
 				#Add Colourbar (Axis, Label, Bins)
-				ImageOptions(fig,ax0,Xlabel,Ylabel,Crop=True)
+				ImageOptions(fig,ax0,Xlabel,Ylabel,Title,Crop=True)
 				Ylabel = VariableLabelMaker(varlist)
 				cax = Colourbar(ax0,Ylabel[i],5,Lim=CbarLimits)
 
@@ -7950,7 +7949,7 @@ if savefig_phaseresolve2D == True:
 					plt.subplots_adjust(top=0.90)
 				#endif
 				
-				#NOTE:	zfill assumes phase < 999 degrees	(i.e. < 1e5)
+				#NOTE:	zfill assumes phase < 9999 degrees	(i.e. < 1e5)
 				savefig(DirMovieplots+varlist[i]+'_'+str(Phase).zfill(4)+ext)
 				clearfigures(fig)
 
