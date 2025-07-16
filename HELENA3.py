@@ -68,7 +68,7 @@ import gc
 #Enforce matplotlib to avoid instancing undisplayed windows
 #matplotlib-tcl-asyncdelete-async-handler-deleted-by-the-wrong-thread
 import matplotlib as mpl
-#matplotlib.use('Agg')			# Uncomment to fix mem leak, disables GUI backend and "plot()"
+#mpl.use('Agg')			# Uncomment to fix mem leak, disables GUI backend and "plot()"
 
 #Import Additional Modules
 from mpl_toolkits.axes_grid1 import make_axes_locatable
@@ -138,7 +138,7 @@ Units = 'SI'								#'SI','CGS'
 ####################
 
 #Commonly used variable sets.
-Phys = ['E','S-E','SEB-E','TE','PPOT','P-POT','POW-RF','POW-RF-E','POW-ICP','POW-ICP1','POW-ICP2','POW-ICP3','POW-ICP4','POW-ALL','EB-ESORC','COLF','SIGMA','EF-TOT', 'ERADIAL','ETHETA','EAXIAL','PHASEER','PHASE','PHASEEZ','EAMB-Z','EAMB-R','RHO','BR','BRS','BZ','BZS','BT','BTS','BRF', 'PHASEBR','PHASEBT','PHASEBZ','VR-ION+','VZ-ION+','EFLUX-R','FR-E','EFLUX-Z','FZ-E','JZ-NET','JR-NET','J-THETA','J-TH(MAG)','J-TH(PHA)','PRESSURE','TG-AVE','VR-NEUTRAL','VZ-NEUTRAL']
+Phys = ['E','S-E','SEB-E','TE','PPOT','P-POT','POW-RF','POW-RF-E','POW-ICP','POW-ICP1','POW-ICP2','POW-ICP3','POW-ICP4','POW-ALL','EB-ESORC','COLF','SIGMA','EF-TOT', 'ERADIAL','ETHETA','EAXIAL','PHASEER','PHASE','PHASEEZ','EAMB-Z','EAMB-R','RHO','BR','BRS','BZ','BZS','BT','BTS','BRF', 'PHASEBR','PHASEBT','PHASEBZ','VR-ION+','VZ-ION+','E FLUX-R','FR-E','E FLUX-Z','FZ-E','JZ-NET','JR-NET','J-THETA','J-TH(MAG)','J-TH(PHA)','PRESSURE','TG-AVE','VR-NEUTRAL','VZ-NEUTRAL']
 PhysCoilsEF = \
 ['ERADIAL-2','ETHETA-2','EAXIAL-2','PHASEER-2','PHASEEZ-2','ERADIAL-3','ETHETA-3','EAXIAL-3','PHASEER-3','PHASEEZ-3', \
  'ERADIAL-4','ETHETA-4','EAXIAL-4','PHASEER-4','PHASEEZ-4','ERADIAL-5','ETHETA-5','EAXIAL-5','PHASEER-5','PHASEEZ-5', \
@@ -155,9 +155,9 @@ Ar = ['AR3S','AR4SM','AR4SR','AR4SPM','AR4SPR','AR4P','AR4D','AR','AR+','AR2+','
 O2 = ['O3','O2','O2V','O2*','O2*1S','O2+','O','O1S','O+','O-','O*','S-O3','S-O2+','S-O+','S-O-','SEB-O3','SEB-O+','SEB-O2+','SEB-O-','FR-O+','FZ-O+','FR-O-','FZ-O-']
 H2 = ['H2V0','H2V1','H2V2','H2V3','H1','H*','H**','H2+','H+','H-','S-H+','SEB-H+','S-2H+','SEB-2H+','S-H-','SEB-H-','FZ-H2V0','FR-H2V0','FZ-H1','FR-H1','FZ-H+','FR-H+','FZ-H2+','FR-H2+','FZ-H-','FR-H-']
 H2O = ['H2O','H2O+','OH','OH-','H2OV','H2O2']
-N2 = ['N2','N2V','N2*','N2**','N2^','N','N*','N^']
-Cl = ['Cl2','Cl','CL^','CL-','Cl2V','Cl2^','CL*','CL**','CL***']
-F = ['F2','F2*','F2+','F','F*','F+','F-','S-F','S-F+','S-F-','SEB-F','SEB-F+','SEB-F-','FZ-F','FR-F','FZ-F+','FR-F+','FZ-F-','FR-F-']
+N2 = ['N2','N2V','N2*','N2**','N2+','N','N*','N+']
+Cl = ['Cl2','Cl','CL+','CL-','Cl2V','Cl2+','CL*','CL**','CL***']
+F = ['F2','F2*','F2+','F','F*','F+','F-','S-F','S-F+','S-F-','SEB-F','SEB-F+','SEB-F-','FZ-F','FR-F','FZ-F+','FR-F+','FZ-F-','FR-F-','FZ-F+','FR-F+']
 NFx = ['NF3A','NF2A','NFA','NF3B','NF2B','NFB','NF3^','NF2^','NF^']
 SFx = ['SF6','SF5','SF4','SF3','SF2','SF','S','SF5+','SF4+','SF3+','SF2+','SF+','S+','SF6-','SF5-']
 Al = ['AL','AL*','AL**','AL+','S-AL','SEB-AL','S-AL*','SEB-AL*','S-AL**','SEB-AL**','S-AL+','SEB-AL+','FZ-AL+','FR-AL+']
@@ -247,18 +247,18 @@ PRCCPO2_PCMC = ['O^0.35','EB-0.35','ION-TOT0.35']
 #====================================================================#
 
 #Requested IEDF/NEDF Variables.
-IEDFVariables = PRCCPAr_PCMC			#Requested Variables from iprofile_2d.pdt
-NEDFVariables = []						#Requested Variables from nprofile_2d.pdt
+IEDFVariables = PRCCPAr_PCMC			# Requested Variables from iprofile_2d.pdt
+NEDFVariables = []						# Requested Variables from nprofile_2d.pdt
 
 #Requested movie1/movie_icp Variables.
 PhaseVariables = Ar_Phase				# Requested Movie1 (phase) Variables.
-electrodeloc = [10,90]					# Cell location of powered electrode [R,Z].
+electrodeloc = [0,0]					# Cell location of powered electrode [R,Z].
 waveformlocs = []						# Cell locations of additional waveforms [R,Z].
 
 #Requested variables and plotting locations.
-Variables = ['E']#Phys+Ar#Phys+H2+H2O			# Requested Variables from Tecplot2D.pdt, tecplot_kin.pdt, and movie_icp.pdt 
+Variables = Phys+Ar+O2+Be				# Requested Variables from Tecplot2D.pdt, tecplot_kin.pdt, and movie_icp.pdt 
 multivar = []							# Additional variables plotted ontop of [Variables]
-radialprofiles = [38]						# Radial 1D-Profiles to be plotted (fixed Z-mesh) --
+radialprofiles = []						# Radial 1D-Profiles to be plotted (fixed Z-mesh) --
 axialprofiles = []						# Axial 1D-Profiles to be plotted (fixed R-mesh) |
 probeloc = []							# Cell location For Trend Analysis [R,Z], (leave empty for global min/max)
 
@@ -267,7 +267,7 @@ sheathROI = []							# Sheath Region of Interest, (Start,End) [cells]
 sourcewidth = []						# Source Dimension at ROI, leave empty for auto. [cells]
 
 #Requested diagnostics and plotting routines.
-savefig_tecplot2D = False				# 2D Single-Variables: TECPLOT2D.PDT		<<< .csv File Save
+savefig_tecplot2D = True				# 2D Single-Variables: TECPLOT2D.PDT		<<< .csv File Save
 
 savefig_movieicp2D = False				# 2D Single-Variables: movie_icp.pdt		<<< MAXITER SHOULD BE AN ARRAY...
 savefig_movieicp1D = False				# 1D Single-Variables: movie_icp.pdt		<<< MAXITER SHOULD BE AN ARRAY...
@@ -316,25 +316,25 @@ image_extension = '.png'				# Define image extension  ('.png', '.jpg', '.eps')
 image_interp = 'spline36'				# Define image smoothing  ('none', 'bilinear','quadric','spline36')
 image_cmap = 'plasma'					# Define global colourmap ('jet','plasma','inferno','gnuplot','tecmodern')
 
-image_aspectratio = [12,8]#[8,10]				# Real Size of [X,Y] in cm [Doesn't Rotate - X is always horizontal]
+image_aspectratio = [14,10]				# Real Size of [X,Y] in cm [Doesn't Rotate - X is always horizontal]
 image_radialcrop = []					# Crops 2D images to [R1,R2] in cm
-image_axialcrop = []#[1,5]					# Crops 2D images to [Z1,Z2] in cm
+image_axialcrop = []					# Crops 2D images to [Z1,Z2] in cm
 image_cbarlimit = []					# [min,max] colourbar limits
 image_legendloc = 'best'				# Legend Location, "1-9" or 'best' for automatic
 
 image_plotcolourfill = True				# Plot 2D image colour fill
 image_plotcontours = True				# Plot 2D image contour lines
-image_contourlvls = 20					# Number of contour levels
+image_contourlvls = 10					# Number of contour levels
 
-image_plotsymmetry = False				# Plot radial symmetry - mirrors across the ISYM axis
+image_plotsymmetry = True				# Plot radial symmetry - mirrors across the ISYM axis
 image_plotoverlay = False				# Plot location(s) of 1D radial/axial profiles onto 2D images
 image_plotsheath = False				# Plot sheath extent onto 2D images 'Axial','Radial'
 image_plotgrid = False					# Plot major/minor gridlines on 1D profiles
-image_plotmesh = False#'GEC'				# Plot material mesh outlines ('True' == Auto,'PRCCP','PRCCPM','ESCT','GEC')
+image_plotmesh = 'GEC'				# Plot material mesh outlines ('True' == Auto,'PRCCP','PRCCPM','ESCT','GEC')
 image_numericaxis = False				#### NOT implemented ####
 image_plotphasewaveform = False			# Plot waveform sub-figure on phaseresolve2D images
 
-image_rotate = False						# Rotate image 90 degrees to the right.
+image_rotate = False					# Rotate image 90 degrees to the right.
 image_normalise = False					# Normalise image/profiles to local max
 image_logplot = False					# Take log10(Data) for both 1D and 2D profiles
 
@@ -560,7 +560,7 @@ header_IEDFlist = list()		#Header num rows for iprofile_tec2d.pdt					-1D array 
 header_kinlist = list()			#Header num rows for kin.pdt							-1D array of ints
 header_2Dlist = list()			#Header num rows for TECPLOT2D.pdt						-1D array of ints
 
-
+Header_TEC2D = list()			# TECPLOT2D Header Strings								-[FolderIdx,[Header Array]]
 
 
 
@@ -1041,17 +1041,43 @@ for l in range(0,numfolders):
 				#UNPACKING AND ORGANIZATION OF DATA#
 #====================================================================#
 
+def EnumerateVariables(Variables, Header):
+#Takes:
+# Variables 	- 1D array of strings
+# Header 		- 1D Datafile Header Array (for 1 simulation folder)
+#Returns:
+# indices 		- 1D array of indices corresponding to Variables in Header
+# strings		- 1D array of strings corresponding to Variable string in Header
+#
+#Example: EnumerateVariables(Variables,Header_TEC2D[l])
+
+	indices = list()
+	strings = list()
+	for Variable in Variables:
+	
+		if Variable in Header:
+			index = Header.index(Variable)
+			indices.append(index)
+			strings.append(Header[index])
+			# print(Variable,strings[-1],indices[-1])		# Debug Option
+		else:
+			Variable_Not_In_Header=1
+		#endif
+	#endfor
+
+	return(indices,strings)
+#enddef
+
+
 #VariableEnumerator(PhaseVariables,rawdata_phasemovie[l],header_phasemovie[l])
 #Enumerates requested variables and produces a VariableIndices for plotting.
-def VariableEnumerator(Variables,Rawdata,Header):
+def VariableEnumerator(Variables,Rawdata,Header):										# OUTDATED, REPLACE THROUGHOUT!
 	VariableIndices = list()
 	VariableStrings = list()
 
 	#For all requested variables, in the requested data header, find which match.
 	for j in range(0,len(Variables)):
 		for i in range(0,Header):
-
-#			print(Variables[j],Rawdata[i].strip(' ,"\n').replace(' ',''))				#!!! RM SJD VARIABLE DEBUG
 
 			#Compare variables and if they match, add to the process list.
 			#Default uses [1:-3] slice for the variable string.
@@ -1126,13 +1152,13 @@ def VariableUnitConversion(profile,variable):
 	#endif
 
 	#For fluxes, convert from [cm-2] to [m-2]. (also reverse axial flux direction)
-	if IsStringInVariable(variable,['EFLUX-Z','EFLUX-R','FZ-','FR-']) == True:
+	if IsStringInVariable(variable,['E FLUX-Z','E FLUX-R','FZ-','FR-']) == True:
 		for i in range(0,len(profile)):
 			if Units == 'SI': 		profile[i] = profile[i]*1.E4			#[m2 s-1]
 			elif Units == 'CGS': 	profile[i] = profile[i]					#[cm2 s-1]
 		#endfor
 	#endif
-	if IsStringInVariable(variable,['EFLUX-Z','FZ-']) == True:
+	if IsStringInVariable(variable,['E FLUX-Z','FZ-']) == True:
 		for i in range(0,len(profile)):
 			profile[i] = profile[i]*(-1)
 		#endfor
@@ -1933,11 +1959,11 @@ def VariableLabelMaker(VariableStrings):
 			elif Units=='CGS':	VariableUnit = LogString+'[cms$^{-1}$]'
 
 		#Explicit Species Fluxes.
-		elif VariableStrings[i] == 'EFLUX-Z':
+		elif VariableStrings[i] == 'E FLUX-Z':
 			Variable = 'Electron Axial Flux'
 			if Units=='SI': 	VariableUnit = LogString+'[m$^{-2}$s$^{-1}$]'
 			elif Units=='CGS':	VariableUnit = LogString+'[cm$^{-2}$s$^{-1}$]'
-		elif VariableStrings[i] == 'EFLUX-R':
+		elif VariableStrings[i] == 'E FLUX-R':
 			Variable = 'Electron Radial Flux'
 			if Units=='SI': 	VariableUnit = LogString+'[m$^{-2}$s$^{-1}$]'
 			elif Units=='CGS':	VariableUnit = LogString+'[cm$^{-2}$s$^{-1}$]'
@@ -2501,7 +2527,7 @@ def ManualEVgenyMeshOLD(Ax=plt.gca()):
 
 #=============#
 
-def ManualGECMesh(Ax=plt.gca()):
+def ManualGECMesh(Ax,Sym=True,ICP_Powered=True):
 
 #	Notes, 	these apply to the 0.1R 0.2Z resolution mesh
 #			These are arranged for zero rotation, the other PR meshes assume rotation=True
@@ -2509,158 +2535,81 @@ def ManualGECMesh(Ax=plt.gca()):
 	Thick = 4		
 
 	# Vacuum Chamber Walls (outer boundary)
-	Ax.plot((0.0*dr[l],59.0*dr[l]), (0.0*dz[l],0.0*dz[l]), '-', color='dimgrey', linewidth=Thick)
-	Ax.plot((-0.0*dr[l],-59.0*dr[l]), (0.0*dz[l],0.0*dz[l]), '-', color='dimgrey', linewidth=Thick)
-	Ax.plot((0.0*dr[l],59.0*dr[l]), (119.0*dz[l],119.0*dz[l]),  '-', color='dimgrey', linewidth=Thick)
-	Ax.plot((-0.0*dr[l],-59.0*dr[l]), (119.0*dz[l],119.0*dz[l]),  '-', color='dimgrey', linewidth=Thick)
-	Ax.plot((59.0*dr[l],59.0*dr[l]), (0.0*dz[l],119.0*dz[l]),  '-', color='dimgrey', linewidth=Thick)	
-	Ax.plot((-59.0*dr[l],-59.0*dr[l]), (0.0*dz[l],119.0*dz[l]),  '-', color='dimgrey', linewidth=Thick)
+	Ax.plot((0.0*dr,60.0*dr), (0.0*dz,0.0*dz), '-', color='dimgrey', linewidth=Thick)
+	if Sym == True: Ax.plot((-0.0*dr,-60.0*dr), (0.0*dz,0.0*dz), '-', color='dimgrey', linewidth=Thick)
+	Ax.plot((0.0*dr,60.0*dr), (119.0*dz,119.0*dz),  '-', color='dimgrey', linewidth=Thick)
+	if Sym == True: Ax.plot((-0.0*dr,-60.0*dr), (119.0*dz,119.0*dz),  '-', color='dimgrey', linewidth=Thick)
+	Ax.plot((60.0*dr,60.0*dr), (0.0*dz,119.0*dz),  '-', color='dimgrey', linewidth=Thick)	
+	if Sym == True: Ax.plot((-60.0*dr,-60.0*dr), (0.0*dz,119.0*dz),  '-', color='dimgrey', linewidth=Thick)
 
 	# Vacuum Chamber Walls (inner boundary)
-	Ax.plot((0.0*dr[l],57.0*dr[l]), (4.0*dz[l],4.0*dz[l]), '-', color='dimgrey', linewidth=Thick)
-	Ax.plot((-0.0*dr[l],-57.0*dr[l]), (4.0*dz[l],4.0*dz[l]), '-', color='dimgrey', linewidth=Thick)
-	Ax.plot((0.0*dr[l],57.0*dr[l]), (115.0*dz[l],115.0*dz[l]),  '-', color='dimgrey', linewidth=Thick)
-	Ax.plot((-0.0*dr[l],-57.0*dr[l]), (115.0*dz[l],115.0*dz[l]),  '-', color='dimgrey', linewidth=Thick)
-	Ax.plot((57.0*dr[l],57.0*dr[l]), (4.0*dz[l],115.0*dz[l]),  '-', color='dimgrey', linewidth=Thick)	
-	Ax.plot((-57.0*dr[l],-57.0*dr[l]), (4.0*dz[l],115.0*dz[l]),  '-', color='dimgrey', linewidth=Thick)		
+	Ax.plot((0.0*dr,58.0*dr), (4.0*dz,4.0*dz), '-', color='dimgrey', linewidth=Thick)
+	if Sym == True: Ax.plot((-0.0*dr,-58.0*dr), (4.0*dz,4.0*dz), '-', color='dimgrey', linewidth=Thick)
+	Ax.plot((0.0*dr,58.0*dr), (115.0*dz,115.0*dz),  '-', color='dimgrey', linewidth=Thick)
+	if Sym == True: Ax.plot((-0.0*dr,-58.0*dr), (115.0*dz,115.0*dz),  '-', color='dimgrey', linewidth=Thick)
+	Ax.plot((58.0*dr,58.0*dr), (4.0*dz,115.0*dz),  '-', color='dimgrey', linewidth=Thick)	
+	if Sym == True: Ax.plot((-58.0*dr,-58.0*dr), (4.0*dz,115.0*dz),  '-', color='dimgrey', linewidth=Thick)		
 
 	# Upper ICP Antenna Housing
-	Ax.plot((35.0*dr[l],35.0*dr[l]), (4.0*dz[l],32.0*dz[l]), '-', color='dimgrey', linewidth=Thick)		#Outboard Vertical
-	Ax.plot((-35.0*dr[l],-35.0*dr[l]), (4.0*dz[l],32.0*dz[l]), '-', color='dimgrey', linewidth=Thick)	#Outboard Vertical
-	Ax.plot((35.0*dr[l],41.0*dr[l]), (32.0*dz[l],32.0*dz[l]), '-', color='dimgrey', linewidth=Thick)	#Top of lip
-	Ax.plot((-35.0*dr[l],-41.0*dr[l]), (32.0*dz[l],32.0*dz[l]), '-', color='dimgrey', linewidth=Thick)	#Top of lip
-	Ax.plot((41.0*dr[l],41.0*dr[l]), (32.0*dz[l],43.0*dz[l]), '-', color='dimgrey', linewidth=Thick)	#Outboard lip
-	Ax.plot((-41.0*dr[l],-41.0*dr[l]), (32.0*dz[l],43.0*dz[l]), '-', color='dimgrey', linewidth=Thick)	#Outboard lip
-	Ax.plot((28.0*dr[l],41.0*dr[l]), (43.0*dz[l],43.0*dz[l]), '-', color='dimgrey', linewidth=Thick)	#Bottom of Lip
-	Ax.plot((-28.0*dr[l],-41.0*dr[l]), (43.0*dz[l],43.0*dz[l]), '-', color='dimgrey', linewidth=Thick)	#Bottom of lip
-	Ax.plot((28.0*dr[l],28.0*dr[l]), (43.0*dz[l],37.0*dz[l]), '-', color='dimgrey', linewidth=Thick)	#Inboard Vertical
-	Ax.plot((-28.0*dr[l],-28.0*dr[l]), (43.0*dz[l],37.0*dz[l]), '-', color='dimgrey', linewidth=Thick)	#Inboard Vertical
+	Ax.plot((35.0*dr,35.0*dr), (4.0*dz,32.0*dz), '-', color='dimgrey', linewidth=Thick)		#Outboard Vertical
+	if Sym == True: Ax.plot((-35.0*dr,-35.0*dr), (4.0*dz,32.0*dz), '-', color='dimgrey', linewidth=Thick)	#Outboard Vertical
+	Ax.plot((35.0*dr,41.0*dr), (32.0*dz,32.0*dz), '-', color='dimgrey', linewidth=Thick)	#Top of lip
+	if Sym == True: Ax.plot((-35.0*dr,-41.0*dr), (32.0*dz,32.0*dz), '-', color='dimgrey', linewidth=Thick)	#Top of lip
+	Ax.plot((41.0*dr,41.0*dr), (32.0*dz,43.0*dz), '-', color='dimgrey', linewidth=Thick)	#Outboard lip
+	if Sym == True: Ax.plot((-41.0*dr,-41.0*dr), (32.0*dz,43.0*dz), '-', color='dimgrey', linewidth=Thick)	#Outboard lip
+	Ax.plot((28.0*dr,41.0*dr), (43.0*dz,43.0*dz), '-', color='dimgrey', linewidth=Thick)	#Bottom of Lip
+	if Sym == True: Ax.plot((-28.0*dr,-41.0*dr), (43.0*dz,43.0*dz), '-', color='dimgrey', linewidth=Thick)	#Bottom of lip
+	Ax.plot((28.0*dr,28.0*dr), (43.0*dz,37.0*dz), '-', color='dimgrey', linewidth=Thick)	#Inboard Vertical
+	if Sym == True: Ax.plot((-28.0*dr,-28.0*dr), (43.0*dz,37.0*dz), '-', color='dimgrey', linewidth=Thick)	#Inboard Vertical
 
 	# Upper ICP Dielectric Window
-	Ax.plot((0.0*dr[l],32.0*dr[l]), (26.0*dz[l],26.0*dz[l]), '-', color='orange', linewidth=Thick)
-	Ax.plot((-0.0*dr[l],-32.0*dr[l]), (26.0*dz[l],26.0*dz[l]), '-', color='orange', linewidth=Thick)
-	Ax.plot((0.0*dr[l],32.0*dr[l]), (37.0*dz[l],37.0*dz[l]), '-', color='orange', linewidth=Thick)
-	Ax.plot((-0.0*dr[l],-32.0*dr[l]), (37.0*dz[l],37.0*dz[l]), '-', color='orange', linewidth=Thick)
-	Ax.plot((32.0*dr[l],32.0*dr[l]), (26.0*dz[l],37.0*dz[l]), '-', color='orange', linewidth=Thick)
-	Ax.plot((-32.0*dr[l],-32.0*dr[l]), (26.0*dz[l],37.0*dz[l]), '-', color='orange', linewidth=Thick)
+	Ax.plot((0.0*dr,32.0*dr), (26.0*dz,26.0*dz), '-', color='orange', linewidth=Thick)
+	if Sym == True: Ax.plot((-0.0*dr,-32.0*dr), (26.0*dz,26.0*dz), '-', color='orange', linewidth=Thick)
+	Ax.plot((0.0*dr,32.0*dr), (37.0*dz,37.0*dz), '-', color='orange', linewidth=Thick)
+	if Sym == True: Ax.plot((-0.0*dr,-32.0*dr), (37.0*dz,37.0*dz), '-', color='orange', linewidth=Thick)
+	Ax.plot((32.0*dr,32.0*dr), (26.0*dz,37.0*dz), '-', color='orange', linewidth=Thick)
+	if Sym == True: Ax.plot((-32.0*dr,-32.0*dr), (26.0*dz,37.0*dz), '-', color='orange', linewidth=Thick)
 	
 	# Upper ICP Antennae
-	Antenna1 = [1.5,3.0,22.0,25.0]			# R1, R2, Z1, Z2 [Cells]
-	Antenna2 = [7.5,9.0,22.0,25.0]			# R1, R2, Z1, Z2 [Cells]
-	Antenna3 = [13.5,15.0,22.0,25.0]		# R1, R2, Z1, Z2 [Cells]
-	Antenna4 = [19.5,21.0,22.0,25.0]		# R1, R2, Z1, Z2 [Cells]
-	Ants = [Antenna1,Antenna2,Antenna3,Antenna4]
-	for i in range(0,4):
-		Ax.plot((Ants[i][0]*dr[l],Ants[i][1]*dr[l]), (22.0*dz[l],22.0*dz[l]), '-', color='red', linewidth=Thick)
-		Ax.plot((-Ants[i][0]*dr[l],-Ants[i][1]*dr[l]), (22.0*dz[l],22.0*dz[l]), '-', color='red', linewidth=Thick)
-		Ax.plot((Ants[i][0]*dr[l],Ants[i][1]*dr[l]), (25.0*dz[l],25.0*dz[l]), '-', color='red', linewidth=Thick)
-		Ax.plot((-Ants[i][0]*dr[l],-Ants[i][1]*dr[l]), (25.0*dz[l],25.0*dz[l]), '-', color='red', linewidth=Thick)
-		Ax.plot((Ants[i][0]*dr[l],Ants[i][0]*dr[l]), (22.0*dz[l],25.0*dz[l]), '-', color='red', linewidth=Thick)
-		Ax.plot((-Ants[i][0]*dr[l],-Ants[i][0]*dr[l]), (22.0*dz[l],25.0*dz[l]), '-', color='red', linewidth=Thick)
-		Ax.plot((Ants[i][1]*dr[l],Ants[i][1]*dr[l]), (22.0*dz[l],25.0*dz[l]), '-', color='red', linewidth=Thick)	
-		Ax.plot((-Ants[i][1]*dr[l],-Ants[i][1]*dr[l]), (22.0*dz[l],25.0*dz[l]), '-', color='red', linewidth=Thick)	
-	#endfor
-
-	# Upper ICP Antenna, MANUAL CENTRAL ANTENNA PAIR
-#	Ax.plot((1.5*dr[l],3.0*dr[l]), (22.0*dz[l],22.0*dz[l]), '-', color='red', linewidth=Thick)
-#	Ax.plot((-1.5*dr[l],-3.0*dr[l]), (22.0*dz[l],22.0*dz[l]), '-', color='red', linewidth=Thick)
-#	Ax.plot((1.5*dr[l],3.0*dr[l]), (25.0*dz[l],25.0*dz[l]), '-', color='red', linewidth=Thick)
-#	Ax.plot((-1.5*dr[l],-3.0*dr[l]), (25.0*dz[l],25.0*dz[l]), '-', color='red', linewidth=Thick)
-#	Ax.plot((1.5*dr[l],1.0*dr[l]), (22.0*dz[l],25.0*dz[l]), '-', color='red', linewidth=Thick)
-#	Ax.plot((-1.5*dr[l],-1.0*dr[l]), (22.0*dz[l],25.0*dz[l]), '-', color='red', linewidth=Thick)
-#	Ax.plot((3.0*dr[l],3.0*dr[l]), (22.0*dz[l],25.0*dz[l]), '-', color='red', linewidth=Thick)	
-#	Ax.plot((-3.0*dr[l],-3.0*dr[l]), (22.0*dz[l],25.0*dz[l]), '-', color='red', linewidth=Thick)
+	if ICP_Powered == True:
+		Antenna1 = [1.5,3.0,22.0,25.0]			# R1, R2, Z1, Z2 [Cells]
+		Antenna2 = [7.5,9.0,22.0,25.0]			# R1, R2, Z1, Z2 [Cells]
+		Antenna3 = [13.5,15.0,22.0,25.0]		# R1, R2, Z1, Z2 [Cells]
+		Antenna4 = [19.5,21.0,22.0,25.0]		# R1, R2, Z1, Z2 [Cells]
+		Ants = [Antenna1,Antenna2,Antenna3,Antenna4]
+		for i in range(0,4):
+			Ax.plot((Ants[i][0]*dr,Ants[i][1]*dr), (22.0*dz,22.0*dz), '-', color='red', linewidth=Thick)
+			if Sym == True: Ax.plot((-Ants[i][0]*dr,-Ants[i][1]*dr), (22.0*dz,22.0*dz), '-', color='red', linewidth=Thick)
+			Ax.plot((Ants[i][0]*dr,Ants[i][1]*dr), (25.0*dz,25.0*dz), '-', color='red', linewidth=Thick)
+			if Sym == True: Ax.plot((-Ants[i][0]*dr,-Ants[i][1]*dr), (25.0*dz,25.0*dz), '-', color='red', linewidth=Thick)
+			Ax.plot((Ants[i][0]*dr,Ants[i][0]*dr), (22.0*dz,25.0*dz), '-', color='red', linewidth=Thick)
+			if Sym == True: Ax.plot((-Ants[i][0]*dr,-Ants[i][0]*dr), (22.0*dz,25.0*dz), '-', color='red', linewidth=Thick)
+			Ax.plot((Ants[i][1]*dr,Ants[i][1]*dr), (22.0*dz,25.0*dz), '-', color='red', linewidth=Thick)	
+			if Sym == True: Ax.plot((-Ants[i][1]*dr,-Ants[i][1]*dr), (22.0*dz,25.0*dz), '-', color='red', linewidth=Thick)	
+		#endfor
+	#endif
 
 	# Lower CCP Electrode Housing
-	Ax.plot((28.0*dr[l],28.0*dr[l]), (82.0*dz[l],115.0*dz[l]), '-', color='dimgrey', linewidth=Thick)	#Outboard Vertical
-	Ax.plot((-28.0*dr[l],-28.0*dr[l]), (82.0*dz[l],115.0*dz[l]), '-', color='dimgrey', linewidth=Thick)	#Outboard Vertical
-	Ax.plot((0.0*dr[l],28.0*dr[l]), (82.0*dz[l],82.0*dz[l]), '-', color='dimgrey', linewidth=Thick)		#Top of platform
-	Ax.plot((-0.0*dr[l],-28.0*dr[l]), (82.0*dz[l],82.0*dz[l]), '-', color='dimgrey', linewidth=Thick)	#Top of platform	
-	Ax.plot((25.0*dr[l],25.0*dr[l]), (82.0*dz[l],115.0*dz[l]), '-', color='dimgrey', linewidth=Thick)	#Inboard Vertical
-	Ax.plot((-25.0*dr[l],-25.0*dr[l]), (82.0*dz[l],115.0*dz[l]), '-', color='dimgrey', linewidth=Thick)	#Inboard Vertical
+	Ax.plot((28.0*dr,28.0*dr), (82.0*dz,115.0*dz), '-', color='dimgrey', linewidth=Thick)	#Outboard Vertical
+	if Sym == True: Ax.plot((-28.0*dr,-28.0*dr), (82.0*dz,115.0*dz), '-', color='dimgrey', linewidth=Thick)	#Outboard Vertical
+	Ax.plot((0.0*dr,28.0*dr), (82.0*dz,82.0*dz), '-', color='dimgrey', linewidth=Thick)		#Top of platform
+	if Sym == True: Ax.plot((-0.0*dr,-28.0*dr), (82.0*dz,82.0*dz), '-', color='dimgrey', linewidth=Thick)	#Top of platform	
+	Ax.plot((25.0*dr,25.0*dr), (82.0*dz,115.0*dz), '-', color='dimgrey', linewidth=Thick)	#Inboard Vertical
+	if Sym == True: Ax.plot((-25.0*dr,-25.0*dr), (82.0*dz,115.0*dz), '-', color='dimgrey', linewidth=Thick)	#Inboard Vertical
 
 	# Lower CCP Electrode
-	Ax.plot((0.0*dr[l],25.0*dr[l]), (82.0*dz[l],82.0*dz[l]), '-', color='red', linewidth=Thick)
-	Ax.plot((-0.0*dr[l],-25.0*dr[l]), (82.0*dz[l],82.0*dz[l]), '-', color='red', linewidth=Thick)
-	Ax.plot((0.0*dr[l],25.0*dr[l]), (97.0*dz[l],97.0*dz[l]), '-', color='red', linewidth=Thick)
-	Ax.plot((-0.0*dr[l],-25.0*dr[l]), (97.0*dz[l],97.0*dz[l]), '-', color='red', linewidth=Thick)
-	Ax.plot((25.0*dr[l],25.0*dr[l]), (82.0*dz[l],97.0*dz[l]), '-', color='red', linewidth=Thick)
-	Ax.plot((-25.0*dr[l],-25.0*dr[l]), (82.0*dz[l],97.0*dz[l]), '-', color='red', linewidth=Thick)	
+	Ax.plot((0.0*dr,25.0*dr), (82.0*dz,82.0*dz), '-', color='red', linewidth=Thick)
+	if Sym == True: Ax.plot((-0.0*dr,-25.0*dr), (82.0*dz,82.0*dz), '-', color='red', linewidth=Thick)
+	Ax.plot((0.0*dr,25.0*dr), (97.0*dz,97.0*dz), '-', color='red', linewidth=Thick)
+	if Sym == True: Ax.plot((-0.0*dr,-25.0*dr), (97.0*dz,97.0*dz), '-', color='red', linewidth=Thick)
+	Ax.plot((25.0*dr,25.0*dr), (82.0*dz,97.0*dz), '-', color='red', linewidth=Thick)
+	if Sym == True: Ax.plot((-25.0*dr,-25.0*dr), (82.0*dz,97.0*dz), '-', color='red', linewidth=Thick)	
 
 	# Wafer
-	Ax.plot((0.0*dr[l],25.5*dr[l]), (80.0*dz[l],80.0*dz[l]), '-', color='cyan', linewidth=Thick)
-	Ax.plot((-0.0*dr[l],-25.5*dr[l]), (80.0*dz[l],80.0*dz[l]), '-', color='cyan', linewidth=Thick)
-	Ax.plot((0.0*dr[l],25.5*dr[l]), (81.0*dz[l],81.0*dz[l]), '-', color='cyan', linewidth=Thick)
-	Ax.plot((-0.0*dr[l],-25.5*dr[l]), (81.0*dz[l],81.0*dz[l]), '-', color='cyan', linewidth=Thick)
-
-#enddef
-
-#=============#
-
-def ManualGECMesh_GS(Ax=plt.gca()):		#Greg's GEC overlay code
-    thin = 2
-    thick = 3
-    verythik = 4
-    superthick = 5
-    
-    #Upstream ICP material dimensions.
-    Ax.plot((56.5*dz[l],56.5*dz[l]), (1.5*dr[l],55.5*dr[l]), '-', color='dimgrey', linewidth=thin)  #vertical right edge
-    Ax.plot((34.5*dz[l],34.5*dz[l]), (1.5*dr[l],14.75*dr[l]), '-', color='dimgrey', linewidth=thin)  #vertical left edge coil house
-    Ax.plot((30.5*dz[l],30.5*dz[l]), (1.5*dr[l],12.5*dr[l]), '-', color='dimgrey', linewidth=thin)  #vertical internal edge coil house
-    Ax.plot((40*dz[l],40*dz[l]), (14.75*dr[l],20.75*dr[l]), '-', color='dimgrey', linewidth=thin)  #vertical left edge coil rim
-    Ax.plot((27.5*dz[l],27.5*dz[l]), (39*dr[l],55.5*dr[l]), '-', color='dimgrey', linewidth=thin)  #vertical left edge electrode
-    Ax.plot((27.5*dz[l],27.5*dz[l]), (17.75*dr[l],20.75*dr[l]), '-', color='dimgrey', linewidth=thin)  #vertical right edge coil house rim
-    
-    Ax.plot((27.5*dz[l],34.5*dz[l]), (55.5*dr[l],55.5*dr[l]), '-', color='dimgrey', linewidth=thin)  #horizontal base edge left
-    Ax.plot((46*dz[l],56.5*dz[l]), (55.5*dr[l],55.5*dr[l]), '-', color='dimgrey', linewidth=thin)  #horizontal base edge right
-    Ax.plot((34.5*dz[l],56.5*dz[l]), (1.5*dr[l],1.5*dr[l]), '-', color='dimgrey', linewidth=thin)  #horizontal top edge 
-    Ax.plot((34.5*dz[l],40*dz[l]), (14.75*dr[l],14.75*dr[l]), '-', color='dimgrey', linewidth=thin)  #horizontal top edge coil house rim
-    Ax.plot((27.5*dz[l],40*dz[l]), (20.75*dr[l],20.75*dr[l]), '-', color='dimgrey', linewidth=thin)  #horizontal bottom edge coil house rim
-    Ax.plot((0.01*dz[l],30.5*dz[l]), (1.5*dr[l],1.5*dr[l]), '-', color='dimgrey', linewidth=thin)  #horizontal top edge internal
-    
-    	#Dielectric window
-    Ax.plot((31.5*dz[l],31.5*dz[l]),  (12.5*dr[l],17.75*dr[l]), 'orange', linewidth=thin)   #Vertical right edege dielectric
-    Ax.plot((0.01*dz[l],31.5*dz[l]),  (12.5*dr[l],12.5*dr[l]), 'orange', linewidth=thin)   
-    Ax.plot((0.01*dz[l],31.5*dz[l]),  (17.75*dr[l],17.75*dr[l]), 'orange', linewidth=thin)   
-    
-    	#Powered Electrode
-    Ax.plot((0.01*dz[l],27.5*dz[l]),   (39*dr[l],39*dr[l]), 'dimgrey', linewidth=superthick)
-    	
-    	#Dielectric spacer on Electrode
-    #Ax.plot((27.55*dz[l],27.55*dz[l]), (39.5*dr[l],40*dr[l]), 'orange', linewidth=verythik)
-    
-    	#Gas inlet - 'Metal' A
-    Ax.plot((34*dz[l],46*dz[l]), (55.5*dr[l],55.5*dr[l]), 'dimgrey', linewidth=thick)
-    	
-    
-    	#Powered ICP Coils - 'Metal'
-    Ax.plot((1.5*dz[l],3.5*dz[l]),   (12.25*dr[l],12.25*dr[l]), '-', color='red', linewidth=thick)		#1st coil bot
-    Ax.plot((1.5*dz[l],3.5*dz[l]),   (10*dr[l],10*dr[l]), '-', color='red', linewidth=thick)		#1st coil top
-    Ax.plot((1.5*dz[l],1.5*dz[l]),   (10*dr[l],12.25*dr[l]), '-', color='red', linewidth=thick)		#1st coil left
-    Ax.plot((3.5*dz[l],3.5*dz[l]),   (10*dr[l],12.25*dr[l]), '-', color='red', linewidth=thick)		#1st coilright
-    
-    Ax.plot((7.25*dz[l],9.25*dz[l]),   (12.25*dr[l],12.25*dr[l]), '-', color='red', linewidth=thick)		#2nd coil bot
-    Ax.plot((7.25*dz[l],9.25*dz[l]),   (10*dr[l],10*dr[l]), '-', color='red', linewidth=thick)		#2nd coil top
-    Ax.plot((7.25*dz[l],7.25*dz[l]),   (10*dr[l],12.25*dr[l]), '-', color='red', linewidth=thick)		#2nd coil left
-    Ax.plot((9.25*dz[l],9.25*dz[l]),   (10*dr[l],12.25*dr[l]), '-', color='red', linewidth=thick)		#2nd coilright
-    
-    Ax.plot((13.1*dz[l],15*dz[l]),   (12.25*dr[l],12.25*dr[l]), '-', color='red', linewidth=thick)		#3rd coil bot
-    Ax.plot((13.1*dz[l],15*dz[l]),   (10*dr[l],10*dr[l]), '-', color='red', linewidth=thick)		#3rd coil top
-    Ax.plot((13.1*dz[l],13.1*dz[l]),   (10*dr[l],12.25*dr[l]), '-', color='red', linewidth=thick)		#3rd coil left
-    Ax.plot((15*dz[l],15*dz[l]),   (10*dr[l],12.25*dr[l]), '-', color='red', linewidth=thick)		#3rd coilright
-    
-    Ax.plot((19*dz[l],20.9*dz[l]),   (12.25*dr[l],12.25*dr[l]), '-', color='red', linewidth=thick)		#4th coil bot
-    Ax.plot((19*dz[l],20.9*dz[l]),   (10*dr[l],10*dr[l]), '-', color='red', linewidth=thick)		#4th coil top
-    Ax.plot((19*dz[l],19*dz[l]),   (10*dr[l],12.25*dr[l]), '-', color='red', linewidth=thick)		#4th coil left
-    Ax.plot((20.9*dz[l],20.9*dz[l]),   (10*dr[l],12.25*dr[l]), '-', color='red', linewidth=thick)		#4th coilright
-    
-    Ax.plot((24.75*dz[l],26.5*dz[l]),   (12.25*dr[l],12.25*dr[l]), '-', color='red', linewidth=thick)		#5th coil bot
-    Ax.plot((24.75*dz[l],26.5*dz[l]),   (10*dr[l],10*dr[l]), '-', color='red', linewidth=thick)		#5th coil top
-    Ax.plot((24.75*dz[l],24.75*dz[l]),   (10*dr[l],12.25*dr[l]), '-', color='red', linewidth=thick)		#5th coil left
-    Ax.plot((26.5*dz[l],26.5*dz[l]),   (10*dr[l],12.25*dr[l]), '-', color='red', linewidth=thick)		#5th coilright
-    
-    Ax.plot((0.01*dz[l], 0.2*dz[l]), (57*dr[l],57*dr[l]), color= 'black', linewidth = 14)
-
+	Ax.plot((0.0*dr,25.5*dr), (80.0*dz,80.0*dz), '-', color='cyan', linewidth=Thick)
+	if Sym == True: Ax.plot((-0.0*dr,-25.5*dr), (80.0*dz,80.0*dz), '-', color='cyan', linewidth=Thick)
+	Ax.plot((0.0*dr,25.5*dr), (81.0*dz,81.0*dz), '-', color='cyan', linewidth=Thick)
+	if Sym == True: Ax.plot((-0.0*dr,-25.5*dr), (81.0*dz,81.0*dz), '-', color='cyan', linewidth=Thick)
 #enddef
 
 #=============#
@@ -2775,8 +2724,9 @@ for l in tqdm(range(0,numfolders)):
 		else: TEC2DVariableStrings.append(str(rawdata_2D[l][i][:-2].strip(' \t\n\r\"')))
 		#endif
 	#endfor
-	numvariables_2D,header_2D = len(TEC2DVariableStrings),len(TEC2DVariableStrings)+2
-	header_2Dlist.append(header_2D)
+	Header_TEC2D.append(TEC2DVariableStrings)											# SJD USE THIS HEADER !!!
+	numvariables_2D,header_2D = len(TEC2DVariableStrings),len(TEC2DVariableStrings)+2	# REMOVE THIS
+	header_2Dlist.append(header_2D)														# REMOVE THIS
 
 	#Seperate total 1D data array into sets of data for each variable.
 	CurrentFolderData = ReadTEC2D(rawdata_2D[l],header_2D,numvariables_2D)
@@ -3799,7 +3749,7 @@ def ImageOptions(fig,ax,Xlabel='',Ylabel='',Title='',Legend=[],Crop=True,Rotate=
 	elif image_plotmesh == 'PRCCPM' and Crop == True:	
 		ManualPRCCPMMesh(ax)
 	elif image_plotmesh == 'GEC' and Crop == True:
-		ManualGECMesh(ax)
+		ManualGECMesh(ax,image_plotsymmetry)
 	elif image_plotmesh == 'EVgeny' and Crop == True:
 		ManualEVgenyMesh(ax)
 	elif image_plotmesh == 'HyperionI' and Crop == True:
@@ -3996,9 +3946,9 @@ def DataExtent(folder=l,aspectratio=image_aspectratio):
 	if image_rotate == True:
 		aspectratio = aspectratio[::-1]
 		if Isym == 1: 
-			extent= [height,0, -radius, radius]
+			extent= [0,height, -radius, radius]
 		elif Isym == 0: 
-			extent= [height,0,  0,      radius]
+			extent= [0,height,  0,      radius]
 		#endif
 
 	#Default mesh orientation: [X,Y] = [Radius,Height]
@@ -4081,16 +4031,18 @@ def ImagePlotter2D(Image,extent,aspectratio=image_aspectratio,variable='N/A',fig
 
 	#Plot image with colour fill and contour lines
 	if image_plotcolourfill == True and image_plotcontours == True:
-		im = ax.contourf(Image,extent=extent,origin="lower",levels=image_contourlvls)
-		im2 = ax.contour(Image,extent=extent,origin="lower",levels=image_contourlvls,cmap='Greys',alpha=0.25)
+		im = ax.imshow(Image,extent=extent,origin='upper',aspect='equal')
+#		im = ax.contourf(Image,extent=extent,origin="upper",levels=999)	# Stretches Pixels Relative to Aspect_Ratio
+		im2 = ax.contour(Image,extent=extent,origin="upper",levels=image_contourlvls,cmap='Greys',alpha=0.25)
 
 	#Plot image with only colour fill
 	elif image_plotcolourfill == True:
-		im = ax.contourf(Image,extent=extent,origin="lower",levels=1000)
+		im = ax.imshow(Image,extent=extent,origin='upper',aspect='equal')
+#		im = ax.contourf(Image,extent=extent,origin="upper",levels=999)	# Stretches Pixels Relative to Aspect_Ratio
 
 	#Plot image with only contour lines
 	elif image_plotcontours == True:
-		im = ax.contour(Image,extent=extent,origin="lower",levels=image_contourlvls)
+		im = ax.contour(Image,extent=extent,origin="upper",levels=image_contourlvls)
 	#endif
 
 	return(fig,ax,im,Image)
@@ -4574,13 +4526,13 @@ def CalcSheathExtent(folderidx=l,Orientation='Radial',Phase='NaN',Ne=list(),Ni=l
 	#Force a single sheath species - Legacy Code or for testing purposes
 	elif len(SheathIonSpecies) > 0:
 		PosSpecies = SheathIonSpecies
-		NegSpecies = []
+		NegSpecies = ['E']
 	#endif
 	
 	MinimumSpeciesExist = False
 	#Check relevant datafile to confirm that positive and negative species exist
-	if PosSpecies in rawdata_2D[folderidx][0:header_2Dlist[folderidx]] and \
-	   NegSpecies in rawdata_2D[folderidx][0:header_2Dlist[folderidx]]:
+	AllSpecies = PosSpecies + NegSpecies
+	if all(Species in Header_TEC2D[folderidx] for Species in AllSpecies):
 		MinimumSpeciesExist = True
 	#endif
 
@@ -5119,7 +5071,8 @@ if savefig_tecplot2D == True:
 		Dir2Dplots = CreateNewFolder(Dirlist[l],'2Dplots')
 
 		#Create VariableIndices for each folder as required.
-		VariableIndices,VariableStrings = VariableEnumerator(Variables,rawdata_2D[l],header_2Dlist[l])
+#		VariableIndices,VariableStrings = VariableEnumerator(Variables,rawdata_2D[l],header_2Dlist[l])	!!! SJD OUTDATED
+		VariableIndices,VariableStrings = EnumerateVariables(Variables,Header_TEC2D[l])
 
 		#Setting the radial ticks for beauty purposes ~HACKY~
 		R = Radius[l]
@@ -5208,7 +5161,7 @@ if savefig_tecplot2D == True:
 				# Write Sheath Data separately as it is not included in the VariableList format
 				if image_plotsheath in ['Radial','Axial'] and k == len(VariableIndices)-1:
 					np.savetxt(Filename, [p for p in zip(SxAxis,Sx)], delimiter=',', fmt='%s')
-					WriteDataToFile(Sx, Dirctory+'Sx.csv')
+					WriteDataToFile(Sx, CSVDir+'Sx.csv')
 				#endif
 			#endif
 			
@@ -7030,7 +6983,7 @@ if 'AR3S' in list(set(FluidSpecies).intersection(Variables)):
 		DirTrends = CreateNewFolder(os.getcwd()+'/',TrendVariable+' Trends')
 
 		#Initiate lists required for storing data.
-		NeutralThrustlist,IonThrustlist,Thrustlist = list(),list(),list()
+		NeutralThrustlist,IonThrustlist,PresThrustlist,Thrustlist = list(),list(),list(),list()
 		NeutralIsplist,IonIsplist,ThrustIsplist = list(),list(),list()
 		Xaxis = list()
 	
@@ -7059,7 +7012,7 @@ if 'AR3S' in list(set(FluidSpecies).intersection(Variables)):
 			VariableIndices,VariableStrings = VariableEnumerator(['PRESSURE'],rawdata_2D[l],header_2Dlist[l])
 			try: 
 				Pressure = ExtractRadialProfile(Data[l],VariableIndices[0],VariableStrings[0],thrustloc)
-				PressureDown = ExtractRadialProfile(Data[l],VariableIndices[0],VariableStrings[0],thrustloc+1)
+				PressureDown = ExtractRadialProfile(Data[l],VariableIndices[0],VariableStrings[0],thrustloc-1)
 			except: 
 				Pressure = np.zeros(R_mesh[l]*2)
 				PressureDown = np.zeros(R_mesh[l]*2)
@@ -7083,12 +7036,22 @@ if 'AR3S' in list(set(FluidSpecies).intersection(Variables)):
 				#Assumes angularly symmetric temperature and Maxwellian velocity distribution.
 				NeutralThrust = 0
 				for i in range(0,R_mesh[l]):
-					#Calculate radial plane area of a ring at radius [i], correcting for central r=0.
-					Circumference = 2*np.pi*(i*(dr[l]/100))		#m
-					CellArea = Circumference*(dr[l]/100)		#m^2
-					if CellArea == 0:
-						CellArea = np.pi*(dr[l]/100)**2			#m^2
-					#endif  
+
+					# Determine Aperture Cell X-sectional Area, based on mesh geometry
+					if IXZlist[l] == 0:
+						# Calculate cylindrical radial plane area of a ring at radius [i],
+						# correcting for central r=0.
+						Circumference = 2*np.pi*(i*(dr[l]/100))		#m
+						CellArea = Circumference*(dr[l]/100)		#m^2
+						if CellArea == 0:
+							CellArea = np.pi*((dr[l]/100)**2)		#m^2
+						#endif
+
+					elif IXZlist[l] == 1:
+						# Calculate cartesian rectilinear planar slice of radius R, and depth dy,
+						# slices are orientated "into" the screen as viewed in 2D
+						CellArea = (dr[l]/100)*(dy[l]/100)			#m^2
+					#endif
 
 					#Calculate most probable neutral velocity based on temperature
 					MeanVelocity = np.sqrt( (2*1.38E-23*NeutGasTemp[i])/(NeutralMass) )  	#m/s
@@ -7111,7 +7074,7 @@ if 'AR3S' in list(set(FluidSpecies).intersection(Variables)):
 				NeutralIsp = (sum(NeutralIsp)/len(NeutralIsp))/9.81			#s
 				Thrust,ThrustIsp = NeutralThrust,NeutralIsp					#N,s
 				IonThrust,IonIsp = 1E-30,1E-30								#'Not Calculated'
-				DiffForce = 1E-30											#'Not Calculated'
+				PresThrust = 1E-30											#'Not Calculated'
 			#endif
 
 			#====================#
@@ -7131,22 +7094,32 @@ if 'AR3S' in list(set(FluidSpecies).intersection(Variables)):
 				IonAxialFlux = IonAxialFlux[0:R_mesh[l]][::-1]
 				#ONLY WORKS WHEN SYMMETRY OPTION IS ON, NEED A MORE ROBUST METHOD!
 
-				DiffForce,NeutralThrust,IonThrust = 0,0,0
+				PresThrust,NeutralThrust,IonThrust = 0,0,0
 				for i in range(0,R_mesh[l]):
-					#Calculate radial plane area of a ring at radius [i], correcting for central r=0.
-					Circumference = 2*np.pi*(i*(dr[l]/100))		#m
-					CellArea = Circumference*(dr[l]/100)		#m^2
-					if CellArea == 0:
-						CellArea = np.pi*((dr[l]/100)**2)		#m^2
+
+					# Determine Aperture Cell X-sectional Area, based on mesh geometry
+					if IXZlist[l] == 0:
+						# Calculate cylindrical radial plane area of a ring at radius [i],
+						# correcting for central r=0.
+						Circumference = 2*np.pi*(i*(dr[l]/100))		#m
+						CellArea = Circumference*(dr[l]/100)		#m^2
+						if CellArea == 0:
+							CellArea = np.pi*((dr[l]/100)**2)		#m^2
+						#endif
+
+					elif IXZlist[l] == 1:
+						# Calculate cartesian rectilinear planar slice of radius R, and depth dy,
+						# slices are orientated "into" the screen as viewed in 2D
+						CellArea = (dr[l]/100)*(dy[l]/100)			#m^2
 					#endif
 
 					#Calculate differential pressure between thrustloc-(thrustloc+1)
 					if Pressure[i] > 0.0:
 						DiffPressure = (Pressure[i]-PRESOUT[l])*133.33			#N/m^2
 #						DiffPressure = (Pressure[i]-PressureDown[i])*133.33		#N/m^2
-						DiffForce += DiffPressure*CellArea						#N
+						PresThrust += DiffPressure*CellArea						#N
 					else:
-						DiffForce += 0.0
+						PresThrust += 0.0
 					#endif
 
 					#Calculate Neutral mass flow rate and integrate thrust via F = (dm/dt)Ve.
@@ -7169,9 +7142,9 @@ if 'AR3S' in list(set(FluidSpecies).intersection(Variables)):
 				if len(NeutralIsp) == 0: NeutralIsp.append(np.nan)
 
 				#Add total thrust and calculate Isp of each component
-				Thrust = DiffForce + NeutralThrust + IonThrust				#N
-				NeutralFraction = NeutralThrust/(Thrust-DiffForce)			#Ignore dP/dz
-				IonFraction = IonThrust/(Thrust-DiffForce)					#Ignore dP/dz
+				Thrust = PresThrust + NeutralThrust + IonThrust				#N
+				NeutralFraction = NeutralThrust/(Thrust-PresThrust)			#Ignore dP/dz
+				IonFraction = IonThrust/(Thrust-PresThrust)					#Ignore dP/dz
 
 				IonIsp = (sum(IonIsp)/len(IonIsp))/9.81						#s
 				NeutralIsp = (sum(NeutralIsp)/len(NeutralIsp))/9.81			#s
@@ -7179,6 +7152,7 @@ if 'AR3S' in list(set(FluidSpecies).intersection(Variables)):
 
 				NeutralThrustlist.append( round(NeutralThrust*1000,5) )		#mN
 				IonThrustlist.append( round(IonThrust*1000,5) )				#mN
+				PresThrustlist.append( round(PresThrust*1000,5) )			#mN
 				Thrustlist.append( round(Thrust*1000,5) )					#mN
 				NeutralIsplist.append( round(NeutralIsp,5) )				#s
 				IonIsplist.append( round(IonIsp,5) )						#s
@@ -7192,7 +7166,7 @@ if 'AR3S' in list(set(FluidSpecies).intersection(Variables)):
 				print(Dirlist[l], '@ Z=',round(thrustloc*dz[l],2),'cm')
 				print('NeutralThrust', round(NeutralThrust*1000,2), 'mN @ ', round(NeutralIsp,2),'s')
 				print('IonThrust:', round(IonThrust*1000,4), 'mN @ ', round(IonIsp,2),'s')
-				print('D-Pressure:', round(DiffForce*1000,4), 'mN')
+				print('D-Pressure:', round(PresThrust*1000,4), 'mN')
 				print('Thrust:',round(Thrust*1000,4),'mN @ ', round(ThrustIsp,2),'s')
 				print('')
 			#endif
@@ -7212,12 +7186,13 @@ if 'AR3S' in list(set(FluidSpecies).intersection(Variables)):
 		fig,ax1 = figure(image_aspectratio,1)
 		TrendPlotter(ax1,Thrustlist,Xaxis,Marker='ko-',NormFactor=0)
 		TrendPlotter(ax1,NeutralThrustlist,Xaxis,Marker='r^-',NormFactor=0)
-#		TrendPlotter(ax1,IonThrustlist,Xaxis,Marker='bs-',NormFactor=0)
+		TrendPlotter(ax1,PresThrustlist,Xaxis,Marker='bs-',NormFactor=0)
+		TrendPlotter(ax1,IonThrustlist,Xaxis,Marker='mv-',NormFactor=0)
 
 		#Apply image options and save figure.
 		Title='Thrust at Z='+str(round(thrustloc*dz[0],2))+'cm with varying '+TrendVariable+' \n'+Dirlist[l][2:-1]
 		Xlabel,Ylabel = 'Varied Property','Thrust F$_{T}$ [mN]'
-		ax1.legend(['Total Thrust','Neutral Component','Ion Component'], fontsize=18, frameon=False)
+		ax1.legend(['Total Thrust','Neutral Thrust','Pressure Thrust','Ion Thrust'], fontsize=18, frameon=False)
 		ImageOptions(fig,ax1,Xlabel,Ylabel,Title,Crop=False)
 
 		plt.savefig(DirTrends+'Thrust Trends'+ext)
