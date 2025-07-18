@@ -252,14 +252,14 @@ NEDFVariables = []						# Requested Variables from nprofile_2d.pdt
 
 #Requested movie1/movie_icp Variables.
 PhaseVariables = Ar_Phase				# Requested Movie1 (phase) Variables.
-electrodeloc = [0,0]					# Cell location of powered electrode [R,Z].
+electrodeloc = [10,90]					# Cell location of powered electrode [R,Z].
 waveformlocs = []						# Cell locations of additional waveforms [R,Z].
 
 #Requested variables and plotting locations.
 Variables = Phys+Ar+O2+Be				# Requested Variables from Tecplot2D.pdt, tecplot_kin.pdt, and movie_icp.pdt 
 multivar = []							# Additional variables plotted ontop of [Variables]
 radialprofiles = []						# Radial 1D-Profiles to be plotted (fixed Z-mesh) --
-axialprofiles = []						# Axial 1D-Profiles to be plotted (fixed R-mesh) |
+axialprofiles = [5]						# Axial 1D-Profiles to be plotted (fixed R-mesh) |
 probeloc = []							# Cell location For Trend Analysis [R,Z], (leave empty for global min/max)
 
 #Various Diagnostic Settings			>>> OUTDATED, TO BE RETIRED <<<
@@ -267,17 +267,18 @@ sheathROI = []							# Sheath Region of Interest, (Start,End) [cells]
 sourcewidth = []						# Source Dimension at ROI, leave empty for auto. [cells]
 
 #Requested diagnostics and plotting routines.
-savefig_tecplot2D = True				# 2D Single-Variables: TECPLOT2D.PDT		<<< .csv File Save
+savefig_tecplot2D = False				# 2D Single-Variables: TECPLOT2D.PDT				< .csv File Save
 
-savefig_movieicp2D = False				# 2D Single-Variables: movie_icp.pdt		<<< MAXITER SHOULD BE AN ARRAY...
-savefig_movieicp1D = False				# 1D Single-Variables: movie_icp.pdt		<<< MAXITER SHOULD BE AN ARRAY...
-savefig_convergence = False				# 1D Single-Variables: movie_icp.pdt
+savefig_movieicp2D = False				# 2D Variables against space-axis:	movie_icp.pdt	< MAXITER SHOULD BE AN ARRAY
+savefig_movieicp1D = False				# 1D Variables against space-axis:	movie_icp.pdt	< MAXITER SHOULD BE AN ARRAY
+savefig_timeaxis1D = False				# 1D Variables against time-axis:	movie_icp.pdt
+savefig_convergence = False				# 1D variables against ITER-axis:	movie_icp.pdt
 iterstep = 1							# movie_icp.pdt iteration step size
 
-savefig_monoprofiles = False			# Single-Variables; fixed height/radius		<<< .csv File Save
-savefig_multiprofiles = False			# Multi-Variables; same folder
-savefig_compareprofiles = False			# Multi-Variables; all folders
-savefig_temporalprofiles = False		# Single-Variables; fixed height/radius
+savefig_monoprofiles = False			# 1D Variables against space-axis:		TECPLOT2D	< .csv File Save
+savefig_multiprofiles = False			# 1D Variables Compared Same Sims:		TECPLOT2D
+savefig_compareprofiles = False			# 1D Variables Compared Between Sims:	TECPLOT2D
+# ^^^^
 # NOTE: IMAGEPLOTTER1D RETURNS ARRAY ORDERED AS [0,height]  <<< REVERSED RELATIVE TO HPEM
 # 		IMAGEPLOTTER2D RETURNS ARRAY ORDERED AS [height,0] 	<<< SAME ORIENTATION AS HPEM
 #		1D PROFILES ARE MANUALLY REVERSED ([::-1]) IN THE 1D DIAGNOSTICS TO ACCOUNT FOR THIS
@@ -287,8 +288,8 @@ savefig_trendphaseaveraged = False		# Phase averaged trends at axial/radial cell
 savefig_trendphaseresolved = False		# Phase resolved trends at axial/radial cells		# CHANGE TO 'ProbeLoc' cell
 thrustloc = 45							# Z-axis cell for thrust calculation  [Cells]
 
-savefig_phaseresolve1D = False			# 1D Phase Resolved Images
 savefig_phaseresolve2D = False			# 2D Phase Resolved Images
+savefig_phaseresolve1D = False			# 1D Phase Resolved Images
 savefig_sheathdynamics = False			# 1D and 2D sheath dynamics images
 savefig_PROES =	False					# Simulated PROES Diagnostic
 phasecycles = 1.01						# Vaveform phase cycles to be plotted. 				 [Float]
@@ -296,7 +297,7 @@ DoFwidth = 0 							# PROES Depth of Field (symmetric about image plane) [Cells]
 
 savefig_IEDFangular = False				# 2D images of angular IEDF; single folders
 savefig_IEDFtrends = False				# 1D IEDF trends; all folders
-savefig_EEDF = False					# NO PLOTTING ROUTINE					<<< NO ROUTINE
+savefig_EEDF = False					# NO PLOTTING ROUTINE								< NO ROUTINE
 
 #Write processed data to ASCII files.
 write_ASCII = False						# Data underpinning figs written in ASCII format
@@ -330,7 +331,7 @@ image_plotsymmetry = True				# Plot radial symmetry - mirrors across the ISYM ax
 image_plotoverlay = False				# Plot location(s) of 1D radial/axial profiles onto 2D images
 image_plotsheath = False				# Plot sheath extent onto 2D images 'Axial','Radial'
 image_plotgrid = False					# Plot major/minor gridlines on 1D profiles
-image_plotmesh = 'GEC'				# Plot material mesh outlines ('True' == Auto,'PRCCP','PRCCPM','ESCT','GEC')
+image_plotmesh = 'GEC'					# Plot material mesh outlines ('True' == Auto,'PRCCP','PRCCPM','ESCT','GEC')
 image_numericaxis = False				#### NOT implemented ####
 image_plotphasewaveform = False			# Plot waveform sub-figure on phaseresolve2D images
 
@@ -561,8 +562,10 @@ header_kinlist = list()			#Header num rows for kin.pdt							-1D array of ints
 header_2Dlist = list()			#Header num rows for TECPLOT2D.pdt						-1D array of ints
 
 Header_TEC2D = list()			# TECPLOT2D Header Strings								-[FolderIdx,[Header Array]]
-
-
+Header_KIN = list()				# TECPLOT2D Header Strings								-[FolderIdx,[Header Array]]
+Header_movieicp = list()		# movie_icp Header Strings								-[FolderIdx,[Header Array]]
+Header_movie1 = list()			# movie1 Header Strings									-[FolderIdx,[Header Array]]
+Header_IEDF = list()			# IEDF Header Strings									-[FolderIdx,[Header Array]]
 
 
 
@@ -593,7 +596,7 @@ if True in [savefig_phaseresolve2D,savefig_PROES]:
 	print('# 2D Phase-Resolved Movie Processing')
 if True in [savefig_phaseresolve1D]:
 	print('# 1D Phase-Resolved Profile Processing')
-if True in [savefig_monoprofiles,savefig_multiprofiles,savefig_compareprofiles,savefig_temporalprofiles]:
+if True in [savefig_monoprofiles,savefig_multiprofiles,savefig_compareprofiles,savefig_timeaxis1D]:
 	print('# 1D Steady-State Profile Processing')
 if True in [print_generaltrends,print_Knudsennumber,print_Reynolds, print_totalpower,print_DCbias,print_thrust]:
 	print('# 1D Specific Trend Analysis')
@@ -1069,29 +1072,6 @@ def EnumerateVariables(Variables, Header):
 #enddef
 
 
-#VariableEnumerator(PhaseVariables,rawdata_phasemovie[l],header_phasemovie[l])
-#Enumerates requested variables and produces a VariableIndices for plotting.
-def VariableEnumerator(Variables,Rawdata,Header):										# OUTDATED, REPLACE THROUGHOUT!
-	VariableIndices = list()
-	VariableStrings = list()
-
-	#For all requested variables, in the requested data header, find which match.
-	for j in range(0,len(Variables)):
-		for i in range(0,Header):
-
-			#Compare variables and if they match, add to the process list.
-			#Default uses [1:-3] slice for the variable string.
-			if Variables[j] == Rawdata[i].strip(' ,"\n').replace(' ',''):
-				VariableIndices.append(i)
-				VariableStrings.append(Rawdata[i].strip(' ,"\n').replace(' ',''))
-				break
-			#endif
-		#endfor
-	#endfor
-	return(VariableIndices,VariableStrings)
-#enddef
-
-
 #Identifies if variable exists in all simulations, rejects if not.
 #Allows for the comparison of datasets with different icp.dat files.
 #Takes VariableIndices, VariableStrings, globalMinSharedVariables
@@ -1266,11 +1246,11 @@ def AzimuthalPhaseConversion(profile,variable):
 	
 	#Only Azimuthally varying fields require phase conversion
 	elif IsStringInVariable(variable,['ETHETA']) == True:	
-		phaseprocess,phasevariable = VariableEnumerator(['PHASE'],rawdata_2D[l],header_2Dlist[l])
+		phaseprocess,phasevariable = EnumerateVariables(['PHASE'],Header_TEC2D[l])
 	elif IsStringInVariable(variable,['J-THETA']) == True:
-		phaseprocess,phasevariable = VariableEnumerator(['PHASE'],rawdata_2D[l],header_2Dlist[l])
+		phaseprocess,phasevariable = EnumerateVariables(['PHASE'],Header_TEC2D[l])
 	elif IsStringInVariable(variable,['J-TH(MAG)']) == True:
-		phaseprocess,phasevariable = VariableEnumerator(['J-TH(PHA)'],rawdata_2D[l],header_2Dlist[l])
+		phaseprocess,phasevariable = EnumerateVariables(['J-TH(PHA)'],Header_TEC2D[l])
 	else: 
 		return(profile)
 	#endif
@@ -1390,9 +1370,10 @@ def ReadTEC2DPhase(folder=l,Variables=PhaseVariables):
 		#endif
 	#endfor
 
-	#Enumerate VariableIndices and VariableStrings, interpolate variables against globalvarlist.
-	proclist,varlist = VariableEnumerator(Variables,rawdata,header)
-	for i in range(0,len(proclist)): proclist[i] -= 2	#R&Z not included, shift back by two.
+	#Enumerate variables in the order they appear in movie1.pdt 
+	proclist,varlist = EnumerateVariables(Variables,Header_movie1[folder])
+	
+	#Interpolate variable lists for all folders to find minimum shared set
 	proclist,varlist = VariableInterpolator(proclist,varlist,MinSharedVariables)
 
 	#Rough method of obtaining the movie1.pdt cycle locations for data extraction.
@@ -2741,79 +2722,6 @@ for l in tqdm(range(0,numfolders)):
 	#Data is now 3D array of form [folder,variable,datapoint(R,Z)]
 	Data.append(CurrentFolderData)
 
-#===================##===================#
-#===================##===================#
-
-
-
-
-
-		##### 	UNDER CONSTRUCTION	 #####
-		
-	#Retrieve entire mesh for plotting if requested.
-	if image_plotmesh == True:
-
-		#Read through TECPLOT2D and extract "GEOMETRY" zone at the bottom
-		GeometryStartMarker = 'GEOMETRY'
-		for i in range(0,nn_2D):
-			if GeometryStartMarker in str(rawdata_2D[l][i]): 
-				GeometryStartIndex = i
-				break
-			#endif
-		#endfor
-		TEC2DGeometry = rawdata_2D[l][GeometryStartIndex::]
-		
-		#Geometry elements are written in batches of max size 25, determine batch spacing
-		MeshElementArray = list()						# FOR FOLDER [l], NEED TO ADD EXTRA DIMENSION
-		for i in range(0,len(TEC2DGeometry)):
-			#Identify Batch Header line and extract plotting information
-			if "GEOMETRY" in TEC2DGeometry[i]:
-				M = "Grid"
-				C = "Black"
-				Origin = (0,0)
-				T = "Line"
-				F = "Point"
-				#Identify element batch length and save batch start and end indices
-				BatchLen = int(TEC2DGeometry[i+1])		# Save current element batch length
-				BatchStart = i+2						# Skip line under GEOMETRY, containing batch length
-				BatchEnd = BatchStart + BatchLen*3		# Length of current batch
-			#endif
-			
-			#From Current "GEOMETRY" line to next "GEOMETRY" line, extract all elements and save arrays of size 2
-			if BatchStart < i < BatchEnd:
-				SplitElements = TEC2DGeometry[i].split()
-				if len(SplitElements) == 2:
-					MeshElementArray.append([ float(SplitElements[0]),float(SplitElements[1]) ])
-				#endif
-			#endif
-		#endfor
-		
-		#Reverse origin from top left to bottom left by subtracting max height from J(Z)-coordinates
-		for i in range(0,len(MeshElementArray),1):	
-	#		MeshElementArray[i][0] = ((R_mesh[l])*dr[l])-MeshElementArray[i][0]			#Reverse I(R)-coordinates
-			MeshElementArray[i][1] = ((Z_mesh[l]-2)*dz[l])-MeshElementArray[i][1]		#Reverse J(Z)-coordinates
-		#endfor		
-
-	#	for i in range(0,len(MeshElementArray),1):
-	#		print(MeshElementArray[i])
-	#		plt.plot(MeshElementArray[i][0],MeshElementArray[i][1], 'ko-', lw=2)
-		#endfor
-	#	plt.show()
-
-	#	for i in range(0,len(MeshElementArray),2):
-	#		print(MeshElementArray[i])
-	#		plt.plot(MeshElementArray[i],MeshElementArray[i+1], 'ko-', lw=2)
-		#endfor
-	#	plt.show()
-		
-	#	exit()
-	#endfor
-#endif
-
-		##### 	UNDER CONSTRUCTION	 #####
-
-
-
 
 #===================##===================#
 #===================##===================#
@@ -2834,8 +2742,9 @@ for l in tqdm(range(0,numfolders)):
 #			else: KinVariableStrings.append(str(rawdata_kin[l][i][:-2].strip(' \t\n\r\"')))
 #			#endif
 #		#endfor
-#		numvariables_kin,header_kin = len(KinVariableStrings),len(KinVariableStrings)+2
-#		header_kinlist.append(header_kin)
+#		Header_KIN.append(KinVariableStrings)												# SJD USE THIS HEADER !!!
+#		numvariables_kin,header_kin = len(KinVariableStrings),len(KinVariableStrings)+2		# REMOVE THIS
+#		header_kinlist.append(header_kin)													# REMOVE THIS
 #
 #		#Seperate total 1D data array into sets of data for each variable.
 #		CurrentFolderData = ReadTEC2D(rawdata_kin[l],header_kin,numvariables_kin, Zmesh=I,Dimension='1D')
@@ -2850,98 +2759,6 @@ for l in tqdm(range(0,numfolders)):
 #		#Data is now 3D array of form [folder,variable,datapoint(R,Z)]
 #		DataKin.append(CurrentFolderData)
 #	#endif
-
-
-#===================##===================#
-#===================##===================#
-
-	#IEDF/NEDF file readin.
-	if True in [savefig_IEDFangular,savefig_IEDFtrends]:
-
-		#Define arguments and autorun conv_prof.exe if possible.
-		#### THIS IS HACKY, WON'T ALWAYS WORK, ARGS LIST NEEDS AUTOMATING ####
-		IEDFVarArgs = ['1','1','1','1','1'] 						#Works for 2 species 1 surface.
-		ExtraArgs = ['1','1','1','1','1','1','1','1','1','1']#[]	#Hack For Additional Species
-		Args = ['pcmc.prof','title','1','1','1'] + IEDFVarArgs + ExtraArgs + ['0','0']
-		DirAdditions = ['iprofile_tec2d.pdt','nprofile_tec2d.pdt','iprofile_tec1d.pdt', 'nprofile_tec1d.pdt','iprofile_zones_tec1d.pdt','nprofile_zones_tec1d.pdt']
-		#try: AutoConvProf('./conv_prof.exe',Args,DirAdditions)
-		#except: print('ConvProf Failure:'+Dirlist[l])
-		AutoConvProf('./conv_prof.exe',Args,DirAdditions)
-
-		#Load data from IEDFprofile file and unpack into 1D array.
-		try: rawdata, nn_IEDF = ExtractRawData(Dir,iprofiletec2d[l].split('/')[-1],l)
-		except: rawdata, nn_IEDF = ExtractRawData(Dir,'iprofile_tec2d.pdt',l)
-		rawdata_IEDF.append(rawdata)
-
-		#Read through all variables for each file and stop when list ends.
-		IEDFVariableStrings,HeaderEndMarker = ['Theta [deg]','Energy [eV]'],'ZONE'
-		for i in range(2,nn_IEDF):
-			#Grab EDFangle(I),EDFbins(J) values from the ZONE line, these outline the datablock size.
-			if HeaderEndMarker in str(rawdata_IEDF[l][i]): 
-				I = list(filter(lambda x: x.isdigit(), rawdata_IEDF[l][i].split(',')[0]))	#discrete digits
-				I = int( ''.join(I) ); EDFangle = I					#Number of EDF angle bins [Integer]
-				J = list(filter(lambda x: x.isdigit(), rawdata_IEDF[l][i].split(',')[1]))	#discrete digits
-				J = int( ''.join(J) ); EDFbins = J					#Number of EDF energy bins [Integer]
-				break
-			else: IEDFVariableStrings.append(str(rawdata_IEDF[l][i][:-2].strip(' \t\n\r\"')))
-			#endif
-		#endfor
-		numvariables_IEDF,header_IEDF = len(IEDFVariableStrings),len(IEDFVariableStrings)+2
-		header_IEDFlist.append(header_IEDF)
-
-		#Seperate total 1D data array into sets of data for each variable.
-		#Data is stored in 2D array of shape: [EDFangle,EDFbins] or [I,J]
-		CurrentFolderData = ReadTEC2D(rawdata_IEDF[l],header_IEDF,numvariables_IEDF,0,I,J)
-		
-		#Convert data from CGS (HPEM DEFAULT) to user requested unit system							!!! Not tested
-		for i in range(0,len(IEDFVariableStrings)):
-			CurrentFolderData[i] = VariableUnitConversion(CurrentFolderData[i],IEDFVariableStrings[i])
-#			CurrentFolderData[i] = AzimuthalPhaseConversion(CurrentFolderData[i],IEDFVariableStrings[i])	
-		#endfor
-
-		#Save all variables for folder[l] to Data.
-		#Data is now 3D array of form [folder,variable,datapoint(R,Z)]
-		DataIEDF.append(CurrentFolderData)
-	#endif
-
-
-#===================##===================#
-#===================##===================#
-
-	#EEDF data readin.											!!! UNDER DEVELOPMENT
-	if True in [savefig_EEDF]:
-
-		#Load data from MCS.PDT file and unpack into 1D array.
-		try: rawdata, nn_mcs = ExtractRawData(Dir,boltztec[l].split('/')[-1],l)
-		except: rawdata, nn_mcs = ExtractRawData(Dir,'boltz_tec.pdt',l)
-		rawdata_mcs.append(rawdata)
-
-		#Unpack each row of data points into single array of floats.
-		#Removing 'spacing' between the floats and ignoring variables above data.
-		Energy,Fe = list(),list()
-		for i in range(3,len(rawdata_mcs[l])):
-			if 'ZONE' in rawdata_mcs[l][i]:
-				EEDF_TDlist.append( rawdata_mcs[l][i].split('"')[-2].strip(' ') )
-				DataEEDF.append([Energy,Fe])
-				Energy,Fe = list(),list()
-			#endif
-			try:
-				Energy.append( float(rawdata_mcs[l][i].split()[0]) )
-				Fe.append( float(rawdata_mcs[l][i].split()[1]) )
-			except:
-				NaN_Value = 1
-			#endtry
-		#endfor
-		
-		
-		a,b = 0,5
-		for i in range(a,b):
-			plt.plot(DataEEDF[i][0],DataEEDF[i][1], lw=2)
-		plt.legend(EEDF_TDlist[a:b])
-		plt.xlabel('Energy [eV]')
-		plt.ylabel('f(e) [eV-3/2]')
-		plt.show()
-	#endif														!!! UNDER DEVELOPMENT
 
 
 #===================##===================#
@@ -2970,7 +2787,8 @@ for l in tqdm(range(0,numfolders)):
 				PhaseVariableStrings.append(str(rawdata_phasemovie[l][i][:-2].strip(' \t\n\r\"')))
 			#endif
 		#endfor
-		header_phasemovie.append(header_phase)
+		Header_movie1.append(PhaseVariableStrings)			# SJD USE THIS HEADER !!!
+		header_phasemovie.append(header_phase)				# REMOVE THIS
 
 		#Rough method of obtaining the movie_icp iter locations for data extraction.
 		Iterloc = list()
@@ -2989,7 +2807,7 @@ for l in tqdm(range(0,numfolders)):
 #===================##===================#
 #===================##===================#
 
-	if True in [savefig_movieicp2D,savefig_temporalprofiles,savefig_movieicp1D,savefig_convergence]:
+	if True in [savefig_movieicp2D,savefig_timeaxis1D,savefig_movieicp1D,savefig_convergence]:
 
 		#Load data from movie_icp file and unpack into 1D array.
 		try: rawdata, nn_itermovie = ExtractRawData(Dir,movieicp[l].split('/')[-1],l)
@@ -3011,7 +2829,8 @@ for l in tqdm(range(0,numfolders)):
 				MovIcpVariableStrings.append(str(rawdata_itermovie[l][i][:-2].strip(' \t\n\r\"')))
 			#endif
 		#endfor
-		header_itermovie.append(header_iter)
+		Header_movieicp.append(MovIcpVariableStrings)			# SJD USE THIS HEADER !!!
+		header_itermovie.append(header_iter)					# REMOVE THIS
 
 		#Rough method of obtaining the movie_icp iter locations for data extraction.
 		Iterloc = list()
@@ -3098,16 +2917,174 @@ for l in tqdm(range(0,numfolders)):
 		#endfor
 		
 		#Save all variables for folder[l] to IterMovieData.
-		MaxIter = len(CurrentFolderData)				#Maximum Iter saved is always in order
-#		MaxVar = len(CurrentFolderData[0])				#Cant tell if variable ORDER has been affected
-#		MaxDim = len(CurrentFolderData[0,0])			#Can't tell which array elements are missing
-		
-#		print(shape(CurrentFolderData))					# Current folder may be missing some iteration data
-#		print(shape(IterMovieData[l,0:MaxIter]))		# IterMovieData arrays "sized" to missing iterations
-		#Write IterMovieData only to MaxIter to ensure correct array sizing
-		#Any IterMovieData[:,ITER,:,:] values after MaxIter will be zeros.
+		MaxIter = len(CurrentFolderData)						#Maximum Iter saved is always in order
 		IterMovieData[l,0:MaxIter] = CurrentFolderData
 	#endif
+
+
+#===================##===================#
+#===================##===================#
+
+	#IEDF/NEDF file readin.
+	if True in [savefig_IEDFangular,savefig_IEDFtrends]:
+
+		#Define arguments and autorun conv_prof.exe if possible.
+		#### THIS IS HACKY, WON'T ALWAYS WORK, ARGS LIST NEEDS AUTOMATING ####
+		IEDFVarArgs = ['1','1','1','1','1'] 						#Works for 2 species 1 surface.
+		ExtraArgs = ['1','1','1','1','1','1','1','1','1','1']#[]	#Hack For Additional Species
+		Args = ['pcmc.prof','title','1','1','1'] + IEDFVarArgs + ExtraArgs + ['0','0']
+		DirAdditions = ['iprofile_tec2d.pdt','nprofile_tec2d.pdt','iprofile_tec1d.pdt', 'nprofile_tec1d.pdt','iprofile_zones_tec1d.pdt','nprofile_zones_tec1d.pdt']
+		#try: AutoConvProf('./conv_prof.exe',Args,DirAdditions)
+		#except: print('ConvProf Failure:'+Dirlist[l])
+		AutoConvProf('./conv_prof.exe',Args,DirAdditions)
+
+		#Load data from IEDFprofile file and unpack into 1D array.
+		try: rawdata, nn_IEDF = ExtractRawData(Dir,iprofiletec2d[l].split('/')[-1],l)
+		except: rawdata, nn_IEDF = ExtractRawData(Dir,'iprofile_tec2d.pdt',l)
+		rawdata_IEDF.append(rawdata)
+
+		#Read through all variables for each file and stop when list ends.
+		IEDFVariableStrings,HeaderEndMarker = ['Theta [deg]','Energy [eV]'],'ZONE'
+		for i in range(2,nn_IEDF):
+			#Grab EDFangle(I),EDFbins(J) values from the ZONE line, these outline the datablock size.
+			if HeaderEndMarker in str(rawdata_IEDF[l][i]): 
+				I = list(filter(lambda x: x.isdigit(), rawdata_IEDF[l][i].split(',')[0]))	#discrete digits
+				I = int( ''.join(I) ); EDFangle = I					#Number of EDF angle bins [Integer]
+				J = list(filter(lambda x: x.isdigit(), rawdata_IEDF[l][i].split(',')[1]))	#discrete digits
+				J = int( ''.join(J) ); EDFbins = J					#Number of EDF energy bins [Integer]
+				break
+			else: IEDFVariableStrings.append(str(rawdata_IEDF[l][i][:-2].strip(' \t\n\r\"')))
+			#endif
+		#endfor
+		Header_IEDF.append(IEDFVariableStrings)
+		numvariables_IEDF,header_IEDF = len(IEDFVariableStrings),len(IEDFVariableStrings)+2
+		header_IEDFlist.append(header_IEDF)
+
+		#Seperate total 1D data array into sets of data for each variable.
+		#Data is stored in 2D array of shape: [EDFangle,EDFbins] or [I,J]
+		CurrentFolderData = ReadTEC2D(rawdata_IEDF[l],header_IEDF,numvariables_IEDF,0,I,J)
+		
+		#Convert data from CGS (HPEM DEFAULT) to user requested unit system							!!! Not tested
+		for i in range(0,len(IEDFVariableStrings)):
+			CurrentFolderData[i] = VariableUnitConversion(CurrentFolderData[i],IEDFVariableStrings[i])
+#			CurrentFolderData[i] = AzimuthalPhaseConversion(CurrentFolderData[i],IEDFVariableStrings[i])	
+		#endfor
+
+		#Save all variables for folder[l] to Data.
+		#Data is now 3D array of form [folder,variable,datapoint(R,Z)]
+		DataIEDF.append(CurrentFolderData)
+	#endif
+
+
+#===================##===================#
+#===================##===================#
+
+	#EEDF data readin.											!!! UNDER DEVELOPMENT
+	if True in [savefig_EEDF]:
+
+		#Load data from MCS.PDT file and unpack into 1D array.
+		try: rawdata, nn_mcs = ExtractRawData(Dir,boltztec[l].split('/')[-1],l)
+		except: rawdata, nn_mcs = ExtractRawData(Dir,'boltz_tec.pdt',l)
+		rawdata_mcs.append(rawdata)
+
+		#Unpack each row of data points into single array of floats.
+		#Removing 'spacing' between the floats and ignoring variables above data.
+		Energy,Fe = list(),list()
+		for i in range(3,len(rawdata_mcs[l])):
+			if 'ZONE' in rawdata_mcs[l][i]:
+				EEDF_TDlist.append( rawdata_mcs[l][i].split('"')[-2].strip(' ') )
+				DataEEDF.append([Energy,Fe])
+				Energy,Fe = list(),list()
+			#endif
+			try:
+				Energy.append( float(rawdata_mcs[l][i].split()[0]) )
+				Fe.append( float(rawdata_mcs[l][i].split()[1]) )
+			except:
+				NaN_Value = 1
+			#endtry
+		#endfor
+		
+		
+		a,b = 0,5
+		for i in range(a,b):
+			plt.plot(DataEEDF[i][0],DataEEDF[i][1], lw=2)
+		plt.legend(EEDF_TDlist[a:b])
+		plt.xlabel('Energy [eV]')
+		plt.ylabel('f(e) [eV-3/2]')
+		plt.show()
+	#endif														!!! UNDER DEVELOPMENT
+
+
+#===================##===================#
+#===================##===================#
+
+	##### 	UNDER CONSTRUCTION	 #####
+		
+	#Retrieve entire mesh for plotting if requested.
+	if image_plotmesh == True:
+
+		#Read through TECPLOT2D and extract "GEOMETRY" zone at the bottom
+		GeometryStartMarker = 'GEOMETRY'
+		for i in range(0,nn_2D):
+			if GeometryStartMarker in str(rawdata_2D[l][i]): 
+				GeometryStartIndex = i
+				break
+			#endif
+		#endfor
+		TEC2DGeometry = rawdata_2D[l][GeometryStartIndex::]
+		
+		#Geometry elements are written in batches of max size 25, determine batch spacing
+		MeshElementArray = list()						# FOR FOLDER [l], NEED TO ADD EXTRA DIMENSION
+		for i in range(0,len(TEC2DGeometry)):
+			#Identify Batch Header line and extract plotting information
+			if "GEOMETRY" in TEC2DGeometry[i]:
+				M = "Grid"
+				C = "Black"
+				Origin = (0,0)
+				T = "Line"
+				F = "Point"
+				#Identify element batch length and save batch start and end indices
+				BatchLen = int(TEC2DGeometry[i+1])		# Save current element batch length
+				BatchStart = i+2						# Skip line under GEOMETRY, containing batch length
+				BatchEnd = BatchStart + BatchLen*3		# Length of current batch
+			#endif
+			
+			#From Current "GEOMETRY" line to next "GEOMETRY" line, extract all elements and save arrays of size 2
+			if BatchStart < i < BatchEnd:
+				SplitElements = TEC2DGeometry[i].split()
+				if len(SplitElements) == 2:
+					MeshElementArray.append([ float(SplitElements[0]),float(SplitElements[1]) ])
+				#endif
+			#endif
+		#endfor
+		
+		#Reverse origin from top left to bottom left by subtracting max height from J(Z)-coordinates
+		for i in range(0,len(MeshElementArray),1):	
+#			MeshElementArray[i][0] = ((R_mesh[l])*dr[l])-MeshElementArray[i][0]			#Reverse I(R)-coordinates
+			MeshElementArray[i][1] = ((Z_mesh[l]-2)*dz[l])-MeshElementArray[i][1]		#Reverse J(Z)-coordinates
+		#endfor
+	#endif
+#endfor
+
+#	Debugging diagnostics to check mesh orientation
+#
+#		for i in range(0,len(MeshElementArray),1):
+#			print(MeshElementArray[i])
+#			plt.plot(MeshElementArray[i][0],MeshElementArray[i][1], 'ko-', lw=2)
+			#endfor
+#		plt.show()
+
+#		for i in range(0,len(MeshElementArray),2):
+#			print(MeshElementArray[i])
+#			plt.plot(MeshElementArray[i],MeshElementArray[i+1], 'ko-', lw=2)
+		#endfor
+#		plt.show()
+		
+#		exit()
+
+
+
+	##### 	UNDER CONSTRUCTION	 #####
 
 #===================##===================#
 #===================##===================#
@@ -3117,7 +3094,7 @@ for l in tqdm(range(0,numfolders)):
 #Create global list of all variable names and find shortest list.
 for l in range(0,numfolders):
 	#Alphabetize the VariableStrings and keep global alphabetized list.
-	tempvarlist = VariableEnumerator(Variables,rawdata_2D[l],header_2Dlist[l])[1]
+	tempvarlist = EnumerateVariables(Variables,Header_TEC2D[l])[1]
 	tempvarlist = sort(tempvarlist)
 	numvars = len(tempvarlist)
 
@@ -3145,7 +3122,7 @@ del HomeDir,DirContents
 
 
 #Alert user that readin process has ended and continue with selected diagnostics.
-if any([savefig_tecplot2D, savefig_phaseresolve2D, savefig_movieicp2D, savefig_convergence, savefig_monoprofiles, savefig_multiprofiles, savefig_compareprofiles, savefig_temporalprofiles, savefig_movieicp1D, savefig_sheathdynamics, savefig_phaseresolve1D, savefig_PROES, savefig_trendphaseaveraged, print_generaltrends, print_Knudsennumber, print_totalpower, print_DCbias, print_thrust, savefig_IEDFangular, savefig_IEDFtrends, savefig_EEDF]) == True:
+if any([savefig_tecplot2D, savefig_phaseresolve2D, savefig_movieicp2D, savefig_convergence, savefig_monoprofiles, savefig_multiprofiles, savefig_compareprofiles, savefig_timeaxis1D, savefig_movieicp1D, savefig_sheathdynamics, savefig_phaseresolve1D, savefig_PROES, savefig_trendphaseaveraged, print_generaltrends, print_Knudsennumber, print_totalpower, print_DCbias, print_thrust, savefig_IEDFangular, savefig_IEDFtrends, savefig_EEDF]) == True:
 	print( '----------------------------------------')
 	print( 'Data Readin Complete, Starting Analysis:')
 	print( '----------------------------------------')
@@ -4294,7 +4271,7 @@ def MinMaxTrends(lineout,Orientation,process):
 	for l in range(0,numfolders):
 
 		#Create and correct VariableIndices for each folder as required.
-		VariableIndices,VariableStrings = VariableEnumerator(Variables,rawdata_2D[l],header_2Dlist[l])
+		VariableIndices,VariableStrings = EnumerateVariables(Variables,Header_TEC2D[l])
 		VariableIndices,VariableStrings = VariableInterpolator(VariableIndices,VariableStrings,MinSharedVariables)
 
 		#Update X-axis with folder information.
@@ -4575,30 +4552,30 @@ def CalcSheathExtent(folderidx=l,Orientation='Radial',Phase='NaN',Ne=list(),Ni=l
 	#Default to 2D data format.
 #	if Phase == 'NaN' and len(Ne) == 0:
 		#Obtain electron density and extract 2D image for further processing.
-#		Eproc = VariableEnumerator(['E'],rawdata_2D[folder],header_2Dlist[folder])[0][0]
+#		Eproc = EnumerateVariables(['E'],Header_TEC2D[folder])[0][0]
 #		Ne = ImageExtractor2D( Data[folder][Eproc] )
 
 		#Obtain all positive and negative ion densities and extract 2D images for further processing
-#		PosSpeciesproc = VariableEnumerator(PosSpecies,rawdata_2D[folder],header_2Dlist[folder])[0]
+#		PosSpeciesproc = EnumerateVariables(PosSpecies,Header_TEC2D[folder])[0]
 #		for i in range(0,len(PosSpeciesproc)): 
 #			NPos.append( ImageExtractor2D(Data[folder][PosSpeciesproc[i]]) )
 		#endfor
-#		NegSpeciesproc = VariableEnumerator(NegSpecies,rawdata_2D[folder],header_2Dlist[folder])[0]
+#		NegSpeciesproc = EnumerateVariables(NegSpecies,Header_TEC2D[folder])[0]
 #		for i in range(0,len(NegSpeciesproc)): 
 #			NNeg.append( ImageExtractor2D(Data[folder][NegSpeciesproc[i]]) )	
 		#endfor
 
 	#If phase is supplied, use phase data format.  (Proc=Proc-2 to skip R,Z data in phase data)
 #	elif Phase != 'NaN' and len(Ne) == 0:
-#		Eproc = VariableEnumerator(['E'],rawdata_phasemovie[folder],header_phasemovie[folder])[0][0]
+#		Eproc = EnumerateVariables(['E'],Header_movie1[folder])[0][0]
 #		Ne = ImageExtractor2D( PhaseMovieData[folder][Phase][Eproc-2] ) 
 
 		#Obtain all positive and negative ion densities and extract 2D images for further processing
-#		PosSpeciesproc=VariableEnumerator(PosSpecies,rawdata_phasemovie[folder],header_phasemovie[folder])[0]
+#		PosSpeciesproc = EnumerateVariables(PosSpecies,Header_movie1[folder])[0]
 #		for i in range(0,len(PosSpeciesproc)): 
 #			NPos.append( ImageExtractor2D(PhaseMovieData[folder][Phase][PosSpeciesproc[i]-2]) )
 		#endfor
-#		NegSpeciesproc=VariableEnumerator(NegSpecies,rawdata_phasemovie[folder],header_phasemovie[folder])[0]
+#		NegSpeciesproc = EnumerateVariables(NegSpecies,Header_movie1[folder])[0]
 #		for i in range(0,len(NegSpeciesproc)): 
 #			NNeg.append( ImageExtractor2D(PhaseMovieData[folder][Phase][NegSpeciesproc[i]-2]) )
 		#endfor
@@ -4645,15 +4622,16 @@ def CalcSheathExtent(folderidx=l,Orientation='Radial',Phase='NaN',Ne=list(),Ni=l
 	#Obtain current folder ion and electron densities if not already supplied.	
 	#Default to 2D data format.
 	if Phase == 'NaN' and len(Ne) == 0:
-		IONproc = VariableEnumerator(PosSpecies,rawdata_2D[folderidx],header_2Dlist[folderidx])[0][0]
-		Eproc = VariableEnumerator(['E'],rawdata_2D[folderidx],header_2Dlist[folderidx])[0][0]
-		Ne,Ni = Data[folderidx][Eproc], Data[folderidx][IONproc]
-	#If phase is supplied, use phase data format.		#RM SJD, DOESN'T WORK ANYMORE, TO BE REMOVED.
+		IONproc = EnumerateVariables(PosSpecies,Header_TEC2D[folderidx])[0][0]
+		Eproc = EnumerateVariables(['E'],Header_TEC2D[folderidx])[0][0]
+		Ne = Data[folderidx][Eproc]
+		Ni = Data[folderidx][IONproc]
+	#If phase is supplied, use phase data format.				<<< TO BE REMOVED
 #	elif Phase != 'NaN' and len(Ne) == 0:
-#		IONproc = VariableEnumerator(PosSpecies,rawdata_phasemovie[folderidx],header_phasemovie[folderidx])[0][0]
-#		Eproc = VariableEnumerator(['E'],rawdata_phasemovie[folderidx],header_phasemovie[folderidx])[0][0]
-#		IONproc,Eproc = IONproc-2, Eproc-2		#Skip R,Z data inputs in phase data.
-#		Ne,Ni = PhaseMovieData[folderidx][Phase][Eproc], PhaseMovieData[folderidx][Phase][IONproc]
+#		IONproc = EnumerateVariables(PosSpecies,Header_movie1[folderidx])[0][0]
+#		Eproc = EnumerateVariables(['E'],Header_movie1[folderidx])[0][0]
+#		Ne = PhaseMovieData[folderidx][Phase][Eproc]
+#		Ni = PhaseMovieData[folderidx][Phase][IONproc]
 	#endif
 	#Extract 2D image for further processing.
 	Ne,Neff = ImageExtractor2D(Ne),ImageExtractor2D(Ni)
@@ -4952,14 +4930,14 @@ def PlotSheathExtent(SxAxis,Sx,ax=plt.gca(),ISymmetry=0,Orientation='Radial'):
 """
 for l in range(0,numfolders):
 	#Create new folder to keep output plots.
-	Dir2Dplots = CreateNewFolder(Dirlist[l],'2Dplots')
+	Dir2Dplots = CreateNewFolder(Dirlist[l],'TECPlot2D')
 	
 	#Create Etot arrays
 	Etot = list()
 	Btot = list()
 
 	#Create VariableIndices for each folder as required.
-	VariableIndices,VariableStrings = VariableEnumerator(Variables,rawdata_2D[l],header_2Dlist[l])
+	VariableIndices,VariableStrings = EnumerateVariables(Variables,Header_TEC2D[l])
 
 	#Setting the radial ticks for beauty purposes ~HACKY~
 	R = Radius[l]
@@ -5068,10 +5046,9 @@ if savefig_tecplot2D == True:
 
 	for l in range(0,numfolders):
 		#Create new folder to keep output plots.
-		Dir2Dplots = CreateNewFolder(Dirlist[l],'2Dplots')
+		Dir2Dplots = CreateNewFolder(Dirlist[l],'TECPlot2D')
 
 		#Create VariableIndices for each folder as required.
-#		VariableIndices,VariableStrings = VariableEnumerator(Variables,rawdata_2D[l],header_2Dlist[l])	!!! SJD OUTDATED
 		VariableIndices,VariableStrings = EnumerateVariables(Variables,Header_TEC2D[l])
 
 		#Setting the radial ticks for beauty purposes ~HACKY~
@@ -5140,12 +5117,12 @@ if savefig_tecplot2D == True:
 			ImageOptions(fig,ax,Xlabel,Ylabel,Title)
 
 			#Save Figure
-			plt.savefig(Dir2Dplots+'2DPlot '+VariableStrings[k]+ext)
+			plt.savefig(Dir2Dplots+'2DPlot_'+VariableStrings[k]+ext)
 			clearfigures(fig)
 			
 			#Write data underpinning current figure in .csv format
 			if Write_CSV == True:
-				CSVDir = CreateNewFolder(Dir2Dplots, '2Dplots_Data')
+				CSVDir = CreateNewFolder(Dir2Dplots, '2DPlots_Data')
 				CSVRMesh = 'R_Mesh [Cells] '+str(R_mesh[l])+'  :: dR [cm/cell] '+str(dr[l])
 				CSVZMesh = 'Z_Mesh [Cells] '+str(Z_mesh[l])+'  :: dZ [cm/cell] '+str(dz[l])
 				CSVFilename = VariableStrings[k]+'.csv'
@@ -5167,7 +5144,7 @@ if savefig_tecplot2D == True:
 			
 			#Write data to ASCII files [OUTDATED FORMAT, TO BE REMOVED]
 			if write_ASCII == True:
-				DirWrite = CreateNewFolder(Dir2Dplots, '2Dplots_Data')
+				DirWrite = CreateNewFolder(Dir2Dplots, '2DPlots_Data')
 				WriteDataToFile(Image, DirWrite+VariableStrings[k])
 				if image_plotsheath in ['Radial','Axial'] and k == len(VariableIndices)-1: 
 					WriteDataToFile(Sx, DirWrite+'Sx-EXT')
@@ -5193,12 +5170,10 @@ if savefig_movieicp2D == True:
 	for l in range(0,numfolders):
 
 		#Create new folder to keep convergence variable folders in.
-		DirMovieicp = CreateNewFolder(Dirlist[l],'Movieicp_2Dplots/')
+		DirMovieicp = CreateNewFolder(Dirlist[l],'Movieicp/')
 
-		#Create VariableIndices for each folder as required.
-		VariableIndices,VariableStrings = VariableEnumerator(Variables,rawdata_itermovie[l],header_itermovie[l])
-		#Skip over the R and Z processes as they are not saved properly in iterdata.
-		for i in range(0,len(VariableIndices)): VariableIndices[i] = VariableIndices[i]-2
+		#Enumerate variable strings in the order they appear in movie_icp.pdt
+		VariableIndices,VariableStrings = EnumerateVariables(Variables,Header_movieicp[l])
 
 		#Extract saved iteration strings and create list for mean convergence trends
 		IterArray,IterAxis = list(),list()
@@ -5215,7 +5190,7 @@ if savefig_movieicp2D == True:
 		for i in tqdm(range(0,len(VariableIndices))):
 
 			#Create new folder to keep output plots.
-			DirMoviePlots = CreateNewFolder(DirMovieicp,VariableStrings[i]+'_2Diterplots/')
+			DirMoviePlots = CreateNewFolder(DirMovieicp,'2DIterPlots_'+VariableStrings[i]+'/')
 
 			#Create empty image array based on mesh size and symmetry options.
 			try: 
@@ -5337,7 +5312,7 @@ if savefig_monoprofiles == True:
 	for l in range(0,numfolders):
 
 		#Create VariableIndices for each folder as required.
-		VariableIndices,VariableStrings = VariableEnumerator(Variables,rawdata_2D[l],header_2Dlist[l])
+		VariableIndices,VariableStrings = EnumerateVariables(Variables,Header_TEC2D[l])
 
 		#Generate SI scale axes for lineout plots and refresh legend.
 		Raxis = GenerateAxis('Radial',ISYMlist[l])
@@ -5347,7 +5322,7 @@ if savefig_monoprofiles == True:
 		#Generate the radial (horizontal) lineouts for a specific height.
 		if len(radialprofiles) > 0:
 			#Create folder to keep output plots.
-			DirRlineouts = CreateNewFolder(Dirlist[l],'Radial_Profiles/')
+			DirRlineouts = CreateNewFolder(Dirlist[l],'1DRadial_Profiles/')
 
 			#Loop over all required variables and requested profile locations.
 			for i in tqdm(range(0,len(VariableIndices))):
@@ -5417,7 +5392,7 @@ if savefig_monoprofiles == True:
 		#Generate the vertical (height) lineouts for a given radius.
 		if len(axialprofiles) > 0:
 			#Create folder to keep output plots.
-			DirZlineouts = CreateNewFolder(Dirlist[l],'Axial_Profiles/')
+			DirZlineouts = CreateNewFolder(Dirlist[l],'1DAxial_Profiles/')
 			Legendlist = list()
 
 			#Collect and plot required data.
@@ -5528,7 +5503,7 @@ if savefig_compareprofiles == True:
 			for l in range(0,numfolders):
 
 				#Create VariableIndices for each folder as required.
-				VariableIndices,VariableStrings = VariableEnumerator(Variables,rawdata_2D[l],header_2Dlist[l])
+				VariableIndices,VariableStrings = EnumerateVariables(Variables,Header_TEC2D[l])
 				
 				#Correct VariableIndices for folders containing different icp.dat.
 				VariableIndices,VariableStrings = VariableInterpolator(VariableIndices,VariableStrings,MinSharedVariables)
@@ -5591,7 +5566,7 @@ if savefig_compareprofiles == True:
 			for l in range(0,numfolders):
 
 				#Create VariableIndices for each folder as required.
-				VariableIndices,VariableStrings = VariableEnumerator(Variables,rawdata_2D[l],header_2Dlist[l])
+				VariableIndices,VariableStrings = EnumerateVariables(Variables,Header_TEC2D[l])
 
 				#Correct VariableIndices for folders containing different icp.dat.
 				VariableIndices,VariableStrings = VariableInterpolator(VariableIndices,VariableStrings,MinSharedVariables)
@@ -5648,8 +5623,8 @@ if savefig_multiprofiles == True:
 		Dirlineouts = CreateNewFolder(Dirlist[l],'multivar_Profiles/')
 
 		#Create VariableIndices for each folder as required.
-		VariableIndices,VariableStrings = VariableEnumerator(Variables,rawdata_2D[l],header_2Dlist[l])
-		multiVariableIndices,multiVariableStrings = VariableEnumerator(multivar,rawdata_2D[l],header_2Dlist[l])
+		VariableIndices,VariableStrings = EnumerateVariables(Variables,Header_TEC2D[l])
+		multiVariableIndices,multiVariableStrings = EnumerateVariables(multivar,Header_TEC2D[l])
 
 		#Create variable labels with SI unit conversions if required.
 		Ylabel = VariableLabelMaker(VariableStrings)
@@ -5771,19 +5746,15 @@ if savefig_multiprofiles == True:
 ##====================================================================#
 
 #Plot 1D profile of requested Variables at desired locations
-if savefig_temporalprofiles == True:
+if savefig_movieicp1D == True:
 
 	#Create new diagnostic output folder and initiate required lists.
-	DirTemporal = CreateNewFolder(Dirlist[l],'Movieicp_Profiles/')
+	DirTemporal = CreateNewFolder(Dirlist[l],'Movieicp/')
 
 	for l in range(0,numfolders):
 
-		#Create VariableIndices for each folder as required.
-		VariableIndices,VariableStrings = VariableEnumerator(Variables,rawdata_itermovie[l],header_itermovie[l])
-		#Skip over the R and Z processes as they are not saved properly in iterdata.
-		for i in range(0,len(VariableIndices)):
-			VariableIndices[i] = VariableIndices[i]-2
-		#endfor
+		#Enumerate variable strings in the order they appear in movie_icp.pdt
+		VariableIndices,VariableStrings = EnumerateVariables(Variables,Header_movieicp[l])
 		
 		IterArray = list()
 		#Generate a numerical iteration array for save strings
@@ -5802,7 +5773,7 @@ if savefig_temporalprofiles == True:
 		#Generate the radial (horizontal) lineouts for a specific height.
 		if len(radialprofiles) > 0:
 			#Create folder to keep output plots.
-			DirRlineouts = CreateNewFolder(DirTemporal,'Radial_Profiles/')
+			DirRlineouts = CreateNewFolder(DirTemporal,'1DRadial_Profiles/')
 
 			#Loop over all required variables and requested profile locations.
 			for i in tqdm(range(0,len(VariableIndices))):
@@ -5876,7 +5847,7 @@ if savefig_temporalprofiles == True:
 		#Generate the vertical (height) lineouts for a given radius.
 		if len(axialprofiles) > 0:
 			#Create folder to keep output plots.
-			DirZlineouts = CreateNewFolder(DirTemporal,'Axial_Profiles/')
+			DirZlineouts = CreateNewFolder(DirTemporal,'1DAxial_Profiles/')
 
 			#Collect and plot required data.
 			for i in tqdm(range(0,len(VariableIndices))):
@@ -5957,24 +5928,20 @@ if savefig_temporalprofiles == True:
 ##====================================================================#
 
 #Plot 1D profile of requested Variables at desired locations
-if savefig_movieicp1D == True:
+if savefig_timeaxis1D == True:
 
 	#Create new diagnostic output folder and initiate required lists.
-	DirTemporal = CreateNewFolder(Dirlist[l],'Movieicp_Profiles/')
+	DirTemporal = CreateNewFolder(Dirlist[l],'Movieicp/')
 
 	#for all folders being processed.
 	for l in range(0,numfolders):
 
 		#Create new folder and initiate required lists.
 		TemporalTrends,Xaxis = list(),list()
-		DirMeshAve = CreateNewFolder(DirTemporal,'MeshAvg_Profiles/')
+		DirMeshAve = CreateNewFolder(DirTemporal,'1DTimeAxis_Profiles/')
 
-		#Create VariableIndices for each folder as required.
-		VariableIndices,VariableStrings = VariableEnumerator(Variables,rawdata_itermovie[l],header_itermovie[l])
-		#Skip over the R and Z processes as they are not saved properly in iterdata.
-		for i in range(0,len(VariableIndices)):
-			VariableIndices[i] = VariableIndices[i]-2
-		#endfor
+		#Enumerate variable strings in the order they appear in movie_icp.pdt
+		VariableIndices,VariableStrings = EnumerateVariables(Variables,Header_movieicp[l])
 
 		#Create list and x-axis for convergence trend plotting.
 		for i in range(0,len(MovieIterlist[l])):
@@ -6012,7 +5979,7 @@ if savefig_movieicp1D == True:
 
 			#Write data to ASCII files if requested.
 			if write_ASCII == True:
-				DirWrite = CreateNewFolder(DirMeshAve, 'MeshAvg_Data')
+				DirWrite = CreateNewFolder(DirMeshAve, '1DTimeAxis_Data')
 				WriteDataToFile(Xaxis, DirWrite+VariableStrings[i], 'w')
 				WriteDataToFile(['\n']+TemporalProfile, DirWrite+VariableStrings[i], 'a')
 			#endif
@@ -6058,12 +6025,10 @@ if savefig_convergence == True:
 	for l in range(0,numfolders):
 
 		#Create new folder to keep convergence variable folders in.
-		DirConvergence = CreateNewFolder(Dirlist[l],'Movieicp_Profiles/')
+		DirConvergence = CreateNewFolder(Dirlist[l],'Movieicp/')
 
-		#Create VariableIndices for each folder as required.
-		VariableIndices,VariableStrings = VariableEnumerator(Variables,rawdata_itermovie[l],header_itermovie[l])
-		#Skip over the R and Z processes as they are not saved properly in iterdata.
-		for i in range(0,len(VariableIndices)): VariableIndices[i] = VariableIndices[i]-2
+		#Enumerate variable strings in the order they appear in movie_icp.pdt
+		VariableIndices,VariableStrings = EnumerateVariables(Variables,Header_movieicp[l])
 
 		#Extract saved iteration strings and create list for mean convergence trends
 		ConvergenceTrends,IterArray,IterAxis = list(),list(),list()
@@ -6210,7 +6175,7 @@ if savefig_IEDFangular == True:
 		DirIEDF = CreateNewFolder(Dirlist[l],'EDFplots')
 
 		#Create VariableIndices for requested EDF species and extract images.
-		VariableIndices,VariableStrings = VariableEnumerator(IEDFVariables,rawdata_IEDF[l],header_IEDFlist[l])
+		VariableIndices,VariableStrings = EnumerateVariables(IEDFVariables,Header_IEDF[l])
 		
 		#For all requested variables.
 		for i in tqdm(range(0,len(VariableIndices))):
@@ -6315,7 +6280,7 @@ if savefig_IEDFtrends == True:
 			EDFprofile = list()
 
 			#Create VariableIndices for requested EDF species and extract images.
-			VariableIndices,VariableStrings=VariableEnumerator(IEDFVariables,rawdata_IEDF[l],header_IEDFlist[l])
+			VariableIndices,VariableStrings = EnumerateVariables(IEDFVariables,Header_IEDF[l])
 			Legendlist.append(FolderNameTrimmer(Dirlist[l]))
 
 			#Extract image from required variable and flatten angular distribution profile.
@@ -6614,7 +6579,7 @@ if savefig_trendphaseaveraged == True or print_generaltrends == True:
 	for k in tqdm(range(0,len(Variables))):
 
 		#Create VariableIndices for largest output, only compare variables shared between all folders.
-		VariableIndices,VariableStrings = VariableEnumerator(Variables,max(rawdata_2D),max(header_2Dlist))
+		VariableIndices,VariableStrings = EnumerateVariables(Variables,Header_TEC2D[l])
 		VariableIndices,VariableStrings = VariableInterpolator(VariableIndices,VariableStrings,MinSharedVariables)
 
 		#Create Y-axis legend for each variable to be plotted.
@@ -6771,7 +6736,7 @@ if savefig_trendphaseaveraged == True or print_DCbias == True:
 	for l in range(0,numfolders):
 
 		#Create VariableIndices for each folder as required.
-		Process,Variable = VariableEnumerator(['P-POT'],rawdata_2D[l],header_2Dlist[l])
+		Process,Variable = EnumerateVariables(['P-POT'],Header_TEC2D[l])
 
 		#Update X-axis with folder information.
 		Xaxis.append( FolderNameTrimmer(Dirlist[l]) )
@@ -6870,7 +6835,7 @@ if savefig_trendphaseaveraged == True or print_totalpower == True:
 		for l in range(0,numfolders):
 
 			#Create extract data for the neutral flux and neutral velocity.
-			VariableIndices,VariableStrings = VariableEnumerator(RequestedPowers,rawdata_2D[l],header_2Dlist[l])
+			VariableIndices,VariableStrings = EnumerateVariables(RequestedPowers,Header_TEC2D[l])
 			
 			#Extract 2D power density data array [W/m3]
 			PowerDensity = ImageExtractor2D(Data[l][VariableIndices[k]])
@@ -6999,17 +6964,17 @@ if 'AR3S' in list(set(FluidSpecies).intersection(Variables)):
 			Xaxis.append( FolderNameTrimmer(Dirlist[l]) )
 
 			#Extract data required for Thrust calculations, discharge plane (Z) = thrustloc.
-			VariableIndices,VariableStrings = VariableEnumerator(['VZ-NEUTRAL'],rawdata_2D[l],header_2Dlist[l])
+			VariableIndices,VariableStrings = EnumerateVariables(['VZ-NEUTRAL'],Header_TEC2D[l])
 			NeutralVelocity = ExtractRadialProfile(Data[l],VariableIndices[0],VariableStrings[0],thrustloc)
-			VariableIndices,VariableStrings = VariableEnumerator(['VZ-ION+'],rawdata_2D[l],header_2Dlist[l])
+			VariableIndices,VariableStrings = EnumerateVariables(['VZ-ION+'],Header_TEC2D[l])
 			IonVelocity = ExtractRadialProfile(Data[l],VariableIndices[0],VariableStrings[0],thrustloc)
-			VariableIndices,VariableStrings = VariableEnumerator(['FZ-AR3S'],rawdata_2D[l],header_2Dlist[l])
+			VariableIndices,VariableStrings = EnumerateVariables(['FZ-AR3S'],Header_TEC2D[l])
 			NeutralAxialFlux = ExtractRadialProfile(Data[l],VariableIndices[0],VariableStrings[0],thrustloc)
-			VariableIndices,VariableStrings = VariableEnumerator(['FZ-AR+'],rawdata_2D[l],header_2Dlist[l])
+			VariableIndices,VariableStrings = EnumerateVariables(['FZ-AR+'],Header_TEC2D[l])
 			IonAxialFlux = ExtractRadialProfile(Data[l],VariableIndices[0],VariableStrings[0],thrustloc)
-			VariableIndices,VariableStrings = VariableEnumerator(['TG-AVE'],rawdata_2D[l],header_2Dlist[l])
+			VariableIndices,VariableStrings = EnumerateVariables(['TG-AVE'],Header_TEC2D[l])
 			NeutGasTemp = ExtractRadialProfile(Data[l],VariableIndices[0],VariableStrings[0],thrustloc)
-			VariableIndices,VariableStrings = VariableEnumerator(['PRESSURE'],rawdata_2D[l],header_2Dlist[l])
+			VariableIndices,VariableStrings = EnumerateVariables(['PRESSURE'],Header_TEC2D[l])
 			try: 
 				Pressure = ExtractRadialProfile(Data[l],VariableIndices[0],VariableStrings[0],thrustloc)
 				PressureDown = ExtractRadialProfile(Data[l],VariableIndices[0],VariableStrings[0],thrustloc-1)
@@ -7328,7 +7293,7 @@ if bool(set(FluidSpecies).intersection(Variables)) == True:
 			CrossSection = np.pi*((7.1E-11)**2)		#[m^2]
 
 			#Extract data for the neutral flux and neutral velocity.
-			VariableIndices,VariableStrings = VariableEnumerator(FluidSpecies,rawdata_2D[l],header_2Dlist[l])
+			VariableIndices,VariableStrings = EnumerateVariables(FluidSpecies,Header_TEC2D[l])
 			Sx,SxAxis = CalcSheathExtent(folderidx=l)
 
 			#Update X-axis with folder information.
@@ -7364,10 +7329,10 @@ if bool(set(FluidSpecies).intersection(Variables)) == True:
 			#endif
 
 			#Create new folder to keep 2D output plots.
-			Dir2Dplots = CreateNewFolder(Dirlist[l],'2Dplots')
+			Dir2Dplots = CreateNewFolder(Dirlist[l],'TECPlot2D')
 			#Write image data to ASCII format datafile if requested.
 			if write_ASCII == True:
-				DirASCII = CreateNewFolder(Dir2Dplots,'2Dplots_Data')
+				DirASCII = CreateNewFolder(Dir2Dplots,'2DPlots_Data')
 				WriteDataToFile(Image, DirASCII+'Kn','w')
 			#endif
 
@@ -7385,7 +7350,7 @@ if bool(set(FluidSpecies).intersection(Variables)) == True:
 			ImageOptions(fig,ax,Xlabel,Ylabel,Title)
 
 			#Save Figure
-			plt.savefig(Dir2Dplots+'2DPlot Kn'+ext)
+			plt.savefig(Dir2Dplots+'2DPlot_Kn'+ext)
 			clearfigures(fig)
 		#endfor
 
@@ -7436,12 +7401,12 @@ if bool(set(FluidSpecies).intersection(Variables)) == True:
 		for l in range(0,numfolders):
 
 			#Extract spatially resolved pressure and neutral densities.
-			VariableIndices,VariableStrings = VariableEnumerator(['PRESSURE'],rawdata_2D[l],header_2Dlist[l])
+			VariableIndices,VariableStrings = EnumerateVariables(['PRESSURE'],Header_TEC2D[l])
 			Pressure = ImageExtractor2D(Data[l][VariableIndices[0]],VariableStrings[0])
 			Sx,SxAxis = CalcSheathExtent(folderidx=l)
 			
 			#If only single neutral species - extract that density
-			VariableIndices,VariableStrings = VariableEnumerator(FluidSpecies,rawdata_2D[l],header_2Dlist[l])
+			VariableIndices,VariableStrings = EnumerateVariables(FluidSpecies,Header_TEC2D[l])
 			if len(VariableIndices) == 1: 
 				NeutralDensity = ImageExtractor2D(Data[l][VariableIndices[0]],VariableStrings[0])
 			#If there are multiple neutral species, combine them to get total neutral density
@@ -7478,10 +7443,10 @@ if bool(set(FluidSpecies).intersection(Variables)) == True:
 			#endif
 
 			#Create new folder to keep 2D output plots.
-			Dir2Dplots = CreateNewFolder(Dirlist[l],'2Dplots')
+			Dir2Dplots = CreateNewFolder(Dirlist[l],'TECPlot2D')
 			#Write image data to ASCII format datafile if requested.
 			if write_ASCII == True:
-				DirASCII = CreateNewFolder(Dir2Dplots,'2Dplots_Data')
+				DirASCII = CreateNewFolder(Dir2Dplots,'2DPlots_Data')
 				WriteDataToFile(Image, DirASCII+'Cs','w')
 			#endif
 
@@ -7500,7 +7465,7 @@ if bool(set(FluidSpecies).intersection(Variables)) == True:
 			ImageOptions(fig,ax,Xlabel,Ylabel,Title)
 
 			#Save Figure
-			plt.savefig(Dir2Dplots+'2DPlot Cs'+ext)
+			plt.savefig(Dir2Dplots+'2DPlot_Cs'+ext)
 			clearfigures(fig)
 		#endfor
 		
