@@ -251,7 +251,7 @@ IEDFVariables = PRCCPAr_PCMC			# Requested Variables from iprofile_2d.pdt
 NEDFVariables = []						# Requested Variables from nprofile_2d.pdt
 
 #Requested movie1/movie_icp Variables.
-PhaseVariables = Ar_Phase				# Requested Movie1 (phase) Variables.
+PhaseVariables = ['S-E','PPOT','TE']#Ar_Phase				# Requested Movie1 (phase) Variables.
 electrodeloc = [10,90]					# Cell location of powered electrode [R,Z].
 waveformlocs = []						# Cell locations of additional waveforms [R,Z].
 
@@ -267,7 +267,11 @@ sheathROI = []							# Sheath Region of Interest, (Start,End) [cells]
 sourcewidth = []						# Source Dimension at ROI, leave empty for auto. [cells]
 
 #Requested diagnostics and plotting routines.
-savefig_tecplot2D = False				# 2D Single-Variables: TECPLOT2D.PDT				< .csv File Save
+savefig_tecplot2D = True				# 2D Single-Variables: TECPLOT2D.PDT				< .csv File Save
+# ^^^^
+# NOTE: icp.dat readin function assumes a split line length
+# THIS ASSUPTION BREAKS WHEN ADDING COMMENTS TO icp.dat FILES
+# NEED TO REPLACE IT WITH A REGEX METHOD THAT IS MORE ROBUST
 
 savefig_movieicp2D = False				# 2D Variables against space-axis:	movie_icp.pdt	< MAXITER SHOULD BE AN ARRAY
 savefig_movieicp1D = False				# 1D Variables against space-axis:	movie_icp.pdt	< MAXITER SHOULD BE AN ARRAY
@@ -331,7 +335,7 @@ image_plotsymmetry = True				# Plot radial symmetry - mirrors across the ISYM ax
 image_plotoverlay = False				# Plot location(s) of 1D radial/axial profiles onto 2D images
 image_plotsheath = False				# Plot sheath extent onto 2D images 'Axial','Radial'
 image_plotgrid = False					# Plot major/minor gridlines on 1D profiles
-image_plotmesh = 'GEC'					# Plot material mesh outlines ('True' == Auto,'PRCCP','PRCCPM','ESCT','GEC')
+image_plotmesh = False					# Plot material mesh outlines ('True' == Auto,'PRCCP','PRCCPM','ESCT','GEC')
 image_numericaxis = False				#### NOT implemented ####
 image_plotphasewaveform = False			# Plot waveform sub-figure on phaseresolve2D images
 
@@ -6066,46 +6070,60 @@ if savefig_convergence == True:
 				ConvergenceTrends[i] = np.append(ConvergenceTrends[i], ConvergenceVal)
 			#endfor
 		#endfor
-
-		#=================#
-
-		#Plot a convergence check for all variables in each folder.
-		Legend = VariableLabelMaker(VariableStrings)
-		fig, ax = plt.subplots(1, figsize=(10,10))
-
-		#Normalise and plot each variable in ConvergenceTrends to single figure.
-		for i in range(0,len(ConvergenceTrends)):
-			NormFactor=max(max(ConvergenceTrends[i]),abs(min(ConvergenceTrends[i])))
-			ConvergenceTrends[i] = Normalise(ConvergenceTrends[i],NormFactor)[0]
-			ax.plot(IterAxis,ConvergenceTrends[i], lw=2)
-		#endfor
 		
-		#Various debug outputs
-		if IDEBUG == True: 
+		# Exit if less than two trend variables have been extracted
+		Continue = True
+		if len(ConvergenceTrends[0]) < 2:
 			print(' ')
-			print('Convergence Limits:',Limits)
-			print(' ')
+			print("#====================================================================#")
+			print("WARNING: Convergence Trends Contains Too Few Iterations For Comparison")
+			print("                          Aborting Diagnostic                         ")
+			print("#====================================================================#")
+			Continue = False
 		#endif
 
-		#Image plotting details.
-		Title = 'Convergence of '+str(VariableStrings)+' for \n'+Dirlist[l][2:-1]
-		Xlabel,Ylabel = 'Simulation Iteration [-]',labelstring
-		ImageOptions(fig,ax,Xlabel,Ylabel,Title,Legend,Crop=False)
-		plt.tight_layout()
+		#=================#
+		
+		if Continue == True:
 
-		#Print convergence data to terminal if required
-		print('')
-		print('Percentage Variation At Final Iteration:')
-		for i in range(0,len(ConvergenceTrends)):
-			ConvergenceFraction = 1-abs( ConvergenceTrends[i][-1]/ConvergenceTrends[i][-2] )
-			ConvergencePercentage = round( (ConvergenceFraction*100), 6)
-			print( VariableStrings[i], '\t', ConvergencePercentage, '%')
+			#Plot a convergence check for all variables in each folder.
+			Legend = VariableLabelMaker(VariableStrings)
+			fig, ax = plt.subplots(1, figsize=(10,10))
+
+			#Normalise and plot each variable in ConvergenceTrends to single figure.
+			for i in range(0,len(ConvergenceTrends)):
+				NormFactor=max(max(ConvergenceTrends[i]),abs(min(ConvergenceTrends[i])))
+				ConvergenceTrends[i] = Normalise(ConvergenceTrends[i],NormFactor)[0]
+				ax.plot(IterAxis,ConvergenceTrends[i], lw=2)
+			#endfor
+			
+			#Various debug outputs
+			if IDEBUG == True: 
+				print(' ')
+				print('Convergence Limits:',Limits)
+				print(' ')
+			#endif
+
+			#Image plotting details.
+			Title = 'Convergence of '+str(VariableStrings)+' for \n'+Dirlist[l][2:-1]
+			Xlabel,Ylabel = 'Simulation Iteration [-]',labelstring
+			ImageOptions(fig,ax,Xlabel,Ylabel,Title,Legend,Crop=False)
+			plt.tight_layout()
+
+			#Print convergence data to terminal if required
+			print('')
+			print('Percentage Variation At Final Iteration:')
+			for i in range(0,len(ConvergenceTrends)):
+				ConvergenceFraction = 1-abs( ConvergenceTrends[i][-1]/ConvergenceTrends[i][-2] )
+				ConvergencePercentage = round( (ConvergenceFraction*100), 6)
+				print( VariableStrings[i], '\t', ConvergencePercentage, '%')
+			#endfor
+
+			#Save figure.
+			savefig(DirConvergence+FolderNameTrimmer(Dirlist[l])+'_Convergence'+ext)
+			clearfigures(fig)
 		#endfor
-
-		#Save figure.
-		savefig(DirConvergence+FolderNameTrimmer(Dirlist[l])+'_Convergence'+ext)
-		clearfigures(fig)
-	#endfor
+	#endif
 
 	print('-------------------------------')
 	print('# Convergence Checking Complete')
