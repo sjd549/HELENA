@@ -246,28 +246,28 @@ PRCCPO2_PCMC = ['O^0.35','EB-0.35','ION-TOT0.35']
 					#SWITCHBOARD AND DIAGNOSTICS#
 #====================================================================#
 
-#Requested IEDF/NEDF Variables.
+# Requested IEDF/NEDF Variables.
 IEDFVariables = PRCCPAr_PCMC			# Requested Variables from iprofile_2d.pdt
 NEDFVariables = []						# Requested Variables from nprofile_2d.pdt
 
-#Requested movie1/movie_icp Variables.
-PhaseVariables = ['S-E','PPOT','TE']#Ar_Phase				# Requested Movie1 (phase) Variables.
-electrodeloc = [10,90]					# Cell location of powered electrode [R,Z].
+# Requested movie1/movie_icp Variables.
+PhaseVariables = ['S-E']#Ar_Phase				# Requested Movie1 (phase) Variables.
+electrodeloc = [40,2]#[10,90]					# Cell location of powered electrode [R,Z].
 waveformlocs = []						# Cell locations of additional waveforms [R,Z].
 
-#Requested variables and plotting locations.
+# Requested variables and plotting locations.
 Variables = Phys+Ar+O2+Be				# Requested Variables from Tecplot2D.pdt, tecplot_kin.pdt, and movie_icp.pdt 
 multivar = []							# Additional variables plotted ontop of [Variables]
 radialprofiles = []						# Radial 1D-Profiles to be plotted (fixed Z-mesh) --
 axialprofiles = [5]						# Axial 1D-Profiles to be plotted (fixed R-mesh) |
 probeloc = []							# Cell location For Trend Analysis [R,Z], (leave empty for global min/max)
 
-#Various Diagnostic Settings			>>> OUTDATED, TO BE RETIRED <<<
+# Various Diagnostic Settings			>>> OUTDATED, TO BE RETIRED <<<
 sheathROI = []							# Sheath Region of Interest, (Start,End) [cells]
 sourcewidth = []						# Source Dimension at ROI, leave empty for auto. [cells]
 
-#Requested diagnostics and plotting routines.
-savefig_tecplot2D = True				# 2D Single-Variables: TECPLOT2D.PDT				< .csv File Save
+# Requested diagnostics and plotting routines.
+savefig_tecplot2D = False				# 2D Single-Variables: TECPLOT2D.PDT				< .csv File Save
 # ^^^^
 # NOTE: icp.dat readin function assumes a split line length
 # THIS ASSUPTION BREAKS WHEN ADDING COMMENTS TO icp.dat FILES
@@ -292,8 +292,8 @@ savefig_trendphaseaveraged = False		# Phase averaged trends at axial/radial cell
 savefig_trendphaseresolved = False		# Phase resolved trends at axial/radial cells		# CHANGE TO 'ProbeLoc' cell
 thrustloc = 45							# Z-axis cell for thrust calculation  [Cells]
 
-savefig_phaseresolve2D = False			# 2D Phase Resolved Images
-savefig_phaseresolve1D = False			# 1D Phase Resolved Images
+savefig_phaseresolve2D = False			# 2D Phase Resolved Images							< .csv File Save
+savefig_phaseresolve1D = True			# 1D Phase Resolved Images							< .csv File Save
 savefig_sheathdynamics = False			# 1D and 2D sheath dynamics images
 savefig_PROES =	False					# Simulated PROES Diagnostic
 phasecycles = 1.01						# Vaveform phase cycles to be plotted. 				 [Float]
@@ -303,11 +303,11 @@ savefig_IEDFangular = False				# 2D images of angular IEDF; single folders
 savefig_IEDFtrends = False				# 1D IEDF trends; all folders
 savefig_EEDF = False					# NO PLOTTING ROUTINE								< NO ROUTINE
 
-#Write processed data to ASCII files.
+# Write processed data to ASCII files.
 write_ASCII = False						# Data underpinning figs written in ASCII format
 Write_CSV = True						# Data underpinning figs written in .csv format
 
-#Steady-State diagnostics terminal output toggles.
+# Steady-State diagnostics terminal output toggles.
 print_generaltrends = False				# Verbose Min/Max Trend Outputs.
 print_Knudsennumber = False				# Print cell averaged Knudsen Number
 print_totalpower = False				# Print all requested total powers
@@ -316,12 +316,12 @@ print_DCbias = False					# Print DC bias at electrodeloc
 print_thrust = False					# Print neutral, ion and total thrust
 print_sheath = False					# Print sheath width at electrodeloc						
 
-#Image plotting options.
+# Image plotting options.
 image_extension = '.png'				# Define image extension  ('.png', '.jpg', '.eps')		
 image_interp = 'spline36'				# Define image smoothing  ('none', 'bilinear','quadric','spline36')
 image_cmap = 'plasma'					# Define global colourmap ('jet','plasma','inferno','gnuplot','tecmodern')
 
-image_aspectratio = [14,10]				# Real Size of [X,Y] in cm [Doesn't Rotate - X is always horizontal]
+image_aspectratio = [13,6]#[14,10]				# Real Size of [X,Y] in cm [Doesn't Rotate - X is always horizontal]
 image_radialcrop = []					# Crops 2D images to [R1,R2] in cm
 image_axialcrop = []					# Crops 2D images to [Z1,Z2] in cm
 image_cbarlimit = []					# [min,max] colourbar limits
@@ -330,20 +330,19 @@ image_legendloc = 'best'				# Legend Location, "1-9" or 'best' for automatic
 image_plotcolourfill = True				# Plot 2D image colour fill
 image_plotcontours = True				# Plot 2D image contour lines
 image_contourlvls = 10					# Number of contour levels
+image_normalise = False					# Normalise image/profiles to local max
+image_logplot = False					# Take log10(Data) for both 1D and 2D profiles
 
-image_plotsymmetry = True				# Plot radial symmetry - mirrors across the ISYM axis
+image_rotate = False					# Rotate image 90 degrees to the right.
+image_plotsymmetry = False#True				# Plot radial symmetry - mirrors across the ISYM axis
 image_plotoverlay = False				# Plot location(s) of 1D radial/axial profiles onto 2D images
-image_plotsheath = False				# Plot sheath extent onto 2D images 'Axial','Radial'
+image_plotsheath = 'Radial'				# Plot sheath extent onto 2D images 'Axial','Radial'
 image_plotgrid = False					# Plot major/minor gridlines on 1D profiles
 image_plotmesh = False					# Plot material mesh outlines ('True' == Auto,'PRCCP','PRCCPM','ESCT','GEC')
 image_numericaxis = False				#### NOT implemented ####
 image_plotphasewaveform = False			# Plot waveform sub-figure on phaseresolve2D images
 
-image_rotate = False					# Rotate image 90 degrees to the right.
-image_normalise = False					# Normalise image/profiles to local max
-image_logplot = False					# Take log10(Data) for both 1D and 2D profiles
-
-#Overrides the automatic image labelling.
+# Overrides the automatic image labelling.
 titleoverride = []
 legendoverride = []
 xaxisoverride = []
@@ -362,32 +361,26 @@ ylabeloverride = []
 #
 #	NEED PERFORM ALL VARIABLE CONVERSION AND ROTATION AT THE READIN STAGE
 #		- SAVE "ORIENTATION" AND "ROTATION" AS GLOBAL VARIABLES THAT CAN BE USED IN DIAGNOSTICS
-#		- PERFORM j=0 AND DATA ROTATION AT READIN STAGE TO MAINTAIN CONSISTANCY
-#		- OVERHAUL THE HEADER / VARIABLE / ITER / PHASE / ETC... ARRAY DEFINITIONS
-#		- CREATE ARRAY OF STRINGS THAT DETAIL WHAT OPERATIONS HAVE BEEN PERFORMED FOR DEBUGGING
 #
-#	NEED TO CHECK THE J INDICE START POINT
-#		IN HPEM Z=0 IS DEFINED AS THE TOP LEFT OF THE MESH
-#		SYNC ALL DIAGNOSTICS IN HERE TO AGREE WITH THAT.
+# 	NOTE: 	IMAGEPLOTTER1D RETURNS ARRAY ORDERED AS [0,height]  <<< !!! REVERSED RELATIVE TO HPEM !!!
+# 			IMAGEPLOTTER2D RETURNS ARRAY ORDERED AS [height,0] 	<<< SAME ORIENTATION AS HPEM
+#			1D PROFILES ARE MANUALLY REVERSED ([::-1]) IN THE 1D DIAGNOSTICS TO ACCOUNT FOR THIS
+#			IT WOULD BE BETTER TO USE "DataExtent" TO PROVIDE THE CORRECT ORIENTATION
 #
-#	DEFINITION OF header_2Dlist NEEDS AN OVERHAUL
-#		IT SHOULD CONTAIN THE ACTUAL HEADER, RATHER THAN THE LENGTH OF THE HEADER
-#		REDEFINE THIS AND THEN REPLACE len(header_2Dlist) WHEREVER IT WAS PREVIOUSLY USED
-
 # 	STILL HAVE ISSUE WITH READING movie FILES OF DIFFERENT LENGTHS...
 #		NEED TO SIZE THE INITIAL DATA ARRAY TO THE SHAPE OF THE LARGEST MOVIE FILE, NOT THE FIRST.
 #		ValueError: could not broadcast input array from shape (100,41,8804) into shape (24,41,8804)
-
+#
 #	ISSUE WITH READING movie_icp.pdt WHEN USING IEXCLUDE > 0
 #		DIFFERENT LENGTHS OF ARRAY IN SDFILEFORMAT WHEN READING movie_icp.pdt HEADER
-
+#
 #	INT SHEATH METHOD NOT COMPLETED FOR AXIAL SHEATH CALCULATION
 #		NOTE, RADIAL SHEATH CALC SCANS FROM R=0 INCREASING, I.E ASSUMES BULK IS ON-AXIS AT R=0 (mostly true)
 #		NOTE, AXIAL SHEATH CALC SCANS FROM Z=0 INCREASING< I.E. ASSUMES BULK IS NOT AT Z=0 (always true)
 #		image_plotsheath DOESN'T WORK VERY WELL WITH PROES IMAGES... NEEDS SPECIAL CASES!!!
 #		SHEATHCALC FUNCTION IS A LITTLE DODGY WHEN image_plotsheath IS NOT IN 'radial' or 'axial'
 #			NEED TO ENSURE THAT IT RETURNS NaN ARRAYS OF PROPER SIZE WHEN NOT CALLED EXPLICITLY
-
+#
 #	ANY VARIABLE NAMES CONTAINING "PHASE" ARE ALL READ IN TOGETHER
 #		NEED TO DIFFERENTIATE BETWEEN E, B PHASES AND ALSO R,Z,THETA PHASES
 #		CTRL+F FOR RM SJD AND SCROLL DOWN TO SEE NOTES IN VARIABLE NAMING FUNCTION
@@ -1458,15 +1451,17 @@ def WriteToCSV(Data, Directory, Filename, Header=[], Mode='w'):
 #enddef
 
 
-def ReadFromCSV(Directory, Filename, Mode='r'):
+def ReadFromCSV(Directory, Filename, Mode='r', Cycle=0):
 #Reads a .csv formatted file and returns a 1D or 2D data array and 1D header array
 #Inputs,
-#		Directory = Folder to write to, String
-#		Filename = Data file will be named "Filename.csv", String
-#		Mode = "w" to write new file or "a" to append to existing file
+#		Directory = Folder to read from. 						[String]
+#		Filename = Data file will be named "Filename.csv". 		[String]
+#		Mode = "w" to write new file or "a" to append to existing file.
+#		Cycle = For time-resolved data, each 2D data array is sequentially 
+#				written as a new "Cycle". 						[Integer]
 #Returns,
-#		Header = 1D array containing each row of header data
-#		Data = 1D or 2D array of data following Header
+#		Header = 1D array containing each row of header data	[Strings]
+#		Data = 1D or 2D array of data following Header			[Floats]
 ###########
 
 	#Write array length and SI dimension to file
@@ -1475,8 +1470,8 @@ def ReadFromCSV(Directory, Filename, Mode='r'):
 		# Initiate any required lists
 		Header = list()
 		Data = list()
-
-		# Read Header sequentially
+		
+		# Read Header sequentially and identify end index
 		RawData = file.readlines()
 		for i in range(0,len(RawData)):
 		
@@ -1484,13 +1479,49 @@ def ReadFromCSV(Directory, Filename, Mode='r'):
 			Header.append(RawData[i].strip('\n'))
 			# Stop once "*END HEADER*" is reached
 			if "*END HEADER*" in RawData[i]:
-				LenHeader = i+1
+				# Data block starts 1 idx after *END HEADER*
+				DataStartidx = i+1				
 				break
 			#endif
 		#endfor
+		
+		# Identify end index of data block
+		for i in range(DataStartidx,len(RawData)):
+
+			# Cyclic data blocks are deliminated by next header
+			if "*" in RawData[i]:
+				DataEndidx = i
+				break
+			else:
+				# Non-cyclic data continues to end of file
+				DataEndidx = len(RawData)
+			#endif
+		#endfor
+
+		# Advance data indices to requested Cycle
+		if Cycle > 0:
+		
+			# Read length of Cycle header - default 3
+			for i in range(DataEndidx,len(RawData)):
+
+				# Stop once "*END HEADER*" is reached
+				if "*END HEADER*" in RawData[i]:
+					CycleHeaderidx = i
+					CycleHeaderLen = CycleHeaderidx-DataEndidx+1
+					break
+				else:
+					CycleHeaderLen = 3
+				#endif
+			#endfor
+		
+			# Advance data start and end indices to requested cycle
+			DataBlockLen = DataEndidx-DataStartidx
+			DataStartidx += Cycle * (DataBlockLen + CycleHeaderLen)
+			DataEndidx += Cycle * (DataBlockLen + CycleHeaderLen)
+		#endif
 
 		# Read Data and append to output array in row-wise fashion
-		for i in range(LenHeader,len(RawData)):
+		for i in range(DataStartidx,DataEndidx):
 			
 			# Split each row into scalars, assuming comma delimination 
 			SplitRow = RawData[i].split(',')
@@ -6088,7 +6119,7 @@ if savefig_convergence == True:
 
 			#Plot a convergence check for all variables in each folder.
 			Legend = VariableLabelMaker(VariableStrings)
-			fig, ax = plt.subplots(1, figsize=(10,10))
+			fig, ax = plt.subplots(1, figsize=(14,10))
 
 			#Normalise and plot each variable in ConvergenceTrends to single figure.
 			for i in range(0,len(ConvergenceTrends)):
@@ -7593,7 +7624,7 @@ if savefig_phaseresolve1D == True:
 		VariedValuelist.append( FolderNameTrimmer(Dirlist[l]) )
 
 		#Create VariableIndices for each folder as required. (Always get 'E','AR+','PPOT')
-		PhaseData,Phaselist,proclist,varlist = ReadTEC2DPhase(folder=l,Variables=PhaseVariables)
+		PhaseData,Phaselist,proclist,VariableStrings = ReadTEC2DPhase(folder=l,Variables=PhaseVariables)
 		SxData,SxPhase,Sxproc,Sxvar = ReadTEC2DPhase(folder=l,Variables=['E','AR+'])
 		PPOT = ReadTEC2DPhase(folder=l,Variables=['PPOT'])[2][0]
 
@@ -7646,7 +7677,7 @@ if savefig_phaseresolve1D == True:
 		for i in tqdm(range(0,len(proclist))):
 
 			#Create new folder to keep specific plots.
-			DirMovieplots = CreateNewFolder(Dirphaseresolved,varlist[i]+'_1Dphaseresolved')
+			DirMovieplots = CreateNewFolder(Dirphaseresolved,VariableStrings[i]+'_1Dphaseresolved')
 
 			#Refresh lineout lists between variables.
 			Lineouts,ProfileOrientation = list(),list()
@@ -7669,9 +7700,9 @@ if savefig_phaseresolve1D == True:
 
 				#Create folders to keep output plots for each variable.
 				if ProfileOrientation[k] == 'Axial':
-					NameString= varlist[i]+'_'+str(round(Lineouts[k]*dr[l],2))+'cm[R]'
+					NameString = VariableStrings[i]+'_'+str(round(Lineouts[k]*dr[l],2))+'cm[R]'
 				if ProfileOrientation[k] == 'Radial':
-					NameString= varlist[i]+'_'+str(round(Lineouts[k]*dz[l],2))+'cm[Z]'
+					NameString = VariableStrings[i]+'_'+str(round(Lineouts[k]*dz[l],2))+'cm[Z]'
 				if savefig_phaseresolve1D == True:
 					Dir1DProfiles = CreateNewFolder(DirMovieplots,NameString)
 				#endif
@@ -7680,9 +7711,9 @@ if savefig_phaseresolve1D == True:
 				for j in range(0,len(Phaselist)):
 					#Record local maximum and minimum for each phase.
 					if ProfileOrientation[k] == 'Axial': 
-						Profile = ExtractAxialProfile(PhaseData[j],proclist[i],varlist[i],Lineouts[k])
+						Profile = ExtractAxialProfile(PhaseData[j],proclist[i],VariableStrings[i],Lineouts[k])
 					elif ProfileOrientation[k] == 'Radial': 
-						Profile = ExtractRadialProfile(PhaseData[j],proclist[i],varlist[i],Lineouts[k])
+						Profile = ExtractRadialProfile(PhaseData[j],proclist[i],VariableStrings[i],Lineouts[k])
 					#endif
 					Profile,Minimum,Maximum = Normalise(Profile)
 					VariableMax.append(Maximum)
@@ -7698,14 +7729,14 @@ if savefig_phaseresolve1D == True:
 
 					if ProfileOrientation[k] == 'Axial':
 						ZlineoutLoc,axis = Lineouts[k],Zaxis
-						# SJD MAY NEED TO REMOVE THE [::-1], THE DATA MAY BE REVERSED AT READIN, 
-						# I CAN'T REMEMBER... THE 2D VERSION DOESN'T HAVE THIS ANYMORE
-						phaseresolvedProfile = ExtractAxialProfile(PhaseData[j],proclist[i],varlist[i],ZlineoutLoc,R_mesh[l],Z_mesh[l],ISYMlist[l])[::-1]	
+						# SJD NEED TO REVERSE 1D DATA AT READIN AND REMOVE [::-1] FROM HERE				!!! SJD
+						# NOTE, ALSO NEED TO REMOVE FROM DATA SAVE ROUTINES BELOW (csv and ACII) 		!!! SJD
+						phaseresolvedProfile = ExtractAxialProfile(PhaseData[j],proclist[i],VariableStrings[i],ZlineoutLoc,R_mesh[l],Z_mesh[l],ISYMlist[l])[::-1]	
 						ProfileString = ' @ R='+str(round(Lineouts[k]*dr[l],2))+'cm \n'
 						Xlabel = 'Axial Distance Z [cm]'
 					elif ProfileOrientation[k] == 'Radial':
 						RlineoutLoc,axis = Lineouts[k],Raxis
-						phaseresolvedProfile = ExtractRadialProfile(PhaseData[j],proclist[i],varlist[i],RlineoutLoc,R_mesh[l],ISYMlist[l])
+						phaseresolvedProfile = ExtractRadialProfile(PhaseData[j],proclist[i],VariableStrings[i],RlineoutLoc,R_mesh[l],ISYMlist[l])
 						ProfileString = ' @ Z='+str(round(Lineouts[k]*dz[l],2))+'cm \n'
 						Xlabel = 'Radial Distance R [cm]'
 					#endif
@@ -7719,8 +7750,8 @@ if savefig_phaseresolve1D == True:
 						fix,ax = figure(image_aspectratio,1)
 						ax0 = ax							# Image Sub-Fig (top fig)
 					#endif
-					Ylabel = VariableLabelMaker(varlist)
-					fig.suptitle('Phase-Resolved '+varlist[i]+' for '+VariedValuelist[l]+ProfileString+str(Phaselist[j]), y=0.97, fontsize=16)
+					Ylabel = VariableLabelMaker(VariableStrings)
+					fig.suptitle('Phase-Resolved '+VariableStrings[i]+' for '+VariedValuelist[l]+ProfileString+str(Phaselist[j]), y=0.97, fontsize=16)
 
 					#Plot profile and apply image options.
 					ax0.plot(axis, phaseresolvedProfile, lw=2)
@@ -7743,12 +7774,39 @@ if savefig_phaseresolve1D == True:
 					plt.savefig(Dir1DProfiles+NameString+'_'+str(Phase).zfill(4)+ext)
 					clearfigures(fig)
 
+
+
+					# Write data underpinning current figure in .csv format
+					if Write_CSV == True:
+						CSVDir = CreateNewFolder(Dir1DProfiles, '1DPhase_Data')
+						CSVRMesh = 'R_Mesh [Cells] '+str(R_mesh[l])+'  :: dR [cm/cell] '+str(dr[l])
+						CSVZMesh = 'Z_Mesh [Cells] '+str(Z_mesh[l])+'  :: dZ [cm/cell] '+str(dz[l])
+						CSVFilename = VariableStrings[i]+'.csv'
+						CSVTitle = str(Dirlist[l])
+						CSVLabel = str(Ylabel)
+						CSVISYM = 'ISYM='+str(ISYMlist[l])
+						CSVRotate = 'Rotate='+str(image_rotate)
+						CSVMaxCYCL = "IMOVIE_FRAMES="+str( Phaselist[-1].strip("CYCL= ") )
+						CSVCurCYCL = str( Phaselist[j].replace(" ", "") )
+
+						# Write to .csv file, including full header on first CYCLE
+						if j == 0:
+							CSVHeader = [CSVTitle,CSVLabel,CSVMaxCYCL,CSVISYM,CSVRotate,CSVRMesh,CSVZMesh]
+							WriteToCSV([phaseresolvedProfile[::-1]], CSVDir, CSVFilename, CSVHeader, Mode='w')
+
+						# Write to .csv file, including only CYCL number for all remaining CYCLEs
+						elif j > 0:
+							CSVHeader = [CSVCurCYCL]
+							WriteToCSV([phaseresolvedProfile[::-1]], CSVDir, CSVFilename, CSVHeader, Mode='a')
+						#endif
+					#endif
+
 					#Write Phase data in ASCII format if required.
 					if write_ASCII == True:
 						DirASCIIPhase = CreateNewFolder(Dirphaseresolved,'1DPhase_Data')
 						DirASCIIPhaseloc = CreateNewFolder(DirASCIIPhase,ProfileString[3:-2])
 						Cycle = str( Phaselist[j].replace(" ", "") )
-						SaveString = DirASCIIPhaseloc+varlist[i]+'_'+Cycle
+						SaveString = DirASCIIPhaseloc+VariableStrings[i]+'_'+Cycle
 						WriteDataToFile(phaseresolvedProfile[::-1], SaveString)
 					#endif
 				#endfor
@@ -7786,7 +7844,7 @@ if savefig_phaseresolve2D == True:
 		VariedValuelist.append( FolderNameTrimmer(Dirlist[l]) )
 
 		#Create VariableIndices for each folder as required. (Always get 'E','AR+','PPOT')
-		PhaseData,Phaselist,proclist,varlist = ReadTEC2DPhase(folder=l,Variables=PhaseVariables)
+		PhaseData,Phaselist,proclist,VariableStrings = ReadTEC2DPhase(folder=l,Variables=PhaseVariables)
 		SxData,SxPhase,Sxproc,Sxvar = ReadTEC2DPhase(folder=l,Variables=['E','AR+'])
 		PPOT = ReadTEC2DPhase(folder=l,Variables=['PPOT'])[2][0]
 		
@@ -7839,12 +7897,12 @@ if savefig_phaseresolve2D == True:
 		for i in tqdm(range(0,len(proclist))):
 
 			#Create new folder to keep specific plots.
-			DirMovieplots = CreateNewFolder(Dirphaseresolved,varlist[i]+'_2Dphaseresolved/')
+			DirMovieplots = CreateNewFolder(Dirphaseresolved,VariableStrings[i]+'_2Dphaseresolved/')
 
 			#Obtain maximum and minimum values of current variable over all phases.
 			MinLim,MaxLim = list(),list()
 			for j in range(0,len(Phaselist)):
-				Image = ImageExtractor2D(PhaseData[j][proclist[i]],varlist[i])
+				Image = ImageExtractor2D(PhaseData[j][proclist[i]],VariableStrings[i])
 				MinLim.append( CbarMinMax(ax,Image,Symmetry=False)[0] )
 				MaxLim.append( CbarMinMax(ax,Image,Symmetry=False)[1] )
 			#endfor
@@ -7855,7 +7913,7 @@ if savefig_phaseresolve2D == True:
 				Phase = int( round(Phaseaxis[j]*360.0,3) )		#[Deg]
 
 				#Extract full 2D image for further processing.
-				Image = ImageExtractor2D(PhaseData[j][proclist[i]],varlist[i])				# SJD REMOVED [::-1]
+				Image = ImageExtractor2D(PhaseData[j][proclist[i]],VariableStrings[i])
 				#Extract Ni and Ne variables for sheath processing.
 				if image_plotsheath in ['Radial','Axial']:
 					Ne = SxData[j][Sxproc[Sxvar.index('E')]]
@@ -7877,18 +7935,18 @@ if savefig_phaseresolve2D == True:
 					fix,ax = figure(aspectratio,1)
 					ax0 = ax							# Image Sub-Fig (top fig)
 				#endif
-				Title = 'Phase-Resolved '+varlist[i]+'\n'+str(Phaselist[j])
+				Title = 'Phase-Resolved '+VariableStrings[i]+'\n'+str(Phaselist[j])
 				fig.suptitle(Title, y=0.97, fontsize=18)
 
 				#Plot 2D image, applying image options and cropping as required.
-				fig,ax0,im,Image = ImagePlotter2D(Image,extent,aspectratio,varlist[i],fig,ax0)
+				fig,ax0,im,Image = ImagePlotter2D(Image,extent,aspectratio,VariableStrings[i],fig,ax0)
 				if image_plotsheath in ['Radial','Axial']:
 					PlotSheathExtent(SxAxis,Sx,ax0,ISYMlist[l],Orientation=image_plotsheath)
 				#endif
 				
 				#Add Colourbar (Axis, Label, Bins)
 				ImageOptions(fig,ax0,Xlabel,Ylabel,Title,Crop=True)
-				Ylabel = VariableLabelMaker(varlist)
+				Ylabel = VariableLabelMaker(VariableStrings)
 				cax = Colourbar(ax0,Ylabel[i],5,Lim=CbarLimits)
 
 				if image_plotphasewaveform == True:
@@ -7908,22 +7966,49 @@ if savefig_phaseresolve2D == True:
 				#endif
 				
 				#NOTE:	zfill assumes phase < 9999 degrees	(i.e. < 1e5)
-				savefig(DirMovieplots+varlist[i]+'_'+str(Phase).zfill(4)+ext)
+				savefig(DirMovieplots+VariableStrings[i]+'_'+str(Phase).zfill(4)+ext)
 				clearfigures(fig)
 
-				#Write Phase data in ASCII format if required.
+
+
+				# Write data underpinning current figure in .csv format
+				if Write_CSV == True:
+					CSVDir = CreateNewFolder(DirMovieplots, '2DPhase_Data')
+					CSVRMesh = 'R_Mesh [Cells] '+str(R_mesh[l])+'  :: dR [cm/cell] '+str(dr[l])
+					CSVZMesh = 'Z_Mesh [Cells] '+str(Z_mesh[l])+'  :: dZ [cm/cell] '+str(dz[l])
+					CSVFilename = VariableStrings[i]+'.csv'
+					CSVTitle = str(Dirlist[l])
+					CSVLabel = str(Ylabel)
+					CSVISYM = 'ISYM='+str(ISYMlist[l])
+					CSVRotate = 'Rotate='+str(image_rotate)
+					CSVMaxCYCL = "IMOVIE_FRAMES="+str( Phaselist[-1].strip("CYCL= ") )
+					CSVCurCYCL = str( Phaselist[j].replace(" ", "") )
+
+					# Write to .csv file, including full header on first CYCLE
+					if j == 0:
+						CSVHeader = [CSVTitle,CSVLabel,CSVMaxCYCL,CSVISYM,CSVRotate,CSVRMesh,CSVZMesh]
+						WriteToCSV(Image, CSVDir, CSVFilename, CSVHeader, Mode='w')
+
+					# Write to .csv file, including only CYCL number for all remaining CYCLEs
+					elif j > 0:
+						CSVHeader = [CSVCurCYCL]
+						WriteToCSV(Image, CSVDir, CSVFilename, CSVHeader, Mode='a')
+					#endif
+				#endif
+
+				#Write Phase data in ASCII format
 				if write_ASCII == True:
-					DirASCIIPhase = CreateNewFolder(Dirphaseresolved,'2DPhase_Data')
-					DirASCIIPhaseVar = CreateNewFolder(DirASCIIPhase,varlist[i])
+					DirASCIIPhase = CreateNewFolder(DirMovieplots,'2DPhase_Data')
+					DirASCIIPhaseVar = CreateNewFolder(DirASCIIPhase,VariableStrings[i])
 					Cycle = str( Phaselist[j].replace(" ", "") )
-					SaveString = DirASCIIPhaseVar+varlist[i]+'_'+Cycle
+					SaveString = DirASCIIPhaseVar+VariableStrings[i]+'_'+Cycle
 					WriteDataToFile(Image, SaveString)
 				#endif
 			#endfor
 
 			#Create .mp4 movie from completed images.
 			Prefix = FolderNameTrimmer(Dirlist[l])
-			MakeMovie(DirMovieplots,Prefix+'_'+varlist[i])
+			MakeMovie(DirMovieplots,Prefix+'_'+VariableStrings[i])
 		#endfor
 	#endfor
 
