@@ -154,10 +154,12 @@ Conv = ['E','TE','PPOT','POW-RF','SIGMA','EF-TOT','TG-AVE']
 Ar = ['AR3S','AR4SM','AR4SR','AR4SPM','AR4SPR','AR4P','AR4D','AR','AR+','AR2+','AR2*','S-AR+','S-AR4P','SEB-AR+','SEB-AR4P','FZ-AR3S','FR-AR3S','FR-AR+','FZ-AR+','FZ-AR3S','FR-AR3S']
 O2 = ['O3','O2','O2V','O2*','O2*1S','O2+','O','O1S','O+','O-','O*','S-O3','S-O2+','S-O+','S-O-','SEB-O3','SEB-O+','SEB-O2+','SEB-O-','FR-O+','FZ-O+','FR-O-','FZ-O-']
 H2 = ['H2V0','H2V1','H2V2','H2V3','H1','H*','H**','H2+','H+','H-','S-H+','SEB-H+','S-2H+','SEB-2H+','S-H-','SEB-H-','FZ-H2V0','FR-H2V0','FZ-H1','FR-H1','FZ-H+','FR-H+','FZ-H2+','FR-H2+','FZ-H-','FR-H-']
-H2O = ['H2O','H2O+','OH','OH-','H2OV','H2O2']
 N2 = ['N2','N2V','N2*','N2**','N2+','N','N*','N+']
 Cl = ['Cl2','Cl','CL+','CL-','Cl2V','Cl2+','CL*','CL**','CL***']
 F = ['F2','F2*','F2+','F','F*','F+','F-','S-F','S-F+','S-F-','SEB-F','SEB-F+','SEB-F-','FZ-F','FR-F','FZ-F+','FR-F+','FZ-F-','FR-F-','FZ-F+','FR-F+']
+H2O = ['H2O','H2O+','OH','OH-','H2OV','H2O2','S-H2O','SEB-H2O','S-H2OV','SEB-H2OV','S-H2O+','SEB-H2O+','S-OH','SEB-OH','S-OH-','SEB-OH-','S-OH+','SEB-OH+']
+CO2 = ['CO2','CO2V','CO+','CO','CO+','C','C+']
+CHx = ['CH4','CH3','CH2','CH','C','CH5+','CH4+','CH3+','CH2+','CH+','C+']
 NFx = ['NF3A','NF2A','NFA','NF3B','NF2B','NFB','NF3^','NF2^','NF^']
 SFx = ['SF6','SF5','SF4','SF3','SF2','SF','S','SF5+','SF4+','SF3+','SF2+','SF+','S+','SF6-','SF5-']
 Al = ['AL','AL*','AL**','AL+','S-AL','SEB-AL','S-AL*','SEB-AL*','S-AL**','SEB-AL**','S-AL+','SEB-AL+','FZ-AL+','FR-AL+']
@@ -171,7 +173,6 @@ PRCCPO2_PCMC = ['O^0.35','EB-0.35','ION-TOT0.35']
 
 ####################
 
-#Commonly Used Diagnostic Settings:
 #### PRCCP ####
 #electrodeloc =		[29,44] 					#Reverse [29,62]
 #waveformlocs =		[[16,29],[16,44],[16,64],[0,29],[0,44],[0,64]]
@@ -180,18 +181,17 @@ PRCCPO2_PCMC = ['O^0.35','EB-0.35','ION-TOT0.35']
 #thrustloc =		75, 						#stdESCT=76, smlESCT=48/54
 #sheathROI =		[34,72]
 #sourcewidth =		[0.21]						
-#Crop =				R[0.65];Z[1.0,4.0] 
+#Crop =				R[0.65];Z[1.0,5.0] 
 
 #### PRICP ####	
 #electrodeloc = 	[33,33]			# Coil V
 #waveformlocs = 	[]
 #DoFwidth = 		[]
 #TrendLoc = 		H[0];R[36,50]
-#thrustloc = 		[79]
+#thrustloc = 		[75]
 #sheathROI = 		[]
 #sourcewidth = 		[]
-#Crop = 			R[1.0];Z[1.0,9.0]
-#Plotmesh = 		'PRCCP'
+#Crop =				R[0.65];Z[1.0,5.0] 
 
 #### ESCT ####
 #electrodeloc = 	[0,5]
@@ -251,8 +251,8 @@ IEDFVariables = PRCCPAr_PCMC			# Requested Variables from iprofile_2d.pdt
 NEDFVariables = []						# Requested Variables from nprofile_2d.pdt
 
 # Requested movie1/movie_icp Variables.
-PhaseVariables = ['S-E']#Ar_Phase				# Requested Movie1 (phase) Variables.
-electrodeloc = [40,2]#[10,90]					# Cell location of powered electrode [R,Z].
+PhaseVariables = Ar_Phase				# Requested Movie1 (phase) Variables.
+electrodeloc = [10,90]					# Cell location of powered electrode [R,Z].
 waveformlocs = []						# Cell locations of additional waveforms [R,Z].
 
 # Requested variables and plotting locations.
@@ -267,7 +267,7 @@ sheathROI = []							# Sheath Region of Interest, (Start,End) [cells]
 sourcewidth = []						# Source Dimension at ROI, leave empty for auto. [cells]
 
 # Requested diagnostics and plotting routines.
-savefig_tecplot2D = False				# 2D Single-Variables: TECPLOT2D.PDT				< .csv File Save
+savefig_tecplot2D = True				# 2D Single-Variables: TECPLOT2D.PDT				< .csv File Save
 # ^^^^
 # NOTE: icp.dat readin function assumes a split line length
 # THIS ASSUPTION BREAKS WHEN ADDING COMMENTS TO icp.dat FILES
@@ -293,7 +293,7 @@ savefig_trendphaseresolved = False		# Phase resolved trends at axial/radial cell
 thrustloc = 45							# Z-axis cell for thrust calculation  [Cells]
 
 savefig_phaseresolve2D = False			# 2D Phase Resolved Images							< .csv File Save
-savefig_phaseresolve1D = True			# 1D Phase Resolved Images							< .csv File Save
+savefig_phaseresolve1D = False			# 1D Phase Resolved Images							< .csv File Save
 savefig_sheathdynamics = False			# 1D and 2D sheath dynamics images
 savefig_PROES =	False					# Simulated PROES Diagnostic
 phasecycles = 1.01						# Vaveform phase cycles to be plotted. 				 [Float]
@@ -301,10 +301,10 @@ DoFwidth = 0 							# PROES Depth of Field (symmetric about image plane) [Cells]
 
 savefig_IEDFangular = False				# 2D images of angular IEDF; single folders
 savefig_IEDFtrends = False				# 1D IEDF trends; all folders
-savefig_EEDF = False					# NO PLOTTING ROUTINE								< NO ROUTINE
+savefig_EEDF = False					# 1D EEDF trends; all folders						< No Routine
 
 # Write processed data to ASCII files.
-write_ASCII = False						# Data underpinning figs written in ASCII format
+write_ASCII = False						# Data underpinning figs written in ASCII format	< Outdated
 Write_CSV = True						# Data underpinning figs written in .csv format
 
 # Steady-State diagnostics terminal output toggles.
@@ -321,7 +321,7 @@ image_extension = '.png'				# Define image extension  ('.png', '.jpg', '.eps')
 image_interp = 'spline36'				# Define image smoothing  ('none', 'bilinear','quadric','spline36')
 image_cmap = 'plasma'					# Define global colourmap ('jet','plasma','inferno','gnuplot','tecmodern')
 
-image_aspectratio = [13,6]#[14,10]				# Real Size of [X,Y] in cm [Doesn't Rotate - X is always horizontal]
+image_aspectratio = [10,10]				# Real Size of [X,Y] in cm [Doesn't Rotate - X is always horizontal]
 image_radialcrop = []					# Crops 2D images to [R1,R2] in cm
 image_axialcrop = []					# Crops 2D images to [Z1,Z2] in cm
 image_cbarlimit = []					# [min,max] colourbar limits
@@ -334,11 +334,11 @@ image_normalise = False					# Normalise image/profiles to local max
 image_logplot = False					# Take log10(Data) for both 1D and 2D profiles
 
 image_rotate = False					# Rotate image 90 degrees to the right.
-image_plotsymmetry = False#True				# Plot radial symmetry - mirrors across the ISYM axis
+image_plotsymmetry = False				# Plot radial symmetry - mirrors across the ISYM axis
 image_plotoverlay = False				# Plot location(s) of 1D radial/axial profiles onto 2D images
-image_plotsheath = 'Radial'				# Plot sheath extent onto 2D images 'Axial','Radial'
+image_plotsheath = False				# Plot sheath extent onto 2D images 'Axial','Radial'
 image_plotgrid = False					# Plot major/minor gridlines on 1D profiles
-image_plotmesh = False					# Plot material mesh outlines ('True' == Auto,'PRCCP','PRCCPM','ESCT','GEC')
+image_plotmesh = True					# Plot material mesh outlines ('True' == Auto,'PRCCP','PRCCPM','ESCT','GEC')
 image_numericaxis = False				#### NOT implemented ####
 image_plotphasewaveform = False			# Plot waveform sub-figure on phaseresolve2D images
 
@@ -1414,10 +1414,144 @@ def ReadTEC2DPhase(folder=l,Variables=PhaseVariables):
 #enddef
 
 
+def ReadGeometry(DataFileDir,GeomFileDir):
+#Takes .PDT file with TECPLOT "GEOMETRY" section, returns mesh nodes and connections
+#Inputs,
+#		DataFileDir = Relative filepath to data file,			String 
+#		(inc. filename, e.g. "Dir1/Dir2/TECPLOT2D.PDT")
+#		GeomFileDir = Relative filepath/name to write to	 	String
+#Returns,
+#	MeshCoordinates: 2D array of [[radius,height],[radius,height],...]		:: [cm]
+#					 List of mesh node (vertice) coordinates as floats
+#					 Expects origin to be top-left corner
+#	MeshConnections: 2D array of [[i, j],[i, j],...] 						:: [-]
+#					 list of indices that identify connections between nodes
+#					 indices are sequential to MeshCoordinates.
+###########
+
+	# Global arrays carried through each geometry zone
+	conn_index_offset = 0
+	MeshCoordinates = list()
+	MeshConnections = list()
+
+	# Reusable arrays cleared on each geometry zone
+	geom_count = 0 
+	geom_coords = []
+	geom_active = False
+	unique_gc = []
+	geom_line_ctr = 0
+	num_geom_lines = 0 
+
+	# Open file containing GEOMETRY sections, 
+	with open(DataFileDir, 'rt') as infile, open(GeomFileDir, 'wt') as outfile:
+		outfile.write("*START HEADER*\n")		
+		outfile.write('TITLE="FE-LineSeg zones converted from GEOMETRIES"\n')
+		outfile.write('VARIABLES= "X" "Y"\n')
+			
+		for line in infile:
+			if line.strip().upper().startswith('GEOMETRY'):
+				geom_count += 1
+				geom_active = True
+				geom_line_ctr = 0
+
+			# If in geometry section
+			elif geom_active:
+			
+				# First line after GEOMETRY line is expected to hold number of line segments.				
+				if geom_line_ctr == 0:  
+					num_geom_lines = int(line[:-1]) * 3 + 1
+					# Always increase line counter
+					geom_line_ctr += 1
+
+				elif geom_line_ctr < num_geom_lines:
+					# If line is coordinate line, extract radius and height of node
+					if len(line.split()) >= 2:
+#							geom_coords.append(line[:-1].split())		#Doesn't Reverse J(Z)-coordinates
+						r = float( line[:-1].split()[0] )
+						h = float( line[:-1].split()[1] )
+						h = ((Z_mesh[l]-2)*dz[l]) - h					#Reverse J(Z)-coordinates	
+						geom_coords.append([r,h])
+					#endif
+					
+					# Always increase line counter
+					geom_line_ctr += 1
+
+				else:
+					# create list of unique node coordinates:
+					for lineseg in geom_coords:
+						if lineseg not in unique_gc:
+							unique_gc.append(lineseg)
+						#endif
+					#endfor
+					
+					# Write header
+					outfile.write(f'ZONE T="geometry-{geom_count}"\n')
+					outfile.write(f'Nodes={len(unique_gc)}, Elements={int(len(geom_coords)/2)}, ZONETYPE=FELINESEG\n')
+					outfile.write('DATAPACKING=POINT\n')
+					outfile.write('DT=(SINGLE SINGLE)\n')
+					outfile.write("*END HEADER*\n")				
+					outfile.write("*\n")				
+
+					# create connectivity list
+					conn_list = list()
+					for i in range(0, len(geom_coords),2):
+						r = unique_gc.index(geom_coords[i]) + 1
+						h = unique_gc.index(geom_coords[i+1]) + 1
+						conn_list.append([r,h])
+					#endfor
+
+					outfile.write("*NODE LIST*\n")	
+					# node coords in point format:
+					for n in unique_gc:
+						outfile.write(f' {n[0]}   {n[1]}\n')
+					#endfor
+					
+					outfile.write("*CONN LIST*\n")
+					# connection list sequentally relative to node coordinate indices
+					for i in range(0, len(geom_coords),2):
+						outfile.write(f" {unique_gc.index(geom_coords[i])+1} {unique_gc.index(geom_coords[i+1])+1}\n")
+					#endfor
+					outfile.write("*\n")
+
+					# Geometries are saved in "zones" of 50 nodes
+					# Concat coordinate arrays together, no offset needed
+					for n in range(0,len(unique_gc)):
+						MeshCoordinates.append( unique_gc[n] )
+					#endfor
+
+					# Concat connection lists together with index offset
+					for n in range(0,len(conn_list)):
+						i = conn_list[n][0] + conn_index_offset
+						j = conn_list[n][1] + conn_index_offset
+						conn_offset = [i,j]
+						
+						MeshConnections.append( conn_offset )
+					#endfor
+
+					# Update conn index offset with len of coordinates from current zone
+					# NOTE: THIS MUST BE PERFORMED AFTER APPENDING CURRENT ZONE TO MeshConnections
+					conn_index_offset += len(unique_gc)
+
+					# clean memory for next geometry zone
+					geom_coords = []
+					unique_gc = []
+					geom_active = False
+					geom_line_ctr = 0
+				#endif
+			#endif
+		#endfor
+	#endwith
+	
+	return(MeshCoordinates, MeshConnections)
+#enddef
+
+
 def WriteToCSV(Data, Directory, Filename, Header=[], Mode='w'):
 #Takes 1D or 2D array and writes to a datafile in .csv format
 #Inputs,
 #		Data = Data to be written, Array (real) :: 1D or 2D
+#			Align data array row-wise, 	i.e. [i,j] = [Radius,Height]
+#			Origin as per HPEM mesh, 	i.e. [0,0] = top left corner of image
 #		Directory = Folder to write to, String
 #		Filename = Data file will be named "Filename.csv", String
 #		Header = Array of Header information, String
@@ -1462,6 +1596,8 @@ def ReadFromCSV(Directory, Filename, Mode='r', Cycle=0):
 #Returns,
 #		Header = 1D array containing each row of header data	[Strings]
 #		Data = 1D or 2D array of data following Header			[Floats]
+#Notes,
+#		1D arrays are returned as nested list, i.e. [[DATA]]
 ###########
 
 	#Write array length and SI dimension to file
@@ -1489,7 +1625,7 @@ def ReadFromCSV(Directory, Filename, Mode='r', Cycle=0):
 		for i in range(DataStartidx,len(RawData)):
 
 			# Cyclic data blocks are deliminated by next header
-			if "*" in RawData[i]:
+			if "*START HEADER*" in RawData[i]:
 				DataEndidx = i
 				break
 			else:
@@ -2164,6 +2300,72 @@ def VariableLabelMaker(VariableStrings):
 	return Variablelegends
 #enddef
 
+#=============#
+
+def PlotGeometry(ax,MeshCoordinates,MeshConnections,image_plotsymmetry,LabelNodes=False):
+#	Plots mesh geometry onto a 2D plot
+#	MeshCoordinates: 2D array of [[radius,height],[radius,height],...]		:: [cm]
+#					 List of mesh node (vertice) coordinates as floats
+#					 Expects origin to be top-left corner
+#	MeshConnections: 2D array of [[i, j],[i, j],...] 						:: [-]
+#					 list of indices that identify connections between nodes
+#					 indices are sequential to MeshCoordinates.
+###############
+
+	# Convert strings in scientific notation to floats
+	Coords = [(float(Radius), float(Height)) for Radius, Height in MeshCoordinates]
+
+	# Plot nodes if requested (diagnostic tool)
+	if LabelNodes == True:
+		for idx, (Radius, Height) in enumerate(coords, start=1):
+			ax.scatter(Radius, Height, color="red", s=20)
+			ax.text(Radius, Height, f"{idx}", fontsize=8, ha="right", va="bottom")
+		#endfor
+	#endif
+	
+	# Draw connections
+	for n in range(0,len(MeshConnections)):
+	
+		# Sequentially read mesh connection indices
+		Conn = MeshConnections[n]
+	
+		# Adjust for zero-based index
+		i = int(Conn[0]) - 1
+		j =  int(Conn[1]) - 1
+		
+		# Extract coordinates at relevant connection indices
+		Radius1, Height1 = Coords[i]
+		Radius2, Height2 = Coords[j]
+		
+		# Only works if rotating 90 to the right
+		if image_rotate == True and image_plotsymmetry == True:
+			Radius1,Height1 = Height1,Radius1
+			Radius2,Height2 = Height2,Radius2
+			ax.plot([Radius1, Radius2], [Height1, Height2], color='dimgrey', lw=2)
+			ax.plot([Radius2, Radius1], [-Height1, -Height2], color='dimgrey', lw=2)		
+
+		# Only works if rotating 90 to the right
+		elif image_rotate == True and image_plotsymmetry == False:
+			Radius1,Height1 = Height1,Radius1
+			Radius2,Height2 = Height2,Radius2
+			Height1,Height2 = -Height2+R_mesh[l]*dr[l], -Height1+R_mesh[l]*dr[l]
+			ax.plot([Radius1, Radius2], [Height1, Height2], color='dimgrey', lw=2)			
+		
+		# Works for all cases
+		elif image_rotate == False and image_plotsymmetry == True:
+			ax.plot([Radius1, Radius2], [Height1, Height2], color='dimgrey', lw=2)
+			ax.plot([-Radius2, -Radius1], [Height1, Height2], color='dimgrey', lw=2)
+
+		# if no rotation or symmetry
+		else:
+			ax.plot([Radius1, Radius2], [Height1, Height2], color='dimgrey', lw=2) 
+		#endif
+	#endfor
+	
+	return()
+#enddef
+
+#=============#
 
 def ManualPRCCPMesh(Ax=plt.gca()):
 	#Plot pocket rocket material dimensions.
@@ -3053,73 +3255,24 @@ for l in tqdm(range(0,numfolders)):
 #===================##===================#
 #===================##===================#
 
-	##### 	UNDER CONSTRUCTION	 #####
-		
 	#Retrieve entire mesh for plotting if requested.
 	if image_plotmesh == True:
 
-		#Read through TECPLOT2D and extract "GEOMETRY" zone at the bottom
-		GeometryStartMarker = 'GEOMETRY'
-		for i in range(0,nn_2D):
-			if GeometryStartMarker in str(rawdata_2D[l][i]): 
-				GeometryStartIndex = i
-				break
-			#endif
-		#endfor
-		TEC2DGeometry = rawdata_2D[l][GeometryStartIndex::]
+		# Geometry Name String :: Assume TECPLOT2D.PDT always exists
+		NameString = "TECPLOT2D"
 		
-		#Geometry elements are written in batches of max size 25, determine batch spacing
-		MeshElementArray = list()						# FOR FOLDER [l], NEED TO ADD EXTRA DIMENSION
-		for i in range(0,len(TEC2DGeometry)):
-			#Identify Batch Header line and extract plotting information
-			if "GEOMETRY" in TEC2DGeometry[i]:
-				M = "Grid"
-				C = "Black"
-				Origin = (0,0)
-				T = "Line"
-				F = "Point"
-				#Identify element batch length and save batch start and end indices
-				BatchLen = int(TEC2DGeometry[i+1])		# Save current element batch length
-				BatchStart = i+2						# Skip line under GEOMETRY, containing batch length
-				BatchEnd = BatchStart + BatchLen*3		# Length of current batch
-			#endif
-			
-			#From Current "GEOMETRY" line to next "GEOMETRY" line, extract all elements and save arrays of size 2
-			if BatchStart < i < BatchEnd:
-				SplitElements = TEC2DGeometry[i].split()
-				if len(SplitElements) == 2:
-					MeshElementArray.append([ float(SplitElements[0]),float(SplitElements[1]) ])
-				#endif
-			#endif
-		#endfor
+		# Extract geometry from supplied namestring
+		DataFileDir = filter(lambda x: NameString in x, Dir)
+		DataFileDir = sorted(DataFileDir)
+		GeomFileDir = DataFileDir[l].rsplit('/',1)[0] + "/meshnodes.dat"
 		
-		#Reverse origin from top left to bottom left by subtracting max height from J(Z)-coordinates
-		for i in range(0,len(MeshElementArray),1):	
-#			MeshElementArray[i][0] = ((R_mesh[l])*dr[l])-MeshElementArray[i][0]			#Reverse I(R)-coordinates
-			MeshElementArray[i][1] = ((Z_mesh[l]-2)*dz[l])-MeshElementArray[i][1]		#Reverse J(Z)-coordinates
-		#endfor
+		# NOTE, this assumes all data has the same mesh
+		# IF MULTIPLE MESHES ARE NEEDED AT ANY POINT THEN
+		# MAKE MESHCORDINATES/CONNECTIONS INTO ARRAYS OF SIZE [l]
+		# AND CALL [l] WHEN USING PlotGeometry() FUNCTION
+		MeshCoordinates,MeshConnections = ReadGeometry(DataFileDir[l],GeomFileDir)
 	#endif
 #endfor
-
-#	Debugging diagnostics to check mesh orientation
-#
-#		for i in range(0,len(MeshElementArray),1):
-#			print(MeshElementArray[i])
-#			plt.plot(MeshElementArray[i][0],MeshElementArray[i][1], 'ko-', lw=2)
-			#endfor
-#		plt.show()
-
-#		for i in range(0,len(MeshElementArray),2):
-#			print(MeshElementArray[i])
-#			plt.plot(MeshElementArray[i],MeshElementArray[i+1], 'ko-', lw=2)
-		#endfor
-#		plt.show()
-		
-#		exit()
-
-
-
-	##### 	UNDER CONSTRUCTION	 #####
 
 #===================##===================#
 #===================##===================#
@@ -3752,10 +3905,8 @@ def ImageOptions(fig,ax,Xlabel='',Ylabel='',Title='',Legend=[],Crop=True,Rotate=
 	#endif
 
 	#Plot mesh outline if requested.
-	if image_plotmesh == True:												#!!! RM SJD TO COMPLETE
-		for i in range(0,len(MeshElementArray),1):
-			ax.plot(MeshElementArray[i][0],MeshElementArray[i][1], 'ko-', lw=2)
-		#endfor
+	if image_plotmesh == True:
+		PlotGeometry(ax,MeshCoordinates,MeshConnections,image_plotsymmetry)
 	elif image_plotmesh == 'PRCCP' and Crop == True:	
 		ManualPRCCPMesh(ax)
 	elif image_plotmesh == 'PRCCPM' and Crop == True:	
@@ -7935,20 +8086,23 @@ if savefig_phaseresolve2D == True:
 					fix,ax = figure(aspectratio,1)
 					ax0 = ax							# Image Sub-Fig (top fig)
 				#endif
-				Title = 'Phase-Resolved '+VariableStrings[i]+'\n'+str(Phaselist[j])
-				fig.suptitle(Title, y=0.97, fontsize=18)
 
 				#Plot 2D image, applying image options and cropping as required.
 				fig,ax0,im,Image = ImagePlotter2D(Image,extent,aspectratio,VariableStrings[i],fig,ax0)
-				if image_plotsheath in ['Radial','Axial']:
-					PlotSheathExtent(SxAxis,Sx,ax0,ISYMlist[l],Orientation=image_plotsheath)
-				#endif
+				Title = 'Phase-Resolved '+VariableStrings[i]+'\n'+str(Phaselist[j])
+#				fig.suptitle(Title, y=0.97, fontsize=18)
 				
 				#Add Colourbar (Axis, Label, Bins)
 				ImageOptions(fig,ax0,Xlabel,Ylabel,Title,Crop=True)
 				Ylabel = VariableLabelMaker(VariableStrings)
 				cax = Colourbar(ax0,Ylabel[i],5,Lim=CbarLimits)
+				
+				#Plot sheath onto ax1 if requested
+				if image_plotsheath in ['Radial','Axial']:
+					PlotSheathExtent(SxAxis,Sx,ax0,ISYMlist[l],Orientation=image_plotsheath)
+				#endif
 
+				# Plot waveform onto ax2 if requested
 				if image_plotphasewaveform == True:
 					#Plot waveform and apply image options.
 					ax1.plot(Phaseaxis, ElectrodeWaveform, lw=2)
