@@ -160,7 +160,8 @@ F = ['F2','F2*','F2+','F','F*','F+','F-','S-F','S-F+','S-F-','SEB-F','SEB-F+','S
 H2O = ['H2O','H2O+','OH','OH-','H2OV','H2O2','S-H2O','SEB-H2O','S-H2OV','SEB-H2OV','S-H2O+','SEB-H2O+','S-OH','SEB-OH','S-OH-','SEB-OH-','S-OH+','SEB-OH+']
 CO2 = ['CO2','CO2V','CO+','CO','CO+','C','C+']
 CHx = ['CH4','CH3','CH2','CH','C','CH5+','CH4+','CH3+','CH2+','CH+','C+']
-NFx = ['NF3A','NF2A','NFA','NF3B','NF2B','NFB','NF3^','NF2^','NF^']
+NHx = ['NH3','NH2','NH','NH4+','NH3+','NH2+','NH+']
+NFx = ['NF3A','NF2A','NFA','NF3B','NF2B','NFB','NF3+','NF2+','NF+']
 SFx = ['SF6','SF5','SF4','SF3','SF2','SF','S','SF5+','SF4+','SF3+','SF2+','SF+','S+','SF6-','SF5-']
 Al = ['AL','AL*','AL**','AL+','S-AL','SEB-AL','S-AL*','SEB-AL*','S-AL**','SEB-AL**','S-AL+','SEB-AL+','FZ-AL+','FR-AL+']
 Be = ['BE','BE1','BE2','BE3','BE4','BE5','BE6','BE7','BE8','BE9','BE+']
@@ -256,7 +257,7 @@ electrodeloc = [10,90]					# Cell location of powered electrode [R,Z].
 waveformlocs = []						# Cell locations of additional waveforms [R,Z].
 
 # Requested variables and plotting locations.
-Variables = Phys+Ar+O2+Be				# Requested Variables from Tecplot2D.pdt, tecplot_kin.pdt, and movie_icp.pdt 
+Variables = ['BE']#Phys+Ar						# Requested Variables from Tecplot2D.pdt, tecplot_kin.pdt, and movie_icp.pdt 
 multivar = []							# Additional variables plotted ontop of [Variables]
 radialprofiles = []						# Radial 1D-Profiles to be plotted (fixed Z-mesh) --
 axialprofiles = [5]						# Axial 1D-Profiles to be plotted (fixed R-mesh) |
@@ -268,10 +269,6 @@ sourcewidth = []						# Source Dimension at ROI, leave empty for auto. [cells]
 
 # Requested diagnostics and plotting routines.
 savefig_tecplot2D = True				# 2D Single-Variables: TECPLOT2D.PDT				< .csv File Save
-# ^^^^
-# NOTE: icp.dat readin function assumes a split line length
-# THIS ASSUPTION BREAKS WHEN ADDING COMMENTS TO icp.dat FILES
-# NEED TO REPLACE IT WITH A REGEX METHOD THAT IS MORE ROBUST
 
 savefig_movieicp2D = False				# 2D Variables against space-axis:	movie_icp.pdt	< MAXITER SHOULD BE AN ARRAY
 savefig_movieicp1D = False				# 1D Variables against space-axis:	movie_icp.pdt	< MAXITER SHOULD BE AN ARRAY
@@ -306,6 +303,8 @@ savefig_EEDF = False					# 1D EEDF trends; all folders						< No Routine
 # Write processed data to ASCII files.
 write_ASCII = False						# Data underpinning figs written in ASCII format	< Outdated
 Write_CSV = True						# Data underpinning figs written in .csv format
+# ^^^^
+# NOTE: SHEATH EXTENT SAVES WITH WRONG NAME, IN WRONG FILE FORMAT, IN ROOT DIRECTORY
 
 # Steady-State diagnostics terminal output toggles.
 print_generaltrends = False				# Verbose Min/Max Trend Outputs.
@@ -968,68 +967,65 @@ for l in range(0,numfolders):
 	#==========##===== ICP.DAT READIN =====##==========#
 	#==========##==========================##==========#
 
-	#Attempt automated retrieval of atomic species
+	# Automated retrieval of atomic species
 	try: 
 		ChemistryData = open(icpdat[l], encoding='utf-8').readlines()
 	except:
 		ChemistryData = open(icpdat[l], encoding='iso-8859-15').readlines()
 	#endtry
+	
+	# Determine reaction mechanism (.dat) file header length
+	for i in range(0,len(ChemistryData)):
+	
+		Line = ChemistryData[i].split()
+		if Line[0] == '*': 
+			DatHeaderLen = i
+			break
+		#endif
+	#endfor
 
-	#Plasma chemistry .dat file inputs
+	# Extract reaction mechanism (.dat) header, atomic species definitions
 	try:
-		#Determine end of chemistry set species definition
-		for i in range(0,len(ChemistryData)):
+		for i in range(0,DatHeaderLen):
 
-			#Atomic Species Defined In Header, read in data line by line from icp.dat
-			#len(Header.split()) = 13 for atomic or molecular species definition
-			#len(Header.split()) = 8 for material surface interaction definition 
-			if len(ChemistryData[i].split()) == 13:
-				try:
-					SpeciesName     = ChemistryData[i].split()[0]
-					Charge          = int(ChemistryData[i].split()[2])
-					MolecularWeight = float(ChemistryData[i].split()[4])
-					StickingCoeff   = float(ChemistryData[i].split()[6])
-					TransportBool   = int(ChemistryData[i].split()[8])
-					ReturnFrac      = float(ChemistryData[i].split()[10])
-					ReturnSpecies   = ChemistryData[i].split()[11]
-				except:
-					#Catches any lines that 'coincidentally' have length 13 and ignores
-					# e.g. "This Sentence Happens To Have A Number of Word Entries Equal To Thirteen" 
-					continue
-				#endtry
+			Line = ChemistryData[i]
+			SplitLine = ChemistryData[i].split()
+		
+			# Ignore lines starting with '>' as these are surface return fractions
+			# Ignore lines starting with '!' as these are comments
+			# Minimum split length for atomic entry is 13 when split
+			if SplitLine[0] not in '> !' and len(SplitLine) >= 13:
+		
+				# Split line in order of ":, ;, &, ], [, @, and !", and strip these characters
+				StripLine = re.split(r'\s*[:;&\]\[@!]\s*', Line.strip())
+				header_icpdat.append( StripLine )
+				
+				SpeciesName     = str(StripLine[0])			# -
+				Charge          = int(StripLine[1])			# [e]
+				MolecularWeight = float(StripLine[2])		# [amu]
+				StickingCoeff   = float(StripLine[3])		# -
+				TransportBool   = int(StripLine[4])			# -
+				ReturnFrac      = float(StripLine[5])		# -
+				ReturnSpecies   = str(StripLine[6])			# -
+				Comments		= str(StripLine[7::])		# -
 
-				#Collect all atomic species (including electrons)
+				# Identify atomic species (including electrons)
 				if SpeciesName not in AtomicSpecies: AtomicSpecies.append(SpeciesName)
-				#Seperate species by charge
+				
+				# Identify ground-state neutral species
+				# NOTE :: NEED TO DEVELOP ALGORITHM FOR GROUND STATE
+				FluidSpecies = ['AR','AR3S','O2','O']				
+			
+				# Identify positive and negative species (including electrons)
 				if Charge == 0 and SpeciesName not in NeutSpecies: NeutSpecies.append(SpeciesName)
 				elif Charge >= 1 and SpeciesName not in PosSpecies:  PosSpecies.append(SpeciesName)
 				elif Charge <= -1 and SpeciesName not in NegSpecies: NegSpecies.append(SpeciesName)
-				#List of recognized ground-state neutral species for fluid analysis.
-				FluidSpecies = ['AR','AR3S','O2','O']	#NOTE :: FLUID SPECIES ARE STILL MANUALLY DEFINED
-
-				#Collect icp.dat header if required for later use
-				header_icpdat.append([SpeciesName,Charge,MolecularWeight,StickingCoeff, TransportBool,ReturnFrac,ReturnSpecies])
-			#####
-
-			#End of Chemistry Header Denoted By '*', as soon as this is reached, stop reading in.
-			elif len(ChemistryData[i].split()) != 13 and len(ChemistryData[i].split()) !=8:
-				if ChemistryData[i].split()[0] == '*': break
 			#endif
 		#endfor
-	except:
-		print( 'ERROR: ICP.COM ATOMIC SPECIES READIN, USING DEFAULT ATOMIC PROPERTIES')
-		#List of dafault recognised neutral/metastable atomic sets, add new sets as required.
-		ArgonReduced = ['AR','AR+','AR*']
-		ArgonFull = ['AR3S','AR4SM','AR4SR','AR4SPM','AR4SPR','AR4P','AR4D','AR+','AR2+','AR2*']
-		Oxygen = ['O','O+','O-','O*','O2','O2+','O2*']
 
-		AtomicSpecies = ['E']+ArgonReduced+ArgonFull+Oxygen
-		NeutSpecies = ['AR3S','AR4SM','AR4SR','AR4SPM','AR4SPR','AR4P','AR4D','AR2*','O','O*','O2','O2*']
-		PosSpecies = ['AR+','AR2+','O+','O2+']
-		NegSpecies = ['E','O-']
-		#List of recognized ground-state neutral species for fluid analysis.
-		FluidSpecies = ['AR','AR3S','O2','O']
-	#endtry 
+	except:
+		print( 'ERROR: CANNOT READ .DAT HEADER ATOMIC DEFINITIONS, CHECK ICP.DAT HEADER')
+	#endtry
 
 #==========##========================##==========#
 #==========##========================##==========#
@@ -5323,7 +5319,7 @@ if savefig_tecplot2D == True:
 				
 				# Write Sheath Data separately as it is not included in the VariableList format
 				if image_plotsheath in ['Radial','Axial'] and k == len(VariableIndices)-1:
-					np.savetxt(Filename, [p for p in zip(SxAxis,Sx)], delimiter=',', fmt='%s')
+					np.savetxt(CSVFilename, [p for p in zip(SxAxis,Sx)], delimiter=',', fmt='%s')
 					WriteDataToFile(Sx, CSVDir+'Sx.csv')
 				#endif
 			#endif
