@@ -164,7 +164,7 @@ NHx = ['NH3','NH2','NH','NH4+','NH3+','NH2+','NH+']
 NFx = ['NF3A','NF2A','NFA','NF3B','NF2B','NFB','NF3+','NF2+','NF+']
 SFx = ['SF6','SF5','SF4','SF3','SF2','SF','S','SF5+','SF4+','SF3+','SF2+','SF+','S+','SF6-','SF5-']
 Al = ['AL','AL*','AL**','AL+','S-AL','SEB-AL','S-AL*','SEB-AL*','S-AL**','SEB-AL**','S-AL+','SEB-AL+','FZ-AL+','FR-AL+']
-Be = ['BE','BE1','BE2','BE3','BE4','BE5','BE6','BE7','BE8','BE9','BE+']
+Be = ['BE','BE1','BE2','BE3','BE4','BE5','BE6','BE7','BE8','BE9','BE+','FR-BE','FZ-BE','FR-BE+','FZ-BE+']
 
 Ar_Phase = ['S-E','S-AR+','S-AR4P','SEB-E','SEB-AR+','SEB-AR4P','SRCE-2437','FR-E','FZ-E','TE','PPOT','POW-ALL']
 O2_Phase = ['S-E','S-O+','S-O-','S-O2+','SEB-O+','SEB-O-','SEB-O2+','S-O3P3P','SEB-O3P3P','TE','PPOT','FR-E','FZ-E']
@@ -173,75 +173,6 @@ PRCCPAr_PCMC = ['AR^0.35','EB-0.35','ION-TOT0.35']
 PRCCPO2_PCMC = ['O^0.35','EB-0.35','ION-TOT0.35']
 
 ####################
-
-#### PRCCP ####
-#electrodeloc =		[29,44] 					#Reverse [29,62]
-#waveformlocs =		[[16,29],[16,44],[16,64],[0,29],[0,44],[0,64]]
-#DoFwidth =			R;16,Z;21
-#TrendLoc =			H[0,16];R[29,44,64,75]
-#thrustloc =		75, 						#stdESCT=76, smlESCT=48/54
-#sheathROI =		[34,72]
-#sourcewidth =		[0.21]						
-#Crop =				R[0.65];Z[1.0,5.0] 
-
-#### PRICP ####	
-#electrodeloc = 	[33,33]			# Coil V
-#waveformlocs = 	[]
-#DoFwidth = 		[]
-#TrendLoc = 		H[0];R[36,50]
-#thrustloc = 		[75]
-#sheathROI = 		[]
-#sourcewidth = 		[]
-#Crop =				R[0.65];Z[1.0,5.0] 
-
-#### ESCT ####
-#electrodeloc = 	[0,5]
-#waveformlocs = 	[]
-#DoFwidth = 		R;??,Z;??
-#TrendLoc =  		H[0];R[??]		# [??] For PROES
-#thrustloc = 		[??]
-#sheathROI = 		[]
-#sourcewidth = 		[??]
-#Crop = 			R[0];Z[0,5]
-
-#### TSHC ####
-#electrodeloc = 	[5,20]
-#waveformlocs = 	[]
-#DoFwidth = 		R;20,Z;6			# vvv For 4.6cm inter-electrode mesh, use [78,77,76] for relative cells
-#radialprofiles = 	[55,54,53,38]		#56 is grounded electrode surface (reducing number goes into bulk)
-#axialprofiles =	[]					# ^^^ TECPLOT uses cell 14 (53 in HELENA notation) or Z = 5.4cm
-#probeloc =			[]
-#thrustloc = 		[]
-#sheathROI = 		[]
-#sourcewidth = 		[5]
-#Crop = 			R[0,15];Z[7,14]
-
-#### GEC-CCPmk2 ####
-#electrodeloc = 	[10,45]			# CCP
-#waveformlocs = 	[]
-#DoFwidth = 		R;xx,Z;x
-#radialprofiles = 	[20]
-#axialprofiles =	[]
-#probeloc =			[]
-#thrustloc = 		[]
-#sheathROI = 		[]
-#sourcewidth = 		[]
-#AspectRatio =      [14,8]
-#Crop = 			R[];Z[]
-
-#### SERPENT ####	
-#electrodeloc = 	[33,33]			# Coil V
-#waveformlocs = 	[]
-#DoFwidth = 		[]
-#TrendLoc = 		H[0];R[36,50]
-#thrustloc = 		[79]
-#sheathROI = 		[]
-#sourcewidth = 		[]
-#Crop = 			R[1.4];Z[1,9]
-#Plotmesh = 		False
-
-####################
-
 
 #====================================================================#
 					#SWITCHBOARD AND DIAGNOSTICS#
@@ -257,7 +188,7 @@ electrodeloc = [10,90]					# Cell location of powered electrode [R,Z].
 waveformlocs = []						# Cell locations of additional waveforms [R,Z].
 
 # Requested variables and plotting locations.
-Variables = ['BE']#Phys+Ar						# Requested Variables from Tecplot2D.pdt, tecplot_kin.pdt, and movie_icp.pdt 
+Variables = Phys+Ar+Be					# Requested Variables from Tecplot2D.pdt, tecplot_kin.pdt, and movie_icp.pdt 
 multivar = []							# Additional variables plotted ontop of [Variables]
 radialprofiles = []						# Radial 1D-Profiles to be plotted (fixed Z-mesh) --
 axialprofiles = [5]						# Axial 1D-Profiles to be plotted (fixed R-mesh) |
@@ -269,6 +200,9 @@ sourcewidth = []						# Source Dimension at ROI, leave empty for auto. [cells]
 
 # Requested diagnostics and plotting routines.
 savefig_tecplot2D = True				# 2D Single-Variables: TECPLOT2D.PDT				< .csv File Save
+# ^^^
+# FAILURE TO IDENTIFY MESH EXTENT WHEN PLOTTING DIFFERENT MESH
+# SIZES IN THE SAME FOLDER, LIKELY ISSUE WITH "extent()" FUNCTION
 
 savefig_movieicp2D = False				# 2D Variables against space-axis:	movie_icp.pdt	< MAXITER SHOULD BE AN ARRAY
 savefig_movieicp1D = False				# 1D Variables against space-axis:	movie_icp.pdt	< MAXITER SHOULD BE AN ARRAY
@@ -329,13 +263,16 @@ image_legendloc = 'best'				# Legend Location, "1-9" or 'best' for automatic
 image_plotcolourfill = True				# Plot 2D image colour fill
 image_plotcontours = True				# Plot 2D image contour lines
 image_contourlvls = 10					# Number of contour levels
-image_normalise = False					# Normalise image/profiles to local max
-image_logplot = False					# Take log10(Data) for both 1D and 2D profiles
+image_cbarbins = 5						# Number of colourbar bins
+
+image_plotsheath = False				# Plot sheath extent onto 2D images 'Axial','Radial'
+image_plotvector = True					# Plot vector arrows onto 2D images (uses FR-XX, FZ-XX if they exist)
+image_normalise = False					# Plot Data normlised to maximum value within 2D image or 1D array
+image_logplot = False					# Plot log10(Data) for both 1D and 2D profiles
 
 image_rotate = False					# Rotate image 90 degrees to the right.
 image_plotsymmetry = False				# Plot radial symmetry - mirrors across the ISYM axis
 image_plotoverlay = False				# Plot location(s) of 1D radial/axial profiles onto 2D images
-image_plotsheath = False				# Plot sheath extent onto 2D images 'Axial','Radial'
 image_plotgrid = False					# Plot major/minor gridlines on 1D profiles
 image_plotmesh = True					# Plot material mesh outlines ('True' == Auto,'PRCCP','PRCCPM','ESCT','GEC')
 image_numericaxis = False				#### NOT implemented ####
@@ -370,9 +307,6 @@ ylabeloverride = []
 #		NEED TO SIZE THE INITIAL DATA ARRAY TO THE SHAPE OF THE LARGEST MOVIE FILE, NOT THE FIRST.
 #		ValueError: could not broadcast input array from shape (100,41,8804) into shape (24,41,8804)
 #
-#	ISSUE WITH READING movie_icp.pdt WHEN USING IEXCLUDE > 0
-#		DIFFERENT LENGTHS OF ARRAY IN SDFILEFORMAT WHEN READING movie_icp.pdt HEADER
-#
 #	INT SHEATH METHOD NOT COMPLETED FOR AXIAL SHEATH CALCULATION
 #		NOTE, RADIAL SHEATH CALC SCANS FROM R=0 INCREASING, I.E ASSUMES BULK IS ON-AXIS AT R=0 (mostly true)
 #		NOTE, AXIAL SHEATH CALC SCANS FROM Z=0 INCREASING< I.E. ASSUMES BULK IS NOT AT Z=0 (always true)
@@ -387,10 +321,6 @@ ylabeloverride = []
 #	NEED TO FLIP THE SOUND SPEED DIAGNOSTIC, AND CHECK ORIENTATION OF THE KNUDSEN DIAGNOSTIC
 #		- ADD KNUDSEN, REYNOLDS, ETC... TO SEPARATE FUNCTION CALLS
 #
-#	COMPARE PROFILES (AND PROBABLY MONO PROFILES) PLOT Z-AXIS THE WRONG WAY AROUND
-#		COMPARE PROFILES PLOTS USING J INDICES FROM THE TOP DOWN		(OPPOSITE TO THE CODE)
-#		PLOT2D PLOTS USING J INDICES FROM THE BOTTOM UP					(SAME AS IN THE CODE)
-#
 #	SAVEFIG_SHEATHDYNAMICS USES THE ABSOLUTE SHEATH LOCATION, RATHER THAN THE SHEATH EXTENT
 #		NEED TO DEFINE THE ELECTRODE EDGE, REMOVE AND UPDATE 'sourcewidth' INPUT
 #		PERHAPS: "SheathZero" OR SOMETHING SIMILAR. DEFINE CELL TO USE AS SHEATH ZERO POINT
@@ -399,8 +329,6 @@ ylabeloverride = []
 #
 #
 #	NEED TO ADD ICOILP-n TOT OPTION WITH ALL COILSETS OVERLAYED
-#
-#	NEED TO FINISH B-FIELD QUIVER PLOT IN savefig_tecplot2D AND MAKE SEPARATE FUNCTION
 #
 #	NEED to examine all maths in all trends to check for CGS or SI units
 #		- Each "trend" that employs a calculation will need an initial branch to
@@ -422,7 +350,6 @@ ylabeloverride = []
 #IT WOULD BE GOOD IF THESE COULD BE APPLIED AT THE PHASE READIN STAGE
 #KEEP THE MESH DEFINITION AS Z=0 AT THE TOP LEFT, TO BE HOMOGENIOUS WITH HPEM.
 
-#Remove/simplify the phase-averaged sheath diagnostic?
 #Sheathwidth function integrates axially or radially depending on mesh geometry.
 #Sheathwidth function has 1D (Scott) and 2D (Greg) capabilities
 #SheathWidth function can deal with image rotations.
@@ -487,7 +414,7 @@ ylabeloverride = []
 #Variables and lists for basic processing
 Dir = list()					#List of all datafile directories inside folders
 Dirlist = list()				#List of all folder directories (not including filenames)
-IEDFVariableStrings = list()		#List of all variable names in pcmc.prof in header order
+IEDFVariableStrings = list()	#List of all variable names in pcmc.prof in header order
 Geometrylist = list()			#List containing commonly used geometries [LEGACY: NOT USED]
 
 Globalvarlist = list()			#List of all commonly shared variable names between all folders
@@ -990,11 +917,12 @@ for l in range(0,numfolders):
 
 			Line = ChemistryData[i]
 			SplitLine = ChemistryData[i].split()
-		
+			
 			# Ignore lines starting with '>' as these are surface return fractions
-			# Ignore lines starting with '!' as these are comments
+			# Ignore lines where the first entry is '!' as this is a comment
+			# Ignore lines where the first entry contains '!' as this is a comment
 			# Minimum split length for atomic entry is 13 when split
-			if SplitLine[0] not in '> !' and len(SplitLine) >= 13:
+			if SplitLine[0] not in '> !' and '!' not in SplitLine[0] and len(SplitLine) >= 13:
 		
 				# Split line in order of ":, ;, &, ], [, @, and !", and strip these characters
 				StripLine = re.split(r'\s*[:;&\]\[@!]\s*', Line.strip())
@@ -1062,6 +990,290 @@ def EnumerateVariables(Variables, Header):
 	#endfor
 
 	return(indices,strings)
+#enddef
+
+
+def EnumerateVectors(Variable, Header, Prefixes=['FR','FZ']):
+#Takes:
+# Variable 		- Variable string, e.g. "AR3S"
+# Header 		- 1D Datafile Header Array (for 1 simulation folder)
+# Prefixes		- 1D array containing vector prefixes
+#				  Prefixes are limited to ['FR','FZ'] or ['VR','VZ']
+#Returns:
+# Radial 		- 1D array, name and index of radial vector for input 'Variable'
+# Axial 		- 1D array, name and index of axial vector for input 'Variable'
+#
+#Example: 
+#			EnumerateVectors('AR3S', Header_TEC2D[l], Prefixes['FR','FZ'])
+#			Radial = ['FR-AR3S',121]
+#			Axial = ['FZ-AR3S',120]
+#			Where, 120,121 are the TECPLOT2D header indices of the named variables
+
+	# Create header lookup
+	HeaderIndex = {name: i for i, name in enumerate(Header)}
+
+	# Create output arrays
+	Radial = list()		# Saved [Match, Index]
+	Axial = list()		# Saved [Match, Index]
+
+	#=====#=====# SPECIAL CASES #=====#=====#
+	
+	# Many variables do not follow a standard prefix format,
+	# this section explicitly defines these special cases.
+	#
+	# Special variables are directly "matched" to their
+	# vector equivelants, here "Wanted" variables are
+	# the explicit radial & axial vectors of "Variable"
+	
+	if Variable in ['E FLUX-R','E FLUX-Z']:
+	
+		# Prefixes are the explicit vector quantities relating to "Variable"
+		Vectors = ['E FLUX-R','E FLUX-Z']
+		RadialWanted = [f"{Vectors[0]}"]
+		AxialWanted = [f"{Vectors[1]}"]
+
+		# Match vector variable names
+		RadialMatch = next((w for w in RadialWanted if w in HeaderIndex), None)
+		AxialMatch = next((w for w in AxialWanted if w in HeaderIndex), None)
+
+		# Index vector variable names
+		RadialIndex = HeaderIndex[RadialMatch]
+		AxialIndex = HeaderIndex[AxialMatch]
+		
+		# Return vector variable names and indices
+		Radial = [RadialMatch, RadialIndex]
+		Axial = [AxialMatch, AxialIndex]
+
+		return(Radial,Axial)
+	#endif
+
+	#=====#=====#
+
+	if Variable in ['EF-TOT','EAMB-R','EAMB-Z']:
+	
+		Vectors = ['EAMB-R','EAMB-Z']
+		RadialWanted = [f"{Vectors[0]}"]
+		AxialWanted = [f"{Vectors[1]}"]
+
+		RadialMatch = next((w for w in RadialWanted if w in HeaderIndex), None)
+		AxialMatch = next((w for w in AxialWanted if w in HeaderIndex), None)
+
+		RadialIndex = HeaderIndex[RadialMatch]
+		AxialIndex = HeaderIndex[AxialMatch]
+		
+		Radial = [RadialMatch, RadialIndex]
+		Axial = [AxialMatch, AxialIndex]
+
+		return(Radial,Axial)
+	#endif
+
+	#=====#=====#
+	
+	# THESE ARE NOT CORRECT AS THE VECTORS NEED MULTIPLIED BY PHASE - SEE TECPLOT EQUATIONS
+	# NEED A BETTER WAY TO HANDLE MULTI-COIL SETS				!!! SJD
+	if Variable in ['ERADIAL-1','EAXIAL-1']:
+	
+		Vectors = ['ERADIAL-1','EAXIAL-1']
+		RadialWanted = [f"{Vectors[0]}"]
+		AxialWanted = [f"{Vectors[1]}"]
+
+		RadialMatch = next((w for w in RadialWanted if w in HeaderIndex), None)
+		AxialMatch = next((w for w in AxialWanted if w in HeaderIndex), None)
+
+		RadialIndex = HeaderIndex[RadialMatch]
+		AxialIndex = HeaderIndex[AxialMatch]
+		
+		Radial = [RadialMatch, RadialIndex]
+		Axial = [AxialMatch, AxialIndex]
+
+		return(Radial,Axial)
+	#endif
+
+	# THESE ARE NOT CORRECT AS THE VECTORS NEED MULTIPLIED BY PHASE - SEE TECPLOT EQUATIONS
+	# NEED A BETTER WAY TO HANDLE MULTI-COIL SETS				!!! SJD
+	if Variable in ['ERADIAL-2','EAXIAL-2']:
+	
+		Vectors = ['ERADIAL-2','EAXIAL-2']
+		RadialWanted = [f"{Vectors[0]}"]
+		AxialWanted = [f"{Vectors[1]}"]
+
+		RadialMatch = next((w for w in RadialWanted if w in HeaderIndex), None)
+		AxialMatch = next((w for w in AxialWanted if w in HeaderIndex), None)
+
+		RadialIndex = HeaderIndex[RadialMatch]
+		AxialIndex = HeaderIndex[AxialMatch]
+		
+		Radial = [RadialMatch, RadialIndex]
+		Axial = [AxialMatch, AxialIndex]
+
+		return(Radial,Axial)
+	#endif
+
+	#=====#=====#
+
+	# NOTE, THIS IS FOR STATIC FIELDS ONLY, DO NOT MULTIPLY BY PHASE
+	if Variable in ['BT','BR','BZ']:
+	
+		Vectors = ['BR','BZ']
+		RadialWanted = [f"{Vectors[0]}"]
+		AxialWanted = [f"{Vectors[1]}"]
+		
+		RadialMatch = next((w for w in RadialWanted if w in HeaderIndex), None)
+		AxialMatch = next((w for w in AxialWanted if w in HeaderIndex), None)
+
+		RadialIndex = HeaderIndex[RadialMatch]
+		AxialIndex = HeaderIndex[AxialMatch]
+		
+		Radial = [RadialMatch, RadialIndex]
+		Axial = [AxialMatch, AxialIndex]
+
+		return(Radial,Axial)
+	#endif
+
+	#=====#=====#
+
+	if Variable in ['JR-NET','JZ-NET']:
+	
+		Vectors = ['JR-NET','JZ-NET']
+		RadialWanted = [f"{Vectors[0]}"]
+		AxialWanted = [f"{Vectors[1]}"]
+		
+		RadialMatch = next((w for w in RadialWanted if w in HeaderIndex), None)
+		AxialMatch = next((w for w in AxialWanted if w in HeaderIndex), None)
+
+		RadialIndex = HeaderIndex[RadialMatch]
+		AxialIndex = HeaderIndex[AxialMatch]
+		
+		Radial = [RadialMatch, RadialIndex]
+		Axial = [AxialMatch, AxialIndex]
+
+		return(Radial,Axial)
+	#endif
+
+	#=====#=====#
+
+	if Variable in ['VR-NEUTRAL','VZ-NEUTRAL']:
+	
+		Vectors = ['VR-NEUTRAL','VZ-NEUTRAL']
+		RadialWanted = [f"{Vectors[0]}"]
+		AxialWanted = [f"{Vectors[1]}"]
+		
+		RadialMatch = next((w for w in RadialWanted if w in HeaderIndex), None)
+		AxialMatch = next((w for w in AxialWanted if w in HeaderIndex), None)
+
+		RadialIndex = HeaderIndex[RadialMatch]
+		AxialIndex = HeaderIndex[AxialMatch]
+		
+		Radial = [RadialMatch, RadialIndex]
+		Axial = [AxialMatch, AxialIndex]
+
+		return(Radial,Axial)
+	#endif
+
+	#=====#=====#
+
+	if Variable in ['VR-ION+','VZ-ION+']:
+	
+		Vectors = ['VR-ION+','VZ-ION+']
+		RadialWanted = [f"{Vectors[0]}"]
+		AxialWanted = [f"{Vectors[1]}"]
+		
+		RadialMatch = next((w for w in RadialWanted if w in HeaderIndex), None)
+		AxialMatch = next((w for w in AxialWanted if w in HeaderIndex), None)
+
+		RadialIndex = HeaderIndex[RadialMatch]
+		AxialIndex = HeaderIndex[AxialMatch]
+		
+		Radial = [RadialMatch, RadialIndex]
+		Axial = [AxialMatch, AxialIndex]
+
+		return(Radial,Axial)
+	#endif
+	
+	#=====#=====#
+
+	if Variable in ['VR-ION-','VZ-ION-']:
+	
+		Vectors = ['VR-ION-','VZ-ION-']
+		RadialWanted = [f"{Vectors[0]}"]
+		AxialWanted = [f"{Vectors[1]}"]
+		
+		RadialMatch = next((w for w in RadialWanted if w in HeaderIndex), None)
+		AxialMatch = next((w for w in AxialWanted if w in HeaderIndex), None)
+
+		RadialIndex = HeaderIndex[RadialMatch]
+		AxialIndex = HeaderIndex[AxialMatch]
+		
+		Radial = [RadialMatch, RadialIndex]
+		Axial = [AxialMatch, AxialIndex]
+
+		return(Radial,Axial)
+	#endif
+	
+	#=====#=====#
+
+	if Variable in ['I MFLUX-R','I MFLUX-Z']:
+	
+		Vectors = ['I MFLUX-R','I MFLUX-Z']
+		RadialWanted = [f"{Vectors[0]}"]
+		AxialWanted = [f"{Vectors[1]}"]
+		
+		RadialMatch = next((w for w in RadialWanted if w in HeaderIndex), None)
+		AxialMatch = next((w for w in AxialWanted if w in HeaderIndex), None)
+
+		RadialIndex = HeaderIndex[RadialMatch]
+		AxialIndex = HeaderIndex[AxialMatch]
+		
+		Radial = [RadialMatch, RadialIndex]
+		Axial = [AxialMatch, AxialIndex]
+
+		return(Radial,Axial)
+	#endif
+
+
+	#=====#=====# GENERAL CASE #=====#=====#
+	
+	# The general case applies to species fluxes and velocities
+	# where variables are saved in the following formats:
+	#	"FR-AR3S", "FZ-AR3S"
+	#	"VR-AR3S", "VR-AR3S"
+	# This general approach applies to any given species, 
+	#	e.g. "FR-O2" or "FZ-NH2"
+
+	# IF PLOTTING VECTORS ONTO DENSITY FIGURES
+	# Apply prefix to full name, 
+	#	i.e. "AR3S" becomes "FR-AR3S" 		and IS matched
+	#        "FR-AR3S" becomes "FR-FR-AR3S" and IS NOT matched
+#	RadialWanted = [f"{Prefixes[0]}-{Variable}"]
+#	AxialWanted = [f"{Prefixes[1]}-{Variable}"]
+
+	# IF PLOTTING VECTORS ONTO FLUX FIGURES
+	# Apply prefix ignoring first three characters,
+	#	i.e. "AR3S" becomes "FR-S" 			and IS NOT matched
+	#        "FR-AR3S" becomes "FR-AR3S" 	and IS matched
+	RadialWanted = [f"{Prefixes[0]}-{Variable[3::]}"]
+	AxialWanted = [f"{Prefixes[1]}-{Variable[3::]}"]
+
+	# Search .PDT file header and match for "Wanted" string, return None if none exist
+	RadialMatch = next((w for w in RadialWanted if w in HeaderIndex), None)
+	AxialMatch = next((w for w in AxialWanted if w in HeaderIndex), None)
+
+	# Index variables (in Header order) if a match is found
+	if RadialMatch is None: RadialIndex = None
+	else: RadialIndex = HeaderIndex[RadialMatch]
+	if AxialMatch is None: AxialIndex = None
+	else: AxialIndex = HeaderIndex[AxialMatch]
+	#endif
+
+	# Return vector variable names and indices
+	Radial = [RadialMatch, RadialIndex]
+	Axial = [AxialMatch, AxialIndex]
+#	print(Variable)
+#	print(Radial, Axial)
+#	print('')
+
+
+	return(Radial,Axial)
 #enddef
 
 
@@ -3919,7 +4131,7 @@ def ImageOptions(fig,ax,Xlabel='',Ylabel='',Title='',Legend=[],Crop=True,Rotate=
 		ManualASTRONmk1Mesh(ax)
 	#endif
 
-	#Crop image dimensions, use provided dimensions or default if not provided.
+	#Crop image dimensions, use provided dimensions or default if not provided		- REMOVE THIS FROM HERE...
 	if isinstance(Crop, (list, np.ndarray) ) == True:
 		CropImage(ax,Extent=Crop,Rotate=Rotate)
 	elif any( [len(image_radialcrop),len(image_axialcrop)] ) > 0:
@@ -3939,7 +4151,7 @@ def ImageOptions(fig,ax,Xlabel='',Ylabel='',Title='',Legend=[],Crop=True,Rotate=
 #=========================#
 
 
-def Colourbar(ax=plt.gca(),Label='',Ticks=5,Lim=[]):
+def Colourbar(ax=plt.gca(),Label='',cbarbins=5,Lim=[]):
 #Creates and plots a colourbar with given label and binsize.
 #Takes image axis, label string, number of ticks and limits
 #Allows pre-defined colourbar limits in form [min,max].
@@ -3960,7 +4172,7 @@ def Colourbar(ax=plt.gca(),Label='',Ticks=5,Lim=[]):
 	#Set number of ticks, label location and define scientific notation.
 	cbar.set_label(Label, rotation=Rotation,labelpad=Labelpad,fontsize=LabelFontSize)
 	cbar.formatter.set_powerlimits((-2,3))
-	cbar.locator = ticker.MaxNLocator(nbins=Ticks)
+	cbar.locator = ticker.MaxNLocator(nbins=cbarbins)
 	cbar.ax.yaxis.offsetText.set(size=TickFontsize)
 	yticks(fontsize=TickFontsize)
 
@@ -5109,106 +5321,6 @@ def PlotSheathExtent(SxAxis,Sx,ax=plt.gca(),ISymmetry=0,Orientation='Radial'):
 
 
 
-"""
-for l in range(0,numfolders):
-	#Create new folder to keep output plots.
-	Dir2Dplots = CreateNewFolder(Dirlist[l],'TECPlot2D')
-	
-	#Create Etot arrays
-	Etot = list()
-	Btot = list()
-
-	#Create VariableIndices for each folder as required.
-	VariableIndices,VariableStrings = EnumerateVariables(Variables,Header_TEC2D[l])
-
-	#Setting the radial ticks for beauty purposes ~HACKY~
-	R = Radius[l]
-	SymTicks = [round(-R, 1), round(-R/2, 1), 0, round(R/2, 1), round(R, 1)]
-	NoSymTicks = [0, round(R/2, 1), round(R, 1)]
-
-	#Reshape specific part of 1D Data array into 2D image for plotting.
-	for k in tqdm(range(0,len(VariableIndices))):
-	
-		if 'EAXIAL' in VariableStrings[k] or 'ERADIAL' in VariableStrings[k]:
-
-			#Extract full 2D image for further processing.
-			Image = ImageExtractor2D(Data[l][VariableIndices[k]],VariableStrings[k])
-
-			if len(Etot) > 0:
-				Etot = Etot + Image
-			else:
-				Etot = Image
-			#endif
-		#endif
-		
-		if 'BZ' in VariableStrings[k] or 'BR' in VariableStrings[k]:
-
-			#Extract full 2D image for further processing.
-			Image = ImageExtractor2D(Data[l][VariableIndices[k]],VariableStrings[k])
-
-			if len(Btot) > 0:
-				Btot = Btot + Image
-			else:
-				Btot = Image
-			#endif
-		#endif
-		
-	#endfor
-	
-	extent,aspectratio = DataExtent(l)
-	fig,ax,im,Image = ImagePlotter2D(Etot,extent,aspectratio,VariableStrings[k])
-	
-	#Define image beautification variables.
-	if image_rotate == True:
-		Xlabel,Ylabel = 'Axial Distance Z [cm]','Radial Distance R [cm]'
-	elif image_rotate == False:
-		Xlabel,Ylabel = 'Radial Distance R [cm]','Axial Distance Z [cm]'
-	#endif
-
-	#Image plotting details.
-	Title = '2D Steady State Plot of Etot for \n'+Dirlist[l][2:-1]   #generic titles
-	#Add Colourbar (Axis, Label, Bins)
-	label,bins = VariableLabelMaker(VariableStrings),5
-	cax = Colourbar(ax,label[k],bins,Lim=CbarMinMax(ax,Image))
-	#Finalize image
-	ImageOptions(fig,ax,Xlabel,Ylabel,Title)
-
-	plt.savefig('2DPlot Etot'+ext)
-	
-	
-	extent,aspectratio = DataExtent(l)
-	fig,ax,im,Image = ImagePlotter2D(Btot,extent,aspectratio,VariableStrings[k])
-	
-	#Define image beautification variables.
-	if image_rotate == True:
-		Xlabel,Ylabel = 'Axial Distance Z [cm]','Radial Distance R [cm]'
-	elif image_rotate == False:
-		Xlabel,Ylabel = 'Radial Distance R [cm]','Axial Distance Z [cm]'
-	#endif
-
-	#Image plotting details
-	Title = '2D Steady State Plot of Etot for \n'+Dirlist[l][2:-1]   #generic titles
-	#Add Colourbar (Axis, Label, Bins)
-	label,bins = VariableLabelMaker(VariableStrings),5
-	cax = Colourbar(ax,label[k],bins,Lim=CbarMinMax(ax,Image))
-	#Finalize image
-	ImageOptions(fig,ax,Xlabel,Ylabel,Title)
-
-	plt.savefig('2DPlot Btot'+ext)
-#endfor
-"""
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -5223,51 +5335,69 @@ for l in range(0,numfolders):
 			  	   #STEADY STATE TECPLOT2D FIGURES#
 #====================================================================#
 
-#Generate and save image of required variable for given mesh size.
+# Generate and save image of required variable for given mesh size.
 if savefig_tecplot2D == True:
 
 	for l in range(0,numfolders):
-		#Create new folder to keep output plots.
+		# Create new folder to keep output plots.
 		Dir2Dplots = CreateNewFolder(Dirlist[l],'TECPlot2D')
 
-		#Create VariableIndices for each folder as required.
+		# Create VariableIndices for each folder as required.
 		VariableIndices,VariableStrings = EnumerateVariables(Variables,Header_TEC2D[l])
 
-		#Setting the radial ticks for beauty purposes ~HACKY~
-		R = Radius[l]
-		SymTicks = [round(-R, 1), round(-R/2, 1), 0, round(R/2, 1), round(R, 1)]
-		NoSymTicks = [0, round(R/2, 1), round(R, 1)]
+		# Define image extent
+		extent, aspectratio = DataExtent(l)
 
-		#Reshape specific part of 1D Data array into 2D image for plotting.
+		# Reshape specific part of 1D Data array into 2D image for plotting.
 		for k in tqdm(range(0,len(VariableIndices))):
 
-			#Special vector plot case for magnetic field
-#			if 'BR' in VariableStrings and 'BZ' in VariableStrings:
-#			
-#				BRprocess = VariableStrings.index('BR')
-#				BR =  ImageExtractor2D(Data[l][BRprocess],'BR')
-#				
-#				BZprocess = VariableStrings.index('BZ')
-#				BZ = ImageExtractor2D(Data[l][BZprocess],'BZ')
-#
-#				fig,ax = figure(image_aspectratio)
-#				
-#				# Need to add meshgrid, see tutorial
-#				ax.quiver(BR, BZ)
+			# Extract 2D image from TECPLOT2D "Data" for folder "l"
+			Image = ImageExtractor2D(Data[l][VariableIndices[k]],VariableStrings[k])
+			
+			# Create figure and plot TECPLOT2D image
+			fig,ax = figure(aspectratio)
+			fig,ax,im,Image = ImagePlotter2D(Image,extent,aspectratio,VariableStrings[k],fig=fig,ax=ax)
+
+			#=====##=====# IMAGE OVERLAYS #=====##=====#
+
+			# Overlay vector streamplot if exists
+			Radial,Axial = EnumerateVectors(VariableStrings[k],Header_TEC2D[l])
+			
+			# Confirm Variable[k] has both vector counterparts (e.g. FR-AR3S, FZ-AR3S)
+			VectorVariablesExist = True
+			if None in Radial or None in Axial: VectorVariablesExist = False
+
+			# Overlay variable[k]'s vector components onto 2D flood plot
+			if image_plotvector == True and VectorVariablesExist == True:
+
+					# Create meshgrid
+					R_Space = np.linspace(0,Radius[l],R_mesh[l])
+					Z_Space = np.linspace(0,Height[l],Z_mesh[l])
+					R, Z = np.meshgrid(R_Space, Z_Space)
+					
+					# See definition of "Radial" and "Axial" above
+					UR = ImageExtractor2D(Data[l][Radial[1]],Radial[0])  	# radial velocities
+					UZ = ImageExtractor2D(Data[l][Axial[1]] ,Axial[0] )  	# axial velocities
+					VectorLength = np.sqrt(UR**2 + UZ**2)
+
+					# Streamplot fails if provided "zeros", inform user and skip to next variable
+					try:	ax.streamplot(R, Z, UR, UZ, color=VectorLength, cmap='viridis', density=1.5, linewidth=1)
+					except:	print('Warning: Invalid streamplot for variable: '+VariableStrings[k])
+					#endtry
+				#endif
 			#endif
 
-			#Extract full 2D image for further processing.
-			Image = ImageExtractor2D(Data[l][VariableIndices[k]],VariableStrings[k])
-			Sx,SxAxis = CalcSheathExtent(folderidx=l,Orientation=image_plotsheath)
+			#=====#
 
-			#Generate and rotate figure as requested.
-			extent,aspectratio = DataExtent(l)
-			fig,ax,im,Image = ImagePlotter2D(Image,extent,aspectratio,VariableStrings[k])
+			# Compute sheath extent and overlay onto figure if requested
+			Sx,SxAxis = CalcSheathExtent(folderidx=l,Orientation=image_plotsheath)
 			if image_plotsheath in ['Radial','Axial']:
 				PlotSheathExtent(SxAxis,Sx,ax,ISYMlist[l],Orientation=image_plotsheath)
 			#endif
 			
-			#Overlay location of 1D profiles if requested, adjusting for image rotation.
+			#=====#
+			
+			# Overlay location of 1D profiles if requested, adjusting for image rotation.
 			if image_plotoverlay == True:
 				for j in range(0,len(radialprofiles)):
 					X1,X2 = extent[0],extent[1]
@@ -5282,34 +5412,45 @@ if savefig_tecplot2D == True:
 					ax.plot((X1,X2),(Y1,Y2),'k--',lw=2)
 				#endfor
 			#endif
+			
+			#=====##=====# Image Beautification #=====##=====#
 
-			#Define image beautification variables
-			if image_rotate == True:
-				Xlabel,Ylabel = 'Axial Distance Z [cm]','Radial Distance R [cm]'
-			elif image_rotate == False:
-				Xlabel,Ylabel = 'Radial Distance R [cm]','Axial Distance Z [cm]'
+			# Image plotting details
+			Title = '2D Steady State Plot of '+VariableStrings[k]+' for \n'+Dirlist[l][2:-1]
+			if image_rotate == True:	Xlabel,Ylabel = 'Axial Distance Z [cm]','Radial Distance R [cm]'
+			elif image_rotate == False:	Xlabel,Ylabel = 'Radial Distance R [cm]','Axial Distance Z [cm]'
 			#endif
 
-			#Image plotting details
-			Title = '2D Steady State Plot of '+VariableStrings[k]+' for \n'+Dirlist[l][2:-1]   #generic titles
-			#Add Colourbar (Axis, Label, Bins)
-			label,bins = VariableLabelMaker(VariableStrings),5
-			cax = Colourbar(ax,label[k],bins,Lim=CbarMinMax(ax,Image))
-			#Finalize image
-			ImageOptions(fig,ax,Xlabel,Ylabel,Title)
+			# Add Colourbar
+			cbarlabel = VariableLabelMaker(VariableStrings)
+			cax = Colourbar(ax,cbarlabel[k],image_cbarbins,Lim=CbarMinMax(ax,Image))
 
-			#Save Figure
+			# Crop image dimensions to [image_radialcrop,image_axialcrop]
+			# NOTE: also sets cbar min/max to cropped region min/max
+			if any( [len(image_radialcrop),len(image_axialcrop)] ) > 0:
+				CropImage(ax,Rotate=image_rotate)
+			#endif
+
+			# Apply image optionsinalize image
+			ImageOptions(fig,ax,Xlabel,Ylabel,Title,Crop=False)
+
+
+			#=====##=====# Image I/O #=====##=====#
+
+			# Save Figure
 			plt.savefig(Dir2Dplots+'2DPlot_'+VariableStrings[k]+ext)
 			clearfigures(fig)
-			
-			#Write data underpinning current figure in .csv format
+
+			#=====#
+
+			# Write data underpinning current figure in .csv format
 			if Write_CSV == True:
 				CSVDir = CreateNewFolder(Dir2Dplots, '2DPlots_Data')
 				CSVRMesh = 'R_Mesh [Cells] '+str(R_mesh[l])+'  :: dR [cm/cell] '+str(dr[l])
 				CSVZMesh = 'Z_Mesh [Cells] '+str(Z_mesh[l])+'  :: dZ [cm/cell] '+str(dz[l])
 				CSVFilename = VariableStrings[k]+'.csv'
 				CSVTitle = str(Dirlist[l])
-				CSVLabel = str(label[k])
+				CSVLabel = str(cbarlabel[k])
 				CSVISYM = 'ISYM='+str(ISYMlist[l])
 				CSVRotate = 'Rotate='+str(image_rotate)
 				CSVHeader = [CSVTitle,CSVLabel,CSVISYM,CSVRotate,CSVRMesh,CSVZMesh]
@@ -5323,8 +5464,10 @@ if savefig_tecplot2D == True:
 					WriteDataToFile(Sx, CSVDir+'Sx.csv')
 				#endif
 			#endif
-			
-			#Write data to ASCII files [OUTDATED FORMAT, TO BE REMOVED]
+
+			#=====#
+	
+			# Write data to ASCII files [OUTDATED FORMAT, TO BE REMOVED]
 			if write_ASCII == True:
 				DirWrite = CreateNewFolder(Dir2Dplots, '2DPlots_Data')
 				WriteDataToFile(Image, DirWrite+VariableStrings[k])
@@ -5332,9 +5475,11 @@ if savefig_tecplot2D == True:
 					WriteDataToFile(Sx, DirWrite+'Sx-EXT')
 				#endif
 			#endif
-			
-		#endfor
-	#endfor
+
+			#=====#
+
+		#endfor		- Variable Loop
+	#endfor			- Simulation Directory Loop
 
 	print('-------------------------------------')
 	print('# 2D Steady-State Processing Complete')
@@ -5403,10 +5548,10 @@ if savefig_movieicp2D == True:
 					Xlabel,Ylabel = 'Radial Distance R [cm]','Axial Distance Z [cm]'
 				#endif
 
-				#Add title, legends, Colourbar (Axis, Label, Bins), etc...
+				#Add title, legends, Colourbar, etc...
 				Title = str(MovieIterlist[l][k])
-				label,bins = VariableLabelMaker(VariableStrings),5
-				cax = Colourbar(ax,label[i],bins,Lim=CbarMinMax(ax,Image))
+				cbarlabel = VariableLabelMaker(VariableStrings)
+				cax = Colourbar(ax,cbarlabel[i],image_cbarbins,Lim=CbarMinMax(ax,Image))
 				ImageOptions(fig,ax,Xlabel,Ylabel,Title)
 
 				#Save to seperate folders inside simulation folder.
@@ -8088,10 +8233,10 @@ if savefig_phaseresolve2D == True:
 				Title = 'Phase-Resolved '+VariableStrings[i]+'\n'+str(Phaselist[j])
 #				fig.suptitle(Title, y=0.97, fontsize=18)
 				
-				#Add Colourbar (Axis, Label, Bins)
+				#Add Colourbar
 				ImageOptions(fig,ax0,Xlabel,Ylabel,Title,Crop=True)
 				Ylabel = VariableLabelMaker(VariableStrings)
-				cax = Colourbar(ax0,Ylabel[i],5,Lim=CbarLimits)
+				cax = Colourbar(ax0,Ylabel[i],image_cbarbins,Lim=CbarLimits)
 				
 				#Plot sheath onto ax1 if requested
 				if image_plotsheath in ['Radial','Axial']:
@@ -8591,9 +8736,9 @@ if savefig_PROES == True:
 				ax[0].set_xticks([])
 				ax[0].set_xlim(x1,x2)
 				ax[0].set_ylim(y1,y2)
-				#Add Colourbar (Axis, Label, Bins)
-				label = VariableLabelMaker(varlist)
-				Colourbar(ax[0],label[i],5,Lim=CbarMinMax(ax,Image=PROES,PROES=ProfileOrientation[k]))
+				#Add Colourbar
+				cbarlabel = VariableLabelMaker(varlist)
+				Colourbar(ax[0],cbarlabel[i],image_cbarbins,Lim=CbarMinMax(ax,Image=PROES,PROES=ProfileOrientation[k]))
 
 				#Plot Voltage Waveform.
 				ax[1].plot(Phaseaxis, ElectrodeWaveform, lw=2)
