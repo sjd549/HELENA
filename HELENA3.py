@@ -179,19 +179,19 @@ PRCCPO2_PCMC = ['O^0.35','EB-0.35','ION-TOT0.35']
 #====================================================================#
 
 # Requested IEDF/NEDF Variables.
-IEDFVariables = PRCCPAr_PCMC			# Requested Variables from iprofile_2d.pdt
+IEDFVariables = ['AR^    2.6 L','BE^    2.6 L','EB-    2.6 L']#PRCCPAr_PCMC			# Requested Variables from iprofile_2d.pdt
 NEDFVariables = []						# Requested Variables from nprofile_2d.pdt
 
 # Requested movie1/movie_icp Variables.
 PhaseVariables = Ar_Phase				# Requested Movie1 (phase) Variables.
-electrodeloc = [10,90]					# Cell location of powered electrode [R,Z].
+electrodeloc = [0,0]					# Cell location of powered electrode [R,Z].
 waveformlocs = []						# Cell locations of additional waveforms [R,Z].
 
 # Requested variables and plotting locations.
-Variables = Phys+Ar+Be					# Requested Variables from Tecplot2D.pdt, tecplot_kin.pdt, and movie_icp.pdt 
+Variables = Phys+Ar+Be+O2				# Requested Variables from Tecplot2D.pdt, tecplot_kin.pdt, and movie_icp.pdt 
 multivar = []							# Additional variables plotted ontop of [Variables]
 radialprofiles = []						# Radial 1D-Profiles to be plotted (fixed Z-mesh) --
-axialprofiles = [5]						# Axial 1D-Profiles to be plotted (fixed R-mesh) |
+axialprofiles = []						# Axial 1D-Profiles to be plotted (fixed R-mesh) |
 probeloc = []							# Cell location For Trend Analysis [R,Z], (leave empty for global min/max)
 
 # Various Diagnostic Settings			>>> OUTDATED, TO BE RETIRED <<<
@@ -199,7 +199,7 @@ sheathROI = []							# Sheath Region of Interest, (Start,End) [cells]
 sourcewidth = []						# Source Dimension at ROI, leave empty for auto. [cells]
 
 # Requested diagnostics and plotting routines.
-savefig_tecplot2D = True				# 2D Single-Variables: TECPLOT2D.PDT				< .csv File Save
+savefig_tecplot2D = False				# 2D Single-Variables: TECPLOT2D.PDT				< .csv File Save
 # ^^^
 # FAILURE TO IDENTIFY MESH EXTENT WHEN PLOTTING DIFFERENT MESH
 # SIZES IN THE SAME FOLDER, LIKELY ISSUE WITH "extent()" FUNCTION
@@ -230,7 +230,7 @@ savefig_PROES =	False					# Simulated PROES Diagnostic
 phasecycles = 1.01						# Vaveform phase cycles to be plotted. 				 [Float]
 DoFwidth = 0 							# PROES Depth of Field (symmetric about image plane) [Cells]
 
-savefig_IEDFangular = False				# 2D images of angular IEDF; single folders
+savefig_IEDFangular = True				# 2D images of angular IEDF; single folders
 savefig_IEDFtrends = False				# 1D IEDF trends; all folders
 savefig_EEDF = False					# 1D EEDF trends; all folders						< No Routine
 
@@ -266,15 +266,15 @@ image_contourlvls = 10					# Number of contour levels
 image_cbarbins = 5						# Number of colourbar bins
 
 image_plotsheath = False				# Plot sheath extent onto 2D images 'Axial','Radial'
-image_plotvector = True					# Plot vector arrows onto 2D images (uses FR-XX, FZ-XX if they exist)
+image_plotvector = False				# Plot vector arrows onto 2D images (uses FR-XX, FZ-XX if they exist)
 image_normalise = False					# Plot Data normlised to maximum value within 2D image or 1D array
 image_logplot = False					# Plot log10(Data) for both 1D and 2D profiles
 
-image_rotate = False					# Rotate image 90 degrees to the right.
-image_plotsymmetry = False				# Plot radial symmetry - mirrors across the ISYM axis
+image_rotate = False						# Rotate image 90 degrees to the right.
+image_plotsymmetry = True				# Plot radial symmetry - mirrors across the ISYM axis
 image_plotoverlay = False				# Plot location(s) of 1D radial/axial profiles onto 2D images
 image_plotgrid = False					# Plot major/minor gridlines on 1D profiles
-image_plotmesh = True					# Plot material mesh outlines ('True' == Auto,'PRCCP','PRCCPM','ESCT','GEC')
+image_plotmesh = 'GEC'					# Plot material mesh outlines ('True' == Auto,'PRCCP','PRCCPM','ESCT','GEC')
 image_numericaxis = False				#### NOT implemented ####
 image_plotphasewaveform = False			# Plot waveform sub-figure on phaseresolve2D images
 
@@ -1052,48 +1052,6 @@ def EnumerateVectors(Variable, Header, Prefixes=['FR','FZ']):
 	if Variable in ['EF-TOT','EAMB-R','EAMB-Z']:
 	
 		Vectors = ['EAMB-R','EAMB-Z']
-		RadialWanted = [f"{Vectors[0]}"]
-		AxialWanted = [f"{Vectors[1]}"]
-
-		RadialMatch = next((w for w in RadialWanted if w in HeaderIndex), None)
-		AxialMatch = next((w for w in AxialWanted if w in HeaderIndex), None)
-
-		RadialIndex = HeaderIndex[RadialMatch]
-		AxialIndex = HeaderIndex[AxialMatch]
-		
-		Radial = [RadialMatch, RadialIndex]
-		Axial = [AxialMatch, AxialIndex]
-
-		return(Radial,Axial)
-	#endif
-
-	#=====#=====#
-	
-	# THESE ARE NOT CORRECT AS THE VECTORS NEED MULTIPLIED BY PHASE - SEE TECPLOT EQUATIONS
-	# NEED A BETTER WAY TO HANDLE MULTI-COIL SETS				!!! SJD
-	if Variable in ['ERADIAL-1','EAXIAL-1']:
-	
-		Vectors = ['ERADIAL-1','EAXIAL-1']
-		RadialWanted = [f"{Vectors[0]}"]
-		AxialWanted = [f"{Vectors[1]}"]
-
-		RadialMatch = next((w for w in RadialWanted if w in HeaderIndex), None)
-		AxialMatch = next((w for w in AxialWanted if w in HeaderIndex), None)
-
-		RadialIndex = HeaderIndex[RadialMatch]
-		AxialIndex = HeaderIndex[AxialMatch]
-		
-		Radial = [RadialMatch, RadialIndex]
-		Axial = [AxialMatch, AxialIndex]
-
-		return(Radial,Axial)
-	#endif
-
-	# THESE ARE NOT CORRECT AS THE VECTORS NEED MULTIPLIED BY PHASE - SEE TECPLOT EQUATIONS
-	# NEED A BETTER WAY TO HANDLE MULTI-COIL SETS				!!! SJD
-	if Variable in ['ERADIAL-2','EAXIAL-2']:
-	
-		Vectors = ['ERADIAL-2','EAXIAL-2']
 		RadialWanted = [f"{Vectors[0]}"]
 		AxialWanted = [f"{Vectors[1]}"]
 
@@ -2135,10 +2093,13 @@ def AutoConvProf(ConvProfexe,args=[],DirAdditions=[]):
 		os.system(ConvProfexe)
 	#endif
 
-	#Update Dir with new filenames, must be supplied manually for now.
-	for i in range(0,len(DirAdditions)): Dir.append(Dirlist[l]+DirAdditions[i])
+	# OLD METHOD USED TO HAVE TO MANUALLY UPDATE DIR,
+	# NEW METHODS UPDATE DIR AUTOMATICALLY
+#	for i in range(0,len(DirAdditions)): Dir.append(Dirlist[l]+DirAdditions[i])
 
+	# Return to Home directory (where HELENA3.py is located)
 	os.chdir(HomeDir)
+
 	return()
 #enddef
 
@@ -3167,6 +3128,34 @@ for l in tqdm(range(0,numfolders)):
 	#Data is now 3D array of form [folder,variable,datapoint(R,Z)]
 	Data.append(CurrentFolderData)
 
+#===================##===================#
+#===================##===================#
+
+	#Retrieve mesh geometry for plotting if requested.
+	if image_plotmesh == True:
+	
+		# Create mesh data arrays
+		MeshCoordinates = list()
+		MeshConnections = list()
+
+		# Geometry Name String :: Assume TECPLOT2D.PDT always exists
+		NameString = "TECPLOT2D"
+		
+		# Extract geometry from supplied namestring
+		DataFileDir = filter(lambda x: NameString in x, Dir)
+		DataFileDir = sorted(DataFileDir)
+		GeomFileDir = DataFileDir[l].rsplit('/',1)[0] + "/meshnodes.dat"
+		
+		# Save mesh coordinates for each folder sequentially
+		# MeshCoordinates[Folder][Nodes [R1,Z2], [R2,Z2], ...]
+		for l in range (0,numfolders):
+			MeshCoord,MeshConn = ReadGeometry(DataFileDir[l],GeomFileDir)
+		
+			MeshCoordinates.append(MeshCoord)
+			MeshConnections.append(MeshConn)
+		#endfor
+	#endif
+#endfor
 
 #===================##===================#
 #===================##===================#
@@ -3462,30 +3451,7 @@ for l in tqdm(range(0,numfolders)):
 
 #===================##===================#
 #===================##===================#
-
-	#Retrieve entire mesh for plotting if requested.
-	if image_plotmesh == True:
-
-		# Geometry Name String :: Assume TECPLOT2D.PDT always exists
-		NameString = "TECPLOT2D"
-		
-		# Extract geometry from supplied namestring
-		DataFileDir = filter(lambda x: NameString in x, Dir)
-		DataFileDir = sorted(DataFileDir)
-		GeomFileDir = DataFileDir[l].rsplit('/',1)[0] + "/meshnodes.dat"
-		
-		# NOTE, this assumes all data has the same mesh
-		# IF MULTIPLE MESHES ARE NEEDED AT ANY POINT THEN
-		# MAKE MESHCORDINATES/CONNECTIONS INTO ARRAYS OF SIZE [l]
-		# AND CALL [l] WHEN USING PlotGeometry() FUNCTION
-		MeshCoordinates,MeshConnections = ReadGeometry(DataFileDir[l],GeomFileDir)
-	#endif
-#endfor
-
 #===================##===================#
-#===================##===================#
-#===================##===================#
-
 
 #Create global list of all variable names and find shortest list.
 for l in range(0,numfolders):
@@ -4068,6 +4034,32 @@ def CbarMinMax(ax,Image,Symmetry=image_plotsymmetry,PROES=False):
 #=========================#
 #=========================#
 
+def ImageGeometry(fig,ax,image_plotsymmetry):
+
+	#Plot mesh outline if requested.			!!! RM SJD, SHOULD EXPLICITLY PASS FOLDER [l]
+	if image_plotmesh == True:
+		PlotGeometry(ax,MeshCoordinates[l],MeshConnections[l],image_plotsymmetry)
+	elif image_plotmesh == 'PRCCP':	
+		ManualPRCCPMesh(ax)
+	elif image_plotmesh == 'PRCCPM':	
+		ManualPRCCPMMesh(ax)
+	elif image_plotmesh == 'GEC':
+		ManualGECMesh(ax,image_plotsymmetry)
+	elif image_plotmesh == 'EVgeny':
+		ManualEVgenyMesh(ax)
+	elif image_plotmesh == 'HyperionI':
+		ManualHyperionIMesh(ax)
+	elif image_plotmesh == 'HyperionII':
+		ManualHyperionIIMesh(ax)
+	elif image_plotmesh == 'ASTRONmk1':
+		ManualASTRONmk1Mesh(ax)
+	#endif
+
+	return()
+#enddef
+
+#=========================#
+#=========================#
 
 def ImageOptions(fig,ax,Xlabel='',Ylabel='',Title='',Legend=[],Crop=True,Rotate=True):
 #Applies plt.options to current figure based on user input.
@@ -4113,7 +4105,7 @@ def ImageOptions(fig,ax,Xlabel='',Ylabel='',Title='',Legend=[],Crop=True,Rotate=
 	#endif
 
 	#Plot mesh outline if requested.
-	if image_plotmesh == True:
+	if image_plotmesh and Crop == True:
 		PlotGeometry(ax,MeshCoordinates,MeshConnections,image_plotsymmetry)
 	elif image_plotmesh == 'PRCCP' and Crop == True:	
 		ManualPRCCPMesh(ax)
@@ -5415,23 +5407,26 @@ if savefig_tecplot2D == True:
 			
 			#=====##=====# Image Beautification #=====##=====#
 
-			# Image plotting details
+			# Define title, labels, etc...
 			Title = '2D Steady State Plot of '+VariableStrings[k]+' for \n'+Dirlist[l][2:-1]
 			if image_rotate == True:	Xlabel,Ylabel = 'Axial Distance Z [cm]','Radial Distance R [cm]'
 			elif image_rotate == False:	Xlabel,Ylabel = 'Radial Distance R [cm]','Axial Distance Z [cm]'
 			#endif
 
-			# Add Colourbar
+			# Add Colourbar (must happen before image cropping!)
 			cbarlabel = VariableLabelMaker(VariableStrings)
 			cax = Colourbar(ax,cbarlabel[k],image_cbarbins,Lim=CbarMinMax(ax,Image))
 
 			# Crop image dimensions to [image_radialcrop,image_axialcrop]
-			# NOTE: also sets cbar min/max to cropped region min/max
+			# Also resets cbar min/max to cropped region min/max
 			if any( [len(image_radialcrop),len(image_axialcrop)] ) > 0:
 				CropImage(ax,Rotate=image_rotate)
 			#endif
+			
+			# Apply mesh geometry to image
+			ImageGeometry(fig,ax,image_plotsymmetry)
 
-			# Apply image optionsinalize image
+			# Apply image options, and enforce overides if requested
 			ImageOptions(fig,ax,Xlabel,Ylabel,Title,Crop=False)
 
 
@@ -6537,8 +6532,11 @@ if savefig_IEDFangular == True:
 			#endif
 
 			#Obtain conversion from energy-bin axis to eV axis and construct energy axis
-			deV, eVaxis = (EMAXIPCMC/IEBINSPCMC), list()
-			for j in range (0,int(IEBINSPCMC)): eVaxis.append(j*deV)
+			deV = (EMAXIPCMC/IEBINSPCMC)
+			eVaxis = list()
+			for j in range (0,int(IEBINSPCMC)): 
+				eVaxis.append(j*deV)
+			#endfor
 
 			#Transpose Image for plotting and reverse both lists to align with other data.
 			EDFImage, EDFprofile = EDFImage[::-1].transpose(), EDFprofile[::-1]
@@ -6576,10 +6574,31 @@ if savefig_IEDFangular == True:
 			ImageCrop = [[0,int(eVlimit)],[0,max(EDFprofile)*1.05]]	#[[X1,X2],[Y1,Y2]]
 			ImageOptions(fig,ax[1],Xlabel,Ylabel,Crop=ImageCrop,Rotate=False)
 
-			plt.savefig(DirIEDF+VariableStrings[i]+'_EDF'+ext)
+			#=====##=====# Image I/O #=====##=====#
+
+			# Save Figure
+			plt.savefig(DirIEDF+VariableStrings[i].replace(' ','')+'_EDF'+ext)
 			clearfigures(fig)
 
-			#Write data to ASCII files if requested.
+			#=====#
+
+			# Write data underpinning current figure in .csv format
+			if Write_CSV == True:
+				CSVDir = CreateNewFolder(DirIEDF, 'EDF_Data')
+				CSVEnergyAxis = 'Energy_Range_[eV] '+str([eVaxis[0],eVaxis[-1]])+'  :: Bin_Size_[eV] '+str(deV)
+				CSVAngleAxis =  'Angle_Range_[Deg] '+str([-45,45])+'  :: Bin_Size_[Deg] '+str(45./len(EDFImage))
+				CSVFilename = VariableStrings[i].replace(' ','')+'.csv'
+				CSVTitle = str(DirIEDF)
+				CSVLabel = str(VariableStrings[i])
+				CSVHeader = [CSVTitle,CSVLabel,CSVEnergyAxis,CSVAngleAxis]
+				
+				# Write to .csv
+				WriteToCSV(EDFImage, CSVDir, CSVFilename, CSVHeader)
+			#endif
+
+			#=====#
+
+			# Write data underpinning current figure in ASCII format		- OUTDATED, TO REMOVE
 			if write_ASCII == True:
 				if i == 0:
 					DirASCII = CreateNewFolder(DirIEDF, 'EDF_Data')
