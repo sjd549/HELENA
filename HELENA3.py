@@ -171,6 +171,7 @@ O2_Phase = ['S-E','S-O+','S-O-','S-O2+','SEB-O+','SEB-O-','SEB-O2+','S-O3P3P','S
 
 PRCCPAr_PCMC = ['AR^0.35','EB-0.35','ION-TOT0.35']
 PRCCPO2_PCMC = ['O^0.35','EB-0.35','ION-TOT0.35']
+GECCCP2a_BE_PCMC = ['AR^    2.6 L','BE^    2.6 L','EB-    2.6 L']
 
 ####################
 
@@ -179,7 +180,7 @@ PRCCPO2_PCMC = ['O^0.35','EB-0.35','ION-TOT0.35']
 #====================================================================#
 
 # Requested IEDF/NEDF Variables.
-IEDFVariables = ['AR^    2.6 L','BE^    2.6 L','EB-    2.6 L']#PRCCPAr_PCMC			# Requested Variables from iprofile_2d.pdt
+IEDFVariables = GECCCP2a_BE_PCMC			# Requested Variables from iprofile_2d.pdt
 NEDFVariables = []						# Requested Variables from nprofile_2d.pdt
 
 # Requested movie1/movie_icp Variables.
@@ -188,7 +189,7 @@ electrodeloc = [0,0]					# Cell location of powered electrode [R,Z].
 waveformlocs = []						# Cell locations of additional waveforms [R,Z].
 
 # Requested variables and plotting locations.
-Variables = Phys+Ar+Be+O2				# Requested Variables from Tecplot2D.pdt, tecplot_kin.pdt, and movie_icp.pdt 
+Variables = ['E'] #Phys+Ar+Be+O2				# Requested Variables from Tecplot2D.pdt, tecplot_kin.pdt, and movie_icp.pdt 
 multivar = []							# Additional variables plotted ontop of [Variables]
 radialprofiles = []						# Radial 1D-Profiles to be plotted (fixed Z-mesh) --
 axialprofiles = []						# Axial 1D-Profiles to be plotted (fixed R-mesh) |
@@ -199,7 +200,7 @@ sheathROI = []							# Sheath Region of Interest, (Start,End) [cells]
 sourcewidth = []						# Source Dimension at ROI, leave empty for auto. [cells]
 
 # Requested diagnostics and plotting routines.
-savefig_tecplot2D = False				# 2D Single-Variables: TECPLOT2D.PDT				< .csv File Save
+savefig_tecplot2D = True				# 2D Single-Variables: TECPLOT2D.PDT				< .csv File Save
 # ^^^
 # FAILURE TO IDENTIFY MESH EXTENT WHEN PLOTTING DIFFERENT MESH
 # SIZES IN THE SAME FOLDER, LIKELY ISSUE WITH "extent()" FUNCTION
@@ -230,7 +231,7 @@ savefig_PROES =	False					# Simulated PROES Diagnostic
 phasecycles = 1.01						# Vaveform phase cycles to be plotted. 				 [Float]
 DoFwidth = 0 							# PROES Depth of Field (symmetric about image plane) [Cells]
 
-savefig_IEDFangular = True				# 2D images of angular IEDF; single folders
+savefig_IEDFangular = False				# 2D images of angular IEDF; single folders
 savefig_IEDFtrends = False				# 1D IEDF trends; all folders
 savefig_EEDF = False					# 1D EEDF trends; all folders						< No Routine
 
@@ -274,7 +275,7 @@ image_rotate = False						# Rotate image 90 degrees to the right.
 image_plotsymmetry = True				# Plot radial symmetry - mirrors across the ISYM axis
 image_plotoverlay = False				# Plot location(s) of 1D radial/axial profiles onto 2D images
 image_plotgrid = False					# Plot major/minor gridlines on 1D profiles
-image_plotmesh = 'GEC'					# Plot material mesh outlines ('True' == Auto,'PRCCP','PRCCPM','ESCT','GEC')
+image_plotmesh = True					# Plot material mesh outlines ('True' == Auto,'PRCCP','PRCCPM','ESCT','GEC')
 image_numericaxis = False				#### NOT implemented ####
 image_plotphasewaveform = False			# Plot waveform sub-figure on phaseresolve2D images
 
@@ -600,7 +601,7 @@ if numfolders == 0:
 
 #Extract directories for all required data I/O files 
 #These directories are relative to HELENA.py directory
-icpnam = list(filter(lambda x: '.nam' in x, Dir))
+icpnam = list(filter(lambda x: 'icp.nam' in x, Dir))
 icpdat = list(filter(lambda x: 'icp.dat' in x, Dir))
 icpout = list(filter(lambda x: 'icp.out' in x, Dir))
 mesh = list(filter(lambda x: 'initmesh.out' in x, Dir))
@@ -631,7 +632,7 @@ for l in range(0,numfolders):
 		Z = Z[0].split(",")[1].strip(' \t\n\r,=ZONE J') 		#Split at commas, [1] gives "J=xxx"       
 		R_mesh.append( int(R) )									#R_mesh (Cells) [int]
 		Z_mesh.append( int(Z) )									#Z_mesh (Cells) [int]
-	
+
 	#If extraction from TECPLOT2D file fails, attempt to extract from initmesh.out header
 	#This is an old method and causes issues with Q-VT meshes and magnified meshes
 	except ValueError:
