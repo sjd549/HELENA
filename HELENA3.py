@@ -8172,63 +8172,82 @@ if savefig_phaseresolve2D == True:
 
 	#Initialize required lists.
 	VoltageWaveforms,WaveformBiases,VariedValuelist = list(),list(),list()
+	PPOT = list()
 
 	#for all folders being processed.
 	for l in range(0,numfolders):
 
 		#Create global folder to keep output plots and collect graph title.
-		Dirphaseresolved = CreateNewFolder(Dirlist[l],'2DPhase/')
+		Dirphaseresolved = CreateNewFolder(Dirlist[l],'Movie1/')
 		VariedValuelist.append( FolderNameTrimmer(Dirlist[l]) )
 
-		#Create VariableIndices for each folder as required. (Always get 'E','AR+','PPOT')
+		#Create VariableIndices for each folder as required
 		PhaseData,Phaselist,proclist,VariableStrings = ReadTEC2DPhase(folder=l,Variables=PhaseVariables)
-		SxData,SxPhase,Sxproc,Sxvar = ReadTEC2DPhase(folder=l,Variables=['E','AR+'])
-		PPOT = ReadTEC2DPhase(folder=l,Variables=['PPOT'])[2][0]
+		
+		#Preload 'E','AR+' for sheath plotting
+		if image_plotsheath in ['Radial','Axial']:
+			SxData,SxPhase,Sxproc,Sxvar = ReadTEC2DPhase(folder=l,Variables=['E','AR+'])
+		#endif
+		
+		#Preload 'PPOT' for voltage waveform plotting
+		try:
+			PPOT = ReadTEC2DPhase(folder=l,Variables=['PPOT'])[2][0]
+			PPOTexists = True
+		except:
+			print('Warning: PPOT not in movie1.pdt, skipping waveform plotting')
+			PPOTexists = False
+		#endtry
 		
 		#Generate SI scale axes for lineout plots. ([omega*t/2pi] and [cm] respectively)
 		Phaseaxis = GenerateAxis('Phase',ISYMlist[l],Phaselist)
 		Raxis = GenerateAxis('Radial',ISYMlist[l])
 		Zaxis = GenerateAxis('Axial',ISYMlist[l])
+		
+		# Define image extent for directory 'l'
+		extent, aspectratio = DataExtent(l)
 
-		#=============#
+		#=====##=====# STANDALONE WAVEFORM IMAGE #=====##=====#
 
-		#Extract waveforms from desired electrode locations.
-		for j in range(0,len(waveformlocs)):
-			VoltageWaveforms.append(WaveformExtractor(PhaseData,PPOT,waveformlocs[j])[0])
-			WaveformBiases.append(WaveformExtractor(PhaseData,PPOT,waveformlocs[j])[1])
-		#endfor
-		ElectrodeWaveform,ElectrodeBias,ElectrodeVpp = WaveformExtractor(PhaseData,PPOT)
+		if PPOTexists == True:
+			#Extract waveforms from desired electrode locations.
+			for j in range(0,len(waveformlocs)):
+				VoltageWaveforms.append(WaveformExtractor(PhaseData,PPOT,waveformlocs[j])[0])
+				WaveformBiases.append(WaveformExtractor(PhaseData,PPOT,waveformlocs[j])[1])
+			#endfor
+			ElectrodeWaveform,ElectrodeBias,ElectrodeVpp = WaveformExtractor(PhaseData,PPOT)
 
-		#Plot the phase-resolved waveform.
+			#Plot the phase-resolved waveform.
+			fig,ax = figure(image_aspectratio,1)
+
+			ax.plot(Phaseaxis,ElectrodeWaveform, lw=2)
+			for j in range(0,len(waveformlocs)): 
+				ax.plot(Phaseaxis,VoltageWaveforms[j], lw=2)
+				#ax.plot(Phaseaxis,WaveformBiases[j], 'k--', lw=2)
+			#endfor
+			#ax.plot(Phaseaxis,ElectrodeBias, 'k--', lw=2)
+
+			Title = 'Phase-Resolved Voltage Waveforms for '+FolderNameTrimmer(Dirlist[l])
+			Legend = ['Waveform Vpp: '+str(round(ElectrodeVpp[2],2))+'V']
+			Xlabel,Ylabel = 'Phase [$\omega$t/2$\pi$]','Electrode Potential [V]'
+			ImageOptions(fig,ax,Xlabel,Ylabel,Title,Legend,Crop=False)
+			ax.xaxis.set_major_locator(ticker.MultipleLocator(0.25))
+
+			plt.savefig(Dirphaseresolved+VariedValuelist[l]+' Waveform'+ext)
+			clearfigures(fig)
+
+			#Write PROES data in ASCII format if required.
+			if write_ASCII == True:
+				ASCIIWaveforms = [Phaseaxis,ElectrodeWaveform]
+				for j in range(0,len(waveformlocs)):
+					ASCIIWaveforms.append(VoltageWaveforms[j])
+				#endfor
+				DirASCIIPhase = CreateNewFolder(Dirphaseresolved,'2DPhase_Data')
+				WriteDataToFile(ASCIIWaveforms, DirASCIIPhase+'VoltageWaveforms')
+			#endif
+		#endif
 		fig,ax = figure(image_aspectratio,1)
 
-		ax.plot(Phaseaxis,ElectrodeWaveform, lw=2)
-		for j in range(0,len(waveformlocs)): 
-			ax.plot(Phaseaxis,VoltageWaveforms[j], lw=2)
-			#ax.plot(Phaseaxis,WaveformBiases[j], 'k--', lw=2)
-		#endfor
-		#ax.plot(Phaseaxis,ElectrodeBias, 'k--', lw=2)
-
-		Title = 'Phase-Resolved Voltage Waveforms for '+FolderNameTrimmer(Dirlist[l])
-		Legend = ['Waveform Vpp: '+str(round(ElectrodeVpp[2],2))+'V']
-		Xlabel,Ylabel = 'Phase [$\omega$t/2$\pi$]','Electrode Potential [V]'
-		ImageOptions(fig,ax,Xlabel,Ylabel,Title,Legend,Crop=False)
-		ax.xaxis.set_major_locator(ticker.MultipleLocator(0.25))
-
-		plt.savefig(Dirphaseresolved+VariedValuelist[l]+' Waveform'+ext)
-		clearfigures(fig)
-
-		#Write PROES data in ASCII format if required.
-		if write_ASCII == True:
-			ASCIIWaveforms = [Phaseaxis,ElectrodeWaveform]
-			for j in range(0,len(waveformlocs)):
-				ASCIIWaveforms.append(VoltageWaveforms[j])
-			#endfor
-			DirASCIIPhase = CreateNewFolder(Dirphaseresolved,'2DPhase_Data')
-			WriteDataToFile(ASCIIWaveforms, DirASCIIPhase+'VoltageWaveforms')
-		#endif
-
-		#===============#
+		#=====##=====# PHASE-RESOLVED IMAGE1.PDT VARIABLES #=====##=====#
 
 		#for all variables requested by the user.
 		for i in tqdm(range(0,len(proclist))):
@@ -8247,6 +8266,8 @@ if savefig_phaseresolve2D == True:
 
 			#Reshape specific part of 1D Data array into 2D image for plotting.
 			for j in range(0,len(Phaselist)):
+			
+				#Convert phase 'CYCL' to degrees
 				Phase = int( round(Phaseaxis[j]*360.0,3) )		#[Deg]
 
 				#Extract full 2D image for further processing.
@@ -8257,14 +8278,9 @@ if savefig_phaseresolve2D == True:
 					Ni = SxData[j][Sxproc[Sxvar.index('AR+')]]
 					Sx,SxAxis = CalcSheathExtent(folderidx=l,Phase=j,Ne=Ne,Ni=Ni)
 				#endif
-
-				#Obtain image extent and axis labels based on image symmetry and rotation.
-				Xlabel,Ylabel = 'Radial Distance R [cm]','Axial Distance Z [cm]'
-				if image_rotate == True: Xlabel,Ylabel = Ylabel,Xlabel
-				extent,aspectratio = DataExtent(l)
 				
 				#Create figure and axes, plot image on top and waveform underneath.
-				if image_plotphasewaveform == True:
+				if image_plotphasewaveform == True and PPOTexists == True:
 					fig,ax = figure(aspectratio,2)
 					ax0 = ax[0]							# Image Sub-Fig (top fig)
 					ax1 = ax[1]							# Waveform Sub-Fig (bottom fig)
@@ -8273,28 +8289,26 @@ if savefig_phaseresolve2D == True:
 					ax0 = ax							# Image Sub-Fig (top fig)
 				#endif
 
-				#Plot 2D image, applying image options and cropping as required.
+				#Plot 2D image of variable[i] at phase[j]
 				fig,ax0,im,Image = ImagePlotter2D(Image,extent,aspectratio,VariableStrings[i],fig,ax0)
-				Title = 'Phase-Resolved '+VariableStrings[i]+'\n'+str(Phaselist[j])
-#				fig.suptitle(Title, y=0.97, fontsize=18)
-				
-				#Add Colourbar
-				ImageOptions(fig,ax0,Xlabel,Ylabel,Title,Crop=True)
-				Ylabel = VariableLabelMaker(VariableStrings)
-				cax = Colourbar(ax0,Ylabel[i],image_cbarbins,Lim=CbarLimits)
-				
+
+				#=====##=====# IMAGE OVERLAYS #=====##=====#
+
 				#Plot sheath onto ax1 if requested
 				if image_plotsheath in ['Radial','Axial']:
 					PlotSheathExtent(SxAxis,Sx,ax0,ISYMlist[l],Orientation=image_plotsheath)
 				#endif
-
-				# Plot waveform onto ax2 if requested
-				if image_plotphasewaveform == True:
-					#Plot waveform and apply image options.
+				
+				# Plot waveform onto ax1 if requested
+				if image_plotphasewaveform == True and PPOTexists == True:
+				
+					#Plot phase-resolved 'PPOT' waveform at 'electrodeloc'
 					ax1.plot(Phaseaxis, ElectrodeWaveform, lw=2)
 					ax1.axvline(Phaseaxis[j], color='k', linestyle='--', lw=2)
-					Xlabel,Ylabel = 'Phase [$\omega$t/2$\pi$]','Electrode Potential [V]'
-					ImageOptions(fig,ax1,Xlabel,Ylabel,Crop=False)
+					ax1Xlabel,ax1Ylabel = 'Phase [$\omega$t/2$\pi$]','Electrode Potential [V]'
+					
+					#Apply image options
+					ImageOptions(fig,ax1,ax1Xlabel,ax1Ylabel,Crop=False)
 					ax1.xaxis.set_major_locator(ticker.MultipleLocator(0.25))
 					
 					#Add Invisible Colourbar to sync X-axis
@@ -8304,12 +8318,39 @@ if savefig_phaseresolve2D == True:
 					fig.tight_layout()
 					plt.subplots_adjust(top=0.90)
 				#endif
+
+				#=====##=====# Image Beautification #=====##=====#
+
+				# Define title, labels, etc...
+				Title = 'Phase-Resolved '+VariableStrings[i]+'\n'+str(Phaselist[j])
+				if image_rotate == True:	Xlabel,Ylabel = 'Axial Distance Z [cm]','Radial Distance R [cm]'
+				elif image_rotate == False:	Xlabel,Ylabel = 'Radial Distance R [cm]','Axial Distance Z [cm]'
+				#endif
+
+				# Add Colourbar (must happen before image cropping!)
+				Cbarlabel = VariableLabelMaker(VariableStrings)
+				cax = Colourbar(ax0,Cbarlabel[i],image_cbarbins,Lim=CbarLimits)
+
+				# Crop image dimensions to [image_radialcrop,image_axialcrop]
+				# Also resets cbar min/max to cropped region min/max
+				if any( [len(image_radialcrop),len(image_axialcrop)] ) > 0:
+					CropImage(ax0,Rotate=image_rotate)
+				#endif
 				
+				# Apply mesh geometry to image
+				ImageGeometry(fig,ax0,image_plotsymmetry)
+
+				# Apply image options, and enforce overides if requested
+				ImageOptions(fig,ax0,Xlabel,Ylabel,Title,Crop=False)
+
+
+				#=====##=====# Image I/O #=====##=====#
+			
 				#NOTE:	zfill assumes phase < 9999 degrees	(i.e. < 1e5)
 				savefig(DirMovieplots+VariableStrings[i]+'_'+str(Phase).zfill(4)+ext)
 				clearfigures(fig)
 
-
+				#=====#
 
 				# Write data underpinning current figure in .csv format
 				if Write_CSV == True:
@@ -8318,7 +8359,7 @@ if savefig_phaseresolve2D == True:
 					CSVZMesh = 'Z_Mesh [Cells] '+str(Z_mesh[l])+'  :: dZ [cm/cell] '+str(dz[l])
 					CSVFilename = VariableStrings[i]+'.csv'
 					CSVTitle = str(Dirlist[l])
-					CSVLabel = str(Ylabel)
+					CSVLabel = str(Cbarlabel)
 					CSVISYM = 'ISYM='+str(ISYMlist[l])
 					CSVRotate = 'Rotate='+str(image_rotate)
 					CSVMaxCYCL = "IMOVIE_FRAMES="+str( Phaselist[-1].strip("CYCL= ") )
@@ -8336,6 +8377,8 @@ if savefig_phaseresolve2D == True:
 					#endif
 				#endif
 
+				#=====#
+
 				#Write Phase data in ASCII format
 				if write_ASCII == True:
 					DirASCIIPhase = CreateNewFolder(DirMovieplots,'2DPhase_Data')
@@ -8345,6 +8388,8 @@ if savefig_phaseresolve2D == True:
 					WriteDataToFile(Image, SaveString)
 				#endif
 			#endfor
+
+			#=====#
 
 			#Create .mp4 movie from completed images.
 			Prefix = FolderNameTrimmer(Dirlist[l])
