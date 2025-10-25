@@ -152,7 +152,7 @@ PhysCoilsBF = \
 Conv = ['E','TE','PPOT','POW-RF','SIGMA','EF-TOT','TG-AVE']
 
 Ar = ['AR3S','AR4SM','AR4SR','AR4SPM','AR4SPR','AR4P','AR4D','AR','AR+','AR2+','AR2*','S-AR+','S-AR4P','SEB-AR+','SEB-AR4P','FZ-AR3S','FR-AR3S','FR-AR+','FZ-AR+','FZ-AR3S','FR-AR3S']
-O2 = ['O3','O2','O2V','O2*','O2*1S','O2+','O','O1S','O+','O-','O*','S-O3','S-O2+','S-O+','S-O-','SEB-O3','SEB-O+','SEB-O2+','SEB-O-','FR-O+','FZ-O+','FR-O-','FZ-O-']
+O2 = ['O3','O2','O2V','O2*','O2*1S','O2+','O2-','O','O1S','O+','O-','O*','S-O3','S-O2+','S-O+','S-O-','SEB-O3','SEB-O+','SEB-O2+','SEB-O-','FR-O+','FZ-O+','FR-O-','FZ-O-']
 H2 = ['H2V0','H2V1','H2V2','H2V3','H1','H*','H**','H2+','H+','H-','S-H+','SEB-H+','S-2H+','SEB-2H+','S-H-','SEB-H-','FZ-H2V0','FR-H2V0','FZ-H1','FR-H1','FZ-H+','FR-H+','FZ-H2+','FR-H2+','FZ-H-','FR-H-']
 N2 = ['N2','N2V','N2*','N2**','N2+','N','N*','N+']
 Cl = ['Cl2','Cl','CL+','CL-','Cl2V','Cl2+','CL*','CL**','CL***']
@@ -189,9 +189,9 @@ electrodeloc = [0,0]					# Cell location of powered electrode [R,Z].
 waveformlocs = []						# Cell locations of additional waveforms [R,Z].
 
 # Requested variables and plotting locations.
-Variables = ['E'] #Phys+Ar+Be+O2				# Requested Variables from Tecplot2D.pdt, tecplot_kin.pdt, and movie_icp.pdt 
+Variables = Phys+Ar+O2+Be+Al				# Requested Variables from Tecplot2D.pdt, tecplot_kin.pdt, and movie_icp.pdt 
 multivar = []							# Additional variables plotted ontop of [Variables]
-radialprofiles = []						# Radial 1D-Profiles to be plotted (fixed Z-mesh) --
+radialprofiles = []					# Radial 1D-Profiles to be plotted (fixed Z-mesh) --
 axialprofiles = []						# Axial 1D-Profiles to be plotted (fixed R-mesh) |
 probeloc = []							# Cell location For Trend Analysis [R,Z], (leave empty for global min/max)
 
@@ -201,9 +201,6 @@ sourcewidth = []						# Source Dimension at ROI, leave empty for auto. [cells]
 
 # Requested diagnostics and plotting routines.
 savefig_tecplot2D = True				# 2D Single-Variables: TECPLOT2D.PDT				< .csv File Save
-# ^^^
-# FAILURE TO IDENTIFY MESH EXTENT WHEN PLOTTING DIFFERENT MESH
-# SIZES IN THE SAME FOLDER, LIKELY ISSUE WITH "extent()" FUNCTION
 
 savefig_movieicp2D = False				# 2D Variables against space-axis:	movie_icp.pdt	< MAXITER SHOULD BE AN ARRAY
 savefig_movieicp1D = False				# 1D Variables against space-axis:	movie_icp.pdt	< MAXITER SHOULD BE AN ARRAY
@@ -231,7 +228,7 @@ savefig_PROES =	False					# Simulated PROES Diagnostic
 phasecycles = 1.01						# Vaveform phase cycles to be plotted. 				 [Float]
 DoFwidth = 0 							# PROES Depth of Field (symmetric about image plane) [Cells]
 
-savefig_IEDFangular = False				# 2D images of angular IEDF; single folders
+savefig_IEDFangular = False				# 2D images of angular IEDF; single folders			< .csv File Save
 savefig_IEDFtrends = False				# 1D IEDF trends; all folders
 savefig_EEDF = False					# 1D EEDF trends; all folders						< No Routine
 
@@ -272,7 +269,7 @@ image_normalise = False					# Plot Data normlised to maximum value within 2D ima
 image_logplot = False					# Plot log10(Data) for both 1D and 2D profiles
 
 image_rotate = False						# Rotate image 90 degrees to the right.
-image_plotsymmetry = True				# Plot radial symmetry - mirrors across the ISYM axis
+image_plotsymmetry = False				# Plot radial symmetry - mirrors across the ISYM axis
 image_plotoverlay = False				# Plot location(s) of 1D radial/axial profiles onto 2D images
 image_plotgrid = False					# Plot major/minor gridlines on 1D profiles
 image_plotmesh = True					# Plot material mesh outlines ('True' == Auto,'PRCCP','PRCCPM','ESCT','GEC')
@@ -499,7 +496,7 @@ Header_IEDF = list()			# IEDF Header Strings									-[FolderIdx,[Header Array]]
 					#WELCOME SPLASH AND INFORMATION#
 #====================================================================#
 
-print( '')
+print( '' )
 print( '--------------------------------------------------------------------')
 print( '    __    __   _______  __       _______  __   __      ___          ')
 print( '   |  |  |  | |   ____||  |     |   ____||  \ |  |    /   \         ')
@@ -509,27 +506,27 @@ print( '   |  |  |  | |  |____ |  `----.|  |____ |  |\   | /  _____  \      ')
 print( '   |__|  |__| |_______||_______||_______||__| \__|/__/     \__\     ')
 print( '                                                              v3.1.4')
 print( '--------------------------------------------------------------------')
-print( '')
+print( '' )
 print( 'The following diagnostics were requested:')
 print( '-----------------------------------------')
-if savefig_tecplot2D == True:
-	print('# 2D Steady-State Image Processing')
-if True in [savefig_movieicp2D,savefig_convergence]:
-	print('# 2D Time-Resolved Image Processing')
-if True in [savefig_phaseresolve2D,savefig_PROES]:
-	print('# 2D Phase-Resolved Movie Processing')
-if True in [savefig_phaseresolve1D]:
-	print('# 1D Phase-Resolved Profile Processing')
-if True in [savefig_monoprofiles,savefig_multiprofiles,savefig_compareprofiles,savefig_timeaxis1D]:
-	print('# 1D Steady-State Profile Processing')
-if True in [print_generaltrends,print_Knudsennumber,print_Reynolds, print_totalpower,print_DCbias,print_thrust]:
-	print('# 1D Specific Trend Analysis')
-if savefig_trendphaseaveraged == True:
-	print('# 1D Steady-State Trend Processing')
-if savefig_sheathdynamics == True:
-	print('# 1D Phase-Resolved Trend Processing')
-if True in [savefig_IEDFangular,savefig_IEDFtrends,savefig_EEDF]:
-	print('# Angular Energy Distribution Processing')
+if True in [savefig_tecplot2D]:
+	print('# Plot 2D TECPLOT2D.PDT images')
+if True in [savefig_monoprofiles, savefig_multiprofiles, savefig_compareprofiles]:
+	print('# Plot 1D TECPLOT2D.PDT images')
+if True in [savefig_movieicp2D]:
+	print('# Plot 2D movieicp.pdt images')
+if True in [savefig_movieicp1D, savefig_convergence, savefig_timeaxis1D]:
+	print('# Plot 1D movieicp.pdt images')
+if True in [savefig_phaseresolve2D, savefig_PROES]:
+	print('# Plot 2D movie1.pdt images')
+if True in [savefig_phaseresolve1D, savefig_sheathdynamics]:
+	print('# Plot 1D movie1.pdt images')
+if True in [savefig_IEDFangular, savefig_IEDFtrends, savefig_EEDF]:
+	print('# Plot PCMC distribution functions')
+if True in [savefig_trendphaseaveraged, print_generaltrends, print_Knudsennumber, print_Reynolds, print_totalpower, print_DCbias, print_thrust]:
+	print('# Plot Trends Between Folders')
+#endif
+
 print( '-----------------------------------------')
 print( '')
 
@@ -5338,23 +5335,23 @@ if savefig_tecplot2D == True:
 		# Create VariableIndices for each folder as required.
 		VariableIndices,VariableStrings = EnumerateVariables(Variables,Header_TEC2D[l])
 
-		# Define image extent
+		# Define image extent for directory 'l'
 		extent, aspectratio = DataExtent(l)
 
 		# Reshape specific part of 1D Data array into 2D image for plotting.
-		for k in tqdm(range(0,len(VariableIndices))):
+		for i in tqdm(range(0,len(VariableIndices))):
 
 			# Extract 2D image from TECPLOT2D "Data" for folder "l"
-			Image = ImageExtractor2D(Data[l][VariableIndices[k]],VariableStrings[k])
+			Image = ImageExtractor2D(Data[l][VariableIndices[i]],VariableStrings[i])
 			
 			# Create figure and plot TECPLOT2D image
 			fig,ax = figure(aspectratio)
-			fig,ax,im,Image = ImagePlotter2D(Image,extent,aspectratio,VariableStrings[k],fig=fig,ax=ax)
+			fig,ax,im,Image = ImagePlotter2D(Image,extent,aspectratio,VariableStrings[i],fig=fig,ax=ax)
 
 			#=====##=====# IMAGE OVERLAYS #=====##=====#
 
 			# Overlay vector streamplot if exists
-			Radial,Axial = EnumerateVectors(VariableStrings[k],Header_TEC2D[l])
+			Radial,Axial = EnumerateVectors(VariableStrings[i],Header_TEC2D[l])
 			
 			# Confirm Variable[k] has both vector counterparts (e.g. FR-AR3S, FZ-AR3S)
 			VectorVariablesExist = True
@@ -5375,7 +5372,7 @@ if savefig_tecplot2D == True:
 
 					# Streamplot fails if provided "zeros", inform user and skip to next variable
 					try:	ax.streamplot(R, Z, UR, UZ, color=VectorLength, cmap='viridis', density=1.5, linewidth=1)
-					except:	print('Warning: Invalid streamplot for variable: '+VariableStrings[k])
+					except:	print('Warning: Invalid streamplot for variable: '+VariableStrings[i])
 					#endtry
 				#endif
 			#endif
@@ -5409,14 +5406,14 @@ if savefig_tecplot2D == True:
 			#=====##=====# Image Beautification #=====##=====#
 
 			# Define title, labels, etc...
-			Title = '2D Steady State Plot of '+VariableStrings[k]+' for \n'+Dirlist[l][2:-1]
+			Title = '2D Steady State Plot of '+VariableStrings[i]+' for \n'+Dirlist[l][2:-1]
 			if image_rotate == True:	Xlabel,Ylabel = 'Axial Distance Z [cm]','Radial Distance R [cm]'
 			elif image_rotate == False:	Xlabel,Ylabel = 'Radial Distance R [cm]','Axial Distance Z [cm]'
 			#endif
 
 			# Add Colourbar (must happen before image cropping!)
 			cbarlabel = VariableLabelMaker(VariableStrings)
-			cax = Colourbar(ax,cbarlabel[k],image_cbarbins,Lim=CbarMinMax(ax,Image))
+			cax = Colourbar(ax,cbarlabel[i],image_cbarbins,Lim=CbarMinMax(ax,Image))
 
 			# Crop image dimensions to [image_radialcrop,image_axialcrop]
 			# Also resets cbar min/max to cropped region min/max
@@ -5434,7 +5431,7 @@ if savefig_tecplot2D == True:
 			#=====##=====# Image I/O #=====##=====#
 
 			# Save Figure
-			plt.savefig(Dir2Dplots+'2DPlot_'+VariableStrings[k]+ext)
+			plt.savefig(Dir2Dplots+'2DPlot_'+VariableStrings[i]+ext)
 			clearfigures(fig)
 
 			#=====#
@@ -5444,9 +5441,9 @@ if savefig_tecplot2D == True:
 				CSVDir = CreateNewFolder(Dir2Dplots, '2DPlots_Data')
 				CSVRMesh = 'R_Mesh [Cells] '+str(R_mesh[l])+'  :: dR [cm/cell] '+str(dr[l])
 				CSVZMesh = 'Z_Mesh [Cells] '+str(Z_mesh[l])+'  :: dZ [cm/cell] '+str(dz[l])
-				CSVFilename = VariableStrings[k]+'.csv'
+				CSVFilename = VariableStrings[i]+'.csv'
 				CSVTitle = str(Dirlist[l])
-				CSVLabel = str(cbarlabel[k])
+				CSVLabel = str(cbarlabel[i])
 				CSVISYM = 'ISYM='+str(ISYMlist[l])
 				CSVRotate = 'Rotate='+str(image_rotate)
 				CSVHeader = [CSVTitle,CSVLabel,CSVISYM,CSVRotate,CSVRMesh,CSVZMesh]
@@ -5455,7 +5452,7 @@ if savefig_tecplot2D == True:
 				WriteToCSV(Image, CSVDir, CSVFilename, CSVHeader)
 				
 				# Write Sheath Data separately as it is not included in the VariableList format
-				if image_plotsheath in ['Radial','Axial'] and k == len(VariableIndices)-1:
+				if image_plotsheath in ['Radial','Axial'] and i == len(VariableIndices)-1:
 					np.savetxt(CSVFilename, [p for p in zip(SxAxis,Sx)], delimiter=',', fmt='%s')
 					WriteDataToFile(Sx, CSVDir+'Sx.csv')
 				#endif
@@ -5466,8 +5463,8 @@ if savefig_tecplot2D == True:
 			# Write data to ASCII files [OUTDATED FORMAT, TO BE REMOVED]
 			if write_ASCII == True:
 				DirWrite = CreateNewFolder(Dir2Dplots, '2DPlots_Data')
-				WriteDataToFile(Image, DirWrite+VariableStrings[k])
-				if image_plotsheath in ['Radial','Axial'] and k == len(VariableIndices)-1: 
+				WriteDataToFile(Image, DirWrite+VariableStrings[i])
+				if image_plotsheath in ['Radial','Axial'] and i == len(VariableIndices)-1: 
 					WriteDataToFile(Sx, DirWrite+'Sx-EXT')
 				#endif
 			#endif
@@ -5498,6 +5495,9 @@ if savefig_movieicp2D == True:
 		#Enumerate variable strings in the order they appear in movie_icp.pdt
 		VariableIndices,VariableStrings = EnumerateVariables(Variables,Header_movieicp[l])
 
+		# Define image extent for directory 'l'
+		extent, aspectratio = DataExtent(l)
+
 		#Extract saved iteration strings and create list for mean convergence trends
 		IterArray,IterAxis = list(),list()
 		for i in range(0,len(MovieIterlist[l])):
@@ -5526,34 +5526,57 @@ if savefig_movieicp2D == True:
 			
 			#Reshape specific part of 1D Data array into 2D image for plotting.
 			for k in range(0,len(MovieIterlist[l]),iterstep):
-				#Extract full 2D image for further processing.
+			
+				# Extract full 2D image for further processing.
 				Image = ImageExtractor2D(IterMovieData[l][k][VariableIndices[i]],VariableStrings[i])
-				Sx,SxAxis = CalcSheathExtent(folderidx=l)				#RM: CURRENTLY USES TECPLOT2D DATA
+				Sx,SxAxis = CalcSheathExtent(folderidx=l)				
 
-				#Generate and rotate figure as requested.
-				extent,aspectratio = DataExtent(l)
-				fig,ax,im,Image = ImagePlotter2D(Image,extent,aspectratio,VariableStrings[i])
+				# Create figure and plot movie.icp image at iteration 'MovieIterlist[l][k]'
+				fig,ax = figure(aspectratio)
+				fig,ax,im,Image = ImagePlotter2D(Image,extent,aspectratio,VariableStrings[i],fig=fig,ax=ax)
+				
+				#=====##=====# IMAGE OVERLAYS #=====##=====#			
+				
+				# Compute sheath extent and overlay onto figure if requested
+				# # RM SJD: CURRENTLY USES TECPLOT2D DATA # # # # # # # # # # # # # # # # # # # # RM SJD
+				Sx,SxAxis = CalcSheathExtent(folderidx=l,Orientation=image_plotsheath)		
 				if image_plotsheath in ['Radial','Axial']:
 					PlotSheathExtent(SxAxis,Sx,ax,ISYMlist[l],Orientation=image_plotsheath)
 				#endif
-				
-				#Define image axis labels.
-				if image_rotate == True:
-					Xlabel,Ylabel = 'Axial Distance Z [cm]','Radial Distance R [cm]'
-				elif image_rotate == False:
-					Xlabel,Ylabel = 'Radial Distance R [cm]','Axial Distance Z [cm]'
+
+				#=====##=====# Image Beautification #=====##=====#
+
+				# Define title, labels, etc...
+				Title = str(MovieIterlist[l][k])
+				if image_rotate == True:	Xlabel,Ylabel = 'Axial Distance Z [cm]','Radial Distance R [cm]'
+				elif image_rotate == False:	Xlabel,Ylabel = 'Radial Distance R [cm]','Axial Distance Z [cm]'
 				#endif
 
-				#Add title, legends, Colourbar, etc...
-				Title = str(MovieIterlist[l][k])
+				# Add Colourbar (must happen before image cropping!)
 				cbarlabel = VariableLabelMaker(VariableStrings)
 				cax = Colourbar(ax,cbarlabel[i],image_cbarbins,Lim=CbarMinMax(ax,Image))
-				ImageOptions(fig,ax,Xlabel,Ylabel,Title)
+
+				# Crop image dimensions to [image_radialcrop,image_axialcrop]
+				# Also resets cbar min/max to cropped region min/max
+				if any( [len(image_radialcrop),len(image_axialcrop)] ) > 0:
+					CropImage(ax,Rotate=image_rotate)
+				#endif
+				
+				# Apply mesh geometry to image
+				ImageGeometry(fig,ax,image_plotsymmetry)
+
+				# Apply image options, and enforce overides if requested
+				ImageOptions(fig,ax,Xlabel,Ylabel,Title,Crop=False)
+
+
+				#=====##=====# Image I/O #=====##=====#
 
 				#Save to seperate folders inside simulation folder.
 				#N.B. zfill(4) Asumes Iter never exceeds 999 (i.e. max(IterArray) < 1e5)
 				savefig(DirMoviePlots+VariableStrings[i]+'_'+str(IterArray[k]).zfill(4)+ext)
 				clearfigures(fig)
+
+				#=====#
 
 				#Write data to ASCII files if requested.
 				if write_ASCII == True:
@@ -5565,6 +5588,8 @@ if savefig_movieicp2D == True:
 					#endif
 				#endif
 			#endfor
+			
+			#=====#
 
 			#Create .mp4 movie from completed images.
 			Prefix = FolderNameTrimmer(Dirlist[l])
