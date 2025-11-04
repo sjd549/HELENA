@@ -3094,6 +3094,34 @@ print('----------------------')
 print('Beginning Data Readin:')
 print('----------------------')
 
+#Retrieve mesh geometry for plotting if requested.
+if image_plotmesh == True:
+
+	# Create mesh data arrays
+	MeshCoordinates = list()
+	MeshConnections = list()
+
+	# Geometry Name String :: Assume TECPLOT2D.PDT always exists
+	NameString = "TECPLOT2D"
+	
+	# Extract geometry from supplied namestring
+	DataFileDir = filter(lambda x: NameString in x, Dir)
+	DataFileDir = sorted(DataFileDir)
+	GeomFileDir = DataFileDir[l].rsplit('/',1)[0] + "/meshnodes.dat"
+	
+	# Save mesh coordinates for each folder sequentially
+	# MeshCoordinates[Folder][Nodes [R1,Z2], [R2,Z2], ...]
+	for l in range (0,numfolders):
+		MeshCoord,MeshConn = ReadGeometry(DataFileDir[l],GeomFileDir)
+	
+		MeshCoordinates.append(MeshCoord)
+		MeshConnections.append(MeshConn)
+	#endfor
+#endif
+
+#===================##===================#
+#===================##===================#
+
 #Extraction and organization of data from .PDT files.
 for l in tqdm(range(0,numfolders)):
 
@@ -3125,35 +3153,6 @@ for l in tqdm(range(0,numfolders)):
 	#Save all variables for folder[l] to Data.
 	#Data is now 3D array of form [folder,variable,datapoint(R,Z)]
 	Data.append(CurrentFolderData)
-
-#===================##===================#
-#===================##===================#
-
-	#Retrieve mesh geometry for plotting if requested.
-	if image_plotmesh == True:
-	
-		# Create mesh data arrays
-		MeshCoordinates = list()
-		MeshConnections = list()
-
-		# Geometry Name String :: Assume TECPLOT2D.PDT always exists
-		NameString = "TECPLOT2D"
-		
-		# Extract geometry from supplied namestring
-		DataFileDir = filter(lambda x: NameString in x, Dir)
-		DataFileDir = sorted(DataFileDir)
-		GeomFileDir = DataFileDir[l].rsplit('/',1)[0] + "/meshnodes.dat"
-		
-		# Save mesh coordinates for each folder sequentially
-		# MeshCoordinates[Folder][Nodes [R1,Z2], [R2,Z2], ...]
-		for l in range (0,numfolders):
-			MeshCoord,MeshConn = ReadGeometry(DataFileDir[l],GeomFileDir)
-		
-			MeshCoordinates.append(MeshCoord)
-			MeshConnections.append(MeshConn)
-		#endfor
-	#endif
-#endfor
 
 #===================##===================#
 #===================##===================#
