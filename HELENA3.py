@@ -2504,6 +2504,36 @@ def PlotGeometry(ax,MeshCoordinates,MeshConnections,image_plotsymmetry,LabelNode
 		Radius1, Height1 = Coords[i]
 		Radius2, Height2 = Coords[j]
 		
+		# Determine if line to be plotted is on symmetry axis
+		# If so, 'break' and skip to next 'n' to avoid plotting line at symmetry axis
+		if image_plotsymmetry == True:
+		
+			# Get max height from current directory [l]
+			Height_Max = round( dz[l]*(Z_mesh[l]-1),2)
+			
+			# Check if coordinate one is at the origin
+			if Radius1 == 0.0 and round(Height1,1) == 0.0:
+				# Check if either corresponding height coordinates are at maximum height
+				if abs(Height_Max - Height1) <= dz[l] or abs(Height_Max - Height2) <= dz[l]:
+					# If both are true, line is on symmetry axis
+					# Skip current line plotting
+					break
+				#endif
+			#endif
+
+			# Check if coordinate two is at the origin
+			if Radius2 == 0.0 and round(Height2,1) == 0.0:
+				# Check if either corresponding height coordinates are at maximum height
+				if abs(Height_Max - Height1) <= dz[l] or abs(Height_Max - Height2) <= dz[l]:
+					# If both are true, line is on symmetry axis
+					# Skip current line plotting
+					break
+				#endif
+			#endif
+		#endif
+		
+		#=====#=====#
+		
 		# Only works if rotating 90 to the right
 		if image_rotate == True and image_plotsymmetry == True:
 			Radius1,Height1 = Height1,Radius1
