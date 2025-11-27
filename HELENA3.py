@@ -1047,6 +1047,30 @@ def EnumerateVectors(Variable, Header, Prefixes=['FR','FZ']):
 
 	#=====#=====#
 
+	if Variable in ['FR-E','FZ-E']:
+	
+		# Prefixes are the explicit vector quantities relating to "Variable"
+		Vectors = ['FR-E','FZ-E']
+		RadialWanted = [f"{Vectors[0]}"]
+		AxialWanted = [f"{Vectors[1]}"]
+
+		# Match vector variable names
+		RadialMatch = next((w for w in RadialWanted if w in HeaderIndex), None)
+		AxialMatch = next((w for w in AxialWanted if w in HeaderIndex), None)
+
+		# Index vector variable names
+		RadialIndex = HeaderIndex[RadialMatch]
+		AxialIndex = HeaderIndex[AxialMatch]
+		
+		# Return vector variable names and indices
+		Radial = [RadialMatch, RadialIndex]
+		Axial = [AxialMatch, AxialIndex]
+
+		return(Radial,Axial)
+	#endif
+
+	#=====#=====#
+
 	if Variable in ['EF-TOT','EAMB-R','EAMB-Z']:
 	
 		Vectors = ['EAMB-R','EAMB-Z']
@@ -8322,12 +8346,43 @@ if savefig_phaseresolve2D == True:
 				fig,ax0,im,Image = ImagePlotter2D(Image,extent,aspectratio,VariableStrings[i],fig,ax0)
 
 				#=====##=====# IMAGE OVERLAYS #=====##=====#
+				
+				# Overlay vector streamplot if exists
+				Radial,Axial = EnumerateVectors(VariableStrings[i],Header_movie1[l])
+				
+				# Confirm Variable[k] has both vector counterparts (e.g. FR-AR3S, FZ-AR3S)
+				VectorVariablesExist = True
+				if None in Radial or None in Axial: VectorVariablesExist = False
 
+				# Overlay variable[k]'s vector components onto 2D flood plot
+				if image_plotvector == True and VectorVariablesExist == True:
+
+						# Create meshgrid
+						R_Space = np.linspace(0,Radius[l],R_mesh[l])
+						Z_Space = np.linspace(0,Height[l],Z_mesh[l])
+						R, Z = np.meshgrid(R_Space, Z_Space)
+						
+						# See definition of "Radial" and "Axial" above
+						UR = ImageExtractor2D(PhaseData[j][Radial[1]],Radial[0])  	# radial velocities
+						UZ = ImageExtractor2D(PhaseData[j][Axial[1]] ,Axial[0] )  	# axial velocities
+						VectorLength = np.sqrt(UR**2 + UZ**2)
+
+						# Streamplot fails if provided "zeros", inform user and skip to next variable
+						try:	ax.streamplot(R, Z, UR, UZ, color=VectorLength, cmap='viridis', density=1.5, linewidth=1)
+						except:	print('Warning: Invalid streamplot for variable: '+VariableStrings[i])
+						#endtry
+					#endif
+				#endif
+
+				#=====#
+				
 				#Plot sheath onto ax1 if requested
 				if image_plotsheath in ['Radial','Axial']:
 					PlotSheathExtent(SxAxis,Sx,ax0,ISYMlist[l],Orientation=image_plotsheath)
 				#endif
-				
+
+				#=====#
+
 				# Plot waveform onto ax1 if requested
 				if image_plotphasewaveform == True and PPOTexists == True:
 				
