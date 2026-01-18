@@ -5626,14 +5626,40 @@ if savefig_movieicp2D == True:
 
 				#Save to seperate folders inside simulation folder.
 				#N.B. zfill(4) Asumes Iter never exceeds 999 (i.e. max(IterArray) < 1e5)
-				savefig(DirMoviePlots+VariableStrings[i]+'_'+str(IterArray[k]).zfill(4)+ext)
+				IterString = str(IterArray[k]).zfill(4)
+				savefig(DirMoviePlots+VariableStrings[i]+'_'+IterString+ext)
 				clearfigures(fig)
 
+				#=====#
+				
+				# Write data underpinning current figure in .csv format
+				if Write_CSV == True:
+					CSVDir = CreateNewFolder(DirMoviePlots, '2DPlots_Data')
+					CSVRMesh = 'R_Mesh [Cells] '+str(R_mesh[l])+'  :: dR [cm/cell] '+str(dr[l])
+					CSVZMesh = 'Z_Mesh [Cells] '+str(Z_mesh[l])+'  :: dZ [cm/cell] '+str(dz[l])
+					CSVCurITER = str( MovieIterlist[l][k].replace(" ", "") )
+					CSVFilename = VariableStrings[i]+'_'+IterString+'.csv'
+					CSVTitle = str(Dirlist[l])
+					CSVLabel = str(cbarlabel[i])
+					CSVISYM = 'ISYM='+str(ISYMlist[l])
+					CSVRotate = 'Rotate='+str(image_rotate)
+
+					# Write 2D data to CSV file for current variable [i] at current iteration [k]
+					CSVHeader = [CSVTitle,CSVLabel,CSVCurITER,CSVISYM,CSVRotate,CSVRMesh,CSVZMesh]
+					WriteToCSV(Image, CSVDir, CSVFilename, CSVHeader, Mode='w')
+					
+					# Write Sheath Data separately as it is not included in the VariableList format
+					if image_plotsheath in ['Radial','Axial'] and i == len(VariableIndices)-1:
+						np.savetxt(CSVFilename, [p for p in zip(SxAxis,Sx)], delimiter=',', fmt='%s')
+						WriteDataToFile(Sx, CSVDir+'Sx.csv')
+					#endif
+				#endif
+				
 				#=====#
 
 				#Write data to ASCII files if requested.
 				if write_ASCII == True:
-					DirWrite = CreateNewFolder(DirMovieicp, '2Diterplots_Data')
+					DirWrite = CreateNewFolder(DirMovieicp, '2DPlots_Data')
 					DirWriteVar = CreateNewFolder(DirWrite, VariableStrings[i]+'_Data')
 					WriteDataToFile(Image, DirWriteVar+VariableStrings[i]+'_'+str(IterArray[k]).zfill(4))
 					if image_plotsheath in ['Radial','Axial'] and k == len(VariableIndices)-1: 
@@ -5658,7 +5684,42 @@ if savefig_movieicp2D == True:
 #=====================================================================#
 #=====================================================================#
 
+'''			# !!! WRITE 2D DATA INTO ONE LARGE CONCATENATED DATA FILE !!! #
 
+				# Write data underpinning current figure in .csv format
+				if Write_CSV == True:
+					CSVDir = CreateNewFolder(DirMovieicp, '2DPlots_Data')
+					CSVRMesh = 'R_Mesh [Cells] '+str(R_mesh[l])+'  :: dR [cm/cell] '+str(dr[l])
+					CSVZMesh = 'Z_Mesh [Cells] '+str(Z_mesh[l])+'  :: dZ [cm/cell] '+str(dz[l])
+					CSVFilename = VariableStrings[i]+'.csv'
+					CSVTitle = str(Dirlist[l])
+					CSVLabel = str(cbarlabel[i])
+					CSVISYM = 'ISYM='+str(ISYMlist[l])
+					CSVRotate = 'Rotate='+str(image_rotate)
+					CSVMaxITER = "IMOVIE_FRAMES="+str( MovieIterlist[l][-1].strip("ITER= ") )
+					CSVCurITER = str( MovieIterlist[l][k].replace(" ", "") )
+					
+					print(CSVMaxCYCL)
+					print(CSVCurCYCL)
+					
+					# Write to .csv file, including full header on first CYCLE
+					if k == 0:
+						CSVHeader = [CSVTitle,CSVLabel,CSVMaxITER,CSVISYM,CSVRotate,CSVRMesh,CSVZMesh]
+						WriteToCSV(Image, CSVDir, CSVFilename, CSVHeader, Mode='w')
+
+					# Write to .csv file, including only CYCL number for all remaining CYCLEs
+					elif k > 0:
+						CSVHeader = [CSVCurITER]
+						WriteToCSV(Image, CSVDir, CSVFilename, CSVHeader, Mode='a')
+					#endif
+					
+					# Write Sheath Data separately as it is not included in the VariableList format
+					if image_plotsheath in ['Radial','Axial'] and i == len(VariableIndices)-1:
+						np.savetxt(CSVFilename, [p for p in zip(SxAxis,Sx)], delimiter=',', fmt='%s')
+						WriteDataToFile(Sx, CSVDir+'Sx.csv')
+					#endif
+				#endif
+'''
 
 
 
@@ -6149,10 +6210,10 @@ if savefig_multiprofiles == True:
 #Plot 1D profile of requested Variables at desired locations
 if savefig_movieicp1D == True:
 
-	#Create new diagnostic output folder and initiate required lists.
-	DirTemporal = CreateNewFolder(Dirlist[l],'Movieicp/')
-
 	for l in range(0,numfolders):
+	
+		#Create new diagnostic output folder and initiate required lists.
+		DirTemporal = CreateNewFolder(Dirlist[l],'Movieicp/')
 
 		#Enumerate variable strings in the order they appear in movie_icp.pdt
 		VariableIndices,VariableStrings = EnumerateVariables(Variables,Header_movieicp[l])
