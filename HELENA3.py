@@ -200,11 +200,11 @@ sheathROI = []							# Sheath Region of Interest, (Start,End) [cells]
 sourcewidth = []						# Source Dimension at ROI, leave empty for auto. [cells]
 
 # Requested diagnostics and plotting routines.
-savefig_tecplot2D = True				# 2D Single-Variables: TECPLOT2D.PDT				< .csv File Save
+savefig_tecplot2D = False				# 2D Single-Variables: TECPLOT2D.PDT				< .csv File Save
 
 savefig_movieicp2D = False				# 2D Variables against space-axis:	movie_icp.pdt	< MAXITER SHOULD BE AN ARRAY
 savefig_movieicp1D = False				# 1D Variables against space-axis:	movie_icp.pdt	< MAXITER SHOULD BE AN ARRAY
-savefig_timeaxis1D = False				# 1D Variables against time-axis:	movie_icp.pdt
+savefig_timeaxis1D = True				# 1D Variables against time-axis:	movie_icp.pdt
 savefig_convergence = False				# 1D variables against ITER-axis:	movie_icp.pdt
 iterstep = 1							# movie_icp.pdt iteration step size
 
@@ -1309,7 +1309,7 @@ def VariableUnitConversion(profile,variable):
 	#endif
 
 	#For ionisation rates, convert from [cm3 s-1] to [m3 s-1]
-	if IsStringInVariable(variable,['S-','SEB-']) == True:
+	if IsStringInVariable(variable,['S-','SEB-','SRCE-']) == True:
 		for i in range(0,len(profile)):
 			if Units == 'SI': 		profile[i] = profile[i]*1.E6			#[m3 s-1]
 			elif Units == 'CGS': 	profile[i] = profile[i]					#[cm3 s-1]
@@ -1766,7 +1766,15 @@ def WriteToCSV(Data, Directory, Filename, Header=[], Mode='w'):
 		
 		# Append CSV formatted data after header
 		writer = csv.writer(file)
-		writer.writerows(Data)
+		# Write 1D array as a single row
+		if np.ndim(Data) == 1:
+			writer.writerow(Data)	
+		# Write 2D array [i,j] as: 'i rows of j length each'
+		elif np.ndim(Data) == 2:
+			writer.writerows(Data)
+		else:
+			raise ValueError("Data must be 1D or 2D")
+		#endif
 	#endwith
 	
 	return()
@@ -6389,23 +6397,23 @@ if savefig_movieicp1D == True:
 #			  #ITERMOVIE TRENDS - TEMPORAL ANALYSIS#
 ##====================================================================#
 
-#Plot 1D profile of requested Variables at desired locations
+# Plot 1D profile of requested Variables at desired locations
 if savefig_timeaxis1D == True:
 
-	#Create new diagnostic output folder and initiate required lists.
-	DirTemporal = CreateNewFolder(Dirlist[l],'Movieicp/')
-
-	#for all folders being processed.
+	# for all folders being processed.
 	for l in range(0,numfolders):
+	
+		# Create new diagnostic output folder and initiate required lists.
+		DirTemporal = CreateNewFolder(Dirlist[l],'Movieicp/')
 
-		#Create new folder and initiate required lists.
+		# Create new folder and initiate required lists.
 		TemporalTrends,Xaxis = list(),list()
 		DirMeshAve = CreateNewFolder(DirTemporal,'1DTimeAxis_Profiles/')
 
-		#Enumerate variable strings in the order they appear in movie_icp.pdt
+		# Enumerate variable strings in the order they appear in movie_icp.pdt
 		VariableIndices,VariableStrings = EnumerateVariables(Variables,Header_movieicp[l])
 
-		#Create list and x-axis for convergence trend plotting.
+		# Create list and x-axis for convergence trend plotting.
 		for i in range(0,len(MovieIterlist[l])):
 			IterDigits = list(filter(lambda x: x.isdigit(), MovieIterlist[l][i]))
 			IterDigits = float(''.join(IterDigits))
@@ -6413,33 +6421,62 @@ if savefig_timeaxis1D == True:
 			Xaxis.append(IterTime)
 		#endfor
 
-		#for all variables requested by the user.
+		# for all variables requested by the user.
 		for i in tqdm(range(0,len(VariableIndices))):
 
-			#Extract 2D image and take mesh averaged value for iteration trend.
+			# Extract 2D image and take mesh averaged value for iteration trend.
 			TemporalProfile = list()
 			for k in range(0,len(MovieIterlist[l])):
 				Image = ImageExtractor2D(IterMovieData[l][k][VariableIndices[i]],VariableStrings[i])
+				
 				# RM: DEFAULT TEMPORAL PROFILE REPRESENTS THE MESH AVERAGED VALUE
 				TemporalProfile.append( sum(Image.flatten())/len(Image.flatten()) )
 			#endfor
+			 
+			# TemporalTrends contains all variable trends in "VariableIndices" order
 			TemporalTrends.append(TemporalProfile)
 
-			#Plot each variable against simulation real-time.
+			# Plot each variable against simulation real-time.
 			fig, ax = plt.subplots(1, figsize=(10,10))
 			ax.plot(Xaxis,TemporalProfile, lw=2)
 
-			#Image plotting details.
+			# Image plotting details.
 			Title = 'Mesh-Averaged Temporal Profile of '+str(VariableStrings[i])+' for \n'+Dirlist[l][2:-1]
 			Xlabel = 'Simulation time [ms]'
 			Ylabel =VariableLabelMaker(VariableStrings)[i]
 			ImageOptions(fig,ax,Xlabel,Ylabel,Title,Legend=[],Crop=False)
 
-			#Save figure.
+			#=====##=====# Image I/O #=====##=====#
+
+			# Save figure.
 			savefig(DirMeshAve+'Temporal_'+VariableStrings[i]+ext)
 			clearfigures(fig)
+			
+			#=====#
+			
+			# Write data underpinning current figure in .csv format
+			if Write_CSV == True:
+				CSVDir = CreateNewFolder(DirMeshAve, '1DPlots_Data')
+				CSVRMesh = 'R_Mesh [Cells] '+str(R_mesh[l])+'  :: dR [cm/cell] '+str(dr[l])
+				CSVZMesh = 'Z_Mesh [Cells] '+str(Z_mesh[l])+'  :: dZ [cm/cell] '+str(dz[l])
+				CSVTMax = 'Sim_Time '+str( np.round(Xaxis[-1],9) )+' [ms]'
+				CSVdT = 'dT '+str( np.round(Xaxis[-1]-Xaxis[-2],9) )+' [ms]'
+				CSVFilename = VariableStrings[i]+'.csv'
+				CSVTitle = str(Dirlist[l])
+				CSVLabel = str(Ylabel)
+				CSVISYM = 'ISYM='+str(ISYMlist[l])
+				CSVRotate = 'Rotate='+str(image_rotate)
+				
+				# Define Header Contents
+				CSVHeader = [CSVTitle,CSVLabel,CSVTMax,CSVdT]
 
-			#Write data to ASCII files if requested.
+				# Write to .csv file
+				WriteToCSV(TemporalProfile, CSVDir, CSVFilename, CSVHeader)
+			#endif
+
+			#=====#		
+
+			# Write data to ASCII files if requested.
 			if write_ASCII == True:
 				DirWrite = CreateNewFolder(DirMeshAve, '1DTimeAxis_Data')
 				WriteDataToFile(Xaxis, DirWrite+VariableStrings[i], 'w')
@@ -6447,28 +6484,30 @@ if savefig_timeaxis1D == True:
 			#endif
 		#endfor
 
-		#=================#
 
-		#Plot mesh averaged value over 'real-time' in simulation.
+		#=====##=====# Multi-Variable Figure #=====##=====#
+
+		# Plot mesh averaged value over 'real-time' in simulation.
 		Legend = VariableLabelMaker(VariableStrings)
 		fig, ax = plt.subplots(1, figsize=(14,10))
 
-		#Plot each variable in ConvergenceTrends to single figure.
+		# Plot each variable in ConvergenceTrends to single figure.
 		for i in range(0,len(TemporalTrends)):
 			TemporalTrends[i] = Normalise(TemporalTrends[i])[0]
 			ax.plot(Xaxis,TemporalTrends[i], lw=2)
 		#endfor
 
-		#Image plotting details.
+		# Image plotting details.
 		Title = 'Mesh-Averaged Temporal Profiles of '+str(VariableStrings)+' for \n'+Dirlist[l][2:-1]
 		Xlabel,Ylabel = 'Simulation time [ms]','Normalised Mesh-Average Value'
 		ImageOptions(fig,ax,Xlabel,Ylabel,Title,Legend,Crop=False)
 		ax.set_ylim(0,1)
 
-		#Save figure.
+		# Save figure.
 		savefig(DirMeshAve+FolderNameTrimmer(Dirlist[l])+'_Normalised'+ext)
 		clearfigures(fig)
 	#endfor
+	
 	print('--------------------------')
 	print('# Temporal Trends Complete')
 	print('--------------------------')
@@ -8243,12 +8282,12 @@ if savefig_phaseresolve1D == True:
 						# Write to .csv file, including full header on first CYCLE
 						if j == 0:
 							CSVHeader = [CSVTitle,CSVLabel,CSVMaxCYCL,CSVISYM,CSVRotate,CSVRMesh,CSVZMesh]
-							WriteToCSV([phaseresolvedProfile[::-1]], CSVDir, CSVFilename, CSVHeader, Mode='w')
+							WriteToCSV(phaseresolvedProfile[::-1], CSVDir, CSVFilename, CSVHeader, Mode='w')
 
 						# Write to .csv file, including only CYCL number for all remaining CYCLEs
 						elif j > 0:
 							CSVHeader = [CSVCurCYCL]
-							WriteToCSV([phaseresolvedProfile[::-1]], CSVDir, CSVFilename, CSVHeader, Mode='a')
+							WriteToCSV(phaseresolvedProfile[::-1], CSVDir, CSVFilename, CSVHeader, Mode='a')
 						#endif
 					#endif
 
