@@ -270,8 +270,8 @@ image_plotcolourfill = True				# Plot 2D image colour fill
 image_plotcontours = True				# Plot 2D image contour lines
 image_contourlvls = 10					# Number of contour levels
 
-image_showticks = True					# Toggle to show axis ticks and associated values or not
-image_showlabels = True					# Toggle to show axis labels or not 
+image_axisticks = True					# Toggle to show axis ticks and associated values or not
+image_axislabels = True					# Toggle to show axis labels or not 
 image_legendloc = 'best'				# Set Legend Location, "1-9" or 'best' for automatic
 image_cbarticks = True					# Toggle to show cbar ticks and associated values or not
 image_cbarbins = 5						# Set number of colourbar bins
@@ -4156,19 +4156,19 @@ def ImageOptions(fig,ax,Xlabel='',Ylabel='',Title='',Legend=[],Crop=True,Rotate=
 	#endif
 
 	#Set axis labels
-	if image_showlabels == True:
+	if image_axislabels == True:
 		ax.set_xlabel(Xlabel, fontsize=24)
 		ax.set_ylabel(Ylabel, fontsize=24)
-	elif image_showlabels == False:
+	elif image_axislabels == False:
 		ax.set_xlabel('')
 		ax.set_ylabel('')
 	#endif
 	
 	#Set axis ticks
-	if image_showticks == True:
+	if image_axisticks == True:
 		ax.tick_params(axis='x', labelsize=18)
 		ax.tick_params(axis='y', labelsize=18)
-	elif image_showticks == False:
+	elif image_axisticks == False:
 		ax.tick_params(axis='x', labelbottom=False, labelleft=False, length=0)
 		ax.tick_params(axis='y', labelbottom=False, labelleft=False, length=0)
 	#endif
