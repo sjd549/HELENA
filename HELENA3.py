@@ -158,9 +158,10 @@ N2 = ['N2','N2V','N2*','N2**','N2+','N','N*','N+']
 Cl = ['Cl2','Cl','CL+','CL-','Cl2V','Cl2+','CL*','CL**','CL***']
 F = ['F2','F2*','F2+','F','F*','F+','F-','S-F','S-F+','S-F-','SEB-F','SEB-F+','SEB-F-','FZ-F','FR-F','FZ-F+','FR-F+','FZ-F-','FR-F-','FZ-F+','FR-F+']
 H2O = ['H2O','H2O+','OH','OH-','H2OV','H2O2','S-H2O','SEB-H2O','S-H2OV','SEB-H2OV','S-H2O+','SEB-H2O+','S-OH','SEB-OH','S-OH-','SEB-OH-','S-OH+','SEB-OH+']
-CO2 = ['CO2','CO2V','CO+','CO','CO+','C','C+']
+COx = ['CO2','CO2V','CO+','CO','CO+','C','C+']
 CHx = ['CH4','CH3','CH2','CH','C','CH5+','CH4+','CH3+','CH2+','CH+','C+']
 NHx = ['NH3','NH2','NH','NH4+','NH3+','NH2+','NH+']
+NOx = ['NO2','NO2+','N2O','N2O+','NO','NO+']
 NFx = ['NF3A','NF2A','NFA','NF3B','NF2B','NFB','NF3+','NF2+','NF+']
 SFx = ['SF6','SF5','SF4','SF3','SF2','SF','S','SF5+','SF4+','SF3+','SF2+','SF+','S+','SF6-','SF5-']
 Al = ['AL','AL*','AL**','AL+','S-AL','SEB-AL','S-AL*','SEB-AL*','S-AL**','SEB-AL**','S-AL+','SEB-AL+','FZ-AL+','FR-AL+']
@@ -191,7 +192,7 @@ waveformlocs = []						# Cell locations of additional waveforms [R,Z].
 # Requested variables and plotting locations.
 Variables = Phys+Ar+O2+Be+Al				# Requested Variables from Tecplot2D.pdt, tecplot_kin.pdt, and movie_icp.pdt 
 multivar = []							# Additional variables plotted ontop of [Variables]
-radialprofiles = []					# Radial 1D-Profiles to be plotted (fixed Z-mesh) --
+radialprofiles = []						# Radial 1D-Profiles to be plotted (fixed Z-mesh) --
 axialprofiles = []						# Axial 1D-Profiles to be plotted (fixed R-mesh) |
 probeloc = []							# Cell location For Trend Analysis [R,Z], (leave empty for global min/max)
 
@@ -199,12 +200,13 @@ probeloc = []							# Cell location For Trend Analysis [R,Z], (leave empty for g
 sheathROI = []							# Sheath Region of Interest, (Start,End) [cells]
 sourcewidth = []						# Source Dimension at ROI, leave empty for auto. [cells]
 
+
 # Requested diagnostics and plotting routines.
-savefig_tecplot2D = False				# 2D Single-Variables: TECPLOT2D.PDT				< .csv File Save
+savefig_tecplot2D = True				# 2D Single-Variables: TECPLOT2D.PDT				< .csv File Save
 
 savefig_movieicp2D = False				# 2D Variables against space-axis:	movie_icp.pdt	< MAXITER SHOULD BE AN ARRAY
 savefig_movieicp1D = False				# 1D Variables against space-axis:	movie_icp.pdt	< MAXITER SHOULD BE AN ARRAY
-savefig_timeaxis1D = True				# 1D Variables against time-axis:	movie_icp.pdt
+savefig_timeaxis1D = False				# 1D Variables against time-axis:	movie_icp.pdt
 savefig_convergence = False				# 1D variables against ITER-axis:	movie_icp.pdt
 iterstep = 1							# movie_icp.pdt iteration step size
 
@@ -232,11 +234,13 @@ savefig_IEDFangular = False				# 2D images of angular IEDF; single folders			< .
 savefig_IEDFtrends = False				# 1D IEDF trends; all folders
 savefig_EEDF = False					# 1D EEDF trends; all folders						< No Routine
 
+
 # Write processed data to ASCII files.
 write_ASCII = False						# Data underpinning figs written in ASCII format	< Outdated
 Write_CSV = True						# Data underpinning figs written in .csv format
 # ^^^^
 # NOTE: SHEATH EXTENT SAVES WITH WRONG NAME, IN WRONG FILE FORMAT, IN ROOT DIRECTORY
+
 
 # Steady-State diagnostics terminal output toggles.
 print_generaltrends = False				# Verbose Min/Max Trend Outputs.
@@ -247,6 +251,7 @@ print_DCbias = False					# Print DC bias at electrodeloc
 print_thrust = False					# Print neutral, ion and total thrust
 print_sheath = False					# Print sheath width at electrodeloc						
 
+
 # Image plotting options.
 image_extension = '.png'				# Define image extension  ('.png', '.jpg', '.eps')		
 image_interp = 'spline36'				# Define image smoothing  ('none', 'bilinear','quadric','spline36')
@@ -255,28 +260,36 @@ image_cmap = 'plasma'					# Define global colourmap ('jet','plasma','inferno','g
 image_aspectratio = [10,10]				# Real Size of [X,Y] in cm [Doesn't Rotate - X is always horizontal]
 image_radialcrop = []					# Crops 2D images to [R1,R2] in cm
 image_axialcrop = []					# Crops 2D images to [Z1,Z2] in cm
-image_cbarlimit = []					# [min,max] colourbar limits
-image_legendloc = 'best'				# Legend Location, "1-9" or 'best' for automatic
+
+image_plotsymmetry = False				# Plot radial symmetry - mirrors across the ISYM axis
+image_plotmesh = True					# Plot material mesh outlines
+image_plotgrid = False					# Plot major/minor gridlines on 1D profiles
+image_rotate = False					# Rotate 2D images 90 degrees to the right.
 
 image_plotcolourfill = True				# Plot 2D image colour fill
 image_plotcontours = True				# Plot 2D image contour lines
 image_contourlvls = 10					# Number of contour levels
-image_cbarbins = 5						# Number of colourbar bins
+
+image_showticks = True					# Toggle to show axis ticks and associated values or not
+image_showlabels = True					# Toggle to show axis labels or not 
+image_legendloc = 'best'				# Set Legend Location, "1-9" or 'best' for automatic
+image_cbarticks = True					# Toggle to show cbar ticks and associated values or not
+image_cbarbins = 5						# Set number of colourbar bins
+image_cbarlimit = []					# Set arbitrary [min,max] colourbar limits
+
+image_plotvector = True					# Plot vector arrows onto 2D images (uses FR-XX, FZ-XX if they exist)
+image_vectordensity = 1.5				# Vector line density, higher means more dense streamlines
+image_vectorlw = 1.0					# Vector line width, higher means thicker streamlines
+
+image_normalise = False					# Plot Data normlised to maximum value (Applies to all outputs)
+image_logplot = False					# Plot log10(Data) (Applies to all outputs)
 
 image_plotsheath = False				# Plot sheath extent onto 2D images 'Axial','Radial'
-image_plotvector = False				# Plot vector arrows onto 2D images (uses FR-XX, FZ-XX if they exist)
-image_normalise = False					# Plot Data normlised to maximum value within 2D image or 1D array
-image_logplot = False					# Plot log10(Data) for both 1D and 2D profiles
-
-image_rotate = False						# Rotate image 90 degrees to the right.
-image_plotsymmetry = False				# Plot radial symmetry - mirrors across the ISYM axis
-image_plotoverlay = False				# Plot location(s) of 1D radial/axial profiles onto 2D images
-image_plotgrid = False					# Plot major/minor gridlines on 1D profiles
-image_plotmesh = True					# Plot material mesh outlines ('True' == Auto,'PRCCP','PRCCPM','ESCT','GEC')
-image_numericaxis = False				#### NOT implemented ####
 image_plotphasewaveform = False			# Plot waveform sub-figure on phaseresolve2D images
+image_plotoverlay = False				# Plot location(s) of 1D radial/axial profiles onto 2D images
 
-# Overrides the automatic image labelling.
+
+# Image Overrides (Applies to all images)
 titleoverride = []
 legendoverride = []
 xaxisoverride = []
@@ -371,8 +384,6 @@ ylabeloverride = []
 
 
 ### For Future ###
-
-#implement image_numericaxis, try float(FolderNameTrimmer) as axis.
 
 #implement tests for key I/O functions
 #Implement tests for key mathematical/diagnostic functions (dc self-bias/thrust/soundspeed/knudsen/etc...)
@@ -4144,11 +4155,23 @@ def ImageOptions(fig,ax,Xlabel='',Ylabel='',Title='',Legend=[],Crop=True,Rotate=
 		ax.legend(Legend, loc=image_legendloc, fontsize=16, frameon=False)
 	#endif
 
-	#Set labels and ticksize.
-	ax.set_xlabel(Xlabel, fontsize=24)
-	ax.set_ylabel(Ylabel, fontsize=24)
-	ax.tick_params(axis='x', labelsize=18)
-	ax.tick_params(axis='y', labelsize=18)
+	#Set axis labels
+	if image_showlabels == True:
+		ax.set_xlabel(Xlabel, fontsize=24)
+		ax.set_ylabel(Ylabel, fontsize=24)
+	elif image_showlabels == False:
+		ax.set_xlabel('')
+		ax.set_ylabel('')
+	#endif
+	
+	#Set axis ticks
+	if image_showticks == True:
+		ax.tick_params(axis='x', labelsize=18)
+		ax.tick_params(axis='y', labelsize=18)
+	elif image_showticks == False:
+		ax.tick_params(axis='x', labelbottom=False, labelleft=False, length=0)
+		ax.tick_params(axis='y', labelbottom=False, labelleft=False, length=0)
+	#endif
 
 	#Force scientific notation for all axes, accounting for non-scalar x-axes.
 	#	RM: THIS SEEMS TO ALSO BE DEPRECIATED - NEED TO REPLACE WITH NEW Matplotlib COMMAND
@@ -4215,17 +4238,29 @@ def Colourbar(ax=plt.gca(),Label='',cbarbins=5,Lim=[]):
 	if '\n' in Label: Labelpad += 25		#Pad label for multi-line names
 
 	#Create and define colourbar axis
-	divider = make_axes_locatable(ax)
-	cax = divider.append_axes("right", size="2%", pad=0.1)
-	try: cbar = plt.colorbar(im, cax=cax)
-	except: return()
+	try: 
+		divider = make_axes_locatable(ax)
+		cax = divider.append_axes("right", size="2%", pad=0.1)
+		cbar = plt.colorbar(im, cax=cax)
+	except:
+		print('Warning: Colourbar failed to plot, check Colourbar() function')
+		return()
+	#endtry
 
 	#Set number of ticks, label location and define scientific notation.
-	cbar.set_label(Label, rotation=Rotation,labelpad=Labelpad,fontsize=LabelFontSize)
-	cbar.formatter.set_powerlimits((-2,3))
-	cbar.locator = ticker.MaxNLocator(nbins=cbarbins)
-	cbar.ax.yaxis.offsetText.set(size=TickFontsize)
-	yticks(fontsize=TickFontsize)
+	if image_cbarticks == True:	
+		cbar.set_label(Label, rotation=Rotation,labelpad=Labelpad,fontsize=LabelFontSize)
+		cbar.locator = ticker.MaxNLocator(nbins=cbarbins)
+		cbar.ax.tick_params(labelsize=TickFontsize)
+		cbar.formatter.set_powerlimits((-2,3))
+		cbar.update_ticks()
+		
+	elif image_cbarticks == False:
+		cbar.set_label(Label, rotation=Rotation,labelpad=Labelpad-30,fontsize=LabelFontSize)
+		cmin, cmax = im.get_clim()
+		cbar.set_ticks([cmin, cmax])
+		cbar.set_ticklabels(['min', 'max'])
+	#endif
 
 	#Apply colourbar limits if specified.  (lim=[min,max])
 	if len(Lim) == 2: im.set_clim(vmin=Lim[0], vmax=Lim[1])
@@ -4486,24 +4521,14 @@ def TrendPlotter(ax=plt.gca(),TrendArray=[],Xaxis=[],Marker='o-',NormFactor=0):
 		TrendArray = Normalise(TrendArray,NormFactor)[0]
 	#endif
 
-	#Choose how to plot the trends.
-	if image_numericaxis == True:			#!!!!!THIS NEEDS GENERALIZING!!!!!#
-		#Plot results against number of cells in each mesh for convergence studies.
-		numcells = list()
-		for l in range(0,numfolders):
-			numcells.append(Z_mesh[l]*R_mesh[l])
-		#endfor
-		Plot = ax.plot(numcells[::-1],TrendArray[::-1], Marker, lw=2)
+	#Plot results against strings pulled from folder names for batch studies.
+	Plot = ax.plot(range(0,numfolders),TrendArray, Marker, lw=2)
+	if len(xaxisoverride) > 0:
+		ax.set_xticks(np.arange(0,numfolders))
+		ax.set_xticklabels(xaxisoverride)
 	else:
-		#Plot results against strings pulled from folder names for batch studies.
-		Plot = ax.plot(range(0,numfolders),TrendArray, Marker, lw=2)
-		if len(xaxisoverride) > 0:
-			ax.set_xticks(np.arange(0,numfolders))
-			ax.set_xticklabels(xaxisoverride)
-		else:
-			ax.set_xticks(np.arange(0,numfolders))
-			ax.set_xticklabels(Xaxis)
-		#endif
+		ax.set_xticks(np.arange(0,numfolders))
+		ax.set_xticklabels(Xaxis)
 	#endif
 
 	return(Plot)
@@ -5432,8 +5457,12 @@ if savefig_tecplot2D == True:
 					VectorLength = np.sqrt(UR**2 + UZ**2)
 
 					# Streamplot fails if provided "zeros", inform user and skip to next variable
-					try:	ax.streamplot(R, Z, UR, UZ, color=VectorLength, cmap='viridis', density=1.5, linewidth=1)
-					except:	print('Warning: Invalid streamplot for variable: '+VariableStrings[i])
+					try:
+						Density = image_vectordensity
+						Linewidth = image_vectorlw
+						ax.streamplot(R, Z, UR, UZ, color=VectorLength, cmap='viridis', density=Density, linewidth=Linewidth)
+					except:	
+						print('Warning: Invalid streamplot for variable: '+VariableStrings[i])
 					#endtry
 				#endif
 			#endif
@@ -8468,8 +8497,12 @@ if savefig_phaseresolve2D == True:
 						VectorLength = np.sqrt(UR**2 + UZ**2)
 
 						# Streamplot fails if provided "zeros", inform user and skip to next variable
-						try:	ax.streamplot(R, Z, UR, UZ, color=VectorLength, cmap='viridis', density=1.5, linewidth=1)
-						except:	print('Warning: Invalid streamplot for variable: '+VariableStrings[i])
+						try:	
+							Density = image_vectordensity
+							Linewidth = image_vectorlw
+							ax.streamplot(R, Z, UR, UZ, color=VectorLength, cmap='viridis', density=Density, linewidth=Linewidth)
+						except:	
+							print('Warning: Invalid streamplot for variable: '+VariableStrings[i])
 						#endtry
 					#endif
 				#endif
