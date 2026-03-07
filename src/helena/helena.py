@@ -22,11 +22,14 @@
 
 from pylab import *
 
-def run():
+def run(argv):
 	from optparse import OptionParser
 	parser = OptionParser()
 	parser.add_option("-f", "--first", action="store_true", dest="install", default=False, help="Install prompt for required python modules")
-	(options, args) = parser.parse_args()
+	import sys
+	if argv is None:
+		argv = sys.argv[1:]
+	(options, args) = parser.parse_args(argv)
 
 	if 'True' in str(options):
 		import os, sys
@@ -153,6 +156,7 @@ def run():
 
 	Conv = ['E','TE','PPOT','POW-RF','SIGMA','EF-TOT','TG-AVE']
 
+	TEST = ['AR2+']
 	Ar = ['AR3S','AR4SM','AR4SR','AR4SPM','AR4SPR','AR4P','AR4D','AR','AR+','AR2+','AR2*','S-AR+','S-AR4P','SEB-AR+','SEB-AR4P','FZ-AR3S','FR-AR3S','FR-AR+','FZ-AR+','FZ-AR3S','FR-AR3S']
 	O2 = ['O3','O2','O2V','O2*','O2*1S','O2+','O2-','O','O1S','O+','O-','O*','S-O3','S-O2+','S-O+','S-O-','SEB-O3','SEB-O+','SEB-O2+','SEB-O-','FR-O+','FZ-O+','FR-O-','FZ-O-']
 	H2 = ['H2V0','H2V1','H2V2','H2V3','H1','H*','H**','H2+','H+','H-','S-H+','SEB-H+','S-2H+','SEB-2H+','S-H-','SEB-H-','FZ-H2V0','FR-H2V0','FZ-H1','FR-H1','FZ-H+','FR-H+','FZ-H2+','FR-H2+','FZ-H-','FR-H-']
@@ -192,7 +196,7 @@ def run():
 	waveformlocs = []						# Cell locations of additional waveforms [R,Z].
 
 	# Requested variables and plotting locations.
-	Variables = Phys+Ar+O2+Be+Al				# Requested Variables from Tecplot2D.pdt, tecplot_kin.pdt, and movie_icp.pdt
+	Variables = TEST						# Requested Variables from Tecplot2D.pdt, tecplot_kin.pdt, and movie_icp.pdt
 	multivar = []							# Additional variables plotted ontop of [Variables]
 	radialprofiles = []						# Radial 1D-Profiles to be plotted (fixed Z-mesh) --
 	axialprofiles = []						# Axial 1D-Profiles to be plotted (fixed R-mesh) |
