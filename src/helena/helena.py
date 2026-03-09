@@ -22,7 +22,7 @@
 
 from pylab import *
 
-def run(argv):
+def run(argv=None):
 	from optparse import OptionParser
 	parser = OptionParser()
 	parser.add_option("-f", "--first", action="store_true", dest="install", default=False, help="Install prompt for required python modules")
