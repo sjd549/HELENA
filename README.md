@@ -1,17 +1,55 @@
 # HELENA
 Hpem ELectronic ENgine Analysis: data plotting and analysis software for TECPLOT output files.
 
+
+
+Using HELENA in with uv virtual environment
+
+	Download HELENA from repo, either manually or with
+    	$ git clone https://github.com/sjd549/HELENA.git && cd HELENA
+
+	Create virtual environment (uses uv.lock file)
+    	$ uv sync
+    	$ source .venv/bin/activate
+
+	For first time usage, install the HELENA package
+	Here the -e flag ensures src/ files are editable
+		$ uv pip install -e .[tests]
+
+	Once installed use helena with
+		$ HELENA
+
+    Runs the code exactly as before.
+ 		$ helena
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# Old Documentation
+
 Files recognised: 
 
 TECPLOT2D.PDT, kin.pdt, movie1.pdt, movie_icp.pdt
-
-
-Requires the following software/modules to function:
-
-python-pip, python-numpy, python-matplotlib, ffmpeg, findtools.
-
-
-
 
 HELENA is designed for use in it's own seperate folder. When executed it will search for directories and sub-directories which contain HPEM output files and catagorize these into seprate 'simulations' based on which directory they came from. 
 Each simulation will then be processed in turn with the output from requested diagnostics being saved in seperate directories within the simulation directory. Diagnostics which perform comparisons between simulations will be saved in the upper HELENA directory.
