@@ -229,7 +229,7 @@ def run(argv=None):
 	savefig_trendphaseresolved = False		# Phase resolved trends at axial/radial cells		# CHANGE TO 'ProbeLoc' cell
 	thrustloc = 45							# Z-axis cell for thrust calculation  [Cells]
 
-	savefig_phaseresolve2D = True			# 2D Phase Resolved Images							< .csv File Save
+	savefig_phaseresolve2D = False			# 2D Phase Resolved Images							< .csv File Save
 	savefig_phaseresolve1D = False			# 1D Phase Resolved Images							< .csv File Save
 	savefig_sheathdynamics = False			# 1D and 2D sheath dynamics images
 	savefig_PROES =	False					# Simulated PROES Diagnostic
