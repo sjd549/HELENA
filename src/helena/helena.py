@@ -191,15 +191,15 @@ def run(argv=None):
 	NEDFVariables = []						# Requested Variables from nprofile_2d.pdt
 
 	# Requested movie1/movie_icp Variables.
-	PhaseVariables = Ar_Phase				# Requested Movie1 (phase) Variables.
+	PhaseVariables = ['FZ-E']#Ar_Phase				# Requested Movie1 (phase) Variables.
 	electrodeloc = [0,0]					# Cell location of powered electrode [R,Z].
 	waveformlocs = []						# Cell locations of additional waveforms [R,Z].
 
 	# Requested variables and plotting locations.
-	Variables = TEST						# Requested Variables from Tecplot2D.pdt, tecplot_kin.pdt, and movie_icp.pdt
+	Variables = Phys+Ar						# Requested Variables from Tecplot2D.pdt, tecplot_kin.pdt, and movie_icp.pdt
 	multivar = []							# Additional variables plotted ontop of [Variables]
 	radialprofiles = []						# Radial 1D-Profiles to be plotted (fixed Z-mesh) --
-	axialprofiles = []						# Axial 1D-Profiles to be plotted (fixed R-mesh) |
+	axialprofiles = [0]						# Axial 1D-Profiles to be plotted (fixed R-mesh) |
 	probeloc = []							# Cell location For Trend Analysis [R,Z], (leave empty for global min/max)
 
 	# Various Diagnostic Settings			>>> OUTDATED, TO BE RETIRED <<<
@@ -208,7 +208,7 @@ def run(argv=None):
 
 
 	# Requested diagnostics and plotting routines.
-	savefig_tecplot2D = True				# 2D Single-Variables: TECPLOT2D.PDT				< .csv File Save
+	savefig_tecplot2D = False				# 2D Single-Variables: TECPLOT2D.PDT				< .csv File Save
 
 	savefig_movieicp2D = False				# 2D Variables against space-axis:	movie_icp.pdt	< MAXITER SHOULD BE AN ARRAY
 	savefig_movieicp1D = False				# 1D Variables against space-axis:	movie_icp.pdt	< MAXITER SHOULD BE AN ARRAY
@@ -229,7 +229,7 @@ def run(argv=None):
 	savefig_trendphaseresolved = False		# Phase resolved trends at axial/radial cells		# CHANGE TO 'ProbeLoc' cell
 	thrustloc = 45							# Z-axis cell for thrust calculation  [Cells]
 
-	savefig_phaseresolve2D = False			# 2D Phase Resolved Images							< .csv File Save
+	savefig_phaseresolve2D = True			# 2D Phase Resolved Images							< .csv File Save
 	savefig_phaseresolve1D = False			# 1D Phase Resolved Images							< .csv File Save
 	savefig_sheathdynamics = False			# 1D and 2D sheath dynamics images
 	savefig_PROES =	False					# Simulated PROES Diagnostic
@@ -264,13 +264,13 @@ def run(argv=None):
 	image_cmap = 'plasma'					# Define global colourmap ('jet','plasma','inferno','gnuplot','tecmodern')
 
 	image_aspectratio = [10,10]				# Real Size of [X,Y] in cm [Doesn't Rotate - X is always horizontal]
-	image_radialcrop = []					# Crops 2D images to [R1,R2] in cm
+	image_radialcrop = []				# Crops 2D images to [R1,R2] in cm
 	image_axialcrop = []					# Crops 2D images to [Z1,Z2] in cm
 
 	image_plotsymmetry = False				# Plot radial symmetry - mirrors across the ISYM axis
 	image_plotmesh = True					# Plot material mesh outlines
 	image_plotgrid = False					# Plot major/minor gridlines on 1D profiles
-	image_rotate = False					# Rotate 2D images 90 degrees to the right.
+	image_rotate = False						# Rotate 2D images 90 degrees to the right.
 
 	image_plotcolourfill = True				# Plot 2D image colour fill
 	image_plotcontours = True				# Plot 2D image contour lines
@@ -5417,6 +5417,8 @@ def run(argv=None):
 					   #STEADY STATE TECPLOT2D FIGURES#
 	#====================================================================#
 
+	image_rotate = False
+
 	# Generate and save image of required variable for given mesh size.
 	if savefig_tecplot2D == True:
 
@@ -5453,13 +5455,23 @@ def run(argv=None):
 				if image_plotvector == True and VectorVariablesExist == True:
 
 						# Create meshgrid
-						R_Space = np.linspace(0,Radius[l],R_mesh[l])
-						Z_Space = np.linspace(0,Height[l],Z_mesh[l])
+						R_Space = np.linspace(0,Radius[l],R_mesh[l])			# Radial mesh locations [mm]
+						Z_Space = np.linspace(0,Height[l],Z_mesh[l])			# Axial mesh locations [mm]
+						if image_rotate == True:
+							R_Space = np.linspace(0,Height[l],Z_mesh[l])		# Radial location is now axial location
+							Z_Space = np.linspace(0,Radius[l],R_mesh[l])		# Axial location is now radial location
+						#endif
 						R, Z = np.meshgrid(R_Space, Z_Space)
-
+						
 						# See definition of "Radial" and "Axial" above
-						UR = ImageExtractor2D(Data[l][Radial[1]],Radial[0])  	# radial velocities
-						UZ = ImageExtractor2D(Data[l][Axial[1]] ,Axial[0] )  	# axial velocities
+						UR = ImageExtractor2D(Data[l][Radial[1]],Radial[0])  		# Radial vector magnitude
+						UZ = ImageExtractor2D(Data[l][Axial[1]] ,Axial[0] )  		# Axial vector magnitude
+						if image_rotate == True:
+							UR = ImageExtractor2D(Data[l][Axial[1]] ,Axial[0])  	# Radial magnitude DATA is now Axial
+							UZ = ImageExtractor2D(Data[l][Radial[1]],Radial[0] )  	# Axial magnitude DATA is now Radial
+							UR = UR.transpose()[::-1]								# Vector shape also needs flipped
+							UZ = UZ.transpose()[::-1]								# Vector shape also needs flipped
+						#endif
 						VectorLength = np.sqrt(UR**2 + UZ**2)
 
 						# Streamplot fails if provided "zeros", inform user and skip to next variable
@@ -8493,13 +8505,23 @@ def run(argv=None):
 					if image_plotvector == True and VectorVariablesExist == True:
 
 							# Create meshgrid
-							R_Space = np.linspace(0,Radius[l],R_mesh[l])
-							Z_Space = np.linspace(0,Height[l],Z_mesh[l])
+							R_Space = np.linspace(0,Radius[l],R_mesh[l])			# Radial mesh locations [mm]
+							Z_Space = np.linspace(0,Height[l],Z_mesh[l])			# Axial mesh locations [mm]
+							if image_rotate == True:
+								R_Space = np.linspace(0,Height[l],Z_mesh[l])		# Radial location is now axial location
+								Z_Space = np.linspace(0,Radius[l],R_mesh[l])		# Axial location is now radial location
+							#endif
 							R, Z = np.meshgrid(R_Space, Z_Space)
-
+							
 							# See definition of "Radial" and "Axial" above
-							UR = ImageExtractor2D(PhaseData[j][Radial[1]],Radial[0])  	# radial velocities
-							UZ = ImageExtractor2D(PhaseData[j][Axial[1]] ,Axial[0] )  	# axial velocities
+							UR = ImageExtractor2D(PhaseData[j][Radial[1]],Radial[0])  		# Radial vector magnitude
+							UZ = ImageExtractor2D(PhaseData[j][Axial[1]] ,Axial[0] )  		# Axial vector magnitude
+							if image_rotate == True:
+								UR = ImageExtractor2D(PhaseData[j][Axial[1]] ,Axial[0])  	# Radial magnitude DATA is now Axial
+								UZ = ImageExtractor2D(PhaseData[j][Radial[1]],Radial[0] )  	# Axial magnitude DATA is now Radial
+								UR = UR.transpose()[::-1]									# Vector shape also needs flipped
+								UZ = UZ.transpose()[::-1]									# Vector shape also needs flipped
+							#endif
 							VectorLength = np.sqrt(UR**2 + UZ**2)
 
 							# Streamplot fails if provided "zeros", inform user and skip to next variable
