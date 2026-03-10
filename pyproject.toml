@@ -9,7 +9,7 @@ name = "HELENA"
 authors = [
     {name = "Scott Doyle"}
 ]
-description = "Hpem ELectronic ENgine Analysis ::::: Data visualisation and analysis software for TECPLOT output files"
+description = "HELENA - TECPLOT visualisation and diagnostic tool "
 keywords = ["tecplot", "data-visualisation", "data-analysis", "plasma-physics", "post-proessing"]
 readme = "README.md"
 requires-python = ">=3.11"

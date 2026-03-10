@@ -191,7 +191,7 @@ def run(argv=None):
 	NEDFVariables = []						# Requested Variables from nprofile_2d.pdt
 
 	# Requested movie1/movie_icp Variables.
-	PhaseVariables = ['FZ-E']#Ar_Phase				# Requested Movie1 (phase) Variables.
+	PhaseVariables = Ar_Phase				# Requested Movie1 (phase) Variables.
 	electrodeloc = [0,0]					# Cell location of powered electrode [R,Z].
 	waveformlocs = []						# Cell locations of additional waveforms [R,Z].
 
@@ -5454,35 +5454,39 @@ def run(argv=None):
 				# Overlay variable[k]'s vector components onto 2D flood plot
 				if image_plotvector == True and VectorVariablesExist == True:
 
-						# Create meshgrid
-						R_Space = np.linspace(0,Radius[l],R_mesh[l])			# Radial mesh locations [mm]
-						Z_Space = np.linspace(0,Height[l],Z_mesh[l])			# Axial mesh locations [mm]
-						if image_rotate == True:
-							R_Space = np.linspace(0,Height[l],Z_mesh[l])		# Radial location is now axial location
-							Z_Space = np.linspace(0,Radius[l],R_mesh[l])		# Axial location is now radial location
-						#endif
-						R, Z = np.meshgrid(R_Space, Z_Space)
-						
-						# See definition of "Radial" and "Axial" above
-						UR = ImageExtractor2D(Data[l][Radial[1]],Radial[0])  		# Radial vector magnitude
-						UZ = ImageExtractor2D(Data[l][Axial[1]] ,Axial[0] )  		# Axial vector magnitude
-						if image_rotate == True:
-							UR = ImageExtractor2D(Data[l][Axial[1]] ,Axial[0])  	# Radial magnitude DATA is now Axial
-							UZ = ImageExtractor2D(Data[l][Radial[1]],Radial[0] )  	# Axial magnitude DATA is now Radial
-							UR = UR.transpose()[::-1]								# Vector shape also needs flipped
-							UZ = UZ.transpose()[::-1]								# Vector shape also needs flipped
-						#endif
-						VectorLength = np.sqrt(UR**2 + UZ**2)
-
-						# Streamplot fails if provided "zeros", inform user and skip to next variable
-						try:
-							Density = image_vectordensity
-							Linewidth = image_vectorlw
-							ax.streamplot(R, Z, UR, UZ, color=VectorLength, cmap='viridis', density=Density, linewidth=Linewidth)
-						except:
-							print('Warning: Invalid streamplot for variable: '+VariableStrings[i])
-						#endtry
+					# Create meshgrid
+					R_Space = np.linspace(0,Radius[l],R_mesh[l])			# Radial mesh locations [mm]
+					Z_Space = np.linspace(0,Height[l],Z_mesh[l])			# Axial mesh locations [mm]
+					if image_rotate == True:
+						R_Space = np.linspace(0,Height[l],Z_mesh[l])		# Radial location is now axial location
+						Z_Space = np.linspace(0,Radius[l],R_mesh[l])		# Axial location is now radial location
 					#endif
+					R, Z = np.meshgrid(R_Space, Z_Space)
+						
+					# See definition of "Radial" and "Axial" above
+					UR = ImageExtractor2D(Data[l][Radial[1]],Radial[0])  		# Radial vector magnitude
+					UZ = ImageExtractor2D(Data[l][Axial[1]] ,Axial[0] )  		# Axial vector magnitude
+					if image_rotate == True:
+						UR = ImageExtractor2D(Data[l][Axial[1]] ,Axial[0])  	# Radial magnitude DATA is now Axial
+						UZ = ImageExtractor2D(Data[l][Radial[1]],Radial[0] )  	# Axial magnitude DATA is now Radial
+						if image_plotsymmetry == False:
+							UR = UR.transpose()[::-1]							# Without symmetry, Axis Zero is on LHS
+							UZ = UZ.transpose()[::-1]
+						elif image_plotsymmetry == True:
+							UR = UR.transpose()									# With symmetry, Axis Zero is on RHS
+							UZ = UZ.transpose()
+						#endif
+					#endif
+					VectorLength = np.sqrt(UR**2 + UZ**2)
+
+					# Streamplot fails if provided "zeros", inform user and skip to next variable
+					try:
+						Density = image_vectordensity
+						Linewidth = image_vectorlw
+						ax.streamplot(R, Z, UR, UZ, color=VectorLength, cmap='viridis', density=Density, linewidth=Linewidth)
+					except:
+						print('Warning: Invalid streamplot for variable: '+VariableStrings[i])
+					#endtry
 				#endif
 
 				#=====#
@@ -8504,35 +8508,39 @@ def run(argv=None):
 					# Overlay variable[k]'s vector components onto 2D flood plot
 					if image_plotvector == True and VectorVariablesExist == True:
 
-							# Create meshgrid
-							R_Space = np.linspace(0,Radius[l],R_mesh[l])			# Radial mesh locations [mm]
-							Z_Space = np.linspace(0,Height[l],Z_mesh[l])			# Axial mesh locations [mm]
-							if image_rotate == True:
-								R_Space = np.linspace(0,Height[l],Z_mesh[l])		# Radial location is now axial location
-								Z_Space = np.linspace(0,Radius[l],R_mesh[l])		# Axial location is now radial location
-							#endif
-							R, Z = np.meshgrid(R_Space, Z_Space)
-							
-							# See definition of "Radial" and "Axial" above
-							UR = ImageExtractor2D(PhaseData[j][Radial[1]],Radial[0])  		# Radial vector magnitude
-							UZ = ImageExtractor2D(PhaseData[j][Axial[1]] ,Axial[0] )  		# Axial vector magnitude
-							if image_rotate == True:
-								UR = ImageExtractor2D(PhaseData[j][Axial[1]] ,Axial[0])  	# Radial magnitude DATA is now Axial
-								UZ = ImageExtractor2D(PhaseData[j][Radial[1]],Radial[0] )  	# Axial magnitude DATA is now Radial
-								UR = UR.transpose()[::-1]									# Vector shape also needs flipped
-								UZ = UZ.transpose()[::-1]									# Vector shape also needs flipped
-							#endif
-							VectorLength = np.sqrt(UR**2 + UZ**2)
-
-							# Streamplot fails if provided "zeros", inform user and skip to next variable
-							try:
-								Density = image_vectordensity
-								Linewidth = image_vectorlw
-								ax.streamplot(R, Z, UR, UZ, color=VectorLength, cmap='viridis', density=Density, linewidth=Linewidth)
-							except:
-								print('Warning: Invalid streamplot for variable: '+VariableStrings[i])
-							#endtry
+						# Create meshgrid
+						R_Space = np.linspace(0,Radius[l],R_mesh[l])			# Radial mesh locations [mm]
+						Z_Space = np.linspace(0,Height[l],Z_mesh[l])			# Axial mesh locations [mm]
+						if image_rotate == True:
+							R_Space = np.linspace(0,Height[l],Z_mesh[l])		# Radial location is now axial location
+							Z_Space = np.linspace(0,Radius[l],R_mesh[l])		# Axial location is now radial location
 						#endif
+						R, Z = np.meshgrid(R_Space, Z_Space)
+							
+						# See definition of "Radial" and "Axial" above
+						UR = ImageExtractor2D(PhaseData[j][Radial[1]],Radial[0])  		# Radial vector magnitude
+						UZ = ImageExtractor2D(PhaseData[j][Axial[1]] ,Axial[0] )  		# Axial vector magnitude
+						if image_rotate == True:
+							UR = ImageExtractor2D(PhaseData[j][Axial[1]] ,Axial[0])  	# Radial magnitude DATA is now Axial
+							UZ = ImageExtractor2D(PhaseData[j][Radial[1]],Radial[0] )  	# Axial magnitude DATA is now Radial
+							if image_plotsymmetry == False:
+								UR = UR.transpose()[::-1]								# Without symmetry, Axis Zero is on LHS
+								UZ = UZ.transpose()[::-1]
+							elif image_plotsymmetry == True:
+								UR = UR.transpose()										# With symmetry, Axis Zero is on RHS
+								UZ = UZ.transpose()
+							#endif
+						#endif
+						VectorLength = np.sqrt(UR**2 + UZ**2)
+
+						# Streamplot fails if provided "zeros", inform user and skip to next variable
+						try:
+							Density = image_vectordensity
+							Linewidth = image_vectorlw
+							ax.streamplot(R, Z, UR, UZ, color=VectorLength, cmap='viridis', density=Density, linewidth=Linewidth)
+						except:
+							print('Warning: Invalid streamplot for variable: '+VariableStrings[i])
+						#endtry
 					#endif
 
 					#=====#
