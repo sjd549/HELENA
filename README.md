@@ -1,9 +1,9 @@
 # HELENA
-Hpem ELectronic ENgine Analysis: data plotting and analysis software for TECPLOT output files.
+HELENA is a TECPLOT ".pdt" file extension visualisation tool.
 
 
 
-Using HELENA in with uv virtual environment
+Installing and Accessing HELENA Within uv Virtual Environment:
 
 	Download HELENA from repo, either manually or with
     	$ git clone https://github.com/sjd549/HELENA.git && cd HELENA
@@ -16,16 +16,29 @@ Using HELENA in with uv virtual environment
 	Here the -e flag ensures src/ files are editable
 		$ uv pip install -e .[tests]
 
-	Once installed use helena with
-		$ HELENA
-
-    Runs the code exactly as before.
- 		$ helena
+	Once installed use helena with:
+		$ helena
 
 
+Configuring and Running HELENA:
 
+	Directories to be extracted/plotted should be placed in the root "HELENA/" directory
+	Processed images are saved within the simulation directory containing the datafiles
+	Data underpinning images is saved in ".csv" format within relevant image directories
+	Multiple directories may be processed simultaniously
 
+	All diagnostic choices and image options are contained within the "SWITCHBOARD" section of helena.py
+	Current usage requires modification of the src/helena.py file to alter the switchboard:
+	   $ nano /src/helena/helena.py
 
+	Once switchboard settings have been saved, enter uv environment and run HELENA:
+		$ source .venv/bin/activate
+		$ helena
+
+	A splash is provided and progress updated communicated through the terminal
+
+	To view generated images from terminal type:
+		$ xdg-open Simulation_Directory/TECPlot2D/Image_File.png
 
 
 
