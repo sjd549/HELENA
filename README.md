@@ -59,10 +59,6 @@ Configuring and Running HELENA:
 
 
 
-
-
-
-
 # Old Documentation
 
 Files recognised: 
