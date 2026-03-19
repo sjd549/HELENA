@@ -30,6 +30,7 @@ def run(argv=None):
 	if argv is None:
 		argv = sys.argv[1:]
 	(options, args) = parser.parse_args(argv)
+	input_file = "input.toml" if len(args) == 0 else args[0]
 
 	if 'True' in str(options):
 		import os, sys
@@ -70,6 +71,8 @@ def run(argv=None):
 	import csv
 	import re
 	import gc
+	import toml
+	from typing import TypeVar, Callable
 
 	#Enforce matplotlib to avoid instancing undisplayed windows
 	#matplotlib-tcl-asyncdelete-async-handler-deleted-by-the-wrong-thread
@@ -85,222 +88,622 @@ def run(argv=None):
 	from matplotlib import ticker
 	from scipy import ndimage
 	from tqdm import tqdm
+	from dataclasses import dataclass, field
 	#from Read_data_functions.py import overlay_GEC_geometry
 
 
+    #Commonly used variable sets.
+	variable_sets = {
+		"Phys": ['E','S-E','SEB-E','TE','PPOT','P-POT','POW-RF','POW-RF-E','POW-ICP','POW-ICP1','POW-ICP2','POW-ICP3',
+				 'POW-ICP4','POW-ALL','EB-ESORC','COLF','SIGMA','EF-TOT', 'ERADIAL','ETHETA','EAXIAL','PHASEER','PHASE',
+				 'PHASEEZ','EAMB-Z','EAMB-R','RHO','BR','BRS','BZ','BZS','BT','BTS','BRF', 'PHASEBR','PHASEBT',
+				 'PHASEBZ','VR-ION+','VZ-ION+','E FLUX-R','FR-E','E FLUX-Z','FZ-E','JZ-NET','JR-NET','J-THETA',
+				 'J-TH(MAG)','J-TH(PHA)','PRESSURE','TG-AVE','VR-NEUTRAL','VZ-NEUTRAL'],
+		"PhysCoilsEF": ['ERADIAL-2','ETHETA-2','EAXIAL-2','PHASEER-2','PHASEEZ-2','ERADIAL-3','ETHETA-3','EAXIAL-3',
+						'PHASEER-3','PHASEEZ-3','ERADIAL-4','ETHETA-4','EAXIAL-4','PHASEER-4','PHASEEZ-4','ERADIAL-5',
+						'ETHETA-5','EAXIAL-5','PHASEER-5','PHASEEZ-5','ERADIAL-6','ETHETA-6','EAXIAL-6','PHASEER-6',
+						'PHASEEZ-6','ERADIAL-7','ETHETA-7','EAXIAL-7','PHASEER-7','PHASEEZ-7','ERADIAL-8','ETHETA-8',
+						'EAXIAL-8','PHASEER-8','PHASEEZ-8'],
+		"PhysCoilsBF": ['BT-2','BT-3','BT-4','BT-5','BT-6','BT-7','BT-8','BRF-2','BRF-3','BRF-4','BRF-5','BRF-6',
+						'BRF-7','BRF-8','PHASEBT-2','PHASEBT-3','PHASEBT-4','PHASEBT-5','PHASEBT-6','PHASEBT-7',
+						'PHASEBT-8'],
+
+		"Conv": ['E','TE','PPOT','POW-RF','SIGMA','EF-TOT','TG-AVE'],
+
+		"TEST": ['AR2+'],
+		"Ar": ['AR3S','AR4SM','AR4SR','AR4SPM','AR4SPR','AR4P','AR4D','AR','AR+','AR2+','AR2*','S-AR+','S-AR4P',
+			   'SEB-AR+','SEB-AR4P','FZ-AR3S','FR-AR3S','FR-AR+','FZ-AR+','FZ-AR3S','FR-AR3S'],
+		"O2": ['O3','O2','O2V','O2*','O2*1S','O2+','O2-','O','O1S','O+','O-','O*','S-O3','S-O2+','S-O+','S-O-','SEB-O3',
+			   'SEB-O+','SEB-O2+','SEB-O-','FR-O+','FZ-O+','FR-O-','FZ-O-'],
+		"H2": ['H2V0','H2V1','H2V2','H2V3','H1','H*','H**','H2+','H+','H-','S-H+','SEB-H+','S-2H+','SEB-2H+','S-H-',
+			   'SEB-H-','FZ-H2V0','FR-H2V0','FZ-H1','FR-H1','FZ-H+','FR-H+','FZ-H2+','FR-H2+','FZ-H-','FR-H-'],
+		"N2": ['N2','N2V','N2*','N2**','N2+','N','N*','N+'],
+		"Cl": ['Cl2','Cl','CL+','CL-','Cl2V','Cl2+','CL*','CL**','CL***'],
+		"F": ['F2','F2*','F2+','F','F*','F+','F-','S-F','S-F+','S-F-','SEB-F','SEB-F+','SEB-F-','FZ-F','FR-F','FZ-F+',
+			  'FR-F+','FZ-F-','FR-F-','FZ-F+','FR-F+'],
+		"H2O": ['H2O','H2O+','OH','OH-','H2OV','H2O2','S-H2O','SEB-H2O','S-H2OV','SEB-H2OV','S-H2O+','SEB-H2O+','S-OH',
+				'SEB-OH','S-OH-','SEB-OH-','S-OH+','SEB-OH+'],
+		"COx": ['CO2','CO2V','CO+','CO','CO+','C','C+'],
+		"CHx": ['CH4','CH3','CH2','CH','C','CH5+','CH4+','CH3+','CH2+','CH+','C+'],
+		"NHx": ['NH3','NH2','NH','NH4+','NH3+','NH2+','NH+'],
+		"NOx": ['NO2','NO2+','N2O','N2O+','NO','NO+'],
+		"NFx": ['NF3A','NF2A','NFA','NF3B','NF2B','NFB','NF3+','NF2+','NF+'],
+		"SFx": ['SF6','SF5','SF4','SF3','SF2','SF','S','SF5+','SF4+','SF3+','SF2+','SF+','S+','SF6-','SF5-'],
+		"Al": ['AL','AL*','AL**','AL+','S-AL','SEB-AL','S-AL*','SEB-AL*','S-AL**','SEB-AL**','S-AL+','SEB-AL+','FZ-AL+',
+			   'FR-AL+'],
+		"Be": ['BE','BE1','BE2','BE3','BE4','BE5','BE6','BE7','BE8','BE9','BE+','FR-BE','FZ-BE','FR-BE+','FZ-BE+'],
+
+		"Ar_Phase": ['S-E','S-AR+','S-AR4P','SEB-E','SEB-AR+','SEB-AR4P','SRCE-2437','FR-E','FZ-E','TE','PPOT',
+					 'POW-ALL'],
+		"O2_Phase": ['S-E','S-O+','S-O-','S-O2+','SEB-O+','SEB-O-','SEB-O2+','S-O3P3P','SEB-O3P3P','TE','PPOT','FR-E',
+					 'FZ-E'],
+
+		"PRCCPAr_PCMC": ['AR^0.35','EB-0.35','ION-TOT0.35'],
+		"PRCCPO2_PCMC": ['O^0.35','EB-0.35','ION-TOT0.35'],
+		"GECCCP2a_BE_PCMC": ['AR^    2.6 L','BE^    2.6 L','EB-    2.6 L'],
+	}
+
+
+	_T = TypeVar("T")
+
+	def enforce_float(value: int | float, field: str) -> float:
+		if isinstance(value, bool) or not isinstance(value, int | float):
+			raise TypeError(f"Field {field} is not a float or int.")
+
+		return float(value)
+
+	def enforce_int(value: int, field: str) -> int:
+		if isinstance(value, bool) or not isinstance(value, int):
+			raise TypeError(f"Field {field} is not an int.")
+
+		return value
+
+	def enforce_str(value: str, field: str) -> str:
+		if not isinstance(value, str):
+			raise TypeError(f"Field {field} is not a string.")
+
+		return value
+
+	def enforce_bool(value: bool, field: str) -> bool:
+		if not isinstance(value, bool):
+			raise TypeError(f"Field {field} is not a bool.")
+
+		return value
+
+	def enforce_list_obj(lst: list[_T], func_checker: Callable[_T, str], field: str) -> list[_T]:
+		return [func_checker(element, field) for element in lst]
+
+
+	@dataclass
+	class ChemistryInput:
+		variables: list[str] = field(default_factory=lambda: variable_sets["Phys"] + variable_sets["Ar"])
+		multivar: list[str] = field(default_factory=list)
+		radial_profiles: list[int] = field(default_factory=list)
+		axial_profiles: list[int] = field(default_factory=lambda: [0])
+		probe_loc: list[int] = field(default_factory=list)
+
+		# EDF.
+		IEDF_variables: list[str] = field(default_factory=lambda: variable_sets["GECCCP2a_BE_PCMC"].copy())
+		NEDF_variables: list[str] = field(default_factory=list)
+
+		# Movie.
+		phase_variables: list[str] = field(default_factory=lambda: variable_sets["Ar_Phase"].copy())
+		electrode_loc: list[int] = field(default_factory=lambda: [0, 0])
+		waveform_locs: list[int] = field(default_factory=list)
+
+		# Diagnostic.
+		sheath_ROI: list[int] = field(default_factory=list)
+		source_width: list[int] = field(default_factory=list)
+
+		def __post_init__(self):
+			self.variables = enforce_list_obj(self.variables, enforce_str, "variables")
+			self.multivar = enforce_list_obj(self.multivar, enforce_str, "multivar")
+			self.radial_profiles = enforce_list_obj(self.radial_profiles, enforce_int, "radial_profiles")
+			self.axial_profiles = enforce_list_obj(self.axial_profiles, enforce_int, "axial_profiles")
+			self.probe_loc = enforce_list_obj(self.probe_loc, enforce_int, "probe_loc")
+
+			self.IEDF_variables = enforce_list_obj(self.IEDF_variables, enforce_str, "IEDF_variables")
+			self.NEDF_variables = enforce_list_obj(self.NEDF_variables, enforce_str, "NEDF_variables")
+
+			self.phase_variables = enforce_list_obj(self.phase_variables, enforce_str, "phase_variables")
+			self.electrode_loc = enforce_list_obj(self.electrode_loc, enforce_int, "electrode_loc")
+			self.waveform_locs = enforce_list_obj(self.waveform_locs, enforce_int, "waveform_locs")
+
+			self.sheath_ROI = enforce_list_obj(self.sheath_ROI, enforce_int, "sheath_ROI")
+			self.source_width = enforce_list_obj(self.source_width, enforce_int, "source_width")
+
+			# Expand variable sets.
+			self.variables = self.expand_variable_set(self.variables)
+			self.multivar = self.expand_variable_set(self.multivar)
+			self.IEDF_variables = self.expand_variable_set(self.IEDF_variables)
+			self.NEDF_variables = self.expand_variable_set(self.NEDF_variables)
+			self.phase_variables = self.expand_variable_set(self.phase_variables)
+
+		@staticmethod
+		def expand_variable_set(items: list[str]) -> list[str]:
+			out = []
+			
+			for item in items:
+				if item in variable_sets:
+					out.extend(variable_sets[item])
+				else:
+					out.append(item)
+
+			return out
+
+	@dataclass
+	class FiguresInput:
+		tecplot2D: bool = False
+
+		# Movie.
+		movieicp2D: bool = False
+		movieicp1D: bool = False
+		timeaxis1D: bool = False
+		convergence: bool = False
+		iterstep: int = 1
+
+		# Profiles.
+		monoprofiles: bool = False
+		multiprofiles: bool = False
+		compare_profiles: bool = False
+
+		# Trends.
+		trend_phase_averaged: bool = False
+		trend_phase_resolved: bool = False
+		thrust_loc: int = 45
+
+		# Resolve.
+		phase_resolve2D: bool = False
+		phase_resolve1D: bool = False
+		sheath_dynamics: bool = False
+		PROES: bool = False
+		phase_cycles: float = 1.01
+		do_Fwidth: int = 0
+
+		# EDF.
+		IEDF_angular: bool = False
+		IEDF_trends: bool = False
+		EEDF: bool = False
+
+		def __post_init__(self):
+			self.tecplot2D = enforce_bool(self.tecplot2D, "tecplot2D")
+
+			self.movieicp2D = enforce_bool(self.movieicp2D, "movieicp2D")
+			self.movieicp1D = enforce_bool(self.movieicp1D, "movieicp1D")
+			self.timeaxis1D = enforce_bool(self.timeaxis1D, "timeaxis1D")
+			self.convergence = enforce_bool(self.convergence, "convergence")
+			self.iterstep = enforce_int(self.iterstep, "iterstep")
+
+			self.monoprofiles = enforce_bool(self.monoprofiles, "monoprofiles")
+			self.multiprofiles = enforce_bool(self.multiprofiles, "multiprofiles")
+			self.compare_profiles = enforce_bool(self.compare_profiles, "compare_profiles")
+
+			self.trend_phase_averaged = enforce_bool(self.trend_phase_averaged, "trend_phase_averaged")
+			self.trend_phase_resolved = enforce_bool(self.trend_phase_resolved, "trend_phase_resolved")
+			self.thrust_loc = enforce_int(self.thrust_loc, "thrust_loc")
+
+			self.phase_resolve2D = enforce_bool(self.phase_resolve2D, "phase_resolve2D")
+			self.phase_resolve1D = enforce_bool(self.phase_resolve1D, "phase_resolve1D")
+			self.sheath_dynamics = enforce_bool(self.sheath_dynamics, "sheath_dynamics")
+			self.PROES = enforce_bool(self.PROES, "PROES")
+			self.phase_cycles = enforce_float(self.phase_cycles, "phase_cycles")
+			self.do_Fwidth = enforce_int(self.do_Fwidth, "do_Fwidth")
+
+			self.IEDF_angular = enforce_bool(self.IEDF_angular, "IEDF_angular")
+			self.IEDF_trends = enforce_bool(self.IEDF_trends, "IEDF_trends")
+			self.EEDF = enforce_bool(self.EEDF, "EEDF")
+
+	@dataclass
+	class WriteInput:
+		ASCII: bool = False
+		CSV: bool = True
+
+		def __post_init__(self):
+			self.ASCII = enforce_bool(self.ASCII, "ASCII")
+			self.CSV = enforce_bool(self.CSV, "CSV")
+
+	@dataclass
+	class PrintoutInput:
+		general_trends: bool = False
+		Knudsen_number: bool = False
+		total_power: bool = False
+		Reynolds: bool = False
+		DC_bias: bool = False
+		thrust: bool = False
+		sheath: bool = False
+
+		def __post_init__(self):
+			self.general_trends = enforce_bool(self.general_trends, "general_trends")
+			self.Knudsen_number = enforce_bool(self.Knudsen_number, "Knudsen_number")
+			self.total_power = enforce_bool(self.total_power, "total_power")
+			self.Reynolds = enforce_bool(self.Reynolds, "Reynolds")
+			self.DC_bias = enforce_bool(self.DC_bias, "DC_bias")
+			self.thrust = enforce_bool(self.thrust, "thrust")
+			self.sheath = enforce_bool(self.sheath, "sheath")
+
+	@dataclass
+	class ImageInput:
+		extension: str = ".png"
+
+		# Style.
+		interp: str = "spline36"
+		cmap: str = "plasma"
+
+		# Geometry.
+		aspect_ratio: list[float] = field(default_factory=lambda: [10.0, 10.0])
+		radial_crop: list[float] = field(default_factory=list)
+		axial_crop: list[float] = field(default_factory=list)
+		rotate: bool = False
+
+		# Display.
+		plot_symmetry: bool = False
+		plot_mesh: bool = True
+		plot_grid: bool = False
+
+		# Contours.
+		plot_colourfill: bool = True
+		plot_contours: bool = True
+		contour_lvls: int = 10
+
+		# Axes.
+		axis_ticks: bool = True
+		axis_labels: bool = True
+		legend_loc: str = 'best'
+
+		# Colorbar.
+		cbar_ticks: bool = True
+		cbar_bins: int = 5
+		cbar_limit: list[float] = field(default_factory=list)
+
+		# Vector.
+		plot_vector: bool = True
+		vector_density: float = 1.5
+		vector_lw: float = 1.0
+
+		# Processing.
+		normalise: bool = False
+		log_plot: bool = False
+
+		# Overlays.
+		plot_sheath: bool = False
+		plot_phase_waveform: bool = False
+		plot_overlay: bool = False
+
+		def __post_init__(self):
+			self.extension = enforce_str(self.extension, "extension")
+
+			self.interp = enforce_str(self.interp, "interp")
+			self.cmap = enforce_str(self.cmap, "cmap")
+
+			self.aspect_ratio = enforce_list_obj(self.aspect_ratio, enforce_float, "aspect_ratio")
+			self.radial_crop = enforce_list_obj(self.radial_crop, enforce_float, "radial_crop")
+			self.axial_crop = enforce_list_obj(self.axial_crop, enforce_float, "axial_crop")
+			self.rotate = enforce_bool(self.rotate, "rotate")
+
+			self.plot_symmetry = enforce_bool(self.plot_symmetry, "plot_symmetry")
+			self.plot_mesh = enforce_bool(self.plot_mesh, "plot_mesh")
+			self.plot_grid = enforce_bool(self.plot_grid, "plot_grid")
+
+			self.plot_colourfill = enforce_bool(self.plot_colourfill, "plot_colourfill")
+			self.plot_contours = enforce_bool(self.plot_contours, "plot_contours")
+			self.contour_lvls = enforce_int(self.contour_lvls, "contour_lvls")
+
+			self.axis_ticks = enforce_bool(self.axis_ticks, "axis_ticks")
+			self.axis_labels = enforce_bool(self.axis_labels, "axis_labels")
+			self.legend_loc = enforce_str(self.legend_loc, "legend_loc")
+
+			self.cbar_ticks = enforce_bool(self.cbar_ticks, "cbar_ticks")
+			self.cbar_bins = enforce_int(self.cbar_bins, "cbar_bins")
+			self.cbar_limit = enforce_list_obj(self.cbar_limit, enforce_float, "cbar_limit")
+
+			self.plot_vector = enforce_bool(self.plot_vector, "plot_vector")
+			self.vector_density = enforce_float(self.vector_density, "vector_density")
+			self.vector_lw = enforce_float(self.vector_lw, "vector_lw")
+
+			self.normalise = enforce_bool(self.normalise, "normalise")
+			self.log_plot = enforce_bool(self.log_plot, "log_plot")
+
+			self.plot_sheath = enforce_bool(self.plot_sheath, "plot_sheath")
+			self.plot_phase_waveform = enforce_bool(self.plot_phase_waveform, "plot_phase_waveform")
+			self.plot_overlay = enforce_bool(self.plot_overlay, "plot_overlay")
+
+
+
+	@dataclass
+	class OverridesInput:
+		title: list[str] = field(default_factory=list)
+		legend: list[str] = field(default_factory=list)
+		xaxis: list[str] = field(default_factory=list)
+		xlabel: list[str] = field(default_factory=list)
+		ylabel: list[str] = field(default_factory=list)
+
+		def __post_init__(self):
+			self.title = enforce_list_obj(self.title, enforce_str, "title")
+			self.legend = enforce_list_obj(self.legend, enforce_str, "legend")
+			self.xaxis = enforce_list_obj(self.xaxis, enforce_str, "xaxis")
+			self.xlabel = enforce_list_obj(self.xlabel, enforce_str, "xlabel")
+			self.ylabel = enforce_list_obj(self.ylabel, enforce_str, "ylabel")
+
+	@dataclass
+	class ExpertInput:
+		# Debug.
+		magmesh: int = 1
+		ffmpeg_movies: bool = False
+		IDEBUG: bool = False
+
+		# Warnings.
+		ignore_div_zero: bool = True
+		ignore_empty_contours: bool = True
+
+		# Numerical.
+		sheath_method: str = 'AbsDensity'
+		thrust_method: str = 'AxialMomentum'
+		mean_calculation: str = 'MeanFraction'
+
+		# Overrides.
+		DC_bias_axis: str = 'Auto'
+		sheath_ion_species: list[str] = field(default_factory=lambda: ['AR+'])
+
+		# Filtering.
+		kinetic_filtering: bool = True
+		plot_kinetic_filtering: bool = False
+		sav_window: int = 25
+		sav_poly_order: int = 3
+
+		# Misc.
+		sheath_ion_ratio_threshold: float = 1.03
+		conv_azimuthal_phase: bool = True
+		EDF_threshold: float = 0.01
+		units: str = 'SI'
+
+		def __post_init__(self):
+			self.magmesh = enforce_int(self.magmesh, "magmesh")
+			self.ffmpeg_movies = enforce_bool(self.ffmpeg_movies, "ffmpeg_movies")
+			self.IDEBUG = enforce_bool(self.IDEBUG, "IDEBUG")
+
+			self.ignore_div_zero = enforce_bool(self.ignore_div_zero, "ignore_div_zero")
+			self.ignore_empty_contours = enforce_bool(self.ignore_empty_contours, "ignore_empty_contours")
+
+			self.sheath_method = enforce_str(self.sheath_method, "sheath_method")
+			self.thrust_method = enforce_str(self.thrust_method, "thrust_method")
+			self.mean_calculation = enforce_str(self.mean_calculation, "mean_calculation")
+
+			self.DC_bias_axis = enforce_str(self.DC_bias_axis, "DC_bias_axis")
+			self.sheath_ion_species = enforce_list_obj(self.sheath_ion_species, enforce_str, "sheath_ion_species")
+
+			self.kinetic_filtering = enforce_bool(self.kinetic_filtering, "kinetic_filtering")
+			self.plot_kinetic_filtering = enforce_bool(self.plot_kinetic_filtering, "plot_kinetic_filtering")
+			self.sav_window = enforce_int(self.sav_window, "sav_window")
+			self.sav_poly_order = enforce_int(self.sav_poly_order, "sav_poly_order")
+
+			self.sheath_ion_ratio_threshold = enforce_float(self.sheath_ion_ratio_threshold, "sheath_ion_ratio_threshold")
+			self.conv_azimuthal_phase = enforce_bool(self.conv_azimuthal_phase, "conv_azimuthal_phase")
+			self.EDF_threshold = enforce_float(self.EDF_threshold, "EDF_threshold")
+			self.units = enforce_str(self.units, "units")
+
+
+	@dataclass
+	class Config:
+		chemistry: ChemistryInput = field(default_factory=ChemistryInput)
+		figures: FiguresInput = field(default_factory=FiguresInput)
+		write: WriteInput = field(default_factory=WriteInput)
+		printout: PrintoutInput = field(default_factory=PrintoutInput)
+		image: ImageInput = field(default_factory=ImageInput)
+		overrides: OverridesInput = field(default_factory=OverridesInput)
+		expert: ExpertInput = field(default_factory=ExpertInput)
+
+
+	def create_input(data: dict, category: str, output_obj: type[_T], sections: list[str] | None = None) -> _T:
+		# data: the whole toml data
+		# category: the specific category we are creating an input for
+		# output_obj: the category's output object
+		# sections: the additional sections of this category
+
+		if sections is None:
+			sections = []
+
+		category_dict = data.get(category, {})
+
+		output_dict = {k: v for k, v in category_dict.items() if k not in sections}
+
+		for section in sections:
+			output_dict.update(category_dict.get(section, {}))
+
+		return output_obj(**output_dict)
+
+
+	def load_config(toml_dict):
+		chemistry_input = create_input(toml_dict, "chemistry", ChemistryInput, ["EDF", "movie", "diagnostic"])
+		figures_input = create_input(toml_dict, "figures", FiguresInput, ["movie", "profiles", "trends", "resolve", "EDF"])
+		write_input = create_input(toml_dict, "write", WriteInput)
+		printout_input = create_input(toml_dict, "print", PrintoutInput)
+		image_input = create_input(toml_dict, "image", ImageInput, ["style", "geometry", "display", "contours", "axes", "colorbar", "vector", "processing", "overlays"])
+		overrides_input = create_input(toml_dict, "overrides", OverridesInput)
+		expert_input = create_input(toml_dict, "expert", ExpertInput, ["debug", "warnings", "numerical", "overrides", "filtering", "misc"])
+
+		return Config(
+			chemistry=chemistry_input,
+			figures=figures_input,
+			write=write_input,
+			printout=printout_input,
+			image=image_input,
+			overrides=overrides_input,
+			expert=expert_input,
+		)
+
+	with open(input_file, "r") as toml_file:
+		toml_dict = toml.load(toml_file)
+
+	config = load_config(toml_dict)
 
 	#====================================================================#
 							 #LOW LEVEL INPUTS#
 	#====================================================================#
 
 	#Various debug and streamlining options.
-	Magmesh = 1							#initmesh.exe magnification factor. (Obsolete - legacy)
-	ffmpegMovies = False				#If False: Suppresses ffmpeg routines, saves RAM.
-	IDEBUG = False						#Produces debug outputs for most diagnostics.
+	Magmesh = config.expert.magmesh							#initmesh.exe magnification factor. (Obsolete - legacy)
+	ffmpegMovies = config.expert.ffmpeg_movies				#If False: Suppresses ffmpeg routines, saves RAM.
+	IDEBUG = config.expert.IDEBUG							#Produces debug outputs for most diagnostics.
 
 	#Warning suppressions
-	np.seterr(divide='ignore', invalid='ignore')		#Suppresses divide by zero errors
-	#Fix: "can't invoke "event" command: application has been destroyed" error with PROES images
-	#Fix: "Exception KeyError: KeyError(<weakref at 0x7fc8723ca940; to 'tqdm' at 0x7fc85cd23910>,)" error
+	if config.expert.ignore_div_zero:
+		np.seterr(divide='ignore', invalid='ignore')		#Suppresses divide by zero errors
+		#Fix: "can't invoke "event" command: application has been destroyed" error with PROES images
+		#Fix: "Exception KeyError: KeyError(<weakref at 0x7fc8723ca940; to 'tqdm' at 0x7fc85cd23910>,)" error
 
-	warnings.filterwarnings("ignore", message="No contour levels were found within the data range.")
-	#Fix: Suppress above warning on plotting of empty contour plots
+	if config.expert.ignore_empty_contours:
+		warnings.filterwarnings("ignore", message="No contour levels were found within the data range.")
+		#Fix: Suppress above warning on plotting of empty contour plots
 
 	#Numerical Calculation Methods:
-	GlobSheathMethod = 'AbsDensity'			#Set Global Sheath Calculation Method.
-	#Choices: ('AbsDensity','IntDensity')
-	GlobThrustMethod = 'AxialMomentum'		#Set Global Thrust Calculation Method.
-	#Choices:('ThermalVelocity','AxialMomentum')
-	GlobMeanCalculation = 'MeanFraction'	#Definition of 'mean' EDF value
-	#Choices: ('MeanEnergy','MeanFraction')
+	GlobSheathMethod = config.expert.sheath_method			#Set Global Sheath Calculation Method.
+	GlobThrustMethod = config.expert.thrust_method			#Set Global Thrust Calculation Method.
+	GlobMeanCalculation = config.expert.mean_calculation	#Definition of 'mean' EDF value
 
 	#Overrides or 'fudge factors' for diagnostics
-	DCbiasaxis = 'Auto'							#Force Direction Over Which DCBias is Calculated
-	#Choices:('Axial','Radial','Auto')
-	SheathIonSpecies = ['AR+']					#Force Sheath Ion Species (blank for auto)
-	#['AR+'] #['O+']
+	DCbiasaxis = config.expert.DC_bias_axis					#Force Direction Over Which DCBias is Calculated
+	SheathIonSpecies = config.expert.sheath_ion_species		#Force Sheath Ion Species (blank for auto)
 
 	#Ratio of electrons to ions that determines the edge of the sheath
 	#Ideally this should be 1.00, but in practice it's slightly over 1 at lower resolutions
-	Sheath_IonRatio_Threshold = 1.03
+	Sheath_IonRatio_Threshold = config.expert.sheath_ion_ratio_threshold
 
 	#Data Filtering and Smoothing Methods:
-	KineticFiltering = True						#Pre-fit kinetic data employing a SavGol filter
-	PlotKineticFiltering = False				#Plot Filtered Profiles, or employ only in trends.
-	Glob_SavWindow, Glob_SavPolyOrder = 25, 3	#Window > FeatureSize, Polyorder ~= Smoothness
+	KineticFiltering = config.expert.kinetic_filtering				#Pre-fit kinetic data employing a SavGol filter
+	PlotKineticFiltering = config.expert.plot_kinetic_filtering		#Plot Filtered Profiles, or employ only in trends.
+	Glob_SavWindow = config.expert.sav_window						#Window > FeatureSize
+	Glob_SavPolyOrder = config.expert.sav_poly_order				#Polyorder ~= Smoothness
 
 	#Apply azimuthal direction (phase) to relevant variables if true, else plot magnitude only
-	ConvAzimuthalPhase = True
+	ConvAzimuthalPhase = config.expert.conv_azimuthal_phase
 
 	#Minimum plotted EDF energy fraction, cuts x-axis at index where :: f(e) = f(e)*EDF_Threshold
 	#Note: IEDF/EEDF trends are only taken within range :: EDF_threshold < f(e) < 1.0
-	EDF_Threshold = 0.01						# i.e. = 0.0 to plot all
+	EDF_Threshold = config.expert.EDF_threshold				# i.e. = 0.0 to plot all
 
 	#Define units for particular variables
-	Units = 'SI'								#'SI','CGS'
+	Units = config.expert.units					#'SI','CGS'
 												# FUNCTION MATHS ASSUMES SI, CGS WILL GIVE INCORRECT RESULTS
-
-	####################
-
-	#Commonly used variable sets.
-	Phys = ['E','S-E','SEB-E','TE','PPOT','P-POT','POW-RF','POW-RF-E','POW-ICP','POW-ICP1','POW-ICP2','POW-ICP3','POW-ICP4','POW-ALL','EB-ESORC','COLF','SIGMA','EF-TOT', 'ERADIAL','ETHETA','EAXIAL','PHASEER','PHASE','PHASEEZ','EAMB-Z','EAMB-R','RHO','BR','BRS','BZ','BZS','BT','BTS','BRF', 'PHASEBR','PHASEBT','PHASEBZ','VR-ION+','VZ-ION+','E FLUX-R','FR-E','E FLUX-Z','FZ-E','JZ-NET','JR-NET','J-THETA','J-TH(MAG)','J-TH(PHA)','PRESSURE','TG-AVE','VR-NEUTRAL','VZ-NEUTRAL']
-	PhysCoilsEF = \
-	['ERADIAL-2','ETHETA-2','EAXIAL-2','PHASEER-2','PHASEEZ-2','ERADIAL-3','ETHETA-3','EAXIAL-3','PHASEER-3','PHASEEZ-3', \
-	 'ERADIAL-4','ETHETA-4','EAXIAL-4','PHASEER-4','PHASEEZ-4','ERADIAL-5','ETHETA-5','EAXIAL-5','PHASEER-5','PHASEEZ-5', \
-	 'ERADIAL-6','ETHETA-6','EAXIAL-6','PHASEER-6','PHASEEZ-6','ERADIAL-7','ETHETA-7','EAXIAL-7','PHASEER-7','PHASEEZ-7', \
-	 'ERADIAL-8','ETHETA-8','EAXIAL-8','PHASEER-8','PHASEEZ-8']
-	PhysCoilsBF = \
-	['BT-2','BT-3','BT-4','BT-5','BT-6','BT-7','BT-8', \
-	 'BRF-2','BRF-3','BRF-4','BRF-5','BRF-6','BRF-7','BRF-8', \
-	 'PHASEBT-2','PHASEBT-3','PHASEBT-4','PHASEBT-5','PHASEBT-6','PHASEBT-7','PHASEBT-8']
-
-	Conv = ['E','TE','PPOT','POW-RF','SIGMA','EF-TOT','TG-AVE']
-
-	TEST = ['AR2+']
-	Ar = ['AR3S','AR4SM','AR4SR','AR4SPM','AR4SPR','AR4P','AR4D','AR','AR+','AR2+','AR2*','S-AR+','S-AR4P','SEB-AR+','SEB-AR4P','FZ-AR3S','FR-AR3S','FR-AR+','FZ-AR+','FZ-AR3S','FR-AR3S']
-	O2 = ['O3','O2','O2V','O2*','O2*1S','O2+','O2-','O','O1S','O+','O-','O*','S-O3','S-O2+','S-O+','S-O-','SEB-O3','SEB-O+','SEB-O2+','SEB-O-','FR-O+','FZ-O+','FR-O-','FZ-O-']
-	H2 = ['H2V0','H2V1','H2V2','H2V3','H1','H*','H**','H2+','H+','H-','S-H+','SEB-H+','S-2H+','SEB-2H+','S-H-','SEB-H-','FZ-H2V0','FR-H2V0','FZ-H1','FR-H1','FZ-H+','FR-H+','FZ-H2+','FR-H2+','FZ-H-','FR-H-']
-	N2 = ['N2','N2V','N2*','N2**','N2+','N','N*','N+']
-	Cl = ['Cl2','Cl','CL+','CL-','Cl2V','Cl2+','CL*','CL**','CL***']
-	F = ['F2','F2*','F2+','F','F*','F+','F-','S-F','S-F+','S-F-','SEB-F','SEB-F+','SEB-F-','FZ-F','FR-F','FZ-F+','FR-F+','FZ-F-','FR-F-','FZ-F+','FR-F+']
-	H2O = ['H2O','H2O+','OH','OH-','H2OV','H2O2','S-H2O','SEB-H2O','S-H2OV','SEB-H2OV','S-H2O+','SEB-H2O+','S-OH','SEB-OH','S-OH-','SEB-OH-','S-OH+','SEB-OH+']
-	COx = ['CO2','CO2V','CO+','CO','CO+','C','C+']
-	CHx = ['CH4','CH3','CH2','CH','C','CH5+','CH4+','CH3+','CH2+','CH+','C+']
-	NHx = ['NH3','NH2','NH','NH4+','NH3+','NH2+','NH+']
-	NOx = ['NO2','NO2+','N2O','N2O+','NO','NO+']
-	NFx = ['NF3A','NF2A','NFA','NF3B','NF2B','NFB','NF3+','NF2+','NF+']
-	SFx = ['SF6','SF5','SF4','SF3','SF2','SF','S','SF5+','SF4+','SF3+','SF2+','SF+','S+','SF6-','SF5-']
-	Al = ['AL','AL*','AL**','AL+','S-AL','SEB-AL','S-AL*','SEB-AL*','S-AL**','SEB-AL**','S-AL+','SEB-AL+','FZ-AL+','FR-AL+']
-	Be = ['BE','BE1','BE2','BE3','BE4','BE5','BE6','BE7','BE8','BE9','BE+','FR-BE','FZ-BE','FR-BE+','FZ-BE+']
-
-	Ar_Phase = ['S-E','S-AR+','S-AR4P','SEB-E','SEB-AR+','SEB-AR4P','SRCE-2437','FR-E','FZ-E','TE','PPOT','POW-ALL']
-	O2_Phase = ['S-E','S-O+','S-O-','S-O2+','SEB-O+','SEB-O-','SEB-O2+','S-O3P3P','SEB-O3P3P','TE','PPOT','FR-E','FZ-E']
-
-	PRCCPAr_PCMC = ['AR^0.35','EB-0.35','ION-TOT0.35']
-	PRCCPO2_PCMC = ['O^0.35','EB-0.35','ION-TOT0.35']
-	GECCCP2a_BE_PCMC = ['AR^    2.6 L','BE^    2.6 L','EB-    2.6 L']
-
-	####################
 
 	#====================================================================#
 						#SWITCHBOARD AND DIAGNOSTICS#
 	#====================================================================#
 
 	# Requested IEDF/NEDF Variables.
-	IEDFVariables = GECCCP2a_BE_PCMC			# Requested Variables from iprofile_2d.pdt
-	NEDFVariables = []						# Requested Variables from nprofile_2d.pdt
+	IEDFVariables = config.chemistry.IEDF_variables			# Requested Variables from iprofile_2d.pdt
+	NEDFVariables = config.chemistry.NEDF_variables			# Requested Variables from nprofile_2d.pdt
 
 	# Requested movie1/movie_icp Variables.
-	PhaseVariables = Ar_Phase				# Requested Movie1 (phase) Variables.
-	electrodeloc = [0,0]					# Cell location of powered electrode [R,Z].
-	waveformlocs = []						# Cell locations of additional waveforms [R,Z].
+	PhaseVariables = config.chemistry.phase_variables		# Requested Movie1 (phase) Variables.
+	electrodeloc = config.chemistry.electrode_loc			# Cell location of powered electrode [R,Z].
+	waveformlocs = config.chemistry.waveform_locs			# Cell locations of additional waveforms [R,Z].
 
 	# Requested variables and plotting locations.
-	Variables = Phys+Ar						# Requested Variables from Tecplot2D.pdt, tecplot_kin.pdt, and movie_icp.pdt
-	multivar = []							# Additional variables plotted ontop of [Variables]
-	radialprofiles = []						# Radial 1D-Profiles to be plotted (fixed Z-mesh) --
-	axialprofiles = [0]						# Axial 1D-Profiles to be plotted (fixed R-mesh) |
-	probeloc = []							# Cell location For Trend Analysis [R,Z], (leave empty for global min/max)
+	Variables = config.chemistry.variables					# Requested Variables from Tecplot2D.pdt, tecplot_kin.pdt, and movie_icp.pdt
+	multivar = config.chemistry.multivar					# Additional variables plotted ontop of [Variables]
+	radialprofiles = config.chemistry.radial_profiles		# Radial 1D-Profiles to be plotted (fixed Z-mesh) --
+	axialprofiles = config.chemistry.axial_profiles			# Axial 1D-Profiles to be plotted (fixed R-mesh) |
+	probeloc = config.chemistry.probe_loc					# Cell location For Trend Analysis [R,Z], (leave empty for global min/max)
 
 	# Various Diagnostic Settings			>>> OUTDATED, TO BE RETIRED <<<
-	sheathROI = []							# Sheath Region of Interest, (Start,End) [cells]
-	sourcewidth = []						# Source Dimension at ROI, leave empty for auto. [cells]
+	sheathROI = config.chemistry.sheath_ROI					# Sheath Region of Interest, (Start,End) [cells]
+	sourcewidth = config.chemistry.source_width				# Source Dimension at ROI, leave empty for auto. [cells]
 
 
 	# Requested diagnostics and plotting routines.
-	savefig_tecplot2D = False				# 2D Single-Variables: TECPLOT2D.PDT				< .csv File Save
+	savefig_tecplot2D = config.figures.tecplot2D			# 2D Single-Variables: TECPLOT2D.PDT				< .csv File Save
 
-	savefig_movieicp2D = False				# 2D Variables against space-axis:	movie_icp.pdt	< MAXITER SHOULD BE AN ARRAY
-	savefig_movieicp1D = False				# 1D Variables against space-axis:	movie_icp.pdt	< MAXITER SHOULD BE AN ARRAY
-	savefig_timeaxis1D = False				# 1D Variables against time-axis:	movie_icp.pdt
-	savefig_convergence = False				# 1D variables against ITER-axis:	movie_icp.pdt
-	iterstep = 1							# movie_icp.pdt iteration step size
+	savefig_movieicp2D = config.figures.movieicp2D			# 2D Variables against space-axis:	movie_icp.pdt	< MAXITER SHOULD BE AN ARRAY
+	savefig_movieicp1D = config.figures.movieicp1D			# 1D Variables against space-axis:	movie_icp.pdt	< MAXITER SHOULD BE AN ARRAY
+	savefig_timeaxis1D = config.figures.timeaxis1D			# 1D Variables against time-axis:	movie_icp.pdt
+	savefig_convergence = config.figures.convergence		# 1D variables against ITER-axis:	movie_icp.pdt
+	iterstep = config.figures.iterstep						# movie_icp.pdt iteration step size
 
-	savefig_monoprofiles = False			# 1D Variables against space-axis:		TECPLOT2D	< .csv File Save
-	savefig_multiprofiles = False			# 1D Variables Compared Same Sims:		TECPLOT2D
-	savefig_compareprofiles = False			# 1D Variables Compared Between Sims:	TECPLOT2D
+	savefig_monoprofiles = config.figures.monoprofiles			# 1D Variables against space-axis:		TECPLOT2D	< .csv File Save
+	savefig_multiprofiles = config.figures.multiprofiles		# 1D Variables Compared Same Sims:		TECPLOT2D
+	savefig_compareprofiles = config.figures.compare_profiles	# 1D Variables Compared Between Sims:	TECPLOT2D
 	# ^^^^
 	# NOTE: IMAGEPLOTTER1D RETURNS ARRAY ORDERED AS [0,height]  <<< REVERSED RELATIVE TO HPEM
 	# 		IMAGEPLOTTER2D RETURNS ARRAY ORDERED AS [height,0] 	<<< SAME ORIENTATION AS HPEM
 	#		1D PROFILES ARE MANUALLY REVERSED ([::-1]) IN THE 1D DIAGNOSTICS TO ACCOUNT FOR THIS
 	#		IT WOULD BE BETTER TO USE "DataExtent" TO PROVIDE THE CORRECT ORIENTATION
 
-	savefig_trendphaseaveraged = False		# Phase averaged trends at axial/radial cells		# CHANGE TO 'ProbeLoc' cell
-	savefig_trendphaseresolved = False		# Phase resolved trends at axial/radial cells		# CHANGE TO 'ProbeLoc' cell
-	thrustloc = 45							# Z-axis cell for thrust calculation  [Cells]
+	savefig_trendphaseaveraged = config.figures.trend_phase_averaged	# Phase averaged trends at axial/radial cells		# CHANGE TO 'ProbeLoc' cell
+	savefig_trendphaseresolved = config.figures.trend_phase_resolved	# Phase resolved trends at axial/radial cells		# CHANGE TO 'ProbeLoc' cell
+	thrustloc = config.figures.thrust_loc								# Z-axis cell for thrust calculation  [Cells]
 
-	savefig_phaseresolve2D = False			# 2D Phase Resolved Images							< .csv File Save
-	savefig_phaseresolve1D = False			# 1D Phase Resolved Images							< .csv File Save
-	savefig_sheathdynamics = False			# 1D and 2D sheath dynamics images
-	savefig_PROES =	False					# Simulated PROES Diagnostic
-	phasecycles = 1.01						# Vaveform phase cycles to be plotted. 				 [Float]
-	DoFwidth = 0 							# PROES Depth of Field (symmetric about image plane) [Cells]
+	savefig_phaseresolve2D = config.figures.phase_resolve2D		# 2D Phase Resolved Images							< .csv File Save
+	savefig_phaseresolve1D = config.figures.phase_resolve1D		# 1D Phase Resolved Images							< .csv File Save
+	savefig_sheathdynamics = config.figures.sheath_dynamics		# 1D and 2D sheath dynamics images
+	savefig_PROES =	config.figures.PROES						# Simulated PROES Diagnostic
+	phasecycles = config.figures.phase_cycles					# Vaveform phase cycles to be plotted. 				 [Float]
+	DoFwidth = config.figures.do_Fwidth							# PROES Depth of Field (symmetric about image plane) [Cells]
 
-	savefig_IEDFangular = False				# 2D images of angular IEDF; single folders			< .csv File Save
-	savefig_IEDFtrends = False				# 1D IEDF trends; all folders
-	savefig_EEDF = False					# 1D EEDF trends; all folders						< No Routine
+	savefig_IEDFangular = config.figures.IEDF_angular			# 2D images of angular IEDF; single folders			< .csv File Save
+	savefig_IEDFtrends = config.figures.IEDF_trends				# 1D IEDF trends; all folders
+	savefig_EEDF = config.figures.EEDF							# 1D EEDF trends; all folders						< No Routine
 
 
 	# Write processed data to ASCII files.
-	write_ASCII = False						# Data underpinning figs written in ASCII format	< Outdated
-	Write_CSV = True						# Data underpinning figs written in .csv format
+	write_ASCII = config.write.ASCII				# Data underpinning figs written in ASCII format	< Outdated
+	Write_CSV = config.write.CSV					# Data underpinning figs written in .csv format
 	# ^^^^
 	# NOTE: SHEATH EXTENT SAVES WITH WRONG NAME, IN WRONG FILE FORMAT, IN ROOT DIRECTORY
 
 
 	# Steady-State diagnostics terminal output toggles.
-	print_generaltrends = False				# Verbose Min/Max Trend Outputs.
-	print_Knudsennumber = False				# Print cell averaged Knudsen Number
-	print_totalpower = False				# Print all requested total powers
-	print_Reynolds = False					# Print cell averaged sound speed
-	print_DCbias = False					# Print DC bias at electrodeloc
-	print_thrust = False					# Print neutral, ion and total thrust
-	print_sheath = False					# Print sheath width at electrodeloc
+	print_generaltrends = config.printout.general_trends		# Verbose Min/Max Trend Outputs.
+	print_Knudsennumber = config.printout.Knudsen_number		# Print cell averaged Knudsen Number
+	print_totalpower = config.printout.total_power				# Print all requested total powers
+	print_Reynolds = config.printout.Reynolds					# Print cell averaged sound speed
+	print_DCbias = config.printout.DC_bias						# Print DC bias at electrodeloc
+	print_thrust = config.printout.thrust						# Print neutral, ion and total thrust
+	print_sheath = config.printout.sheath						# Print sheath width at electrodeloc
 
 
 	# Image plotting options.
-	image_extension = '.png'				# Define image extension  ('.png', '.jpg', '.eps')
-	image_interp = 'spline36'				# Define image smoothing  ('none', 'bilinear','quadric','spline36')
-	image_cmap = 'plasma'					# Define global colourmap ('jet','plasma','inferno','gnuplot','tecmodern')
+	image_extension = config.image.extension					# Define image extension  ('.png', '.jpg', '.eps')
+	image_interp = config.image.interp							# Define image smoothing  ('none', 'bilinear','quadric','spline36')
+	image_cmap = config.image.cmap								# Define global colourmap ('jet','plasma','inferno','gnuplot','tecmodern')
 
-	image_aspectratio = [10,10]				# Real Size of [X,Y] in cm [Doesn't Rotate - X is always horizontal]
-	image_radialcrop = []				# Crops 2D images to [R1,R2] in cm
-	image_axialcrop = []					# Crops 2D images to [Z1,Z2] in cm
+	image_aspectratio = config.image.aspect_ratio				# Real Size of [X,Y] in cm [Doesn't Rotate - X is always horizontal]
+	image_radialcrop = config.image.radial_crop					# Crops 2D images to [R1,R2] in cm
+	image_axialcrop = config.image.axial_crop					# Crops 2D images to [Z1,Z2] in cm
 
-	image_plotsymmetry = False				# Plot radial symmetry - mirrors across the ISYM axis
-	image_plotmesh = True					# Plot material mesh outlines
-	image_plotgrid = False					# Plot major/minor gridlines on 1D profiles
-	image_rotate = False						# Rotate 2D images 90 degrees to the right.
+	image_plotsymmetry = config.image.plot_symmetry				# Plot radial symmetry - mirrors across the ISYM axis
+	image_plotmesh = config.image.plot_mesh						# Plot material mesh outlines
+	image_plotgrid = config.image.plot_grid						# Plot major/minor gridlines on 1D profiles
+	image_rotate = config.image.rotate							# Rotate 2D images 90 degrees to the right.
 
-	image_plotcolourfill = True				# Plot 2D image colour fill
-	image_plotcontours = True				# Plot 2D image contour lines
-	image_contourlvls = 10					# Number of contour levels
+	image_plotcolourfill = config.image.plot_colourfill			# Plot 2D image colour fill
+	image_plotcontours = config.image.plot_contours				# Plot 2D image contour lines
+	image_contourlvls = config.image.contour_lvls				# Number of contour levels
 
-	image_axisticks = True					# Toggle to show axis ticks and associated values or not
-	image_axislabels = True					# Toggle to show axis labels or not
-	image_legendloc = 'best'				# Set Legend Location, "1-9" or 'best' for automatic
-	image_cbarticks = True					# Toggle to show cbar ticks and associated values or not
-	image_cbarbins = 5						# Set number of colourbar bins
-	image_cbarlimit = []					# Set arbitrary [min,max] colourbar limits
+	image_axisticks = config.image.axis_ticks					# Toggle to show axis ticks and associated values or not
+	image_axislabels = config.image.axis_labels					# Toggle to show axis labels or not
+	image_legendloc = config.image.legend_loc					# Set Legend Location, "1-9" or 'best' for automatic
+	image_cbarticks = config.image.cbar_ticks					# Toggle to show cbar ticks and associated values or not
+	image_cbarbins = config.image.cbar_bins						# Set number of colourbar bins
+	image_cbarlimit = config.image.cbar_limit					# Set arbitrary [min,max] colourbar limits
 
-	image_plotvector = True					# Plot vector arrows onto 2D images (uses FR-XX, FZ-XX if they exist)
-	image_vectordensity = 1.5				# Vector line density, higher means more dense streamlines
-	image_vectorlw = 1.0					# Vector line width, higher means thicker streamlines
+	image_plotvector = config.image.plot_vector					# Plot vector arrows onto 2D images (uses FR-XX, FZ-XX if they exist)
+	image_vectordensity = config.image.vector_density			# Vector line density, higher means more dense streamlines
+	image_vectorlw = config.image.vector_lw						# Vector line width, higher means thicker streamlines
 
-	image_normalise = False					# Plot Data normlised to maximum value (Applies to all outputs)
-	image_logplot = False					# Plot log10(Data) (Applies to all outputs)
+	image_normalise = config.image.normalise					# Plot Data normlised to maximum value (Applies to all outputs)
+	image_logplot = config.image.log_plot						# Plot log10(Data) (Applies to all outputs)
 
-	image_plotsheath = False				# Plot sheath extent onto 2D images 'Axial','Radial'
-	image_plotphasewaveform = False			# Plot waveform sub-figure on phaseresolve2D images
-	image_plotoverlay = False				# Plot location(s) of 1D radial/axial profiles onto 2D images
+	image_plotsheath = config.image.plot_sheath					# Plot sheath extent onto 2D images 'Axial','Radial'
+	image_plotphasewaveform = config.image.plot_phase_waveform	# Plot waveform sub-figure on phaseresolve2D images
+	image_plotoverlay = config.image.plot_overlay				# Plot location(s) of 1D radial/axial profiles onto 2D images
 
 
 	# Image Overrides (Applies to all images)
-	titleoverride = []
-	legendoverride = []
-	xaxisoverride = []
-	xlabeloverride = []
-	ylabeloverride = []
+	titleoverride = config.overrides.title
+	legendoverride = config.overrides.legend
+	xaxisoverride = config.overrides.xaxis
+	xlabeloverride = config.overrides.xlabel
+	ylabeloverride = config.overrides.ylabel
 
 	#============================#
 
