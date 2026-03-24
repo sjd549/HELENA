@@ -1,10 +1,18 @@
 import pathlib
+import pytest
+import shutil
+import os
 
 from helena import run
 
 
-def test_AR2plus(snaptolshot):
-    import os
+@pytest.fixture
+def directory():
+    return pathlib.Path(__file__).parent / "input_files"
+
+
+def test_AR2plus(snaptolshot, directory):
+    input_file = directory / "input1.toml"
 
     os.chdir("tests/")
 
@@ -12,7 +20,7 @@ def test_AR2plus(snaptolshot):
 
     output_file.unlink(missing_ok=True)
 
-    run(argv=[])
+    run(argv=[str(input_file)])
 
     assert output_file.exists()
 
@@ -24,9 +32,6 @@ def test_AR2plus(snaptolshot):
     assert snaptolshot == output_lines
 
     pathlib.Path("data/meshnodes.dat").unlink()
-    pathlib.Path("data/TECPlot2D/2DPlots_Data/AR2+.csv").unlink()
-    pathlib.Path("data/TECPlot2D/2DPlot_AR2+.png").unlink()
-    pathlib.Path("data/TECPlot2D/2DPlots_Data").rmdir()
-    pathlib.Path("data/TECPlot2D").rmdir()
+    shutil.rmtree(pathlib.Path("data/TECPlot2D/"))
 
     os.chdir("../")

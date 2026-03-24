@@ -1,0 +1,151 @@
+[chemistry]
+variables = ["TEST"]
+multivar = []
+radial_profiles = []
+axial_profiles = [0]
+probe_loc = []
+
+[chemistry.EDF]
+IEDF_variables = ["GECCCP2a_BE_PCMC"]
+NEDF_variables = []
+
+[chemistry.movie]
+phase_variables = ["Ar_Phase"]
+electrode_loc = [0,0]
+waveform_locs = []
+
+[chemistry.diagnostic]
+sheath_ROI = []
+source_width = []
+
+[figures]
+tecplot2D = true
+
+[figures.movie]
+movieicp2D = false
+movieicp1D = false
+timeaxis1D = false
+convergence = false
+iterstep = 1
+
+[figures.profiles]
+monoprofiles = false
+multiprofiles = false
+compare_profiles = false
+
+[figures.trends]
+trend_phase_averaged = false
+trend_phase_resolved = false
+thrust_loc = 45
+
+[figures.resolve]
+phase_resolve2D = false
+phase_resolve1D = false
+sheath_dynamics = false
+PROES =	false
+phase_cycles = 1.01
+do_Fwidth = 0
+
+[figures.EDF]
+IEDF_angular = false
+IEDF_trends = false
+EEDF = false
+
+[write]
+ASCII = false
+CSV = true
+
+[print]
+general_trends = false
+Knudsen_number = false
+total_power = false
+Reynolds = false
+DC_bias = false
+thrust = false
+sheath = false
+
+[image]
+extension = '.png'
+
+[image.style]
+interp = 'spline36'
+cmap = 'plasma'
+
+[image.geometry]
+aspect_ratio = [10,10]
+radial_crop = []
+axial_crop = []
+rotate = false
+
+[image.display]
+plot_symmetry = false
+plot_mesh = true
+plot_grid = false
+
+[image.contours]
+plot_colourfill = true
+plot_contours = true
+contour_lvls = 10
+
+[image.axes]
+axis_ticks = true
+axis_labels = true
+legend_loc = 'best'
+
+[image.colorbar]
+cbar_ticks = true
+cbar_bins = 5
+cbar_limit = []
+
+[image.vector]
+plot_vector = true
+vector_density = 1.5
+vector_lw = 1.0
+
+[image.processing]
+normalise = false
+log_plot = false
+
+[image.overlays]
+plot_sheath = false
+plot_phase_waveform = false
+plot_overlay = false
+
+[overrides]
+title = []
+legend = []
+xaxis = []
+xlabel = []
+ylabel = []
+
+#=======================================================#
+
+[expert.debug]
+magmesh = 1
+ffmpeg_movies = false
+IDEBUG = false
+
+[expert.warnings]
+ignore_div_zero = true
+ignore_empty_contours = true
+
+[expert.numerical]
+sheath_method = 'AbsDensity'
+thrust_method = 'AxialMomentum'
+mean_calculation = 'MeanFraction'
+
+[expert.overrides]
+DC_bias_axis = 'Auto'
+sheath_ion_species = ['AR+']
+
+[expert.filtering]
+kinetic_filtering = true
+plot_kinetic_filtering = false
+sav_window = 25
+sav_poly_order = 3
+
+[expert.misc]
+sheath_ion_ratio_threshold = 1.03
+conv_azimuthal_phase = true
+EDF_threshold = 0.01
+units = 'SI'
