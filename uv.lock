@@ -178,7 +178,7 @@ requires-dist = [
     { name = "pytest", marker = "extra == 'tests'", specifier = ">=9.0.2" },
     { name = "ruff", marker = "extra == 'lint'", specifier = ">=0.15.4" },
     { name = "scipy", specifier = ">=1.17.1" },
-    { name = "snaptol", marker = "extra == 'tests'", specifier = ">=0.0.3" },
+    { name = "snaptol", marker = "extra == 'tests'", specifier = ">=0.0.4" },
     { name = "toml", specifier = ">=0.10.2" },
     { name = "tqdm", specifier = ">=4.67.3" },
 ]
@@ -684,15 +684,15 @@ wheels = [
 
 [[package]]
 name = "snaptol"
-version = "0.0.3"
+version = "0.0.4"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "numpy" },
     { name = "pytest" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/ff/36/d78a0002c921b0297b72ac35d852d6892790563d4b6a696d59d876cb69bb/snaptol-0.0.3.tar.gz", hash = "sha256:6892e6bfc6108c8d94a4c1242a82b96751c3ce9c639bf3ec9e821d72ad9a0919", size = 102884, upload-time = "2026-02-17T10:27:47.249Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/c3/f3/745fe4e9248cf7372bc3ced73d52e83185e60ffc0f3193520e69198ae0cf/snaptol-0.0.4.tar.gz", hash = "sha256:62b7759add1aab7cd8abb3a2a25ff824259ac837fab851568c01df1dd12577be", size = 102905, upload-time = "2026-03-26T19:22:29.689Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/e7/99/c52a1cabc65247a419ca6dcb9114a488c5fc3f5d1a176430d053bf055271/snaptol-0.0.3-py3-none-any.whl", hash = "sha256:af5a191209f934e4e1f65079dd601aec9aa85e5283c832ad67c27bfc00b353d9", size = 13013, upload-time = "2026-02-17T10:27:45.563Z" },
+    { url = "https://files.pythonhosted.org/packages/f9/67/3c5cb4cf7e7a8902c66dfd4b775528b813fa03bce959aedd1ab63ac03ccb/snaptol-0.0.4-py3-none-any.whl", hash = "sha256:f22a1a6f982c9d9030a36652157c966f89928c95789ef89b35fc238e7e755cff", size = 13024, upload-time = "2026-03-26T19:22:28.018Z" },
 ]
 
 [[package]]
