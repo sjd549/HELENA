@@ -222,7 +222,7 @@ def run(argv=None):
 		@staticmethod
 		def expand_variable_set(items: list[str]) -> list[str]:
 			out = []
-			
+
 			for item in items:
 				if item in variable_sets:
 					out.extend(variable_sets[item])
@@ -7061,13 +7061,31 @@ def run(argv=None):
 				ImageOptions(fig,ax,Xlabel,Ylabel,Title,Legend,Crop=False)
 				plt.tight_layout()
 
-				#Print convergence data to terminal if required
+
+				# Compute and display convergence trends to terminal
 				print('')
 				print('Percentage Variation At Final Iteration:')
+				print('Var \t Relative % \t Abs Delta \t Abs Sum')
 				for i in range(0,len(ConvergenceTrends)):
-					ConvergenceFraction = 1-abs( ConvergenceTrends[i][-1]/ConvergenceTrends[i][-2] )
-					ConvergencePercentage = round( (ConvergenceFraction*100), 6)
-					print( VariableStrings[i], '\t', ConvergencePercentage, '%')
+
+					# The mesh averaged value 	# NOTE, NORMALISED TO MAX VALUE FOR VARIABLE [i] #
+					MeshAveragedVal = abs(ConvergenceTrends[i][-1])
+
+					# Compute absolute delta and absolute sum
+					AbsoluteDelta = abs(ConvergenceTrends[i][-1] - ConvergenceTrends[i][-2])
+					AbsoluteSum = abs(ConvergenceTrends[i][-1]) + abs(ConvergenceTrends[i][-2])
+
+					# Compute symmetric relative change (2*deltaValue / (Value[n] + Value[n-1]))
+					RelativeChange = (2*AbsoluteDelta / AbsoluteSum )
+					RelativePercent = round(RelativeChange*100.0, 4)
+
+					# Print convergence data to terminal
+					print(
+					VariableStrings[i], '\t',
+					RelativePercent, '%', '\t',
+					'Δ=', round(AbsoluteDelta, 5), '\t',
+					'Σ=', round(AbsoluteSum, 5)
+					)
 				#endfor
 
 				#Save figure.
@@ -9590,212 +9608,3 @@ def run(argv=None):
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-	#====================================================================#
-								  #CODE DUMP#
-	#====================================================================#
-	#
-	##===============================#
-	##     Paper Trend Locations     #
-	##===============================#
-	#
-	##SDoyle2017a:
-	##dz(5.50/118), dr(2.55/102) height=[24,43], Trend=[19]
-	#
-	##SDoyle2018a:
-	##PROES, (Z=14.2, 21.0, 31.0) radialprofiles = [29,44,64]
-	##Dielectric locations: [16,29],[16,44],[16,64]
-	#
-	##===============================#
-	## Archived Switchboard Settings #
-	##===============================#
-	#
-	#### PP-SCCP ####
-	##electrodeloc = 	[0,3]
-	##waveformlocs = 	[]
-	##DoFwidth = 		R;??,Z;??
-	##TrendLoc =  		H[0];R[]
-	##thrustloc = 		[]
-	##sheathROI = 		[]
-	##sourcewidth = 		[]
-	##Crop = 			R[];Z[]
-	#
-	##### TSHC-2017 ####
-	##electrodeloc = 	[0,15]
-	##waveformlocs = 	[]
-	##DoFwidth = 		R;5,Z;10
-	##TrendLoc =  		H[0,20];R[30,60,90]
-	##thrustloc = 		[]
-	##sheathROI = 		[]
-	##sourcewidth = 		[]
-	##Crop = 			R[0.0,1.0];Z[0.5,2.5]
-	#
-	#### TSHC-OI Mk3 ###
-	##electrodeloc = 	[58,15]
-	##waveformlocs = 	[]
-	##DoFwidth = 		R;??,Z;??
-	##TrendLoc =  		H[0,23,45];R[46,55,64]			#R,Z = 0.2cm/cell,0.1cm/cell
-	##thrustloc = 		[]
-	##sheathROI = 		[]
-	##sourcewidth = 		[]
-	##Crop = 			R[0,12];Z[4,7]
-	#
-	#### HYPERION-I Mk1 ###
-	##electrodeloc = 	[51,14]HYPI OR [12,28]HYPII			#Upper(Positive) ICP coil
-	##waveformlocs = 	[[51,24][51,34]]					#Middle ICP Coil, Lower(Negative) coil
-	##DoFwidth = 		R;??,Z;??
-	##TrendLoc =  		H[0];R[50]HYPI OR H[56];R[50]HYPII	#R,Z = 0.2cm/cell,0.1cm/cell
-	##thrustloc = 		[]
-	##sheathROI = 		[]
-	##sourcewidth = 		[]
-	##Crop = 			R[];Z[]
-	#
-	#### EVgeny Mk1 ###
-	##electrodeloc = 	[31,14]							#Middle ICP Coil
-	##waveformlocs = 	[[31,6],[31,23],[20,6]]			#[UpstreamCoil],[DownstreamCoil],[DielectricSurface]
-	##DoFwidth = 		R;??,Z;??
-	##TrendLoc =  		H[0,21,41];R[]					#R,Z = 0.2cm/cell,0.1cm/cell
-	##thrustloc = 		[]
-	##sheathROI = 		[45,85]							#Downstream
-	##sourcewidth = 		[90]							#Downstream
-	##Crop = 			R[];Z[]
-	##Plotmesh = 		'EVgeny'
-	#
-	##===============================#
-	##             Notes             #
-	##===============================#
-	#
-	## Disabled the following warning message regarding scalar assignment of 'arr' axis.
-	## /home/sjd549/.local/lib/python2.7/site-packages/numpy/ma/core.py:6385
-	#
-	#
-	##====================================================================#
-	#				  	#GRAPHICAL USER INTERFACE#
-	##====================================================================#
-	#
-	#
-	#use_GUI = False
-	#if use_GUI == True:
-	#	try:
-	#		# Python2
-	#		import Tkinter as tk
-	#		from ttk import *
-	#	except ImportError:
-	#		# Python3
-	#		import tkinter as tk
-	#		from ttk import *
-	#	#endtry
-	#
-	#	#Create switchboard directory for GUI.
-	#	Switchboard = {}
-	#
-	##=============#
-	#
-	#	#Toggles button font between green/red and outputs corresponding true/false.
-	#	def toggle(string,btn):
-	#		#to get the present state of the toggle button
-	#		if btnlist[btn].config('fg')[-1] == 'green':
-	#			btnlist[btn].config(fg='red')
-	#		else:
-	#			btnlist[btn].config(fg='green')
-	#		#endif
-	#
-	#		#Add name of button and true/false value to switchboard dictionary.
-	#		global Switchboard
-	#		if btnlist[btn].config('fg')[-1] == 'green':
-	#			Switchboard[string] = 'True'
-	#		elif btnlist[btn].config('fg')[-1] == 'red':
-	#			Switchboard[string] = 'False'
-	#		#endif
-	#	#enddef
-	#
-	##=============#
-	#
-	#	#Initialize and configure root window.
-	#	root = tk.Tk()
-	#	root.title("Hpem ELectronic ENgine Analysis v0.8.4")
-	#	root.minsize(width=800, height=600)
-	#	root.maxsize(width=4*1080, height=1080)
-	#
-	#	#Buttonlist as displayed in GUI.
-	#	btnlist = ['2D Images','2D Converge','2D Phase']
-	#
-	#	#Add toggle buttons.  (lambda returns a reference to a nameless function)
-	#	btnlist[0] = tk.Button(text=btnlist[0], width=12, fg='red')
-	#	btnlist[0]["command"] = lambda: toggle('savefig_tecplot2D',0)
-	#	btnlist[0].grid(row=1, column=0)
-	#
-	#	btnlist[1] = tk.Button(text=btnlist[1], width=12, fg='red')
-	#	btnlist[1]["command"] = lambda: toggle('savefig_movieicp2D',1)
-	#	btnlist[1].grid(row=1, column=1)
-	#
-	#	btnlist[2] = tk.Button(text=btnlist[2], width=12, fg='red')
-	#	btnlist[2]["command"] = lambda: toggle('savefig_PHASEEResolve',2)
-	#	btnlist[2].grid(row=1, column=2)
-	#
-	#	#Add run button, disables GUI and progresses to the main program.
-	#	Run = tk.Button(text='Run Analysis', height=4, width=18, fg='black')
-	#	Run["command"] = root.destroy
-	#	Run.grid(row=3,column=3,padx=0,pady=100)
-	#
-	#	root.mainloop()
-	#	print Switchboard
-	##endif
-	#
-	##=====================================================================#
-	##=====================================================================#
-	#
-	#
-	#
-	#
-	#
-	#
-	#
-	#
