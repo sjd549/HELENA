@@ -88,7 +88,8 @@ def run(argv=None):
 	from matplotlib import ticker
 	from scipy import ndimage
 	from tqdm import tqdm
-	from dataclasses import dataclass, field
+	from pydantic import Field
+	from pydantic.dataclasses import dataclass
 	#from Read_data_functions.py import overlay_GEC_geometry
 
 
@@ -146,73 +147,29 @@ def run(argv=None):
 
 	_T = TypeVar("T")
 
-	def enforce_float(value: int | float, field: str) -> float:
-		if isinstance(value, bool) or not isinstance(value, int | float):
-			raise TypeError(f"Field {field} is not a float or int.")
-
-		return float(value)
-
-	def enforce_int(value: int, field: str) -> int:
-		if isinstance(value, bool) or not isinstance(value, int):
-			raise TypeError(f"Field {field} is not an int.")
-
-		return value
-
-	def enforce_str(value: str, field: str) -> str:
-		if not isinstance(value, str):
-			raise TypeError(f"Field {field} is not a string.")
-
-		return value
-
-	def enforce_bool(value: bool, field: str) -> bool:
-		if not isinstance(value, bool):
-			raise TypeError(f"Field {field} is not a bool.")
-
-		return value
-
-	def enforce_list_obj(lst: list[_T], func_checker: Callable[_T, str], field: str) -> list[_T]:
-		return [func_checker(element, field) for element in lst]
-
 
 	@dataclass
 	class ChemistryInput:
-		variables: list[str] = field(default_factory=lambda: variable_sets["Phys"] + variable_sets["Ar"])
-		multivar: list[str] = field(default_factory=list)
-		radial_profiles: list[int] = field(default_factory=list)
-		axial_profiles: list[int] = field(default_factory=lambda: [0])
-		probe_loc: list[int] = field(default_factory=list)
+		variables: list[str] = Field(default_factory=lambda: variable_sets["Phys"] + variable_sets["Ar"])
+		multivar: list[str] = Field(default_factory=list)
+		radial_profiles: list[int] = Field(default_factory=list)
+		axial_profiles: list[int] = Field(default_factory=lambda: [0])
+		probe_loc: list[int] = Field(default_factory=list)
 
 		# EDF.
-		IEDF_variables: list[str] = field(default_factory=lambda: variable_sets["GECCCP2a_BE_PCMC"].copy())
-		NEDF_variables: list[str] = field(default_factory=list)
+		IEDF_variables: list[str] = Field(default_factory=lambda: variable_sets["GECCCP2a_BE_PCMC"].copy())
+		NEDF_variables: list[str] = Field(default_factory=list)
 
 		# Movie.
-		phase_variables: list[str] = field(default_factory=lambda: variable_sets["Ar_Phase"].copy())
-		electrode_loc: list[int] = field(default_factory=lambda: [0, 0])
-		waveform_locs: list[int] = field(default_factory=list)
+		phase_variables: list[str] = Field(default_factory=lambda: variable_sets["Ar_Phase"].copy())
+		electrode_loc: list[int] = Field(default_factory=lambda: [0, 0])
+		waveform_locs: list[int] = Field(default_factory=list)
 
 		# Diagnostic.
-		sheath_ROI: list[int] = field(default_factory=list)
-		source_width: list[int] = field(default_factory=list)
+		sheath_ROI: list[int] = Field(default_factory=list)
+		source_width: list[int] = Field(default_factory=list)
 
 		def __post_init__(self):
-			self.variables = enforce_list_obj(self.variables, enforce_str, "variables")
-			self.multivar = enforce_list_obj(self.multivar, enforce_str, "multivar")
-			self.radial_profiles = enforce_list_obj(self.radial_profiles, enforce_int, "radial_profiles")
-			self.axial_profiles = enforce_list_obj(self.axial_profiles, enforce_int, "axial_profiles")
-			self.probe_loc = enforce_list_obj(self.probe_loc, enforce_int, "probe_loc")
-
-			self.IEDF_variables = enforce_list_obj(self.IEDF_variables, enforce_str, "IEDF_variables")
-			self.NEDF_variables = enforce_list_obj(self.NEDF_variables, enforce_str, "NEDF_variables")
-
-			self.phase_variables = enforce_list_obj(self.phase_variables, enforce_str, "phase_variables")
-			self.electrode_loc = enforce_list_obj(self.electrode_loc, enforce_int, "electrode_loc")
-			self.waveform_locs = enforce_list_obj(self.waveform_locs, enforce_int, "waveform_locs")
-
-			self.sheath_ROI = enforce_list_obj(self.sheath_ROI, enforce_int, "sheath_ROI")
-			self.source_width = enforce_list_obj(self.source_width, enforce_int, "source_width")
-
-			# Expand variable sets.
 			self.variables = self.expand_variable_set(self.variables)
 			self.multivar = self.expand_variable_set(self.multivar)
 			self.IEDF_variables = self.expand_variable_set(self.IEDF_variables)
@@ -265,42 +222,10 @@ def run(argv=None):
 		IEDF_trends: bool = False
 		EEDF: bool = False
 
-		def __post_init__(self):
-			self.tecplot2D = enforce_bool(self.tecplot2D, "tecplot2D")
-
-			self.movieicp2D = enforce_bool(self.movieicp2D, "movieicp2D")
-			self.movieicp1D = enforce_bool(self.movieicp1D, "movieicp1D")
-			self.timeaxis1D = enforce_bool(self.timeaxis1D, "timeaxis1D")
-			self.convergence = enforce_bool(self.convergence, "convergence")
-			self.iterstep = enforce_int(self.iterstep, "iterstep")
-
-			self.monoprofiles = enforce_bool(self.monoprofiles, "monoprofiles")
-			self.multiprofiles = enforce_bool(self.multiprofiles, "multiprofiles")
-			self.compare_profiles = enforce_bool(self.compare_profiles, "compare_profiles")
-
-			self.trend_phase_averaged = enforce_bool(self.trend_phase_averaged, "trend_phase_averaged")
-			self.trend_phase_resolved = enforce_bool(self.trend_phase_resolved, "trend_phase_resolved")
-			self.thrust_loc = enforce_int(self.thrust_loc, "thrust_loc")
-
-			self.phase_resolve2D = enforce_bool(self.phase_resolve2D, "phase_resolve2D")
-			self.phase_resolve1D = enforce_bool(self.phase_resolve1D, "phase_resolve1D")
-			self.sheath_dynamics = enforce_bool(self.sheath_dynamics, "sheath_dynamics")
-			self.PROES = enforce_bool(self.PROES, "PROES")
-			self.phase_cycles = enforce_float(self.phase_cycles, "phase_cycles")
-			self.do_Fwidth = enforce_int(self.do_Fwidth, "do_Fwidth")
-
-			self.IEDF_angular = enforce_bool(self.IEDF_angular, "IEDF_angular")
-			self.IEDF_trends = enforce_bool(self.IEDF_trends, "IEDF_trends")
-			self.EEDF = enforce_bool(self.EEDF, "EEDF")
-
 	@dataclass
 	class WriteInput:
 		ASCII: bool = False
 		CSV: bool = True
-
-		def __post_init__(self):
-			self.ASCII = enforce_bool(self.ASCII, "ASCII")
-			self.CSV = enforce_bool(self.CSV, "CSV")
 
 	@dataclass
 	class PrintoutInput:
@@ -312,15 +237,6 @@ def run(argv=None):
 		thrust: bool = False
 		sheath: bool = False
 
-		def __post_init__(self):
-			self.general_trends = enforce_bool(self.general_trends, "general_trends")
-			self.Knudsen_number = enforce_bool(self.Knudsen_number, "Knudsen_number")
-			self.total_power = enforce_bool(self.total_power, "total_power")
-			self.Reynolds = enforce_bool(self.Reynolds, "Reynolds")
-			self.DC_bias = enforce_bool(self.DC_bias, "DC_bias")
-			self.thrust = enforce_bool(self.thrust, "thrust")
-			self.sheath = enforce_bool(self.sheath, "sheath")
-
 	@dataclass
 	class ImageInput:
 		extension: str = ".png"
@@ -330,9 +246,9 @@ def run(argv=None):
 		cmap: str = "plasma"
 
 		# Geometry.
-		aspect_ratio: list[float] = field(default_factory=lambda: [10.0, 10.0])
-		radial_crop: list[float] = field(default_factory=list)
-		axial_crop: list[float] = field(default_factory=list)
+		aspect_ratio: list[float] = Field(default_factory=lambda: [10.0, 10.0])
+		radial_crop: list[float] = Field(default_factory=list)
+		axial_crop: list[float] = Field(default_factory=list)
 		rotate: bool = False
 
 		# Display.
@@ -353,7 +269,7 @@ def run(argv=None):
 		# Colorbar.
 		cbar_ticks: bool = True
 		cbar_bins: int = 5
-		cbar_limit: list[float] = field(default_factory=list)
+		cbar_limit: list[float] = Field(default_factory=list)
 
 		# Vector.
 		plot_vector: bool = True
@@ -369,60 +285,14 @@ def run(argv=None):
 		plot_phase_waveform: bool = False
 		plot_overlay: bool = False
 
-		def __post_init__(self):
-			self.extension = enforce_str(self.extension, "extension")
-
-			self.interp = enforce_str(self.interp, "interp")
-			self.cmap = enforce_str(self.cmap, "cmap")
-
-			self.aspect_ratio = enforce_list_obj(self.aspect_ratio, enforce_float, "aspect_ratio")
-			self.radial_crop = enforce_list_obj(self.radial_crop, enforce_float, "radial_crop")
-			self.axial_crop = enforce_list_obj(self.axial_crop, enforce_float, "axial_crop")
-			self.rotate = enforce_bool(self.rotate, "rotate")
-
-			self.plot_symmetry = enforce_bool(self.plot_symmetry, "plot_symmetry")
-			self.plot_mesh = enforce_bool(self.plot_mesh, "plot_mesh")
-			self.plot_grid = enforce_bool(self.plot_grid, "plot_grid")
-
-			self.plot_colourfill = enforce_bool(self.plot_colourfill, "plot_colourfill")
-			self.plot_contours = enforce_bool(self.plot_contours, "plot_contours")
-			self.contour_lvls = enforce_int(self.contour_lvls, "contour_lvls")
-
-			self.axis_ticks = enforce_bool(self.axis_ticks, "axis_ticks")
-			self.axis_labels = enforce_bool(self.axis_labels, "axis_labels")
-			self.legend_loc = enforce_str(self.legend_loc, "legend_loc")
-
-			self.cbar_ticks = enforce_bool(self.cbar_ticks, "cbar_ticks")
-			self.cbar_bins = enforce_int(self.cbar_bins, "cbar_bins")
-			self.cbar_limit = enforce_list_obj(self.cbar_limit, enforce_float, "cbar_limit")
-
-			self.plot_vector = enforce_bool(self.plot_vector, "plot_vector")
-			self.vector_density = enforce_float(self.vector_density, "vector_density")
-			self.vector_lw = enforce_float(self.vector_lw, "vector_lw")
-
-			self.normalise = enforce_bool(self.normalise, "normalise")
-			self.log_plot = enforce_bool(self.log_plot, "log_plot")
-
-			self.plot_sheath = enforce_bool(self.plot_sheath, "plot_sheath")
-			self.plot_phase_waveform = enforce_bool(self.plot_phase_waveform, "plot_phase_waveform")
-			self.plot_overlay = enforce_bool(self.plot_overlay, "plot_overlay")
-
-
 
 	@dataclass
 	class OverridesInput:
-		title: list[str] = field(default_factory=list)
-		legend: list[str] = field(default_factory=list)
-		xaxis: list[str] = field(default_factory=list)
-		xlabel: list[str] = field(default_factory=list)
-		ylabel: list[str] = field(default_factory=list)
-
-		def __post_init__(self):
-			self.title = enforce_list_obj(self.title, enforce_str, "title")
-			self.legend = enforce_list_obj(self.legend, enforce_str, "legend")
-			self.xaxis = enforce_list_obj(self.xaxis, enforce_str, "xaxis")
-			self.xlabel = enforce_list_obj(self.xlabel, enforce_str, "xlabel")
-			self.ylabel = enforce_list_obj(self.ylabel, enforce_str, "ylabel")
+		title: list[str] = Field(default_factory=list)
+		legend: list[str] = Field(default_factory=list)
+		xaxis: list[str] = Field(default_factory=list)
+		xlabel: list[str] = Field(default_factory=list)
+		ylabel: list[str] = Field(default_factory=list)
 
 	@dataclass
 	class ExpertInput:
@@ -442,7 +312,7 @@ def run(argv=None):
 
 		# Overrides.
 		DC_bias_axis: str = 'Auto'
-		sheath_ion_species: list[str] = field(default_factory=lambda: ['AR+'])
+		sheath_ion_species: list[str] = Field(default_factory=lambda: ['AR+'])
 
 		# Filtering.
 		kinetic_filtering: bool = True
@@ -456,41 +326,16 @@ def run(argv=None):
 		EDF_threshold: float = 0.01
 		units: str = 'SI'
 
-		def __post_init__(self):
-			self.magmesh = enforce_int(self.magmesh, "magmesh")
-			self.ffmpeg_movies = enforce_bool(self.ffmpeg_movies, "ffmpeg_movies")
-			self.IDEBUG = enforce_bool(self.IDEBUG, "IDEBUG")
-
-			self.ignore_div_zero = enforce_bool(self.ignore_div_zero, "ignore_div_zero")
-			self.ignore_empty_contours = enforce_bool(self.ignore_empty_contours, "ignore_empty_contours")
-
-			self.sheath_method = enforce_str(self.sheath_method, "sheath_method")
-			self.thrust_method = enforce_str(self.thrust_method, "thrust_method")
-			self.mean_calculation = enforce_str(self.mean_calculation, "mean_calculation")
-
-			self.DC_bias_axis = enforce_str(self.DC_bias_axis, "DC_bias_axis")
-			self.sheath_ion_species = enforce_list_obj(self.sheath_ion_species, enforce_str, "sheath_ion_species")
-
-			self.kinetic_filtering = enforce_bool(self.kinetic_filtering, "kinetic_filtering")
-			self.plot_kinetic_filtering = enforce_bool(self.plot_kinetic_filtering, "plot_kinetic_filtering")
-			self.sav_window = enforce_int(self.sav_window, "sav_window")
-			self.sav_poly_order = enforce_int(self.sav_poly_order, "sav_poly_order")
-
-			self.sheath_ion_ratio_threshold = enforce_float(self.sheath_ion_ratio_threshold, "sheath_ion_ratio_threshold")
-			self.conv_azimuthal_phase = enforce_bool(self.conv_azimuthal_phase, "conv_azimuthal_phase")
-			self.EDF_threshold = enforce_float(self.EDF_threshold, "EDF_threshold")
-			self.units = enforce_str(self.units, "units")
-
 
 	@dataclass
 	class Config:
-		chemistry: ChemistryInput = field(default_factory=ChemistryInput)
-		figures: FiguresInput = field(default_factory=FiguresInput)
-		write: WriteInput = field(default_factory=WriteInput)
-		printout: PrintoutInput = field(default_factory=PrintoutInput)
-		image: ImageInput = field(default_factory=ImageInput)
-		overrides: OverridesInput = field(default_factory=OverridesInput)
-		expert: ExpertInput = field(default_factory=ExpertInput)
+		chemistry: ChemistryInput = Field(default_factory=ChemistryInput)
+		figures: FiguresInput = Field(default_factory=FiguresInput)
+		write: WriteInput = Field(default_factory=WriteInput)
+		printout: PrintoutInput = Field(default_factory=PrintoutInput)
+		image: ImageInput = Field(default_factory=ImageInput)
+		overrides: OverridesInput = Field(default_factory=OverridesInput)
+		expert: ExpertInput = Field(default_factory=ExpertInput)
 
 
 	def create_input(data: dict, category: str, output_obj: type[_T], sections: list[str] | None = None) -> _T:
