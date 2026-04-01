@@ -18,7 +18,9 @@ license-files = ["LICEN[CS]E*"]
 dependencies = [
     "matplotlib>=3.10.8",
     "numpy>=2.4.2",
+    "pydantic>=2.12.5",
     "scipy>=1.17.1",
+    "toml>=0.10.2",
     "tqdm>=4.67.3",
 ]
 dynamic = ["version"]
@@ -40,7 +42,7 @@ helena = "helena.helena:run"
 [project.optional-dependencies]
 tests = [
     "pytest>=9.0.2",
-    "snaptol>=0.0.3",
+    "snaptol>=0.0.4",
 ]
 lint = [
     "ruff>=0.15.4",
