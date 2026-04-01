@@ -35,13 +35,8 @@ def work_env(tmp_path, test_env):
 
 
 @pytest.fixture
-def work_env_with_chdir(work_env):
+def run_in_tmp_dir(work_env, monkeypatch):
     """
-    Temporarily run the test from inside its isolated working directory.
+    Temporarily change the directory to the working directory.
     """
-    old_cwd = pathlib.Path.cwd()
-    os.chdir(work_env)
-    try:
-        yield work_env
-    finally:
-        os.chdir(old_cwd)
+    monkeypatch.chdir(work_env)
