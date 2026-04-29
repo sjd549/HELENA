@@ -67,7 +67,7 @@ import gc
 #Enforce matplotlib to avoid instancing undisplayed windows
 #matplotlib-tcl-asyncdelete-async-handler-deleted-by-the-wrong-thread
 import matplotlib as mpl
-#mpl.use('Agg')			# Uncomment to fix mem leak, disables GUI backend and "plot()"
+mpl.use('Agg')			# Uncomment to fix mem leak, disables GUI backend and "plot()"
 
 #Import Additional Modules
 from mpl_toolkits.axes_grid1 import make_axes_locatable
@@ -154,8 +154,8 @@ Ar = ['AR3S','AR4SM','AR4SR','AR4SPM','AR4SPR','AR4P','AR4D','AR','AR+','AR2+','
 O2 = ['O3','O2','O2V','O2*','O2*1S','O2+','O2-','O','O1S','O+','O-','O*','S-O3','S-O2+','S-O+','S-O-','SEB-O3','SEB-O+','SEB-O2+','SEB-O-','FR-O+','FZ-O+','FR-O-','FZ-O-']
 H2 = ['H2V0','H2V1','H2V2','H2V3','H1','H*','H**','H2+','H+','H-','S-H+','SEB-H+','S-2H+','SEB-2H+','S-H-','SEB-H-','FZ-H2V0','FR-H2V0','FZ-H1','FR-H1','FZ-H+','FR-H+','FZ-H2+','FR-H2+','FZ-H-','FR-H-']
 N2 = ['N2','N2V','N2*','N2**','N2+','N','N*','N+']
-Cl = ['Cl2','Cl','CL+','CL-','Cl2V','Cl2+','CL*','CL**','CL***']
-F = ['F2','F2*','F2+','F','F*','F+','F-','S-F','S-F+','S-F-','SEB-F','SEB-F+','SEB-F-','FZ-F','FR-F','FZ-F+','FR-F+','FZ-F-','FR-F-','FZ-F+','FR-F+']
+Cl2 = ['Cl2','Cl','CL+','CL-','Cl2V','Cl2+','CL*','CL**','CL***']
+F2 = ['F2','F2*','F2+','F','F*','F+','F-','S-F','S-F+','S-F-','SEB-F','SEB-F+','SEB-F-','FZ-F','FR-F','FZ-F+','FR-F+','FZ-F-','FR-F-','FZ-F+','FR-F+']
 H2O = ['H2O','H2O+','OH','OH-','H2OV','H2O2','S-H2O','SEB-H2O','S-H2OV','SEB-H2OV','S-H2O+','SEB-H2O+','S-OH','SEB-OH','S-OH-','SEB-OH-','S-OH+','SEB-OH+']
 COx = ['CO2','CO2V','CO+','CO','CO+','C','C+']
 CHx = ['CH4','CH3','CH2','CH','C','CH5+','CH4+','CH3+','CH2+','CH+','C+']
@@ -170,9 +170,10 @@ Be = ['BE','BE1','BE2','BE3','BE4','BE5','BE6','BE7','BE8','BE9','BE+','FR-BE','
 Ar_Phase = ['S-E','S-AR+','S-AR4P','SEB-E','SEB-AR+','SEB-AR4P','SRCE-2437','FR-E','FZ-E','TE','PPOT','POW-ALL']
 O2_Phase = ['S-E','S-O+','S-O-','S-O2+','SEB-O+','SEB-O-','SEB-O2+','S-O3P3P','SEB-O3P3P','TE','PPOT','FR-E','FZ-E']
 
-PRCCPAr_PCMC = ['AR^0.35','EB-0.35','ION-TOT0.35']
-PRCCPO2_PCMC = ['O^0.35','EB-0.35','ION-TOT0.35']
+PRCCP1a_Ar_PCMC = ['AR^0.35','EB-0.35','ION-TOT0.35']
+PRCCP1a_O2_PCMC = ['O^0.35','EB-0.35','ION-TOT0.35']
 GECCCP2a_BE_PCMC = ['AR^    2.6 L','BE^    2.6 L','EB-    2.6 L']
+TSHC4b_SF6_PCMC = ["F^     5.0 5","S^     5.0 5"]
 
 ####################
 
@@ -181,7 +182,7 @@ GECCCP2a_BE_PCMC = ['AR^    2.6 L','BE^    2.6 L','EB-    2.6 L']
 #====================================================================#
 
 # Requested IEDF/NEDF Variables.
-IEDFVariables = GECCCP2a_BE_PCMC			# Requested Variables from iprofile_2d.pdt
+IEDFVariables = TSHC4b_SF6_PCMC			# Requested Variables from iprofile_2d.pdt
 NEDFVariables = []						# Requested Variables from nprofile_2d.pdt
 
 # Requested movie1/movie_icp Variables.
@@ -190,7 +191,7 @@ electrodeloc = [0,0]					# Cell location of powered electrode [R,Z].
 waveformlocs = []						# Cell locations of additional waveforms [R,Z].
 
 # Requested variables and plotting locations.
-Variables = Phys+Ar+O2+Be+Al				# Requested Variables from Tecplot2D.pdt, tecplot_kin.pdt, and movie_icp.pdt 
+Variables = Phys+SFx+F2					# Requested Variables from Tecplot2D.pdt, tecplot_kin.pdt, and movie_icp.pdt 
 multivar = []							# Additional variables plotted ontop of [Variables]
 radialprofiles = []						# Radial 1D-Profiles to be plotted (fixed Z-mesh) --
 axialprofiles = []						# Axial 1D-Profiles to be plotted (fixed R-mesh) |
@@ -258,13 +259,13 @@ image_interp = 'spline36'				# Define image smoothing  ('none', 'bilinear','quad
 image_cmap = 'magma'					# Define global colourmap ('jet','plasma','magma','RdBu','tecmodern')
 
 image_aspectratio = [10,10]				# Real Size of [X,Y] in cm [Doesn't Rotate - X is always horizontal]
-image_radialcrop = []				# Crops 2D images to [R1,R2] in cm
-image_axialcrop = []				# Crops 2D images to [Z1,Z2] in cm
+image_radialcrop = []					# Crops 2D images to [R1,R2] in cm
+image_axialcrop = []					# Crops 2D images to [Z1,Z2] in cm
 
 image_plotsymmetry = False				# Plot radial symmetry - mirrors across the ISYM axis
 image_plotmesh = True					# Plot material mesh outlines
 image_plotgrid = False					# Plot major/minor gridlines on 1D profiles
-image_rotate = False						# Rotate 2D images 90 degrees to the right.
+image_rotate = False					# Rotate 2D images 90 degrees to the right.
 
 image_plotcolourfill = True				# Plot 2D image colour fill
 image_plotcontours = True				# Plot 2D image contour lines
@@ -570,7 +571,7 @@ mem_gib = mem_bytes/(1024.**3)
 ext = image_extension
 
 #Define recognized output file data extensions that will be retained in "Dir"
-FileExtensions = ['.PDT','.pdt','PLT','plt','.nam','.dat','.out']
+FileExtensions = ['.PDT','.pdt','.PLT','.plt','.nam','.dat','.out']
 
 #Create Directory lists and initialise numfolders to zero.
 Dirlist = list() 		#List containing all simulation folder directories relative to HELENA
@@ -586,6 +587,10 @@ for i in range(0,len(HomeDirContents)):
 		HomeDir.append('./'+HomeDirContents[i]+'/')
 	#endif
 #endfor
+
+# Define paths to ignore when searching for data
+IgnoreDir = ['Modules','.git']
+HomeDir = [x for x in HomeDir if os.path.basename(os.path.normpath(x)) not in IgnoreDir]
 
 #Determine number of folders containing accepted file extensions (i.e. simulation folders)
 #Extract directories of each sub-folder within home directory
@@ -3453,13 +3458,26 @@ for l in tqdm(range(0,numfolders)):
 		ExtraArgs = ['1','1','1','1','1','1','1','1','1','1']#[]	#Hack For Additional Species
 		Args = ['pcmc.prof','title','1','1','1'] + IEDFVarArgs + ExtraArgs + ['0','0']
 		DirAdditions = ['iprofile_tec2d.pdt','nprofile_tec2d.pdt','iprofile_tec1d.pdt', 'nprofile_tec1d.pdt','iprofile_zones_tec1d.pdt','nprofile_zones_tec1d.pdt']
-		#try: AutoConvProf('./conv_prof.exe',Args,DirAdditions)
-		#except: print('ConvProf Failure:'+Dirlist[l])
-		AutoConvProf('./conv_prof.exe',Args,DirAdditions)
+		
+		# Run 'conv_prof.exe' to produce 'iprofile_tec.pdt' and 'nprofile_tec.pdt' outputs
+		# Append DirAdditions filenames to end of Dir list so that they are recognisable to HELENA
+		try: 
+			AutoConvProf('./conv_prof.exe', Args, DirAdditions)
+			for i in range(0,len(DirAdditions)):
+				Dir.append(Dirlist[l]+DirAdditions[i])
+			#endfor
+		except:
+			print('')
+			print('Error: Unable to convert pcmc.prof in '+Dirlist[l])
+			print('')
+		#endtry
 
 		#Load data from IEDFprofile file and unpack into 1D array.
-		try: rawdata, nn_IEDF = ExtractRawData(Dir,iprofiletec2d[l].split('/')[-1],l)
-		except: rawdata, nn_IEDF = ExtractRawData(Dir,'iprofile_tec2d.pdt',l)
+		try: 
+			rawdata, nn_IEDF = ExtractRawData(Dir, iprofiletec2d[l].split('/')[-1], l)
+		except: 
+			rawdata, nn_IEDF = ExtractRawData(Dir, 'iprofile_tec2d.pdt', l)
+		#endtry
 		rawdata_IEDF.append(rawdata)
 
 		#Read through all variables for each file and stop when list ends.
