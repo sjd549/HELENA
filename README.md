@@ -1,44 +1,55 @@
 # HELENA
 HELENA is a TECPLOT ".pdt" file extension visualisation tool.
 
+Installing and Accessing HELENA within a bash terminal:
 
+	Download HELENA from repo, either manually or with:
+    	$ git clone https://github.com/sjd549/HELENA.git && cd HELENA-master	
 
-Installing and Accessing HELENA Within uv Virtual Environment:
+	For first time usage, install the python package requirements
+		$ ./HELENA3 -f
 
-	Download HELENA from repo, either manually or with
-    	$ git clone https://github.com/sjd549/HELENA.git && cd HELENA
-
-	Create virtual environment (uses uv.lock file)
-    	$ uv sync
-    	$ source .venv/bin/activate
-
-	For first time usage, install the HELENA package
-	Here the -e flag ensures src/ files are editable
-		$ uv pip install -e .[tests]
-
-	Once installed use helena with:
-		$ helena
+	Once python packages are installed use HELENA3 with:
+		$ ./HELENA3
 
 
 Configuring and Running HELENA:
 
-	Directories to be extracted/plotted should be placed in the root "HELENA/" directory
-	Processed images are saved within the simulation directory containing the datafiles
-	Data underpinning images is saved in ".csv" format within relevant image directories
-	Multiple directories may be processed simultaniously
+	Directories to be extracted/plotted should be placed in the root "HELENA-master/" directory
+		- Processed images are saved within the simulation directory containing the datafiles
+		- Data underpinning images is saved in ".csv" format within relevant image directories
+		- All directories will be processed sequentially, in alphanumeric ordering
 
-	All diagnostic choices and image options are contained within the "SWITCHBOARD" section of helena.py
-	Current usage requires modification of the src/helena.py file to alter the switchboard:
-	   $ nano /src/helena/helena.py
+	All diagnostic choices and image options are contained within the "SWITCHBOARD" section of HELENA3.py
+	Modify the switchboard settings with the text editor of your choice and save changes
+	    $ nano HELENA3.py
 
-	Once switchboard settings have been saved, enter uv environment and run HELENA:
-		$ source .venv/bin/activate
-		$ helena
+	Once switchboard settings have been saved, simply run PyTEC.py:
+		$ ./HELENA3.py
 
 	A splash is provided and progress updated communicated through the terminal
 
-	To view generated images from terminal type:
+
+Visualising Outputs:
+
+	Outputs are saved into folders with the same name as the .pdt datafile underpinning the images.
+	
+	If running HELENA remotely, easy viewing of outputs can be achieved via:
 		$ xdg-open Simulation_Directory/TECPlot2D/Image_File.png
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -64,6 +75,14 @@ Configuring and Running HELENA:
 Files recognised: 
 
 TECPLOT2D.PDT, kin.pdt, movie1.pdt, movie_icp.pdt
+
+
+Requires the following software/modules to function:
+
+python-pip, python-numpy, python-matplotlib, ffmpeg, findtools.
+
+
+
 
 HELENA is designed for use in it's own seperate folder. When executed it will search for directories and sub-directories which contain HPEM output files and catagorize these into seprate 'simulations' based on which directory they came from. 
 Each simulation will then be processed in turn with the output from requested diagnostics being saved in seperate directories within the simulation directory. Diagnostics which perform comparisons between simulations will be saved in the upper HELENA directory.
