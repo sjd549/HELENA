@@ -203,13 +203,15 @@ sourcewidth = []						# Source Dimension at ROI, leave empty for auto. [cells]
 
 
 # Requested diagnostics and plotting routines.
-savefig_tecplot2D = True				# 2D Single-Variables: TECPLOT2D.PDT				< .csv File Save
+savefig_tecplot2D = False				# 2D Single-Variables: TECPLOT2D.PDT				< .csv File Save
 
 savefig_movieicp2D = False				# 2D Variables against space-axis:	movie_icp.pdt	< MAXITER SHOULD BE AN ARRAY
 savefig_movieicp1D = False				# 1D Variables against space-axis:	movie_icp.pdt	< MAXITER SHOULD BE AN ARRAY
 savefig_timeaxis1D = False				# 1D Variables against time-axis:	movie_icp.pdt
 savefig_convergence = False				# 1D variables against ITER-axis:	movie_icp.pdt
 iterstep = 1							# movie_icp.pdt iteration step size
+
+savefig_kin1D = True					# 1D Variables against time-axis:	TECPLOT_KIN.pdt
 
 savefig_monoprofiles = False			# 1D Variables against space-axis:		TECPLOT2D	< .csv File Save
 savefig_multiprofiles = False			# 1D Variables Compared Same Sims:		TECPLOT2D
@@ -529,6 +531,8 @@ if True in [savefig_movieicp2D]:
 	print('# Plot 2D movieicp.pdt images')
 if True in [savefig_movieicp1D, savefig_convergence, savefig_timeaxis1D]:
 	print('# Plot 1D movieicp.pdt images')
+if True in [savefig_kin1D]:
+	print('# Plot 1D TECPLOT_KIN.PDT images')
 if True in [savefig_phaseresolve2D, savefig_PROES]:
 	print('# Plot 2D movie1.pdt images')
 if True in [savefig_phaseresolve1D, savefig_sheathdynamics]:
@@ -3250,40 +3254,41 @@ for l in tqdm(range(0,numfolders)):
 #===================##===================#
 #===================##===================#
 
-#	#Kinetics data readin - NOT CURRENTLY EMPLOYED IN ANY DIAGNOSTICS
-#	if True in [True]:
-#
-#		#Load data from TECPLOT_KIN file and unpack into 1D array.
-#		rawdata, nn_kin = ExtractRawData(Dir,'TECPLOT_KIN.PDT',l)
-#		rawdata_kin.append(rawdata)
-#
-#		#Read through all variables for each file and stop when list ends.
-#		KinVariableStrings,KinHeaderEndMarker = ['T (S)'],'ZONE'
-#		for i in range(2,nn_2D):
-#			if KinHeaderEndMarker in str(rawdata_kin[l][i]): 
-#				I = int(filter(lambda x: x.isdigit(), rawdata_kin[l][i].split(',')[0]))
-#				break
-#			else: KinVariableStrings.append(str(rawdata_kin[l][i][:-2].strip(' \t\n\r\"')))
-#			#endif
-#		#endfor
-#		Header_KIN.append(KinVariableStrings)												# SJD USE THIS HEADER !!!
-#		numvariables_kin,header_kin = len(KinVariableStrings),len(KinVariableStrings)+2		# REMOVE THIS
-#		header_kinlist.append(header_kin)													# REMOVE THIS
-#
-#		#Seperate total 1D data array into sets of data for each variable.
-#		CurrentFolderData = ReadTEC2D(rawdata_kin[l],header_kin,numvariables_kin, Zmesh=I,Dimension='1D')
-#
-#		#Convert data from CGS (HPEM DEFAULT) to user requested unit system						!!! Not tested
-#		for i in range(0,len(KinVariableStrings)):
-#			CurrentFolderData[i] = VariableUnitConversion(CurrentFolderData[i],KinVariableStrings[i])
-#			CurrentFolderData[i] = AzimuthalPhaseConversion(CurrentFolderData[i],KinVariableStrings[i])	
-#		#endfor
-#
-#		#Save all variables for folder[l] to Data.
-#		#Data is now 3D array of form [folder,variable,datapoint(R,Z)]
-#		DataKin.append(CurrentFolderData)
-#	#endif
+	#TECPLOT_KIN.pdt 1D mesh averaged data readin
+	if True in [savefig_kin1D]:
 
+		#Load data from TECPLOT_KIN file and unpack into 1D array.
+		rawdata, nn_kin = ExtractRawData(Dir,'TECPLOT_KIN.PDT',l)
+		rawdata_kin.append(rawdata)
+
+		#Read through all variables for each file and stop when list ends.
+		KinVariableStrings,KinHeaderEndMarker = ['T (S)'],'ZONE'			# SJD Assume first variable is 'T (S)'
+		for i in range(2,len(rawdata_kin[l])):
+			if KinHeaderEndMarker in str(rawdata_kin[l][i]): 
+				I_String = rawdata_kin[l][i].split(',')[0]
+				I = int(I_String.strip(' ZONE I='))
+				break
+			else:
+				Variable = str(rawdata_kin[l][i][:-2].strip(' \t\n\r\"'))
+				KinVariableStrings.append(Variable)
+			#endif
+		#endfor
+		Header_KIN.append(KinVariableStrings)
+		numvariables_kin = len(KinVariableStrings)
+		
+		#Seperate total 1D data array into sets of data for each variable.
+		CurrentFolderData = ReadTEC2D(rawdata_kin[l],len(Header_KIN[l]),numvariables_kin, Zmesh=I,Dimension='1D')
+
+		#Convert data from CGS (HPEM DEFAULT) to user requested unit system
+		for i in range(0,len(KinVariableStrings)):
+			CurrentFolderData[i] = VariableUnitConversion(CurrentFolderData[i],KinVariableStrings[i])
+#			CurrentFolderData[i] = AzimuthalPhaseConversion(CurrentFolderData[i],KinVariableStrings[i])	
+		#endfor
+
+		#Save all variables for folder[l] to Data.
+		#Data is now 3D array of form [folder,variable,datapoint]
+		DataKin.append(CurrentFolderData)
+	#endif
 
 #===================##===================#
 #===================##===================#
@@ -6535,7 +6540,8 @@ if savefig_timeaxis1D == True:
 				CSVDir = CreateNewFolder(DirMeshAve, '1DPlots_Data')
 				CSVRMesh = 'R_Mesh [Cells] '+str(R_mesh[l])+'  :: dR [cm/cell] '+str(dr[l])
 				CSVZMesh = 'Z_Mesh [Cells] '+str(Z_mesh[l])+'  :: dZ [cm/cell] '+str(dz[l])
-				CSVTMax = 'Sim_Time '+str( np.round(Xaxis[-1],9) )+' [ms]'
+				CSVTMin = 'T_Start '+str( np.round(Xaxis[0],9) )+' [ms]'
+				CSVTMax = 'T_End '+str( np.round(Xaxis[-1],9) )+' [ms]'
 				CSVdT = 'dT '+str( np.round(Xaxis[-1]-Xaxis[-2],9) )+' [ms]'
 				CSVFilename = VariableStrings[i]+'.csv'
 				CSVTitle = str(Dirlist[l])
@@ -6544,7 +6550,7 @@ if savefig_timeaxis1D == True:
 				CSVRotate = 'Rotate='+str(image_rotate)
 				
 				# Define Header Contents
-				CSVHeader = [CSVTitle,CSVLabel,CSVTMax,CSVdT]
+				CSVHeader = [CSVTitle,CSVLabel,CSVTMin,CSVTMax,CSVdT]
 
 				# Write to .csv file
 				WriteToCSV(TemporalProfile, CSVDir, CSVFilename, CSVHeader)
@@ -6589,6 +6595,114 @@ if savefig_timeaxis1D == True:
 	print('--------------------------')
 #endif
 
+
+
+##====================================================================#
+#			  #TECPLOT_KIN TRENDS - TEMPORAL ANALYSIS#
+##====================================================================#
+
+if savefig_kin1D == True:
+
+	# ...for all folders being processed.
+	for l in range(0,numfolders):
+
+		# Create new diagnostic output folder and initiate required lists.
+		TemporalTrends = list()
+		DirTECPlotKin = CreateNewFolder(Dirlist[l],'TECPlotKin/')
+
+		# Enumerate variable strings in the order they appear in movie_icp.pdt
+		VariableIndices,VariableStrings = EnumerateVariables(Variables,Header_KIN[l])
+
+		# Extract time-axis and convert to ms
+		Xaxis = DataKin[l][0]					# 'T (S)', [s]
+		Xaxis = [x*1000 for x in Xaxis]			# 'T (S)', [ms]
+
+
+		# ...for all variables requested by the user.
+		for i in tqdm(range(0,len(VariableIndices))):
+
+			# Extract 1D mesh averaged profile for Variable[i] from TECPLOT.KIN datafile
+			# TemporalTrends contains all variable trends in "VariableIndices" order
+			TemporalProfile = DataKin[l][VariableIndices[i]]
+			TemporalTrends.append(TemporalProfile)
+
+			# Plot each variable against simulation real-time.
+			fig, ax = plt.subplots(1, figsize=(10,10))
+			ax.plot(Xaxis,TemporalProfile, lw=2)
+
+			# Image plotting details.
+			Title = 'Mesh-Averaged Temporal Profile of '+str(VariableStrings[i])+' for \n'+Dirlist[l][2:-1]
+			Xlabel = 'Simulation time [ms]'
+			Ylabel = VariableLabelMaker(VariableStrings)[i]
+			ImageOptions(fig,ax,Xlabel,Ylabel,Title,Legend=[],Crop=False)
+
+			#=====##=====# Image I/O #=====##=====#
+	
+			# Save figure.
+			savefig(DirTECPlotKin+'Temporal_'+VariableStrings[i]+ext)
+			clearfigures(fig)
+			
+			#=====#
+			
+			# Write data underpinning current figure in .csv format
+			if Write_CSV == True:
+				CSVDir = CreateNewFolder(DirTECPlotKin, '1DPlots_Data')
+				CSVRMesh = 'R_Mesh [Cells] '+str(R_mesh[l])+'  :: dR [cm/cell] '+str(dr[l])
+				CSVZMesh = 'Z_Mesh [Cells] '+str(Z_mesh[l])+'  :: dZ [cm/cell] '+str(dz[l])
+				CSVTMin = 'T_Start '+str( np.round(Xaxis[0],9) )+' [ms]'
+				CSVTMax = 'T_End '+str( np.round(Xaxis[-1],9) )+' [ms]'
+				CSVdT = 'dT '+str( np.round(Xaxis[-1]-Xaxis[-2],9) )+' [ms]'
+				CSVFilename = VariableStrings[i]+'.csv'
+				CSVTitle = str(Dirlist[l])
+				CSVLabel = str(Ylabel)
+				CSVISYM = 'ISYM='+str(ISYMlist[l])
+				CSVRotate = 'Rotate='+str(image_rotate)
+				
+				# Define Header Contents
+				CSVHeader = [CSVTitle,CSVLabel,CSVTMin,CSVTMax,CSVdT]
+
+				# Write to .csv file
+				WriteToCSV(TemporalProfile, CSVDir, CSVFilename, CSVHeader)
+			#endif
+
+			#=====#		
+
+			# Write data to ASCII files if requested.
+			if write_ASCII == True:
+				DirWrite = CreateNewFolder(DirTECPlotKin, '1DTimeAxis_Data')
+				WriteDataToFile(Xaxis, DirWrite+VariableStrings[i], 'w')
+				WriteDataToFile(['\n']+TemporalProfile, DirWrite+VariableStrings[i], 'a')
+			#endif
+		#endfor
+		
+		
+		#=====##=====# Multi-Variable Figure #=====##=====#
+
+		# Plot mesh averaged value over 'real-time' in simulation.
+		Legend = VariableLabelMaker(VariableStrings)
+		fig, ax = plt.subplots(1, figsize=(14,10))
+
+		# Plot each variable in ConvergenceTrends to single figure.
+		for i in range(0,len(TemporalTrends)):
+			TemporalTrends[i] = Normalise(TemporalTrends[i])[0]
+			ax.plot(Xaxis,TemporalTrends[i], lw=2)
+		#endfor
+
+		# Image plotting details.
+		Title = 'Mesh-Averaged Temporal Profiles of '+str(VariableStrings)+' for \n'+Dirlist[l][2:-1]
+		Xlabel,Ylabel = 'Simulation time [ms]','Normalised Mesh-Average Value'
+		ImageOptions(fig,ax,Xlabel,Ylabel,Title,Legend,Crop=False)
+		ax.set_ylim(0,1)
+
+		# Save figure.
+		savefig(DirTECPlotKin+FolderNameTrimmer(Dirlist[l])+'_Normalised'+ext)
+		clearfigures(fig)
+	#endfor
+	
+	print('------------------------------')
+	print('# Kin Temporal Trends Complete')
+	print('------------------------------')
+#endif
 
 
 
@@ -6724,6 +6838,9 @@ if savefig_convergence == True:
 
 #=====================================================================#
 #=====================================================================#
+
+
+
 
 
 
