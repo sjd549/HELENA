@@ -151,7 +151,7 @@ PhysCoilsBF = \
 Conv = ['E','TE','PPOT','POW-RF','SIGMA','EF-TOT','TG-AVE']
 
 Ar = ['AR3S','AR4SM','AR4SR','AR4SPM','AR4SPR','AR4P','AR4D','AR','AR+','AR2+','AR2*','S-AR+','S-AR4P','SEB-AR+','SEB-AR4P','FZ-AR3S','FR-AR3S','FR-AR+','FZ-AR+','FZ-AR3S','FR-AR3S']
-O2 = ['O3','O2','O2V','O2*','O2*1S','O2+','O2-','O','O1S','O+','O-','O*','S-O3','S-O2+','S-O+','S-O-','SEB-O3','SEB-O+','SEB-O2+','SEB-O-','FR-O+','FZ-O+','FR-O-','FZ-O-']
+O2 = ['O3','O2','O2V','O2*','O2*1S','O2+','O2-','O','O1S','O+','O-','O*','O**','O***','O****','S-O*','S-O**','S-O***','S-O****','S-O3','S-O2+','S-O+','S-O-','SEB-O3','SEB-O+','SEB-O2+','SEB-O-','FR-O+','FZ-O+','FR-O-','FZ-O-']
 H2 = ['H2V0','H2V1','H2V2','H2V3','H1','H*','H**','H2+','H+','H-','S-H+','SEB-H+','S-2H+','SEB-2H+','S-H-','SEB-H-','FZ-H2V0','FR-H2V0','FZ-H1','FR-H1','FZ-H+','FR-H+','FZ-H2+','FR-H2+','FZ-H-','FR-H-']
 N2 = ['N2','N2V','N2*','N2**','N2+','N','N*','N+']
 Cl2 = ['Cl2','Cl','CL+','CL-','Cl2V','Cl2+','CL*','CL**','CL***']
@@ -6488,7 +6488,7 @@ if savefig_timeaxis1D == True:
 		DirTemporal = CreateNewFolder(Dirlist[l],'Movieicp/')
 
 		# Create new folder and initiate required lists.
-		TemporalTrends,Xaxis = list(),list()
+		TemporalTrends,Taxis = list(),list()
 		DirMeshAve = CreateNewFolder(DirTemporal,'1DTimeAxis_Profiles/')
 
 		# Enumerate variable strings in the order they appear in movie_icp.pdt
@@ -6499,7 +6499,7 @@ if savefig_timeaxis1D == True:
 			IterDigits = list(filter(lambda x: x.isdigit(), MovieIterlist[l][i]))
 			IterDigits = float(''.join(IterDigits))
 			IterTime = (IterDigits*DTPOS)*1000					# [ms]
-			Xaxis.append(IterTime)
+			Taxis.append(IterTime)
 		#endfor
 
 		# for all variables requested by the user.
@@ -6519,7 +6519,7 @@ if savefig_timeaxis1D == True:
 
 			# Plot each variable against simulation real-time.
 			fig, ax = plt.subplots(1, figsize=(10,10))
-			ax.plot(Xaxis,TemporalProfile, lw=2)
+			ax.plot(Taxis,TemporalProfile, lw=2)
 
 			# Image plotting details.
 			Title = 'Mesh-Averaged Temporal Profile of '+str(VariableStrings[i])+' for \n'+Dirlist[l][2:-1]
@@ -6540,9 +6540,9 @@ if savefig_timeaxis1D == True:
 				CSVDir = CreateNewFolder(DirMeshAve, '1DPlots_Data')
 				CSVRMesh = 'R_Mesh [Cells] '+str(R_mesh[l])+'  :: dR [cm/cell] '+str(dr[l])
 				CSVZMesh = 'Z_Mesh [Cells] '+str(Z_mesh[l])+'  :: dZ [cm/cell] '+str(dz[l])
-				CSVTMin = 'T_Start '+str( np.round(Xaxis[0],9) )+' [ms]'
-				CSVTMax = 'T_End '+str( np.round(Xaxis[-1],9) )+' [ms]'
-				CSVdT = 'dT '+str( np.round(Xaxis[-1]-Xaxis[-2],9) )+' [ms]'
+				CSVTMin = 'T_Start '+str( np.round(Taxis[0],9) )+' [ms]'
+				CSVTMax = 'T_End '+str( np.round(Taxis[-1],9) )+' [ms]'
+				CSVdT = 'dT '+str( np.round(Taxis[-1]-Taxis[-2],9) )+' [ms]'
 				CSVFilename = VariableStrings[i]+'.csv'
 				CSVTitle = str(Dirlist[l])
 				CSVLabel = str(Ylabel)
@@ -6561,7 +6561,7 @@ if savefig_timeaxis1D == True:
 			# Write data to ASCII files if requested.
 			if write_ASCII == True:
 				DirWrite = CreateNewFolder(DirMeshAve, '1DTimeAxis_Data')
-				WriteDataToFile(Xaxis, DirWrite+VariableStrings[i], 'w')
+				WriteDataToFile(Taxis, DirWrite+VariableStrings[i], 'w')
 				WriteDataToFile(['\n']+TemporalProfile, DirWrite+VariableStrings[i], 'a')
 			#endif
 		#endfor
@@ -6576,7 +6576,7 @@ if savefig_timeaxis1D == True:
 		# Plot each variable in ConvergenceTrends to single figure.
 		for i in range(0,len(TemporalTrends)):
 			TemporalTrends[i] = Normalise(TemporalTrends[i])[0]
-			ax.plot(Xaxis,TemporalTrends[i], lw=2)
+			ax.plot(Taxis,TemporalTrends[i], lw=2)
 		#endfor
 
 		# Image plotting details.
@@ -6614,8 +6614,8 @@ if savefig_kin1D == True:
 		VariableIndices,VariableStrings = EnumerateVariables(Variables,Header_KIN[l])
 
 		# Extract time-axis and convert to ms
-		Xaxis = DataKin[l][0]					# 'T (S)', [s]
-		Xaxis = [x*1000 for x in Xaxis]			# 'T (S)', [ms]
+		Taxis = DataKin[l][0]					# 'T (S)', [s]
+		Taxis = [x*1000 for x in Taxis]			# 'T (S)', [ms]
 
 
 		# ...for all variables requested by the user.
@@ -6628,7 +6628,7 @@ if savefig_kin1D == True:
 
 			# Plot each variable against simulation real-time.
 			fig, ax = plt.subplots(1, figsize=(10,10))
-			ax.plot(Xaxis,TemporalProfile, lw=2)
+			ImagePlotter1D(Taxis,TemporalProfile,image_aspectratio,fig,ax)
 
 			# Image plotting details.
 			Title = 'Mesh-Averaged Temporal Profile of '+str(VariableStrings[i])+' for \n'+Dirlist[l][2:-1]
@@ -6649,9 +6649,9 @@ if savefig_kin1D == True:
 				CSVDir = CreateNewFolder(DirTECPlotKin, '1DPlots_Data')
 				CSVRMesh = 'R_Mesh [Cells] '+str(R_mesh[l])+'  :: dR [cm/cell] '+str(dr[l])
 				CSVZMesh = 'Z_Mesh [Cells] '+str(Z_mesh[l])+'  :: dZ [cm/cell] '+str(dz[l])
-				CSVTMin = 'T_Start '+str( np.round(Xaxis[0],9) )+' [ms]'
-				CSVTMax = 'T_End '+str( np.round(Xaxis[-1],9) )+' [ms]'
-				CSVdT = 'dT '+str( np.round(Xaxis[-1]-Xaxis[-2],9) )+' [ms]'
+				CSVTMin = 'T_Start '+str( np.round(Taxis[0],9) )+' [ms]'
+				CSVTMax = 'T_End '+str( np.round(Taxis[-1],9) )+' [ms]'
+				CSVdT = 'dT '+str( np.round(Taxis[-1]-Taxis[-2],9) )+' [ms]'
 				CSVFilename = VariableStrings[i]+'.csv'
 				CSVTitle = str(Dirlist[l])
 				CSVLabel = str(Ylabel)
@@ -6670,7 +6670,7 @@ if savefig_kin1D == True:
 			# Write data to ASCII files if requested.
 			if write_ASCII == True:
 				DirWrite = CreateNewFolder(DirTECPlotKin, '1DTimeAxis_Data')
-				WriteDataToFile(Xaxis, DirWrite+VariableStrings[i], 'w')
+				WriteDataToFile(Taxis, DirWrite+VariableStrings[i], 'w')
 				WriteDataToFile(['\n']+TemporalProfile, DirWrite+VariableStrings[i], 'a')
 			#endif
 		#endfor
@@ -6685,7 +6685,7 @@ if savefig_kin1D == True:
 		# Plot each variable in ConvergenceTrends to single figure.
 		for i in range(0,len(TemporalTrends)):
 			TemporalTrends[i] = Normalise(TemporalTrends[i])[0]
-			ax.plot(Xaxis,TemporalTrends[i], lw=2)
+			ax.plot(Taxis,TemporalTrends[i], lw=2)
 		#endfor
 
 		# Image plotting details.
