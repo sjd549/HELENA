@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 
 #################################
-#		Point of Contact		#
-#								#
+#		 Point of Contact		#
+#				                #
 #	    Dr. Scott J. Doyle      #
-#	  University of Aberdeen    #
-#	  Department of Physics     # 
+#	    University of Aberdeen  #
+#	    Department of Physics   # 
 #     Kings College, Aberdeen   #
-#           AB21 0HD, UK        #
+#         AB21 0HD, UK          #
 #	  Scott.Doyle@Physics.org   #
 #                               #
 #################################
@@ -52,7 +52,7 @@ if 'True' in str(options):
 #==============#
 
 #Import Core Modules
-import matplotlib.cm as cm
+#import matplotlib.cm as cm
 import numpy as np
 import scipy as sp
 import math as m
@@ -111,8 +111,8 @@ GlobMeanCalculation = 'MeanFraction'	#Definition of 'mean' EDF value
 #Overrides or 'fudge factors' for diagnostics
 DCbiasaxis = 'Auto'							#Force Direction Over Which DCBias is Calculated
 #Choices:('Axial','Radial','Auto')
-SheathIonSpecies = ['AR+']					#Force Sheath Ion Species (blank for auto)
-#['AR+'] #['O+']
+SheathCationSpecies = ['AR+','SF5+','SF4+','SF3+','SF2+','SF+','S+','F+','F2+']		#Cations for Sheath Width Calc
+SheathAnionSpecies = ['E','SF6-','SF5-','SF4-','SF3-','SF2-','F-','F2-']			#Anions for Sheath Width Calc
 
 #Ratio of electrons to ions that determines the edge of the sheath
 #Ideally this should be 1.00, but in practice it's slightly over 1 at lower resolutions
@@ -150,10 +150,13 @@ PhysCoilsBF = \
  
 Conv = ['E','TE','PPOT','POW-RF','SIGMA','EF-TOT','TG-AVE']
 
-Ar = ['AR3S','AR4SM','AR4SR','AR4SPM','AR4SPR','AR4P','AR4D','AR','AR+','AR2+','AR2*','S-AR+','S-AR4P','SEB-AR+','SEB-AR4P','FZ-AR3S','FR-AR3S','FR-AR+','FZ-AR+','FZ-AR3S','FR-AR3S']
+Ar3s = ['AR3S','AR4SM','AR4SR','AR4SPM','AR4SPR','AR4P','AR4D','AR','AR+','AR2+','AR2*','S-AR+','S-AR4P','SEB-AR+','SEB-AR4P','FZ-AR3S','FR-AR3S','FR-AR+','FZ-AR+','FZ-AR3S','FR-AR3S']
+ArOIPT = ['AR','AR*','AR**','AR***','AR','AR+','AR2+','AR2*','S-AR+','S-AR','SEB-AR+','SEB-AR','FZ-AR','FR-AR','FR-AR+','FZ-AR+','FZ-AR','FR-AR']
+Ar = Ar3s+ArOIPT
+
 O2 = ['O3','O2','O2V','O2*','O2*1S','O2+','O2-','O','O1S','O+','O-','O*','O**','O***','O****','S-O*','S-O**','S-O***','S-O****','S-O3','S-O2+','S-O+','S-O-','SEB-O3','SEB-O+','SEB-O2+','SEB-O-','FR-O+','FZ-O+','FR-O-','FZ-O-']
 H2 = ['H2V0','H2V1','H2V2','H2V3','H1','H*','H**','H2+','H+','H-','S-H+','SEB-H+','S-2H+','SEB-2H+','S-H-','SEB-H-','FZ-H2V0','FR-H2V0','FZ-H1','FR-H1','FZ-H+','FR-H+','FZ-H2+','FR-H2+','FZ-H-','FR-H-']
-N2 = ['N2','N2V','N2*','N2**','N2+','N','N*','N+']
+N2 = ['N2','S-N2','FZ-N2','FR-N2','N2V','N2*','N2**','N2+','S-N2+','FZ-N2+','FR-N2','N','S-N','FZ-N','FR-N','N*','N+','S-N+','FZ-N+','FR-N+']
 Cl2 = ['Cl2','Cl','CL+','CL-','Cl2V','Cl2+','CL*','CL**','CL***']
 F2 = ['F2','F2*','F2+','F','F*','F+','F-','S-F','S-F+','S-F-','SEB-F','SEB-F+','SEB-F-','FZ-F','FR-F','FZ-F+','FR-F+','FZ-F-','FR-F-','FZ-F+','FR-F+']
 H2O = ['H2O','H2O+','OH','OH-','H2OV','H2O2','S-H2O','SEB-H2O','S-H2OV','SEB-H2OV','S-H2O+','SEB-H2O+','S-OH','SEB-OH','S-OH-','SEB-OH-','S-OH+','SEB-OH+']
@@ -162,8 +165,11 @@ CHx = ['CH4','CH3','CH2','CH','C','CH5+','CH4+','CH3+','CH2+','CH+','C+']
 NHx = ['NH3','NH2','NH','NH4+','NH3+','NH2+','NH+']
 NOx = ['NO2','NO2+','N2O','N2O+','NO','NO+']
 NFx = ['NF3A','NF2A','NFA','NF3B','NF2B','NFB','NF3+','NF2+','NF+']
-SFx = ['SF6','SF5','SF4','SF3','SF2','SF','S','SF5+','SF4+','SF3+','SF2+','SF+','S+','SF6-','SF5-']
+SFx = ['SF6','SF5','SF4','SF3','SF2','SF','S','SF6+','SF5+','SF4+','SF3+','SF2+','SF+','S+','SF6-','SF5-','SF4-','SF3-','SF2-','SF-','S-']
 CFx = ['CF4','CF3','CF2','CF','C','CF4+','CF3+','CF2+','CF+','C+','FZ-CF4','FR-CF4','S-CF4','SEB-CF4','S-C','SEB-C']
+SiHx = ['SIH4','S-SIH4','FZ-SIH4','FR-SIH4','SIH3','S-SIH3','SIH3+','S-SIH3+','SIH3-','S-SIH3-','SIH2','S-SIH2','SIH2+','S-SIH2+','SIH','S-SIH','SI2H4','S-SI2H4','SI2H4+','S-SI2H4+']+['FZ-SIH','FZ-SiH2','FZ-SIH3']
+Si = ['SI','S-SI','FZ-SI','FR-SI','SI+','S-SI+','FZ-SI+','FR-SI+']
+
 Al = ['AL','AL*','AL**','AL+','S-AL','SEB-AL','S-AL*','SEB-AL*','S-AL**','SEB-AL**','S-AL+','SEB-AL+','FZ-AL+','FR-AL+']
 Be = ['BE','BE1','BE2','BE3','BE4','BE5','BE6','BE7','BE8','BE9','BE+','FR-BE','FZ-BE','FR-BE+','FZ-BE+']
 
@@ -191,19 +197,21 @@ electrodeloc = [0,0]					# Cell location of powered electrode [R,Z].
 waveformlocs = []						# Cell locations of additional waveforms [R,Z].
 
 # Requested variables and plotting locations.
-Variables = Phys+SFx+F2					# Requested Variables from Tecplot2D.pdt, tecplot_kin.pdt, and movie_icp.pdt 
+Variables = Phys+Ar						# Requested Variables from Tecplot2D.pdt, tecplot_kin.pdt, and movie_icp.pdt
 multivar = []							# Additional variables plotted ontop of [Variables]
 radialprofiles = []						# Radial 1D-Profiles to be plotted (fixed Z-mesh) --
 axialprofiles = []						# Axial 1D-Profiles to be plotted (fixed R-mesh) |
 probeloc = []							# Cell location For Trend Analysis [R,Z], (leave empty for global min/max)
 
-# Various Diagnostic Settings			>>> OUTDATED, TO BE RETIRED <<<
+# Various Diagnostic Settings			>>> TO BE RETIRED: [sheathROI, sourcewidth] <<<
 sheathROI = []							# Sheath Region of Interest, (Start,End) [cells]
 sourcewidth = []						# Source Dimension at ROI, leave empty for auto. [cells]
 
+uniformitylimit = 23					# UNIFORMITY DIAGNOSTIC IN DEVELOPMENT (Radial Cell Defining Uniformity Limit)
+
 
 # Requested diagnostics and plotting routines.
-savefig_tecplot2D = False				# 2D Single-Variables: TECPLOT2D.PDT				< .csv File Save
+savefig_tecplot2D = True				# 2D Single-Variables: TECPLOT2D.PDT				< .csv File Save
 
 savefig_movieicp2D = False				# 2D Variables against space-axis:	movie_icp.pdt	< MAXITER SHOULD BE AN ARRAY
 savefig_movieicp1D = False				# 1D Variables against space-axis:	movie_icp.pdt	< MAXITER SHOULD BE AN ARRAY
@@ -211,11 +219,11 @@ savefig_timeaxis1D = False				# 1D Variables against time-axis:	movie_icp.pdt
 savefig_convergence = False				# 1D variables against ITER-axis:	movie_icp.pdt
 iterstep = 1							# movie_icp.pdt iteration step size
 
-savefig_kin1D = True					# 1D Variables against time-axis:	TECPLOT_KIN.pdt
+savefig_kin1D = False					# 1D Variables against time-axis:	TECPLOT_KIN.pdt
 
 savefig_monoprofiles = False			# 1D Variables against space-axis:		TECPLOT2D	< .csv File Save
 savefig_multiprofiles = False			# 1D Variables Compared Same Sims:		TECPLOT2D
-savefig_compareprofiles = False			# 1D Variables Compared Between Sims:	TECPLOT2D
+savefig_compareprofiles = False			# 1D Variables Compared Between Sims:	TECPLOT2D	< .csv File Save
 # ^^^^
 # NOTE: IMAGEPLOTTER1D RETURNS ARRAY ORDERED AS [0,height]  <<< REVERSED RELATIVE TO HPEM
 # 		IMAGEPLOTTER2D RETURNS ARRAY ORDERED AS [height,0] 	<<< SAME ORIENTATION AS HPEM
@@ -266,6 +274,7 @@ image_axialcrop = []					# Crops 2D images to [Z1,Z2] in cm
 
 image_plotsymmetry = False				# Plot radial symmetry - mirrors across the ISYM axis
 image_plotmesh = True					# Plot material mesh outlines
+ZHashPoints_Global = 0					# HACK TO ADJUST MESH FOR EXTRA '#' IN INITMESH.DAT
 image_plotgrid = False					# Plot major/minor gridlines on 1D profiles
 image_rotate = False					# Rotate 2D images 90 degrees to the right.
 
@@ -277,7 +286,7 @@ image_axisticks = True					# Toggle to show axis ticks and associated values or 
 image_axislabels = True					# Toggle to show axis labels or not 
 image_legendloc = 'best'				# Set Legend Location, "1-9" or 'best' for automatic
 image_cbarticks = True					# Toggle to show cbar ticks and associated values or not
-image_cbarbins = 5						# Set number of colourbar bins
+image_cbarbins = 5					# Set number of colourbar bins
 image_cbarlimit = []					# Set arbitrary [min,max] colourbar limits
 
 image_plotvector = True					# Plot vector arrows onto 2D images (uses FR-XX, FZ-XX if they exist)
@@ -288,7 +297,7 @@ image_normalise = False					# Plot Data normlised to maximum value (Applies to a
 image_logplot = False					# Plot log10(Data) (Applies to all outputs)
 
 image_plotsheath = False				# Plot sheath extent onto 2D images 'Axial','Radial'
-image_plotphasewaveform = False			# Plot waveform sub-figure on phaseresolve2D images
+image_plotphasewaveform = False				# Plot waveform sub-figure on phaseresolve2D images
 image_plotoverlay = False				# Plot location(s) of 1D radial/axial profiles onto 2D images
 
 
@@ -510,19 +519,19 @@ Header_IEDF = list()			# IEDF Header Strings									-[FolderIdx,[Header Array]]
 					#WELCOME SPLASH AND INFORMATION#
 #====================================================================#
 
-print( '' )
-print( '--------------------------------------------------------------------')
-print( '    __    __   _______  __       _______  __   __      ___          ')
-print( '   |  |  |  | |   ____||  |     |   ____||  \ |  |    /   \         ')
-print( '   |  |__|  | |  |__   |  |     |  |__   |   \|  |   /  ^  \        ')
-print( '   |   __   | |   __|  |  |     |   __|  |  . `  |  /  /_\  \       ')
-print( '   |  |  |  | |  |____ |  `----.|  |____ |  |\   | /  _____  \      ')
-print( '   |__|  |__| |_______||_______||_______||__| \__|/__/     \__\     ')
-print( '                                                              v3.1.4')
-print( '--------------------------------------------------------------------')
-print( '' )
-print( 'The following diagnostics were requested:')
-print( '-----------------------------------------')
+print( r'' )
+print( r'--------------------------------------------------------------------')
+print( r'    __    __   _______  __       _______  __   __      ___          ')
+print( r'   |  |  |  | |   ____||  |     |   ____||  \ |  |    /   \         ')
+print( r'   |  |__|  | |  |__   |  |     |  |__   |   \|  |   /  ^  \        ')
+print( r'   |   __   | |   __|  |  |     |   __|  |  . `  |  /  /_\  \       ')
+print( r'   |  |  |  | |  |____ |  `----.|  |____ |  |\   | /  _____  \      ')
+print( r'   |__|  |__| |_______||_______||_______||__| \__|/__/     \__\     ')
+print( r'                                                              v3.1.4')
+print( r'--------------------------------------------------------------------')
+print( r'' )
+print( r'The following diagnostics were requested:')
+print( r'-----------------------------------------')
 if True in [savefig_tecplot2D]:
 	print('# Plot 2D TECPLOT2D.PDT images')
 if True in [savefig_monoprofiles, savefig_multiprofiles, savefig_compareprofiles]:
@@ -541,8 +550,8 @@ if True in [savefig_IEDFangular, savefig_IEDFtrends, savefig_EEDF]:
 	print('# Plot PCMC distribution functions')
 if True in [savefig_trendphaseaveraged, print_generaltrends, print_Knudsennumber, print_Reynolds, print_totalpower, print_DCbias, print_thrust]:
 	print('# Plot Trends Between Folders')
-print( '-----------------------------------------')
-print( '')
+print( r'-----------------------------------------')
+print( r'')
 
 
 
@@ -550,7 +559,7 @@ print( '')
 
 
 
-'''
+r'''
 print( '' )
 print( '-----------------------------------------------------')
 print( "                                                     ")
@@ -563,7 +572,7 @@ print( "             `---'                                   ")
 print( "                                               v3.1.4")
 print( '-----------------------------------------------------')
 print( '' )
-'''
+r'''
 
 #====================================================================#
 					#OBTAINING FILE DIRECTORIES#
@@ -2570,6 +2579,13 @@ def PlotGeometry(ax,MeshCoordinates,MeshConnections,image_plotsymmetry,LabelNode
 		# Extract coordinates at relevant connection indices
 		Radius1, Height1 = Coords[i]
 		Radius2, Height2 = Coords[j]
+
+		# Translate mesh to account for additional '#' in initmesh.dat
+		ZHashPoints = ZHashPoints_Global						### RM SJD, AUTOMATE THIS SOMEHOW
+		if ZHashPoints > 0:
+			Height1 = Height1-(dz[l]*ZHashPoints)
+			Height2 = Height2-(dz[l]*ZHashPoints)
+		#end if
 		
 		# Determine if line to be plotted is on symmetry axis
 		# If so, 'break' and skip to next 'n' to avoid plotting line at symmetry axis
@@ -2605,24 +2621,24 @@ def PlotGeometry(ax,MeshCoordinates,MeshConnections,image_plotsymmetry,LabelNode
 		if image_rotate == True and image_plotsymmetry == True:
 			Radius1,Height1 = Height1,Radius1
 			Radius2,Height2 = Height2,Radius2
-			ax.plot([Radius1, Radius2], [Height1, Height2], color='dimgrey', lw=2)
-			ax.plot([Radius2, Radius1], [-Height1, -Height2], color='dimgrey', lw=2)		
+			ax.plot([Radius1, Radius2], [Height1, Height2], color='dimgrey', ls='-', lw=2)
+			ax.plot([Radius2, Radius1], [-Height1, -Height2], color='dimgrey', ls='-', lw=2)		
 
 		# Only works if rotating 90 to the right
 		elif image_rotate == True and image_plotsymmetry == False:
 			Radius1,Height1 = Height1,Radius1
 			Radius2,Height2 = Height2,Radius2
 			Height1,Height2 = -Height2+R_mesh[l]*dr[l], -Height1+R_mesh[l]*dr[l]
-			ax.plot([Radius1, Radius2], [Height1, Height2], color='dimgrey', lw=2)			
+			ax.plot([Radius1, Radius2], [Height1, Height2], color='dimgrey', ls='-', lw=2)					
 		
 		# Works for all cases
 		elif image_rotate == False and image_plotsymmetry == True:
-			ax.plot([Radius1, Radius2], [Height1, Height2], color='dimgrey', lw=2)
-			ax.plot([-Radius2, -Radius1], [Height1, Height2], color='dimgrey', lw=2)
+			ax.plot([Radius1, Radius2], [Height1, Height2], color='dimgrey', ls='-', lw=2)
+			ax.plot([-Radius2, -Radius1], [Height1, Height2], color='dimgrey', ls='-', lw=2)	
 
 		# if no rotation or symmetry
 		else:
-			ax.plot([Radius1, Radius2], [Height1, Height2], color='dimgrey', lw=2) 
+			ax.plot([Radius1, Radius2], [Height1, Height2], color='dimgrey', ls='-', lw=2) 		
 		#endif
 	#endfor
 	
@@ -3758,15 +3774,17 @@ if image_cmap == 'tecmodern':
 	tecplotcmap,tecplotcdict = tecplot_cmap(NumLevels=256)
 	image_cmap = tecplotcmap
 #endif
-	
+
+'''	
 #Load IDL colourmap (std_gamma_II.txt in modules dir)
 Filename = 'Modules/std_gamma_II.txt'          
-try: 
+ try: 
 	map = np.loadtxt(Filename, delimiter=',')
 	IDL_Gamma_II = col.ListedColormap(map.T, name='IDL_Gamma_II')
 except:
 	print('Warning: gamma_II colourmap not found')
 #endtry
+'''
 
 #=========================#
 #=========================#
@@ -3799,8 +3817,10 @@ def Matplotlib_GlobalOptions():
 
 	#Line and Colour options
 #	from cycler import cycler								#See below
-#	mpl.rcParams['axes.prop_cycle']=cycler(color='bgrcmyk')	#Set default colour names
-	mpl.rcParams['lines.linewidth'] = 1.0					#Set Default linewidth
+	Colours = ['k','b','r','g','c','m','y']
+	Linestyles = ['-']
+	mpl.rcParams['axes.prop_cycle'] = cycler(color=Colours) * cycler(linestyle=Linestyles)	#Set default colour names
+	mpl.rcParams['lines.linewidth'] = 1.5					#Set Default linewidth
 
 	#Maths and Font options
 	mpl.rcParams['mathtext.fontset'] = 'cm'					#Sets 'Latex-like' maths font
@@ -5125,25 +5145,54 @@ def CalcSheathExtent(folderidx=l,Orientation='Radial',Phase='NaN',Ne=list(),Ni=l
 
 	#=======#	#=======#	#=======#
 	#=======#	#=======#	#=======#
+	
+	# Obtain current directory positive ion species densities
+	for i in range(0,len(PosSpecies)):
+	
+		# Define variable header number and Extract data from		
+		# TECPLOT2D.PDT or movie1.pdt file formats
+		if Phase == 'NaN' and len(Ne) == 0:
+			IONproc = EnumerateVariables(PosSpecies,Header_TEC2D[folderidx])[0][i]
+			Ni = Data[folderidx][IONproc]
+		elif Phase != 'NaN' and len(Ne) == 0:
+			IONproc = EnumerateVariables(PosSpecies,Header_movie1[folderidx])[0][i]
+			Ni = PhaseMovieData[folderidx][Phase][IONproc]
+		#endif
+		
+		# Sum all PosSpecies densities together into Neff
+		try:
+			NeffPos = NeffPos + ImageExtractor2D(Ni)
+		except:
+			NeffPos = ImageExtractor2D(Ni)
+		#endtry
+		
+	#endfor
 
-	#!!! OLD METHOD !!!
-	#Obtain current folder ion and electron densities if not already supplied.	
-	#Default to 2D data format.
-	if Phase == 'NaN' and len(Ne) == 0:
-		IONproc = EnumerateVariables(PosSpecies,Header_TEC2D[folderidx])[0][0]
-		Eproc = EnumerateVariables(['E'],Header_TEC2D[folderidx])[0][0]
-		Ne = Data[folderidx][Eproc]
-		Ni = Data[folderidx][IONproc]
-	#If phase is supplied, use phase data format.				<<< TO BE REMOVED
-#	elif Phase != 'NaN' and len(Ne) == 0:
-#		IONproc = EnumerateVariables(PosSpecies,Header_movie1[folderidx])[0][0]
-#		Eproc = EnumerateVariables(['E'],Header_movie1[folderidx])[0][0]
-#		Ne = PhaseMovieData[folderidx][Phase][Eproc]
-#		Ni = PhaseMovieData[folderidx][Phase][IONproc]
-	#endif
-	#Extract 2D image for further processing.
-	Ne,Neff = ImageExtractor2D(Ne),ImageExtractor2D(Ni)
-	#!!! OLD METHOD !!!
+	# Obtain current directory negative ion species densities
+	for i in range(0,len(NegSpecies)):
+	
+		# Define variable header number and Extract data from		
+		# TECPLOT2D.PDT or movie1.pdt file formats
+		if Phase == 'NaN' and len(Ne) == 0:
+			Eproc = EnumerateVariables(NegSpecies,Header_TEC2D[folderidx])[0][i]
+			Ne = Data[folderidx][Eproc]
+		elif Phase != 'NaN' and len(Ne) == 0:
+			Eproc = EnumerateVariables(NegSpecies,Header_movie1[folderidx])[0][i]
+			Ne = PhaseMovieData[folderidx][Phase][Eproc]
+		#endif
+		
+		# Sum all PosSpecies densities together into Neff
+		try:
+			NeffNeg = NeffNeg + ImageExtractor2D(Ne)
+		except:
+			NeffNeg = ImageExtractor2D(Ne)
+		#endtry
+		
+	#endfor
+
+	# Reset to OLD naming convension for ease.
+	Ne = NeffNeg
+	Neff = NeffPos
 
 	#=======#	#=======#	#=======#
 	#=======#	#=======#	#=======#
@@ -5942,6 +5991,7 @@ if savefig_monoprofiles == True:
 
 		#Generate the vertical (height) lineouts for a given radius.
 		if len(axialprofiles) > 0:
+		
 			#Create folder to keep output plots.
 			DirZlineouts = CreateNewFolder(Dirlist[l],'1DAxial_Profiles/')
 			Legendlist = list()
@@ -5980,6 +6030,8 @@ if savefig_monoprofiles == True:
 					#endif
 				#endfor
 
+				#=====##=====# Image Beautification #=====##=====#
+
 				#Apply image options and axis labels.
 				Title = 'Height Profiles for '+VariableStrings[i]+' for \n'+Dirlist[l][2:-1]
 				Xlabel,Ylabel = 'Axial Distance Z [cm]',VariableLabelMaker(VariableStrings)[i]
@@ -5988,6 +6040,8 @@ if savefig_monoprofiles == True:
 				#Save profiles in previously created folder.
 				plt.savefig(DirZlineouts+'1D_Axial_'+VariableStrings[i]+'_Profiles'+ext)
 				plt.close(fig)
+				
+				#=====##=====# Image I/O #=====##=====#
 				
 				# Write data underpinning current figure in .csv format
 				if Write_CSV == True:
@@ -6040,6 +6094,10 @@ if savefig_compareprofiles == True:
 
 		#For each requested comparison variable.
 		for k in tqdm(range(0,len(Variables))):
+		
+			# Create lists to store output for writing to file
+			CSVCases = list()
+			CSVProfiles = list()
 
 			#Loop escape if variables that do not exist have been requested.
 			if k >= 1 and k > len(VariableStrings)-1:
@@ -6065,30 +6123,74 @@ if savefig_compareprofiles == True:
 
 				#Plot all radial profiles for all variables in one folder.
 				RProfile = ExtractRadialProfile(Data[l],VariableIndices[k],VariableStrings[k], radialprofiles[j],R_mesh[l],ISYMlist[l])
+				
+				# Record radial profiles for saving to file
+				CSVProfiles.append(RProfile)
 
 				#Plot radial profile and allow for log y-axis if requested.
 				ImagePlotter1D(Raxis,RProfile,image_aspectratio,fig,ax)
 
-
-				#Write data to ASCII files if requested.
-				if write_ASCII == True:
-					if l == 0:
-						WriteFolder = 'Z='+str(round((radialprofiles[j])*dz[l], 1))+'cm_Data'
-						DirWrite = CreateNewFolder(DirComparisons, WriteFolder)
-						WriteDataToFile(Raxis+['\n'], DirWrite+VariableStrings[k], 'w')
-					#endif
-					WriteDataToFile(RProfile+['\n'], DirWrite+VariableStrings[k], 'a')
-				#endif
+				#=====##=====# Image Beautification #=====##=====#
 
 				#Apply image options and axis labels.
 				Title = 'Comparison of '+VariableStrings[k]+' Profiles at Z='+str(round((radialprofiles[j])*dz[l], 2))+'cm for \n'+Dirlist[l][2:-1]
 				Xlabel,Ylabel,Legend = 'Radial Distance R [cm]',Ylabels[k],Legendlist
 				ImageOptions(fig,ax,Xlabel,Ylabel,Title,Legendlist,Crop=False)
 			#endfor
+			
+			#=====##=====# Image I/O #=====##=====#
 
 			#Save one image per variable with data from all simulations.
-			plt.savefig(DirProfile+VariableStrings[k]+'@ Z='+str(round((radialprofiles[j])*dz[l], 1))+'cm profiles'+ext)
+			ProfileString = VariableStrings[k]+'_Z='+str(round((radialprofiles[j])*dz[l], 1))+'cm'
+			plt.savefig(DirProfile+ProfileString+ext)
 			clearfigures(fig)
+		
+			# Write data underpinning current figure in .csv format
+			if Write_CSV == True:
+				CSVDir = CreateNewFolder(DirProfile, '1Dplots_Data')
+				CSVRMesh = 'R_Mesh [Cells] '+str(R_mesh[l])+'  :: dR [cm/cell] '+str(dr[l])
+				CSVZMesh = 'Z_Mesh [Cells] '+str(Z_mesh[l])+'  :: dZ [cm/cell] '+str(dz[l])
+				CSVFilename = ProfileString+'.csv'
+				CSVTitle = str(Dirlist[l])
+				CSVLabel = str(Ylabel)
+				CSVISYM = 'ISYM='+str(ISYMlist[l])
+				CSVRotate = 'Rotate='+str(image_rotate)
+				CSVCell = 'Zcell='+str(radialprofiles[j])
+				CSVSimCases = 'SimCases='+str(Legendlist)
+				CSVHeader = [CSVTitle,CSVLabel,CSVISYM,CSVRotate,CSVRMesh,CSVZMesh,CSVCell,CSVSimCases]
+				
+				# Write to .csv file
+				WriteToCSV(CSVProfiles, CSVDir, CSVFilename, CSVHeader)
+			#endif
+			
+			#Write data to ASCII files if requested.
+			if write_ASCII == True:
+				WriteFolder = 'Z='+str(round((radialprofiles[j])*dz[l], 1))+'cm_Data'
+				DirWrite = CreateNewFolder(DirComparisons, WriteFolder)
+				WriteDataToFile(Raxis+['\n'], DirWrite+VariableStrings[k], 'w')
+				for i in range(0,len(CSVProfiles)):
+					WriteDataToFile(CSVProfiles[i]+['\n'], DirWrite+VariableStrings[k], 'a')
+				#endfor
+			#endif
+
+
+			#=====##=====# TREND ANALYSIS #=====##=====#
+
+			# Uniformity Analysis									RM SJD, INCOMPLETE DIAGNOSTIC
+			
+			print('')
+			print(Ylabels[k], 'Radial Uniformity')
+			
+			for i in range(0,len(CSVProfiles)):
+				CSVProfile = CSVProfiles[i]
+				RSlice = CSVProfile[0:uniformitylimit]
+				
+				Uniformity = (max(RSlice)-min(RSlice))/(2*np.mean(RSlice))
+				
+				print(FolderNameTrimmer(Dirlist[l]), str(round(Uniformity*100,2)), str('%') ) 
+			#endfor
+			print('')
+
 		#endfor
 	#endfor
 
@@ -6103,6 +6205,10 @@ if savefig_compareprofiles == True:
 
 		#For each requested comparison variable.
 		for k in tqdm(range(0,len(Variables))):
+
+			# Create lists to store output for writing to file
+			CSVCases = list()
+			CSVProfiles = list()
 
 			#Loop escape if variables that do not exist have been requested.
 			if k >= 1 and k > len(VariableStrings)-1:
@@ -6129,19 +6235,13 @@ if savefig_compareprofiles == True:
 				#Obtain axial profile for each folder of the current variable.
 				ZProfile = ExtractAxialProfile(Data[l],VariableIndices[k],VariableStrings[k], axialprofiles[j],R_mesh[l],Z_mesh[l],ISYMlist[l])
 
+				# Record axial profiles for saving to file
+				CSVProfiles.append(ZProfile)
+
 				#Plot axial profile and allow for log y-axis if requested.
 				ImagePlotter1D(Zaxis,ZProfile[::-1],image_aspectratio,fig,ax)
 
-
-				#Write data to ASCII files if requested.
-				if write_ASCII == True:
-					if l == 0:
-						WriteFolder = 'R='+str(round((axialprofiles[j])*dr[l], 1))+'cm_Data'
-						DirWrite = CreateNewFolder(DirComparisons, WriteFolder)
-						WriteDataToFile(Zaxis+['\n'], DirWrite+VariableStrings[k], 'w')
-					#endif
-					WriteDataToFile(ZProfile[::-1]+['\n'], DirWrite+VariableStrings[k], 'a')
-				#endif
+				#=====##=====# Image Beautification #=====##=====#
 
 				#Apply image options and axis labels.
 				Title = 'Comparison of '+VariableStrings[k]+' Profiles at R='+str(round((axialprofiles[j])*dr[l], 1))+'cm for \n'+Dirlist[l][2:-1]
@@ -6149,9 +6249,40 @@ if savefig_compareprofiles == True:
 				ImageOptions(fig,ax,Xlabel,Ylabel,Title,Legendlist,Crop=False)
 			#endfor
 
+			#=====##=====# Image I/O #=====##=====#
+
 			#Save one image per variable with data from all simulations.
 			plt.savefig(DirProfile+VariableStrings[k]+'@ R='+str(round((axialprofiles[j])*dr[l], 2))+'cm profiles'+ext)
 			clearfigures(fig)
+		
+			# Write data underpinning current figure in .csv format
+			if Write_CSV == True:
+				CSVDir = CreateNewFolder(DirProfile, '1Dplots_Data')
+				CSVRMesh = 'R_Mesh [Cells] '+str(R_mesh[l])+'  :: dR [cm/cell] '+str(dr[l])
+				CSVZMesh = 'Z_Mesh [Cells] '+str(Z_mesh[l])+'  :: dZ [cm/cell] '+str(dz[l])
+				CSVFilename = ProfileString+'.csv'
+				CSVTitle = str(Dirlist[l])
+				CSVLabel = str(Ylabel)
+				CSVISYM = 'ISYM='+str(ISYMlist[l])
+				CSVRotate = 'Rotate='+str(image_rotate)
+				CSVCell = 'Rcell='+str(axialprofiles[j])
+				CSVSimCases = 'SimCases='+str(Legendlist)
+				CSVHeader = [CSVTitle,CSVLabel,CSVISYM,CSVRotate,CSVRMesh,CSVZMesh,CSVCell,CSVSimCases]
+				
+				# Write to .csv file
+				WriteToCSV(CSVProfiles, CSVDir, CSVFilename, CSVHeader)
+			#endif
+			
+			#Write data to ASCII files if requested.
+			if write_ASCII == True:
+				WriteFolder = 'R='+str(round((axialprofiles[j])*dr[l], 1))+'cm_Data'
+				DirWrite = CreateNewFolder(DirComparisons, WriteFolder)
+				WriteDataToFile(Zaxis+['\n'], DirWrite+VariableStrings[k], 'w')
+				for i in range(0,len(CSVProfiles)):
+					WriteDataToFile(CSVProfiles[i]+['\n'], DirWrite+VariableStrings[k], 'a')
+				#endfor
+			#endif			
+
 		#endfor
 	#endfor
 
@@ -6954,7 +7085,7 @@ if savefig_IEDFangular == True:
 			#Angularly resolved IEDF Figure
 			im = ax[0].imshow(EDFImage, extent=Extent, aspect='auto')
 			cax = Colourbar(ax[0],VariableStrings[i]+' EDF($\\theta$)',5)
-			Xlabel,Ylabel = '','Angular Dispersion [$\\theta^{\circ}$]'
+			Xlabel,Ylabel = '',r'Angular Dispersion [$\\theta^{\circ}$]'
 			ImageCrop = [[0,int(eVlimit)],[-45,45]]					#[[X1,X2],[Y1,Y2]]
 			ImageOptions(fig,ax[0],Xlabel,Ylabel,Title,Crop=ImageCrop,Rotate=False) 
 
@@ -8356,7 +8487,7 @@ if savefig_phaseresolve1D == True:
 
 		Title = 'Phase-Resolved Voltage Waveforms for '+FolderNameTrimmer(Dirlist[l])
 		Legend = ['Waveform Vpp: '+str(round(ElectrodeVpp[2],2))+'V']
-		Xlabel,Ylabel = 'Phase [$\omega$t/2$\pi$]','Electrode Potential [V]'
+		Xlabel,Ylabel = r'Phase [$\omega$t/2$\pi$]','Electrode Potential [V]'
 		ImageOptions(fig,ax,Xlabel,Ylabel,Title,Legend,Crop=False)
 		ax.xaxis.set_major_locator(ticker.MultipleLocator(0.25))
 
@@ -8464,7 +8595,7 @@ if savefig_phaseresolve1D == True:
 						#Plot waveform and apply image options.
 						ax1.plot(Phaseaxis, ElectrodeWaveform, lw=2)
 						ax1.axvline(Phaseaxis[j], color='k', linestyle='--', lw=2)
-						Xlabel,Ylabel = 'Phase [$\omega$t/2$\pi$]','Electrode Potential [V]'
+						Xlabel,Ylabel = r'Phase [$\omega$t/2$\pi$]','Electrode Potential [V]'
 						ImageOptions(fig,ax1,Xlabel,Ylabel,Crop=False)
 						
 						#Clean up image subfigures
@@ -8593,7 +8724,7 @@ if savefig_phaseresolve2D == True:
 
 			Title = 'Phase-Resolved Voltage Waveforms for '+FolderNameTrimmer(Dirlist[l])
 			Legend = ['Waveform Vpp: '+str(round(ElectrodeVpp[2],2))+'V']
-			Xlabel,Ylabel = 'Phase [$\omega$t/2$\pi$]','Electrode Potential [V]'
+			Xlabel,Ylabel = r'Phase [$\omega$t/2$\pi$]','Electrode Potential [V]'
 			ImageOptions(fig,ax,Xlabel,Ylabel,Title,Legend,Crop=False)
 			ax.xaxis.set_major_locator(ticker.MultipleLocator(0.25))
 
@@ -8719,7 +8850,7 @@ if savefig_phaseresolve2D == True:
 					#Plot phase-resolved 'PPOT' waveform at 'electrodeloc'
 					ax1.plot(Phaseaxis, ElectrodeWaveform, lw=2)
 					ax1.axvline(Phaseaxis[j], color='k', linestyle='--', lw=2)
-					ax1Xlabel,ax1Ylabel = 'Phase [$\omega$t/2$\pi$]','Electrode Potential [V]'
+					ax1Xlabel,ax1Ylabel = r'Phase [$\omega$t/2$\pi$]','Electrode Potential [V]'
 					
 					#Apply image options
 					ImageOptions(fig,ax1,ax1Xlabel,ax1Ylabel,Crop=False)
@@ -8946,7 +9077,7 @@ if savefig_sheathdynamics == True:
 		
 		ax[1].plot(Phaseaxis, ElectrodeWaveform, lw=2)
 		ax[1].plot(Phaseaxis, ElectrodeBias, 'k--', lw=2)
-		Xlabel,Ylabel = 'Phase [$\omega$t/2$\pi$]','Electrode Potential [V]'
+		Xlabel,Ylabel = r'Phase [$\omega$t/2$\pi$]','Electrode Potential [V]'
 		ImageOptions(fig,ax[1],Xlabel,Ylabel,Crop=False)
 
 		plt.savefig(Dirphaseresolved+VariedValuelist[l]+' SheathDynamics'+ext)
@@ -9092,7 +9223,7 @@ if savefig_PROES == True:
 
 		Title = 'Phase-Resolved Voltage Waveforms for '+FolderNameTrimmer(Dirlist[l])
 		Legend = ['Waveform Vpp: '+str(round(ElectrodeVpp[2],2))+'V']
-		Xlabel,Ylabel = 'Phase [$\omega$t/2$\pi$]','Electrode Potential [V]'
+		Xlabel,Ylabel = r'Phase [$\omega$t/2$\pi$]','Electrode Potential [V]'
 		ImageOptions(fig,ax,Xlabel,Ylabel,Title,Legend,Crop=False)
 		ax.xaxis.set_major_locator(ticker.MultipleLocator(0.25))
 
@@ -9247,7 +9378,7 @@ if savefig_PROES == True:
 				#Plot Voltage Waveform.
 				ax[1].plot(Phaseaxis, ElectrodeWaveform, lw=2)
 				ax[1].plot(Phaseaxis, ElectrodeBias, 'k--', lw=2)
-				Xlabel,Ylabel = 'Phase [$\omega$t/2$\pi$]','Electrode Potential [V]'
+				Xlabel,Ylabel = r'Phase [$\omega$t/2$\pi$]','Electrode Potential [V]'
 				ImageOptions(fig,ax[1],Xlabel,Ylabel,Crop=False)
 				ax[1].xaxis.set_major_locator(ticker.MultipleLocator(0.25))
 				ax[1].set_xlim(x1,x2)
@@ -9287,7 +9418,7 @@ if savefig_PROES == True:
 				#Plot Waveform onto Temporally collapsed PROES.
 				ax[1].plot(Phaseaxis, ElectrodeWaveform, lw=2)
 				ax[1].plot(Phaseaxis, ElectrodeBias, 'k--', lw=2)
-				Xlabel,Ylabel = 'Phase [$\omega$t/2$\pi$]','Electrode Potential [V]'
+				Xlabel,Ylabel = r'Phase [$\omega$t/2$\pi$]','Electrode Potential [V]'
 				ImageOptions(fig,ax[1],Xlabel,Ylabel,Crop=False)
 #				ax[1].set_xlim(x1,x2)
 
@@ -9311,14 +9442,14 @@ if savefig_PROES == True:
 #				fig,ax = figure(image_aspectratio,2,shareX=True)
 #				try: ax[0].plot(Raxis,SpatialPROES, lw=2)		### HACKY ###
 #				except: ax[0].plot(Zaxis,SpatialPROES, lw=2)	### HACKY ###
-#				Xlabel = 'Phase [$\omega$t/2$\pi$]'
+#				Xlabel = r'Phase [$\omega$t/2$\pi$]'
 #				Ylabel = 'Temporally Integrated '+varlist[i]
 #				ImageOptions(fig,ax[0],Xlabel,Ylabel,Crop=False)
 
 				#Plot Waveform onto Spatially collapsed PROES.
 #				ax[1].plot(Phaseaxis, ElectrodeWaveform, lw=2)
 #				ax[1].plot(Phaseaxis, ElectrodeBias, 'k--', lw=2)
-#				Xlabel,Ylabel = 'Phase [$\omega$t/2$\pi$]','Electrode Potential [V]'
+#				Xlabel,Ylabel = r'Phase [$\omega$t/2$\pi$]','Electrode Potential [V]'
 #				ImageOptions(fig,ax[1],Xlabel,Ylabel,Crop=False)
 
 #				plt.savefig(DirPROESloc+VariedValuelist[l]+' '+NameString+' SpatialPROES'+ext)
