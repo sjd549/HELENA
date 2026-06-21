@@ -111,8 +111,8 @@ GlobMeanCalculation = 'MeanFraction'	#Definition of 'mean' EDF value
 #Overrides or 'fudge factors' for diagnostics
 DCbiasaxis = 'Auto'							#Force Direction Over Which DCBias is Calculated
 #Choices:('Axial','Radial','Auto')
-SheathCationSpecies = ['AR+','SF5+','SF4+','SF3+','SF2+','SF+','S+','F+','F2+']		#Cations for Sheath Width Calc
-SheathAnionSpecies = ['E','SF6-','SF5-','SF4-','SF3-','SF2-','F-','F2-']			#Anions for Sheath Width Calc
+SheathIonSpecies = ['AR+']					#Force Sheath Ion Species (blank for auto)
+#['AR+'] #['O+']
 
 #Ratio of electrons to ions that determines the edge of the sheath
 #Ideally this should be 1.00, but in practice it's slightly over 1 at lower resolutions
@@ -155,7 +155,7 @@ ArOIPT = ['AR','AR*','AR**','AR***','AR','AR+','AR2+','AR2*','S-AR+','S-AR','SEB
 Ar = Ar3s+ArOIPT
 
 O2 = ['O3','O2','O2V','O2*','O2*1S','O2+','O2-','O','O1S','O+','O-','O*','O**','O***','O****','S-O*','S-O**','S-O***','S-O****','S-O3','S-O2+','S-O+','S-O-','SEB-O3','SEB-O+','SEB-O2+','SEB-O-','FR-O+','FZ-O+','FR-O-','FZ-O-']
-H2 = ['H2V0','H2V1','H2V2','H2V3','H1','H*','H**','H2+','H+','H-','S-H+','SEB-H+','S-2H+','SEB-2H+','S-H-','SEB-H-','FZ-H2V0','FR-H2V0','FZ-H1','FR-H1','FZ-H+','FR-H+','FZ-H2+','FR-H2+','FZ-H-','FR-H-']
+H2 = ['H2V0','H2V1','H2V2','H2V3','H1','H*','H**','H3+','H2+','H+','H-','S-H+','SEB-H+','S-2H+','SEB-2H+','S-H-','SEB-H-','FZ-H2V0','FR-H2V0','FZ-H1','FR-H1','FZ-H+','FR-H+','FZ-H2+','FR-H2+','FZ-H-','FR-H-']
 N2 = ['N2','S-N2','FZ-N2','FR-N2','N2V','N2*','N2**','N2+','S-N2+','FZ-N2+','FR-N2','N','S-N','FZ-N','FR-N','N*','N+','S-N+','FZ-N+','FR-N+']
 Cl2 = ['Cl2','Cl','CL+','CL-','Cl2V','Cl2+','CL*','CL**','CL***']
 F2 = ['F2','F2*','F2+','F','F*','F+','F-','S-F','S-F+','S-F-','SEB-F','SEB-F+','SEB-F-','FZ-F','FR-F','FZ-F+','FR-F+','FZ-F-','FR-F-','FZ-F+','FR-F+']
@@ -197,9 +197,10 @@ electrodeloc = [0,0]					# Cell location of powered electrode [R,Z].
 waveformlocs = []						# Cell locations of additional waveforms [R,Z].
 
 # Requested variables and plotting locations.
-Variables = Phys+Ar						# Requested Variables from Tecplot2D.pdt, tecplot_kin.pdt, and movie_icp.pdt
+Variables = Phys+SiHx+Si+H2+NHx+N2					# Requested Variables from Tecplot2D.pdt, tecplot_kin.pdt, and movie_icp.pdt
 multivar = []							# Additional variables plotted ontop of [Variables]
-radialprofiles = []						# Radial 1D-Profiles to be plotted (fixed Z-mesh) --
+#['FZ-N']#['FZ-N2','FZ-SIH3','FZ-SIH2','FZ-SIH','FZ-SI']
+radialprofiles = [107,108]					# Radial 1D-Profiles to be plotted (fixed Z-mesh) --
 axialprofiles = []						# Axial 1D-Profiles to be plotted (fixed R-mesh) |
 probeloc = []							# Cell location For Trend Analysis [R,Z], (leave empty for global min/max)
 
@@ -207,7 +208,7 @@ probeloc = []							# Cell location For Trend Analysis [R,Z], (leave empty for g
 sheathROI = []							# Sheath Region of Interest, (Start,End) [cells]
 sourcewidth = []						# Source Dimension at ROI, leave empty for auto. [cells]
 
-uniformitylimit = 23					# UNIFORMITY DIAGNOSTIC IN DEVELOPMENT (Radial Cell Defining Uniformity Limit)
+uniformitylimits = [0,23]					# Radial Cell Defining Edge of Uniformity 			<<< INCOMPLETE DIAGNOSTIC
 
 
 # Requested diagnostics and plotting routines.
@@ -219,11 +220,11 @@ savefig_timeaxis1D = False				# 1D Variables against time-axis:	movie_icp.pdt
 savefig_convergence = False				# 1D variables against ITER-axis:	movie_icp.pdt
 iterstep = 1							# movie_icp.pdt iteration step size
 
-savefig_kin1D = False					# 1D Variables against time-axis:	TECPLOT_KIN.pdt
+savefig_kin1D = True					# 1D Variables against time-axis:	TECPLOT_KIN.pdt
 
-savefig_monoprofiles = False			# 1D Variables against space-axis:		TECPLOT2D	< .csv File Save
+savefig_monoprofiles = True			# 1D Variables against space-axis:		TECPLOT2D	< .csv File Save
 savefig_multiprofiles = False			# 1D Variables Compared Same Sims:		TECPLOT2D
-savefig_compareprofiles = False			# 1D Variables Compared Between Sims:	TECPLOT2D	< .csv File Save
+savefig_compareprofiles = True			# 1D Variables Compared Between Sims:	TECPLOT2D	< .csv File Save
 # ^^^^
 # NOTE: IMAGEPLOTTER1D RETURNS ARRAY ORDERED AS [0,height]  <<< REVERSED RELATIVE TO HPEM
 # 		IMAGEPLOTTER2D RETURNS ARRAY ORDERED AS [height,0] 	<<< SAME ORIENTATION AS HPEM
@@ -270,7 +271,7 @@ image_cmap = 'magma'					# Define global colourmap ('jet','plasma','magma','RdBu
 
 image_aspectratio = [10,10]				# Real Size of [X,Y] in cm [Doesn't Rotate - X is always horizontal]
 image_radialcrop = []					# Crops 2D images to [R1,R2] in cm
-image_axialcrop = []					# Crops 2D images to [Z1,Z2] in cm
+image_axialcrop = []#[40,31]					# Crops 2D images to [Z1,Z2] in cm
 
 image_plotsymmetry = False				# Plot radial symmetry - mirrors across the ISYM axis
 image_plotmesh = True					# Plot material mesh outlines
@@ -3230,6 +3231,24 @@ if image_plotmesh == True:
 		MeshCoordinates.append(MeshCoord)
 		MeshConnections.append(MeshConn)
 	#endfor
+
+	'''
+	# Save empty geometry image in sim directory							<<< RM SJD TO BE COMPLETED
+	for l in range(0,numfolders):
+
+		fig,ax = figure()
+		Title = Dirlist[l]+'\n'+'Mesh Geometry'
+		Xlabel = 'Radius [cm]'
+		Ylabel = 'Height [cm]'
+
+		# Plot image, apply image options, and enforce overides if requested
+		PlotGeometry(ax,MeshCoordinates[l],MeshConnections[l],image_plotsymmetry)
+		ImageOptions(fig,ax,Xlabel,Ylabel,Title,Crop=False)
+		
+		plt.savefig(Dirlist[l]+'MeshGeometry.png')
+		clearfigures(fig)
+	#endif	
+	'''
 #endif
 
 #===================##===================#
@@ -5145,54 +5164,25 @@ def CalcSheathExtent(folderidx=l,Orientation='Radial',Phase='NaN',Ne=list(),Ni=l
 
 	#=======#	#=======#	#=======#
 	#=======#	#=======#	#=======#
-	
-	# Obtain current directory positive ion species densities
-	for i in range(0,len(PosSpecies)):
-	
-		# Define variable header number and Extract data from		
-		# TECPLOT2D.PDT or movie1.pdt file formats
-		if Phase == 'NaN' and len(Ne) == 0:
-			IONproc = EnumerateVariables(PosSpecies,Header_TEC2D[folderidx])[0][i]
-			Ni = Data[folderidx][IONproc]
-		elif Phase != 'NaN' and len(Ne) == 0:
-			IONproc = EnumerateVariables(PosSpecies,Header_movie1[folderidx])[0][i]
-			Ni = PhaseMovieData[folderidx][Phase][IONproc]
-		#endif
-		
-		# Sum all PosSpecies densities together into Neff
-		try:
-			NeffPos = NeffPos + ImageExtractor2D(Ni)
-		except:
-			NeffPos = ImageExtractor2D(Ni)
-		#endtry
-		
-	#endfor
 
-	# Obtain current directory negative ion species densities
-	for i in range(0,len(NegSpecies)):
-	
-		# Define variable header number and Extract data from		
-		# TECPLOT2D.PDT or movie1.pdt file formats
-		if Phase == 'NaN' and len(Ne) == 0:
-			Eproc = EnumerateVariables(NegSpecies,Header_TEC2D[folderidx])[0][i]
-			Ne = Data[folderidx][Eproc]
-		elif Phase != 'NaN' and len(Ne) == 0:
-			Eproc = EnumerateVariables(NegSpecies,Header_movie1[folderidx])[0][i]
-			Ne = PhaseMovieData[folderidx][Phase][Eproc]
-		#endif
-		
-		# Sum all PosSpecies densities together into Neff
-		try:
-			NeffNeg = NeffNeg + ImageExtractor2D(Ne)
-		except:
-			NeffNeg = ImageExtractor2D(Ne)
-		#endtry
-		
-	#endfor
-
-	# Reset to OLD naming convension for ease.
-	Ne = NeffNeg
-	Neff = NeffPos
+	#!!! OLD METHOD !!!
+	#Obtain current folder ion and electron densities if not already supplied.	
+	#Default to 2D data format.
+	if Phase == 'NaN' and len(Ne) == 0:
+		IONproc = EnumerateVariables(PosSpecies,Header_TEC2D[folderidx])[0][0]
+		Eproc = EnumerateVariables(['E'],Header_TEC2D[folderidx])[0][0]
+		Ne = Data[folderidx][Eproc]
+		Ni = Data[folderidx][IONproc]
+	#If phase is supplied, use phase data format.				<<< TO BE REMOVED
+#	elif Phase != 'NaN' and len(Ne) == 0:
+#		IONproc = EnumerateVariables(PosSpecies,Header_movie1[folderidx])[0][0]
+#		Eproc = EnumerateVariables(['E'],Header_movie1[folderidx])[0][0]
+#		Ne = PhaseMovieData[folderidx][Phase][Eproc]
+#		Ni = PhaseMovieData[folderidx][Phase][IONproc]
+	#endif
+	#Extract 2D image for further processing.
+	Ne,Neff = ImageExtractor2D(Ne),ImageExtractor2D(Ni)
+	#!!! OLD METHOD !!!
 
 	#=======#	#=======#	#=======#
 	#=======#	#=======#	#=======#
@@ -6183,7 +6173,7 @@ if savefig_compareprofiles == True:
 			
 			for i in range(0,len(CSVProfiles)):
 				CSVProfile = CSVProfiles[i]
-				RSlice = CSVProfile[0:uniformitylimit]
+				RSlice = CSVProfile[uniformitylimits[0]:uniformitylimits[1]]
 				
 				Uniformity = (max(RSlice)-min(RSlice))/(2*np.mean(RSlice))
 				
